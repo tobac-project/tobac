@@ -1,2 +1,2 @@
 from .tracking import maketrack
-from .watershedding import watershedding
+from .watershedding import watershedding,mask_particle,mask_particle_surface
