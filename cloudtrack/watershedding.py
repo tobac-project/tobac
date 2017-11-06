@@ -58,6 +58,15 @@ def watershedding(Track,WC,WC_threshold=3e-3,level=None):
         Watershed_out.data[i,:]=res1
     return Watershed_out
 
+def mask_cube_particle(variable_cube,Mask,particle):
+    import numpy as np 
+    from copy import deepcopy
+    variable_cube_out=deepcopy(variable_cube)
+    mask=Mask.data
+    mask[mask!=particle]=0
+    variable_cube_out.data=np.ma.array(variable_cube_out.data,mask=mask)    
+    return variable_cube_out
+
 def mask_particle(Mask,particle,masked=False):
     import numpy as np 
     from copy import deepcopy
