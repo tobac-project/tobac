@@ -20,14 +20,14 @@ def center_of_gravity(mass):
     from iris.analysis import SUM
     Mass=mass.collapsed(['bottom_top','south_north','west_east'],SUM)
     z=mass.coord('geopotential_height')
-    x=mass.coord('west_east')
-    y=mass.coord('south_north')
+    x=mass.coord('projection_x_coordinate')
+    y=mass.coord('projection_y_coordinate')
     mass.remove_coord('latitude')
     mass.remove_coord('longitude')
     mass.remove_coord('geopotential_height')
     x_M=((mass*x).collapsed(['bottom_top','south_north','west_east'],SUM)/Mass).data
     y_M=((mass*y).collapsed(['bottom_top','south_north','west_east'],SUM)/Mass).data
-    z_M=((mass*z.points).collapsed(['bottom_top','south_north','west_east'],SUM)/Mass).data
+    z_M=((mass*z).collapsed(['bottom_top','south_north','west_east'],SUM)/Mass).data
     Mass=Mass.data
     return(x_M,y_M,z_M,Mass)
 
