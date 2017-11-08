@@ -36,11 +36,9 @@ def watershedding(Track,WC,WC_threshold=3e-3,level=None):
     Watershed_out.data[:]=0
     Watershed_out.units=1
     for i, time in enumerate(WC.coord('time').points):        
-        print('doing watershedding for',WC.coord('time').units.num2date(time).strftime('%Y-%m-%d %H:%M:%S'))
+#        print('doing watershedding for',WC.coord('time').units.num2date(time).strftime('%Y-%m-%d %H:%M:%S'))
         Tracks_i=Track[Track['frame']==i]
         data_i=WC[i,:].data        
-        print('Max TWC: ',np.amax(data_i))
-
         Mask= np.zeros_like(data_i).astype(np.int16)
         Cloudy=data_i>WC_threshold
         Mask[Cloudy]=1
@@ -48,6 +46,7 @@ def watershedding(Track,WC,WC_threshold=3e-3,level=None):
         for index, row in Tracks_i.iterrows():
             markers[:,round(row.y), round(row.x)]=row.particle
         data_i[~Cloudy]=0
+
         data_i_watershed=(1-data_i*10)*1000
         data_i_watershed[~Cloudy]=2000
 
@@ -77,7 +76,6 @@ def mask_particle(Mask,particle,masked=False):
     return Mask_i   
 
 
-    
 def mask_particle_surface(Mask,particle,masked=False,z_coord=None):
     from iris.analysis import MAX
     import numpy as np 

@@ -1,33 +1,34 @@
 def calculate_cog(Tracks,mass,Mask):
-    from watershedding import mask_cube_particle
-    Tracks_out=Tracks['time','frame','particle']
-    Tracks_out['x_M']=None
-    Tracks_out['y_M']=None
-    Tracks_out['z_M']=None
-    Tracks_out['mass']=None
+    import numpy as np
+    from .watershedding import mask_cube_particle
+    Tracks_out=Tracks[['time','frame','particle']]
+    Tracks_out['x_M']=np.nan
+    Tracks_out['y_M']=np.nan
+    Tracks_out['z_M']=np.nan
+    Tracks_out['mass']=np.nan
     for i_row,row in Tracks_out.iterrows():        
         particle=row['particle']
-        print(particle)
-        mass_i=mask_cube_particle(mass['frame'],Mask,particle)
-        x_M,y_M,z_M,mass=center_of_gravity(mass_i)
-    Tracks_out[i_row,'x_M']=x_M
-    Tracks_out[i_row,'y_M']=y_M
-    Tracks_out[i_row,'z_M']=z_M
-    Tracks_out[i_row,'mass']=mass
+#        print('frame: ',row['frame'],'particle: ',row['particle'])
+        mass_i=mask_cube_particle(mass[row['frame']],Mask[row['frame']],particle)
+        x_M,y_M,z_M,mass_M=center_of_gravity(mass_i)
+        Tracks_out.loc[i_row,'x_M']=float(x_M)
+        Tracks_out.loc[i_row,'y_M']=float(y_M)
+        Tracks_out.loc[i_row,'z_M']=float(z_M)
+        Tracks_out.loc[i_row,'mass']=float(mass_M)
     return Tracks_out
     
-def center_of_gravity(mass):
+def center_of_gravity(mass_in):
     from iris.analysis import SUM
-    Mass=mass.collapsed(['bottom_top','south_north','west_east'],SUM)
-    z=mass.coord('geopotential_height')
-    x=mass.coord('projection_x_coordinate')
-    y=mass.coord('projection_y_coordinate')
-    mass.remove_coord('latitude')
-    mass.remove_coord('longitude')
-    mass.remove_coord('geopotential_height')
-    x_M=((mass*x).collapsed(['bottom_top','south_north','west_east'],SUM)/Mass).data
-    y_M=((mass*y).collapsed(['bottom_top','south_north','west_east'],SUM)/Mass).data
-    z_M=((mass*z).collapsed(['bottom_top','south_north','west_east'],SUM)/Mass).data
+    Mass=mass_in.collapsed(['bottom_top','south_north','west_east'],SUM)
+    z=mass_in.coord('geopotential_height')
+    y=mass_in.coord('projection_y_coordinate')
+    mass_in.remove_coord('latitude')
+    mass_in.remove_coord('longitude')
+    mass_in.remove_coord('geopotential_height')
+    x=mass_in.coord('projection_x_coordinate')
+    x_M=((mass_in*x).collapsed(['bottom_top','south_north','west_east'],SUM)/Mass).data
+    y_M=((mass_in*y).collapsed(['bottom_top','south_north','west_east'],SUM)/Mass).data
+    z_M=((mass_in*z.points).collapsed(['bottom_top','south_north','west_east'],SUM)/Mass).data
     Mass=Mass.data
     return(x_M,y_M,z_M,Mass)
 

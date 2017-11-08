@@ -30,23 +30,17 @@ def add_coordinates(t,variable_cube):
 #    constraint_y =iris.Constraint(projection_y_coordinate=lambda cell: projection_y_coordinate(np.floor(row['y'])) < cell < projection_y_coordinate())
 #    constraint_xy= constraint_x & constraint_y
     coord_names=[coord.name() for coord in  variable_cube.coords()]
-    print(coord_names)
     if ('time' in coord_names):
-        print('time coordinate present in variable_cube, interpolating time') 
+#        print('time coordinate present in variable_cube, interpolating time') 
         t['time']=None
         t['timestr']=None
 
         for i, row in t.iterrows():
-            print(Time[row['frame']].points[0])
-            print(Time.units.num2date(Time[row['frame']].points[0]))
-            print(type(Time.units.num2date(Time[row['frame']].points[0])))
-            print(Time.units.num2date(Time[row['frame']].points[0]).strftime('%Y-%m-%d %H:%M:%S'))
-
             t.loc[i,'time']=[Time.units.num2date(Time[row['frame']].points[0])]
             t.loc[i,'timestr']=Time.units.num2date(Time[row['frame']].points[0]).strftime('%Y-%m-%d %H:%M:%S')
 
     if ('projection_x_coordinate' in coord_names and 'projection_y_coordinate' in coord_names):
-        print('x and y coordinates present in variable_cube, interpolating x and y') 
+#        print('x and y coordinates present in variable_cube, interpolating x and y') 
         t['projection_x_coordinate']=None
         t['projection_y_coordinate']=None
         dim_xcoord=variable_cube.coord_dims('projection_x_coordinate')[0]
@@ -76,7 +70,7 @@ def add_coordinates(t,variable_cube):
                 t.loc[i,'projection_x_coordinate']=f_y(row['y'])
 
     if ('latitude' in coord_names and 'longitude' in coord_names):
-        print('latitude and longitude coordinates present in variable_cube, interpolating latitude and longitude') 
+#        print('latitude and longitude coordinates present in variable_cube, interpolating latitude and longitude') 
 
         t['latitude']=None
         t['longitude']=None
@@ -128,9 +122,9 @@ def maketrack(w,model=None,
     dx=np.diff(w.coord('projection_x_coordinate').points)[0]
     dy=np.diff(w.coord('projection_y_coordinate').points)[0]
     dt=np.diff(w.coord('time').points)[0]*24*3600
-    print('dx=',dx)
-    print('dy=',dy)
-    print('dt=',dt)
+#    print('dx=',dx)
+#    print('dy=',dy)
+#    print('dt=',dt)
     
     dxy=0.5*(dx+dy)
 
@@ -183,14 +177,14 @@ def maketrack(w,model=None,
 #    min_signal_pix=signal
 #    min_mass_pix=mass    
     
-    print('diameter_pix: ',diameter_pix)
-    print('memory: ',memory)
-    print('search_range: ',search_range)
-    print('stubs: ',stubs)
-
-    print('min_mass_pix: ',min_mass_pix)
-    print('min_signal_pix: ',min_signal_pix)
-
+#    print('diameter_pix: ',diameter_pix)
+#    print('memory: ',memory)
+#    print('search_range: ',search_range)
+#    print('stubs: ',stubs)
+#
+#    print('min_mass_pix: ',min_mass_pix)
+#    print('min_signal_pix: ',min_signal_pix)
+#
 # Identification of features in the individual frames, i.e. timesteps
     
 #    f = tp.batch(frames, diameter, invert=False).reset_index(drop=True)
