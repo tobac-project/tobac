@@ -46,6 +46,7 @@ def watershedding(Track,WC,WC_threshold=3e-3,level=None):
         for index, row in Tracks_i.iterrows():
             markers[:,round(row.y), round(row.x)]=row.particle
         data_i[~Cloudy]=0
+        markers[~Cloudy]=0
 
         data_i_watershed=(1-data_i*10)*1000
         data_i_watershed[~Cloudy]=2000
