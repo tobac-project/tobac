@@ -5,8 +5,44 @@ from iris.analysis import MAX
 #from skimage.segmentation import random_walker
 #from scipy.ndimage.measurements import watershed_ift
 from scipy.interpolate import interp2d, interp1d
+import pandas as pd
 
 #from pathos.multiprocessing import ProcessingPool as Pool
+
+def fill_gaps(t,order=1,extrapolate=0,frame_max=None):
+    from scipy.interpolate import InterpolatedUnivariateSpline
+    t_grouped=t.groupby('particle')
+    t_list=[]
+    if frame_max==None:
+        frame_max=t['frame'].max()
+    for particle,track in t_grouped:        
+        
+        frame_in=track['frame'].as_matrix()
+        x_in=track['x'].as_matrix()
+        y_in=track['y'].as_matrix()
+        s_x = InterpolatedUnivariateSpline(frame_in, x_in, k=order)
+        s_y = InterpolatedUnivariateSpline(frame_in, y_in, k=order)
+        track=track.set_index('frame', drop=False)
+        
+        index_min=min(track.index)-extrapolate
+        index_min=max(index_min,0)
+        index_max=max(track.index)+extrapolate
+        index_max=min(index_max,frame_max)
+        new_index=range(index_min,index_max)
+        track=track.reindex(new_index)
+        track['frame']=new_index
+#        track=track.interpolate(method='linear')
+        frame_out=track['frame'].as_matrix()
+        x_out=s_x(frame_out)
+        y_out=s_y(frame_out)
+        track['x']=x_out
+        track['y']=y_out
+        track['particle']=particle
+        t_list.append(track)
+    t_out=pd.concat(t_list)
+    t_out=t_out.reset_index(drop=True)
+    print(t_out)
+    return t_out
 
 
 def add_coordinates(t,variable_cube):     
@@ -41,8 +77,8 @@ def add_coordinates(t,variable_cube):
 
     if ('projection_x_coordinate' in coord_names and 'projection_y_coordinate' in coord_names):
 #        print('x and y coordinates present in variable_cube, interpolating x and y') 
-        t['projection_x_coordinate']=None
-        t['projection_y_coordinate']=None
+        t['projection_x_coordinate']=np.nan
+        t['projection_y_coordinate']=np.nan
         dim_xcoord=variable_cube.coord_dims('projection_x_coordinate')[0]
         dim_ycoord=variable_cube.coord_dims('projection_y_coordinate')[0]        
         x_vec=np.arange(variable_cube.shape[dim_xcoord])
@@ -60,27 +96,27 @@ def add_coordinates(t,variable_cube):
     #            print(row['x'])
     #            print(variable_cube.coord('projection_x_coordinate').points)
                 f_x(row['x'])
-                t.loc[i,'projection_x_coordinate']=f_x(row['x'])
-                t.loc[i,'projection_y_coordinate']=f_y(row['y'])
+                t.loc[i,'projection_x_coordinate']=float(f_x(row['x']))
+                t.loc[i,'projection_y_coordinate']=float(f_y(row['y']))
             elif (dim_xcoord==3 and dim_ycoord==2):
     #            print(row['x'])
     #            print(variable_cube.coord('projection_y_coordinate').points)
     #            print(f_x(row['x']))
-                t.loc[i,'projection_y_coordinate']=f_x(row['x'])
-                t.loc[i,'projection_x_coordinate']=f_y(row['y'])
+                t.loc[i,'projection_y_coordinate']=float(f_x(row['x']))
+                t.loc[i,'projection_x_coordinate']=float(f_y(row['y']))
 
     if ('latitude' in coord_names and 'longitude' in coord_names):
 #        print('latitude and longitude coordinates present in variable_cube, interpolating latitude and longitude') 
 
-        t['latitude']=None
-        t['longitude']=None
+        t['latitude']=np.nan
+        t['longitude']=np.nan
         x_vec=np.arange(latitude.shape[0])
         y_vec=np.arange(latitude.shape[1])
         f_lat=interp2d(x_vec,y_vec,latitude)
         f_lon=interp2d(x_vec,y_vec,longitude)
         for i, row in t.iterrows():
-            t.loc[i,'latitude']=f_lat(row['x'],row['y'])
-            t.loc[i,'longitude']=f_lon(row['x'],row['y'])#    print('dim_xcoord',dim_xcoord)
+            t.loc[i,'latitude']=float(f_lat(row['x'],row['y']))
+            t.loc[i,'longitude']=float(f_lon(row['x'],row['y']))#    print('dim_xcoord',dim_xcoord)
     #        t.loc[i,'latitude']=0.5*(latitude[np.floor(row['x']),np.floor(row['y'])]
     #                            +latitude[np.ceil(row['x']),np.ceil(row['y'])])
     #        t.loc[i,'longitude']=0.5*(longitude[np.floor(row['x']),np.floor(row['y'])]
@@ -91,7 +127,9 @@ def add_coordinates(t,variable_cube):
 
 def maketrack(w,model=None,
               diameter=5000,v_max=10,memory=3,stubs=5,
-              min_mass=0, min_signal=0):
+              min_mass=0, min_signal=0,
+              order=1,extrapolate=0
+              ):
     """
     Function using watershedding to determine cloud volumes associated with tracked updrafts
     
@@ -112,7 +150,10 @@ def maketrack(w,model=None,
                   Minumum "mass" of tracked object to be reached over its lifetime (not actually a physical mass, integrated maximum vertical velocity in this case so units (m/s*m^2=m^3/s)
     min_signal:   float
                   Minumum signal of tracked object to be reached over its lifetime (related to contrast between objects and background)
-
+    order:        int
+                  order if interpolation spline to fill gaps in tracking(from allowing memory to be larger than 0)
+    extrapolate   int
+                  number of points to extrapolate individual tracks by
 
     Output
     Tracks:      pandas.DataFrame
@@ -150,7 +191,7 @@ def maketrack(w,model=None,
     frames=data
     
     
-    # Settings for the tracking algorithm (Thresholds etc..)
+    # Settings for the tracking algorithm thresholds etc..)
     diameter_pix=round(int(diameter/dxy)/2)*2+1
 
     memory=memory
@@ -224,7 +265,18 @@ def maketrack(w,model=None,
             )
     t2 = tp.filter(t1, condition)
     t2=t2.reset_index(drop=True)
+    
+    # Restrict output and further treatment to relevant columns:
+    t2=t2[['x','y','frame','particle']]
+    
+    #Interpolate to fill the gaps in the trajectories (left from allowing memory in the linking)
+    t2=fill_gaps(t2,order=1,extrapolate=2,frame_max=len(w.coord('time').points))
+    
+#   # Extrapolate tracks (currently not implemented)
+#    t2=extrapolate_tracks(t_2,steps=2)
+    
     t_final=t2
+    
     t_final_out=add_coordinates(t_final,w)
 
     return t_final_out
