@@ -9,7 +9,7 @@ import pandas as pd
 
 #from pathos.multiprocessing import ProcessingPool as Pool
 
-def fill_gaps(t,order=1,extrapolate=0,frame_max=None):
+def fill_gaps(t,order=1,extrapolate=0,frame_max=None,x_max=None,y_max=None):
     from scipy.interpolate import InterpolatedUnivariateSpline
     t_grouped=t.groupby('particle')
     t_list=[]
@@ -40,6 +40,7 @@ def fill_gaps(t,order=1,extrapolate=0,frame_max=None):
         track['particle']=particle
         t_list.append(track)
     t_out=pd.concat(t_list)
+    t_out=t_out.loc[(t_out['x']<x_max) & (t_out['y']<y_max) &(t_out['x']>0) & (t_out['y']>0)]         
     t_out=t_out.reset_index(drop=True)
     print(t_out)
     return t_out
@@ -270,7 +271,7 @@ def maketrack(w,model=None,
     t2=t2[['x','y','frame','particle']]
     
     #Interpolate to fill the gaps in the trajectories (left from allowing memory in the linking)
-    t2=fill_gaps(t2,order=1,extrapolate=2,frame_max=len(w.coord('time').points))
+    t2=fill_gaps(t2,order=order,extrapolate=extrapolate,frame_max=w.shape[0],x_max=w.shape[2],y_max=w.shape[3])
     
 #   # Extrapolate tracks (currently not implemented)
 #    t2=extrapolate_tracks(t_2,steps=2)
