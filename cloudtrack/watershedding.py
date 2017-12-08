@@ -62,8 +62,15 @@ def mask_cube_particle(variable_cube,Mask,particle):
     import numpy as np 
     from copy import deepcopy
     variable_cube_out=deepcopy(variable_cube)
-    mask=Mask.data
-    mask[mask!=particle]=0
+    mask=Mask.data!=particle
+    variable_cube_out.data=np.ma.array(variable_cube_out.data,mask=mask)    
+    return variable_cube_out
+
+def mask_cube_untracked(variable_cube,Mask):
+    import numpy as np 
+    from copy import deepcopy
+    variable_cube_out=deepcopy(variable_cube)
+    mask=Mask.data!=0
     variable_cube_out.data=np.ma.array(variable_cube_out.data,mask=mask)    
     return variable_cube_out
 
@@ -76,13 +83,15 @@ def mask_particle(Mask,particle,masked=False):
         Mask_i.data=np.ma.array(Mask_i.data,mask=Mask_i.data)
     return Mask_i   
 
-
 def mask_particle_surface(Mask,particle,masked=False,z_coord=None):
     from iris.analysis import MAX
     import numpy as np 
     from copy import deepcopy
     Mask_i=deepcopy(Mask)
     Mask_i.data[Mask_i.data!=particle]=0
+    coord_names=[coord.name() for coord in  Mask_i.coords()]
+    if "geopotential_height" in coord_names:
+        Mask_i.remove_coord('geopotential_height')
     Mask_i_surface=Mask_i.collapsed(z_coord,MAX)
     if masked:
         Mask_i_surface.data=np.ma.array(Mask_i_surface.data,mask=Mask_i_surface.data)
