@@ -17,6 +17,45 @@ def calculate_cog(Tracks,mass,Mask):
         Tracks_out.loc[i_row,'mass']=float(mass_M)
     return Tracks_out
     
+def calculate_cog_untracked(mass,Mask):
+    import numpy as np
+    import pandas as pd
+    from .watershedding import mask_cube_untracked
+    Tracks_out=pd.DataFrame()
+    Tracks_out['frame']=range(len(mass.coord('time').points))
+    Tracks_out['x_M']=np.nan
+    Tracks_out['y_M']=np.nan
+    Tracks_out['z_M']=np.nan
+    Tracks_out['mass']=np.nan
+    for i_row,row in Tracks_out.iterrows():  
+        i_time=int(row['frame'])
+        mass_i=mask_cube_untracked(mass[i_time],Mask[i_time])
+        x_M,y_M,z_M,mass_M=center_of_gravity(mass_i)
+        Tracks_out.loc[i_row,'x_M']=float(x_M)
+        Tracks_out.loc[i_row,'y_M']=float(y_M)
+        Tracks_out.loc[i_row,'z_M']=float(z_M)
+        Tracks_out.loc[i_row,'mass']=float(mass_M)
+    return Tracks_out
+
+def calculate_cog_domain(mass):
+    import numpy as np
+    import pandas as pd
+    Tracks_out=pd.DataFrame()
+    Tracks_out['frame']=range(len(mass.coord('time').points))
+    Tracks_out['x_M']=np.nan
+    Tracks_out['y_M']=np.nan
+    Tracks_out['z_M']=np.nan
+    Tracks_out['mass']=np.nan
+    for i_row,row in Tracks_out.iterrows():  
+        i_time=int(row['frame'])
+        mass_i=mass[i_time]
+        x_M,y_M,z_M,mass_M=center_of_gravity(mass_i)
+        Tracks_out.loc[i_row,'x_M']=float(x_M)
+        Tracks_out.loc[i_row,'y_M']=float(y_M)
+        Tracks_out.loc[i_row,'z_M']=float(z_M)
+        Tracks_out.loc[i_row,'mass']=float(mass_M)
+    return Tracks_out
+
 def center_of_gravity(mass_in):
     from iris.analysis import SUM
     Mass=mass_in.collapsed(['bottom_top','south_north','west_east'],SUM)

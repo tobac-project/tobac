@@ -1,4 +1,4 @@
-def watershedding(Track,WC,WC_threshold=3e-3,level=None):
+def watershedding(Track,WC,WC_threshold=3e-3,level=None,compactness=0,method='watershed'):
     """
     Function using watershedding to determine cloud volumes associated with tracked updrafts
     
@@ -11,6 +11,8 @@ def watershedding(Track,WC,WC_threshold=3e-3,level=None):
                    threshold for the watershedding
     level          slice
                    levels at which to seed the particles for the watershedding algorithm
+    compactness    float
+                   parameter describing the compactness of the resulting volume
     
     Output:
     Watershed_out: iris.cube.Cube
@@ -21,7 +23,7 @@ def watershedding(Track,WC,WC_threshold=3e-3,level=None):
     import numpy as np
     import copy
     from skimage.morphology import watershed
-#    from skimage.segmentation import random_walker
+    from skimage.segmentation import random_walker
 #    from scipy.ndimage.measurements import watershed_ift
 
     #Set level at which to create "Seed" for each cloud and threshold in total water content:
@@ -53,8 +55,14 @@ def watershedding(Track,WC,WC_threshold=3e-3,level=None):
 
         data_i_watershed=data_i_watershed.astype(np.uint16)
         #res1 = watershed_ift(data_i_watershed, markers)
-        res1 = watershed(data_i_watershed,markers.astype(np.int8), mask=Cloudy)
-        #res1 = random_walker(Mask, markers,mode='cg')
+        
+        if method=='watershed':
+            res1 = watershed(data_i_watershed,markers.astype(np.int8), mask=Cloudy,compactness=compactness)
+        elif method=='random_walker':
+            #res1 = random_walker(Mask, markers,mode='cg')
+             res1=random_walker(data_i_watershed, markers.astype(np.int8), beta=130, mode='bf', tol=0.001, copy=True, multichannel=False, return_full_prob=False, spacing=None)
+        else:
+            print('unknown method')
         Watershed_out.data[i,:]=res1
     return Watershed_out
 

@@ -8,6 +8,7 @@ from scipy.interpolate import interp2d, interp1d
 import pandas as pd
 
 #from pathos.multiprocessing import ProcessingPool as Pool
+import logging
 
 def fill_gaps(t,order=1,extrapolate=0,frame_max=None,x_max=None,y_max=None):
     from scipy.interpolate import InterpolatedUnivariateSpline
@@ -42,7 +43,6 @@ def fill_gaps(t,order=1,extrapolate=0,frame_max=None,x_max=None,y_max=None):
     t_out=pd.concat(t_list)
     t_out=t_out.loc[(t_out['x']<x_max) & (t_out['y']<y_max) &(t_out['x']>0) & (t_out['y']>0)]         
     t_out=t_out.reset_index(drop=True)
-    print(t_out)
     return t_out
 
 
@@ -84,22 +84,31 @@ def add_coordinates(t,variable_cube):
         dim_ycoord=variable_cube.coord_dims('projection_y_coordinate')[0]        
         x_vec=np.arange(variable_cube.shape[dim_xcoord])
         y_vec=np.arange(variable_cube.shape[dim_ycoord])
+#        print('dim_xcoord: ',dim_xcoord)
+#        print('dim_ycoord: ',dim_ycoord)
 
-        if (dim_xcoord==2 and dim_ycoord==3):
+        if (dim_xcoord==3 and dim_ycoord==2):
+#        if (dim_xcoord==2 and dim_ycoord==3):
+
             f_x=interp1d(x_vec,variable_cube.coord('projection_x_coordinate').points)
             f_y=interp1d(y_vec,variable_cube.coord('projection_y_coordinate').points)
-        elif (dim_xcoord==3 and dim_ycoord==2):
+        elif (dim_xcoord==2 and dim_ycoord==3):
+#        elif (dim_xcoord==3 and dim_ycoord==2):
             f_x=interp1d(x_vec,variable_cube.coord('projection_y_coordinate').points)
             f_y=interp1d(y_vec,variable_cube.coord('projection_x_coordinate').points)
             
         for i, row in t.iterrows():
-            if (dim_xcoord==2 and dim_ycoord==3):
+#            if (dim_xcoord==2 and dim_ycoord==3):
+            if (dim_xcoord==3 and dim_ycoord==2):
+
     #            print(row['x'])
     #            print(variable_cube.coord('projection_x_coordinate').points)
                 f_x(row['x'])
                 t.loc[i,'projection_x_coordinate']=float(f_x(row['x']))
                 t.loc[i,'projection_y_coordinate']=float(f_y(row['y']))
-            elif (dim_xcoord==3 and dim_ycoord==2):
+#            elif (dim_xcoord==3 and dim_ycoord==2):
+            elif    (dim_xcoord==2 and dim_ycoord==3):
+
     #            print(row['x'])
     #            print(variable_cube.coord('projection_y_coordinate').points)
     #            print(f_x(row['x']))
@@ -161,6 +170,12 @@ def maketrack(w,model=None,
                  Tracked updrafts, one row per timestep and updraft, includes dimensions 'time','latitude','longitude','projection_x_variable', 'projection_y_variable' based on w cube. 
                  'x' and 'y' are used for watershedding in next step, not equivalent to actual x and y in the model, rather to the order of data storage in the model output
     """
+    
+    logger = logging.getLogger('trackpy')
+    logger.propagate = False
+    logger.setLevel(logging.WARNING)
+
+
     dx=np.diff(w.coord('projection_x_coordinate').points)[0]
     dy=np.diff(w.coord('projection_y_coordinate').points)[0]
     dt=np.diff(w.coord('time').points)[0]*24*3600
