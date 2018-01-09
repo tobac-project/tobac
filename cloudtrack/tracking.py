@@ -72,7 +72,7 @@ def add_coordinates(t,variable_cube):
         t['timestr']=None
 
         for i, row in t.iterrows():
-            t.loc[i,'time']=[Time.units.num2date(Time[row['frame']].points[0])]
+            t.loc[i,'time']=Time.units.num2date(Time[row['frame']].points[0])
             t.loc[i,'timestr']=Time.units.num2date(Time[row['frame']].points[0]).strftime('%Y-%m-%d %H:%M:%S')
 
     if ('projection_x_coordinate' in coord_names and 'projection_y_coordinate' in coord_names):
