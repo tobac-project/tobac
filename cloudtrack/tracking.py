@@ -1,6 +1,5 @@
 import trackpy as tp
 import numpy as np
-from iris.analysis import MAX
 #from skimage.morphology import watershed
 #from skimage.segmentation import random_walker
 #from scipy.ndimage.measurements import watershed_ift
@@ -135,7 +134,7 @@ def add_coordinates(t,variable_cube):
     return t
 
 
-def maketrack(w,model=None,
+def maketrack(field_in,model=None,
               diameter=5000,v_max=10,memory=3,stubs=5,
               min_mass=0, min_signal=0,
               order=1,extrapolate=0
@@ -144,8 +143,8 @@ def maketrack(w,model=None,
     Function using watershedding to determine cloud volumes associated with tracked updrafts
     
     Parameters:
-    w:            iris.cube.Cube 
-                  vertical velocity (m/s)
+    Field_in:     iris.cube.Cube 
+                  2D input field tracking is performed on
     model:        string ('WRF' or 'RAMS')
                   flag to determin which model the data is coming from (currently needed for vertical coordinate)
     diameter:     float
@@ -176,32 +175,15 @@ def maketrack(w,model=None,
     logger.setLevel(logging.WARNING)
 
 
-    dx=np.diff(w.coord('projection_x_coordinate').points)[0]
-    dy=np.diff(w.coord('projection_y_coordinate').points)[0]
-    dt=np.diff(w.coord('time').points)[0]*24*3600
-#    print('dx=',dx)
-#    print('dy=',dy)
-#    print('dt=',dt)
-    
+    dx=np.diff(field_in.coord('projection_x_coordinate').points)[0]
+    dy=np.diff(field_in.coord('projection_y_coordinate').points)[0]
+    dt=np.diff(field_in.coord('time').points)[0]*24*3600
+
     dxy=0.5*(dx+dy)
 
    
-#    TWC=LWC+IWC
-#    TWC.rename('toal condensed water')
-    z_coord=None
-
-    if model=='RAMS':
-        z_coord='geopotential_height'
-    elif model=='WRF':
-        z_coord='bottom_top_stag'
-    else:
-        'model unknown'
-
-    w_max=w.collapsed(z_coord,MAX)
     
-    
-    
-    data=w_max.data
+    data=field_in.data
     #data_plot=TWP.data
         
     frames=data
@@ -286,14 +268,14 @@ def maketrack(w,model=None,
     t2=t2[['x','y','frame','particle']]
     
     #Interpolate to fill the gaps in the trajectories (left from allowing memory in the linking)
-    t2=fill_gaps(t2,order=order,extrapolate=extrapolate,frame_max=w.shape[0],x_max=w.shape[2],y_max=w.shape[3])
+    t2=fill_gaps(t2,order=order,extrapolate=extrapolate,frame_max=field_in.shape[0],x_max=field_in.shape[2],y_max=field_in.shape[3])
     
 #   # Extrapolate tracks (currently not implemented)
 #    t2=extrapolate_tracks(t_2,steps=2)
     
     t_final=t2
     
-    t_final_out=add_coordinates(t_final,w)
+    t_final_out=add_coordinates(t_final,field_in)
 
     return t_final_out
 
