@@ -58,6 +58,7 @@ def calculate_cog_domain(mass):
 
 def center_of_gravity(mass_in):
     from iris.analysis import SUM
+    import numpy as np
     Mass=mass_in.collapsed(['bottom_top','south_north','west_east'],SUM)
     z=mass_in.coord('geopotential_height')
     y=mass_in.coord('projection_y_coordinate')
@@ -65,11 +66,16 @@ def center_of_gravity(mass_in):
     mass_in.remove_coord('longitude')
     mass_in.remove_coord('geopotential_height')
     x=mass_in.coord('projection_x_coordinate')
-    x_M=((mass_in*x).collapsed(['bottom_top','south_north','west_east'],SUM)/Mass).data
-    y_M=((mass_in*y).collapsed(['bottom_top','south_north','west_east'],SUM)/Mass).data
-    z_M=((mass_in*z.points).collapsed(['bottom_top','south_north','west_east'],SUM)/Mass).data
-    Mass=Mass.data
-    return(x_M,y_M,z_M,Mass)
+    if Mass.data > 0:
+        x_M=((mass_in*x).collapsed(['bottom_top','south_north','west_east'],SUM)/Mass).data
+        y_M=((mass_in*y).collapsed(['bottom_top','south_north','west_east'],SUM)/Mass).data
+        z_M=((mass_in*z.points).collapsed(['bottom_top','south_north','west_east'],SUM)/Mass).data
+    else:
+        x_M=np.nan
+        y_M=np.nan
+        z_M=np.nan
+    Mass_M=Mass.data
+    return(x_M,y_M,z_M,Mass_M)
 
     
 
