@@ -97,9 +97,9 @@ def mask_particle_surface(Mask,particle,masked=False,z_coord=None):
     from copy import deepcopy
     Mask_i=deepcopy(Mask)
     Mask_i.data[Mask_i.data!=particle]=0
-    coord_names=[coord.name() for coord in  Mask_i.coords()]
-    if "geopotential_height" in coord_names:
-        Mask_i.remove_coord('geopotential_height')
+    for coord in  Mask_i.coords():
+        if coord.ndim>1 and Mask_i.coord_dims(z_coord) in Mask_i.coord_dims(coord):
+            Mask_i.remove_coord(coord.name())
     Mask_i_surface=Mask_i.collapsed(z_coord,MAX)
     if masked:
         Mask_i_surface.data=np.ma.array(Mask_i_surface.data,mask=Mask_i_surface.data)
