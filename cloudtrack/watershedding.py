@@ -1,4 +1,4 @@
-def watershedding_3D(Track,Field_in,Field_threshold=3e-3,level=None,compactness=0,method='watershed'):
+def watershedding_3D(Track,Field_in,threshold=3e-3,level=None,compactness=0,method='watershed'):
     """
     Function using watershedding to determine cloud volumes associated with tracked updrafts
     
@@ -66,7 +66,7 @@ def watershedding_3D(Track,Field_in,Field_threshold=3e-3,level=None,compactness=
         Watershed_out.data[i,:]=res1
     return Watershed_out
 
-def watershedding_2D(Track,Field_in,Field_threshold=0,level=None,compactness=0,method='watershed'):
+def watershedding_2D(Track,Field_in,threshold=0,level=None,compactness=0,method='watershed'):
     """
     Function using watershedding to determine cloud volumes associated with tracked updrafts
     
