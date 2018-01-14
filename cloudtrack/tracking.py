@@ -134,8 +134,7 @@ def add_coordinates(t,variable_cube):
     return t
 
 
-def maketrack(field_in,model=None,
-              diameter=5000,v_max=10,memory=3,stubs=5,
+def maketrack(field_in,diameter=5000,v_max=10,memory=3,stubs=5,
               min_mass=0, min_signal=0,
               order=1,extrapolate=0
               ):
@@ -145,8 +144,6 @@ def maketrack(field_in,model=None,
     Parameters:
     Field_in:     iris.cube.Cube 
                   2D input field tracking is performed on
-    model:        string ('WRF' or 'RAMS')
-                  flag to determin which model the data is coming from (currently needed for vertical coordinate)
     diameter:     float
                   Assumed diameter of tracked objects (m)
     v_max:        float
