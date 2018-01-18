@@ -1,3 +1,3 @@
 from .tracking import maketrack
-from .watershedding import watershedding,mask_particle,mask_particle_surface
+from .watershedding import watershedding_3D,watershedding_2D,mask_particle,mask_particle_surface
 from .centerofgravity import calculate_cog,calculate_cog_untracked,calculate_cog_domain

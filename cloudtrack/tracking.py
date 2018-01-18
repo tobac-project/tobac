@@ -265,7 +265,7 @@ def maketrack(field_in,diameter=5000,v_max=10,memory=3,stubs=5,
     t2=t2[['x','y','frame','particle']]
     
     #Interpolate to fill the gaps in the trajectories (left from allowing memory in the linking)
-    t2=fill_gaps(t2,order=order,extrapolate=extrapolate,frame_max=field_in.shape[0],x_max=field_in.shape[2],y_max=field_in.shape[3])
+    t2=fill_gaps(t2,order=order,extrapolate=extrapolate,frame_max=field_in.shape[0],x_max=field_in.shape[1],y_max=field_in.shape[2])
     
 #   # Extrapolate tracks (currently not implemented)
 #    t2=extrapolate_tracks(t_2,steps=2)

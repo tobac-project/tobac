@@ -42,7 +42,7 @@ def watershedding_3D(Track,Field_in,threshold=3e-3,level=None,compactness=0,meth
         Tracks_i=Track[Track['frame']==i]
         data_i=Field_in[i,:].data        
         Mask= np.zeros_like(data_i).astype(np.int16)
-        unmasked=data_i>Field_threshold
+        unmasked=data_i>threshold
         Mask[unmasked]=1
         markers = np.zeros_like(unmasked).astype(np.int16)
         for index, row in Tracks_i.iterrows():
@@ -71,21 +71,17 @@ def watershedding_2D(Track,Field_in,threshold=0,level=None,compactness=0,method=
     Function using watershedding to determine cloud volumes associated with tracked updrafts
     
     Parameters:
-    Track:         pandas.DataFrame 
-                   output from trackpy/maketrack
-    Field_in:      iris.cube.Cube 
-                   containing the field to perform the watershedding on 
-    Field_threshold:  float 
-                   threshold for the watershedding field to be used for the mask
-    level          slice
-                   levels at which to seed the particles for the watershedding algorithm
-    compactness    float
-                   parameter describing the compactness of the resulting volume
+    :param CommonData or CommonDataList data: Data to collocate
+    
+    :param pandas.DataFrame Track: output from trackpy/maketrack
+    :param iris.cube.Cube Field_in: containing the field to perform the watershedding on 
+    :param float threshold: threshold for the watershedding field to be used for the mask
+    :param slice level: levels at which to seed the particles for the watershedding algorithm
+    :param float compactness: parameter describing the compactness of the resulting volume
     
     Output:
-    Watershed_out: iris.cube.Cube
-                   Cloud mask, 0 outside and integer numbers according to track inside the clouds
-    
+        
+    :return iris.cube.Cube Watershed_out: Cloud mask, 0 outside and integer numbers according to track inside the clouds
     """
     
     import numpy as np
@@ -110,7 +106,7 @@ def watershedding_2D(Track,Field_in,threshold=0,level=None,compactness=0,method=
         Tracks_i=Track[Track['frame']==i]
         data_i=Field_in[i,:].data        
         Mask= np.zeros_like(data_i).astype(np.int16)
-        unmasked=data_i>Field_threshold
+        unmasked=data_i>threshold
         Mask[unmasked]=1
         markers = np.zeros_like(unmasked).astype(np.int16)
         for index, row in Tracks_i.iterrows():
