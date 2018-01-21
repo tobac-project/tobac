@@ -134,7 +134,7 @@ def add_coordinates(t,variable_cube):
     return t
 
 
-def maketrack(field_in,diameter=5000,v_max=10,memory=3,stubs=5,
+def maketrack(field_in,grid_spacing=None,diameter=5000,v_max=10,memory=3,stubs=5,
               min_mass=0, min_signal=0,
               order=1,extrapolate=0
               ):
@@ -144,6 +144,8 @@ def maketrack(field_in,diameter=5000,v_max=10,memory=3,stubs=5,
     Parameters:
     Field_in:     iris.cube.Cube 
                   2D input field tracking is performed on
+    grid_spacing: float
+                  grid spacing in input data (m)
     diameter:     float
                   Assumed diameter of tracked objects (m)
     v_max:        float
@@ -171,12 +173,21 @@ def maketrack(field_in,diameter=5000,v_max=10,memory=3,stubs=5,
     logger.propagate = False
     logger.setLevel(logging.WARNING)
 
+    coord_names=[coord.name() for coord in  field_in.coords()]
+    if ('projection_x_coordinate' in coord_names and 'projection_y_coordinate' in coord_names):
+        dx=np.diff(field_in.coord('projection_x_coordinate').points)[0]
+        dy=np.diff(field_in.coord('projection_y_coordinate').points)[0]    
+        dxy=0.5*(dx+dy)
+    elif grid_spacing is not None:
+        dxy=grid_spacing
+    else:
+        ValueError('no information about grid spacing, need either input cube with projection_x_coord and projection_y_coord or keyword argument grid_spacing')
+        
+    
 
-    dx=np.diff(field_in.coord('projection_x_coordinate').points)[0]
-    dy=np.diff(field_in.coord('projection_y_coordinate').points)[0]
+        
     dt=np.diff(field_in.coord('time').points)[0]*24*3600
 
-    dxy=0.5*(dx+dy)
 
    
     
