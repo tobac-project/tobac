@@ -162,7 +162,7 @@ def mask_particle_surface(Mask,particle,masked=False,z_coord=None):
     Mask_i=deepcopy(Mask)
     Mask_i.data[Mask_i.data!=particle]=0
     for coord in  Mask_i.coords():
-        if coord.ndim>1 and Mask_i.coord_dims(z_coord) in Mask_i.coord_dims(coord):
+        if coord.ndim>1 and Mask_i.coord_dims(z_coord)[0] in Mask_i.coord_dims(coord):
             Mask_i.remove_coord(coord.name())
     Mask_i_surface=Mask_i.collapsed(z_coord,MAX)
     if masked:
