@@ -201,7 +201,7 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',v_max=10
     search_range=int(dt*v_max/dxy)
     
     #Filters:
-    min_mass_pix=min_mass/(dxy^2)
+    min_mass_pix=min_mass/(dxy*dxy)
     min_signal_pix=min_signal
  
     # set invert to True when tracking minima, False when tracking maxima
@@ -247,7 +247,7 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',v_max=10
     t2=t2.reset_index(drop=True)
     
     # Restrict output and further treatment to relevant columns:
-    t2['mass']=t2['mass']*(dxy^2)
+    t2['mass']=t2['mass']*(dxy*dxy)
     t2=t2[['x','y','frame','particle','mass','signal']]
     
     #Interpolate to fill the gaps in the trajectories (left from allowing memory in the linking)
