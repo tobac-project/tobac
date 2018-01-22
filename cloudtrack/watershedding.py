@@ -1,4 +1,4 @@
-def watershedding_3D(Track,Field_in,threshold=3e-3,level=None,compactness=0,method='watershed'):
+def watershedding_3D(Track,Field_in,threshold=3e-3,target='maximum',level=None,compactness=0,method='watershed'):
     """
     Function using watershedding to determine cloud volumes associated with tracked updrafts
     
@@ -7,8 +7,12 @@ def watershedding_3D(Track,Field_in,threshold=3e-3,level=None,compactness=0,meth
                    output from trackpy/maketrack
     Field_in:      iris.cube.Cube 
                    containing the field to perform the watershedding on 
-    Field_threshold:  float 
+    threshold:  float 
                    threshold for the watershedding field to be used for the mask
+                   
+    target:        string
+                   Switch to determine if algorithm looks strating from maxima or minima in input field (maximum: starting from maxima (default), minimum: starting from minima)
+
     level          slice
                    levels at which to seed the particles for the watershedding algorithm
     compactness    float
@@ -24,35 +28,49 @@ def watershedding_3D(Track,Field_in,threshold=3e-3,level=None,compactness=0,meth
     import copy
     from skimage.morphology import watershed
     from skimage.segmentation import random_walker
+    from iris.analysis import MIN,MAX
 #    from scipy.ndimage.measurements import watershed_ift
 
     #Set level at which to create "Seed" for each cloud and threshold in total water content:
     # If none, use all levels (later reduced to the ones fulfilling the theshold conditions)
     if level==None:
         level=slice(None)
-    
-    Data=copy.deepcopy(Field_in)
-    Data.data[:,:,:]=0
+         
     Watershed_out=copy.deepcopy(Field_in)
     Watershed_out.rename('watershedding_output_mask')
     Watershed_out.data[:]=0
     Watershed_out.units=1
+    cooridinates=Field_in.coords(dim_coords=True)
+    maximum_value=Field_in.collapsed(cooridinates,MAX).data
+    minimum_value=Field_in.collapsed(cooridinates,MIN).data
+    range_value=maximum_value-minimum_value
+
     for i, time in enumerate(Field_in.coord('time').points):        
 #        print('doing watershedding for',WC.coord('time').units.num2date(time).strftime('%Y-%m-%d %H:%M:%S'))
         Tracks_i=Track[Track['frame']==i]
-        data_i=Field_in[i,:].data        
-        Mask= np.zeros_like(data_i).astype(np.int16)
-        unmasked=data_i>threshold
-        Mask[unmasked]=1
+        data_i=Field_in[i,:].data
+ 
+        if target == 'maximum':
+            unmasked=data_i>threshold
+        elif target == 'minimum':
+            unmasked=data_i<threshold
+        else:
+            raise ValueError('unknown type of target')
         markers = np.zeros_like(unmasked).astype(np.int16)
         for index, row in Tracks_i.iterrows():
             markers[:,round(row.y), round(row.x)]=row.particle
-        data_i[~unmasked]=0
         markers[~unmasked]=0
+        maximum_value=np.amax(data_i)
+        minimum_value=np.amin(data_i)
+        range_value=maximum_value-minimum_value
+        if target == 'maximum':
+            data_i_watershed=1500-(data_i-minimum_value)*1000/range_value
+        elif target == 'minimum':
+            data_i_watershed=1500-(maximum_value-data_i)*1000/range_value
+        else:
+            raise ValueError('unknown type of target')
 
-        data_i_watershed=(1-data_i*10)*1000
         data_i_watershed[~unmasked]=2000
-
         data_i_watershed=data_i_watershed.astype(np.uint16)
         #res1 = watershed_ift(data_i_watershed, markers)
         
@@ -66,7 +84,7 @@ def watershedding_3D(Track,Field_in,threshold=3e-3,level=None,compactness=0,meth
         Watershed_out.data[i,:]=res1
     return Watershed_out
 
-def watershedding_2D(Track,Field_in,threshold=0,level=None,compactness=0,method='watershed'):
+def watershedding_2D(Track,Field_in,threshold=0,target='maximum',compactness=0,method='watershed'):
     """
     Function using watershedding to determine cloud volumes associated with tracked updrafts
     
@@ -76,6 +94,7 @@ def watershedding_2D(Track,Field_in,threshold=0,level=None,compactness=0,method=
     :param pandas.DataFrame Track: output from trackpy/maketrack
     :param iris.cube.Cube Field_in: containing the field to perform the watershedding on 
     :param float threshold: threshold for the watershedding field to be used for the mask
+    :param string target:Switch to determine if algorithm looks strating from maxima or minima in input field ('maximum': starting from maxima (default), 'minimum': starting from minima)
     :param slice level: levels at which to seed the particles for the watershedding algorithm
     :param float compactness: parameter describing the compactness of the resulting volume
     
@@ -88,34 +107,43 @@ def watershedding_2D(Track,Field_in,threshold=0,level=None,compactness=0,method=
     import copy
     from skimage.morphology import watershed
     from skimage.segmentation import random_walker
+    from iris.analysis import MIN,MAX
+
 #    from scipy.ndimage.measurements import watershed_ift
 
-    #Set level at which to create "Seed" for each cloud and threshold in total water content:
-    # If none, use all levels (later reduced to the ones fulfilling the theshold conditions)
-    if level==None:
-        level=slice(None)
-    
-    Data=copy.deepcopy(Field_in)
-    Data.data[:,:]=0
     Watershed_out=copy.deepcopy(Field_in)
     Watershed_out.rename('watershedding_output_mask')
     Watershed_out.data[:]=0
     Watershed_out.units=1
+    cooridinates=Field_in.coords(dim_coords=True)
+    maximum_value=Field_in.collapsed(cooridinates,MAX).data
+    minimum_value=Field_in.collapsed(cooridinates,MIN).data
+    range_value=maximum_value-minimum_value
+
     for i, time in enumerate(Field_in.coord('time').points):        
 #        print('doing watershedding for',WC.coord('time').units.num2date(time).strftime('%Y-%m-%d %H:%M:%S'))
         Tracks_i=Track[Track['frame']==i]
         data_i=Field_in[i,:].data        
-        Mask= np.zeros_like(data_i).astype(np.int16)
-        unmasked=data_i>threshold
-        Mask[unmasked]=1
+        
+        if target == 'maximum':
+            unmasked=data_i>threshold
+        elif target == 'minimum':
+            unmasked=data_i<threshold
+        else:
+            raise ValueError('unknown type of target')
         markers = np.zeros_like(unmasked).astype(np.int16)
         for index, row in Tracks_i.iterrows():
             markers[round(row.y), round(row.x)]=row.particle
-        data_i[~unmasked]=0
         markers[~unmasked]=0
+        if target == 'maximum':
+            data_i_watershed=1000-(data_i-minimum_value)*1000/range_value
+        elif target == 'minimum':
+            data_i_watershed=1000-(maximum_value-data_i)*1000/range_value
+        else:
+            raise ValueError('unknown type of target')
 
-        data_i_watershed=(1-data_i*10)*1000
         data_i_watershed[~unmasked]=2000
+        data_i_watershed=data_i_watershed.astype(np.uint16)
 
         data_i_watershed=data_i_watershed.astype(np.uint16)
         #res1 = watershed_ift(data_i_watershed, markers)
@@ -124,7 +152,7 @@ def watershedding_2D(Track,Field_in,threshold=0,level=None,compactness=0,method=
             res1 = watershed(data_i_watershed,markers.astype(np.int8), mask=unmasked,compactness=compactness)
         elif method=='random_walker':
             #res1 = random_walker(Mask, markers,mode='cg')
-             res1=random_walker(data_i_watershed, markers.astype(np.int8), beta=130, mode='bf', tol=0.001, copy=True, multichannel=False, return_full_prob=False, spacing=None)
+              res1=random_walker(data_i_watershed, markers.astype(np.int8), beta=130, mode='bf', tol=0.001, copy=True, multichannel=False, return_full_prob=False, spacing=None)
         else:
             print('unknown method')
         Watershed_out.data[i,:]=res1

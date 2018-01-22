@@ -134,7 +134,7 @@ def add_coordinates(t,variable_cube):
     return t
 
 
-def maketrack(field_in,grid_spacing=None,diameter=5000,v_max=10,memory=3,stubs=5,
+def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',v_max=10,memory=3,stubs=5,
               min_mass=0, min_signal=0,
               order=1,extrapolate=0
               ):
@@ -148,6 +148,8 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,v_max=10,memory=3,stubs=5
                   grid spacing in input data (m)
     diameter:     float
                   Assumed diameter of tracked objects (m)
+    target        string
+                  Switch to determine if algorithm looks for maxima or minima in input field (maximum: look for maxima (default), minimum: look for minima)
     v_max:        float
                   Assumed maximum speed of tracked objects (m/s)
     memory:       int
@@ -188,15 +190,10 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,v_max=10,memory=3,stubs=5
         
     dt=np.diff(field_in.coord('time').points)[0]*24*3600
 
-
-   
-    
     data=field_in.data
-    #data_plot=TWP.data
-        
+
     frames=data
-    
-    
+
     # Settings for the tracking algorithm thresholds etc..)
     diameter_pix=round(int(diameter/dxy)/2)*2+1
 
@@ -204,40 +201,19 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,v_max=10,memory=3,stubs=5
     search_range=int(dt*v_max/dxy)
     
     #Filters:
-    min_mass_pix=min_mass#/(dx*dy)
+    min_mass_pix=min_mass/(dxy^2)
     min_signal_pix=min_signal
-    
-    
-
-    
-    
-    
-    # Settings for the tracking algorithm from initial Supercell tracking:
-#    size=11
-#    memory=3
-#    search_range=7
-#    stubs=6
-#    mass=100
-#    signal=20
-##    
-#    diameter_pix=size
-#    min_signal_pix=signal
-#    min_mass_pix=mass    
-    
-#    print('diameter_pix: ',diameter_pix)
-#    print('memory: ',memory)
-#    print('search_range: ',search_range)
-#    print('stubs: ',stubs)
-#
-#    print('min_mass_pix: ',min_mass_pix)
-#    print('min_signal_pix: ',min_signal_pix)
-#
-# Identification of features in the individual frames, i.e. timesteps
-    
-#    f = tp.batch(frames, diameter, invert=False).reset_index(drop=True)
-    f = tp.batch(frames, diameter_pix
-#                 minmass=0,
-#                 maxsize=None, separation=None,
+ 
+    # set invert to True when tracking minima, False when tracking maxima
+    if target=='maximum':
+        invert= False
+    elif target =='minimum':
+        invert= True
+    else:
+        raise ValueError('target has to be either maximum or minimum')
+        
+    f = tp.batch(frames, diameter_pix, invert=invert,
+                 minmass=0, maxsize=None, separation=None,
 #                 noise_size=1, smoothing_size=None, threshold=None, 
 #                  invert=True
 #                 percentile=64, topn=None, preprocess=True, max_iterations=10,
@@ -246,7 +222,6 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,v_max=10,memory=3,stubs=5
                   )
 # Linking of the features in the individual frames to trajectories
     
-#    t = tp.link_df(f, search_range, memory=memory)
     t = tp.link_df(f, search_range, memory=memory
 #                   neighbor_strategy='KDTree', link_strategy='auto',
 #                   predictor=None, adaptive_stop=None, adaptive_step=0.95,
@@ -258,7 +233,6 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,v_max=10,memory=3,stubs=5
     t['particle']=t['particle']+1
                   
 # Filter trajectories to exclude short trajectories that are likely to be spurious
-    
     t1 = tp.filter_stubs(t,threshold=stubs)
     t1=t1.reset_index(drop=True)
 
@@ -273,7 +247,8 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,v_max=10,memory=3,stubs=5
     t2=t2.reset_index(drop=True)
     
     # Restrict output and further treatment to relevant columns:
-    t2=t2[['x','y','frame','particle']]
+    t2['mass']=t2['mass']*(dxy^2)
+    t2=t2[['x','y','frame','particle','mass','signal']]
     
     #Interpolate to fill the gaps in the trajectories (left from allowing memory in the linking)
     t2=fill_gaps(t2,order=order,extrapolate=extrapolate,frame_max=field_in.shape[0],x_max=field_in.shape[1],y_max=field_in.shape[2])
