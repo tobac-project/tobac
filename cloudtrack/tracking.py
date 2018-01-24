@@ -8,6 +8,7 @@ import pandas as pd
 
 #from pathos.multiprocessing import ProcessingPool as Pool
 import logging
+from datetime import datetime
 
 def fill_gaps(t,order=1,extrapolate=0,frame_max=None,x_max=None,y_max=None):
     from scipy.interpolate import InterpolatedUnivariateSpline
@@ -54,95 +55,93 @@ def add_coordinates(t,variable_cube):
                    Cube containing the dimensions 'time','longitude','latitude','x_projection_coordinate','y_projection_coordinate', usually cube that the tracking is performed on
 
     '''
-    Time=variable_cube.coord('time')
-    latitude=variable_cube.coord('latitude').points
-    longitude=variable_cube.coord('longitude').points
-    if (latitude.ndim==3):
-        latitude=latitude[0]
-        longitude=longitude[0]
-
-   
-#    constraint_x =iris.Constraint(projection_x_coordinate=lambda cell: projection_x_coordinate(np.floor(row['x'])) < cell < projection_x_coordinate(np.floor(row['x'])))
-#    constraint_y =iris.Constraint(projection_y_coordinate=lambda cell: projection_y_coordinate(np.floor(row['y'])) < cell < projection_y_coordinate())
-#    constraint_xy= constraint_x & constraint_y
-    coord_names=[coord.name() for coord in  variable_cube.coords()]
-    if ('time' in coord_names):
-#        print('time coordinate present in variable_cube, interpolating time') 
-        t['time']=None
-        t['timestr']=None
-
-        for i, row in t.iterrows():
-            t.loc[i,'time']=Time.units.num2date(Time[row['frame']].points[0])
-            t.loc[i,'timestr']=Time.units.num2date(Time[row['frame']].points[0]).strftime('%Y-%m-%d %H:%M:%S')
-
-    if ('projection_x_coordinate' in coord_names and 'projection_y_coordinate' in coord_names):
-#        print('x and y coordinates present in variable_cube, interpolating x and y') 
-        t['projection_x_coordinate']=np.nan
-        t['projection_y_coordinate']=np.nan
-        dim_xcoord=variable_cube.coord_dims('projection_x_coordinate')[0]
-        dim_ycoord=variable_cube.coord_dims('projection_y_coordinate')[0]        
-        x_vec=np.arange(variable_cube.shape[dim_xcoord])
-        y_vec=np.arange(variable_cube.shape[dim_ycoord])
-#        print('dim_xcoord: ',dim_xcoord)
-#        print('dim_ycoord: ',dim_ycoord)
-
-        if (dim_xcoord==3 and dim_ycoord==2):
-#        if (dim_xcoord==2 and dim_ycoord==3):
-
-            f_x=interp1d(x_vec,variable_cube.coord('projection_x_coordinate').points)
-            f_y=interp1d(y_vec,variable_cube.coord('projection_y_coordinate').points)
-        elif (dim_xcoord==2 and dim_ycoord==3):
-#        elif (dim_xcoord==3 and dim_ycoord==2):
-            f_x=interp1d(x_vec,variable_cube.coord('projection_y_coordinate').points)
-            f_y=interp1d(y_vec,variable_cube.coord('projection_x_coordinate').points)
-            
-        for i, row in t.iterrows():
-#            if (dim_xcoord==2 and dim_ycoord==3):
-            if (dim_xcoord==3 and dim_ycoord==2):
-
-    #            print(row['x'])
-    #            print(variable_cube.coord('projection_x_coordinate').points)
-                f_x(row['x'])
-                t.loc[i,'projection_x_coordinate']=float(f_x(row['x']))
-                t.loc[i,'projection_y_coordinate']=float(f_y(row['y']))
-#            elif (dim_xcoord==3 and dim_ycoord==2):
-            elif    (dim_xcoord==2 and dim_ycoord==3):
-
-    #            print(row['x'])
-    #            print(variable_cube.coord('projection_y_coordinate').points)
-    #            print(f_x(row['x']))
-                t.loc[i,'projection_y_coordinate']=float(f_x(row['x']))
-                t.loc[i,'projection_x_coordinate']=float(f_y(row['y']))
-
-    if ('latitude' in coord_names and 'longitude' in coord_names):
-#        print('latitude and longitude coordinates present in variable_cube, interpolating latitude and longitude') 
-
-        t['latitude']=np.nan
-        t['longitude']=np.nan
-        x_vec=np.arange(latitude.shape[0])
-        y_vec=np.arange(latitude.shape[1])
-        f_lat=interp2d(x_vec,y_vec,latitude)
-        f_lon=interp2d(x_vec,y_vec,longitude)
-        for i, row in t.iterrows():
-            t.loc[i,'latitude']=float(f_lat(row['x'],row['y']))
-            t.loc[i,'longitude']=float(f_lon(row['x'],row['y']))#    print('dim_xcoord',dim_xcoord)
-    #        t.loc[i,'latitude']=0.5*(latitude[np.floor(row['x']),np.floor(row['y'])]
-    #                            +latitude[np.ceil(row['x']),np.ceil(row['y'])])
-    #        t.loc[i,'longitude']=0.5*(longitude[np.floor(row['x']),np.floor(row['y'])]
-    #                            +longitude[np.ceil(row['x']),np.ceil(row['y'])])
+    time_in=variable_cube.coord('time')
+    ndim_time=variable_cube.coord_dims('time')[0]
     
+    t['time']=None
+    t['timestr']=None
+
+    for i, row in t.iterrows():
+        t.loc[i,'time']=time_in.units.num2date(time_in[row['frame']].points[0])
+        t.loc[i,'timestr']=time_in.units.num2date(time_in[row['frame']].points[0]).strftime('%Y-%m-%d %H:%M:%S')
+
+    coord_names=[coord.name() for coord in  variable_cube.coords()]
+    coord_names.remove('time')
+    
+    if ndim_time==0:
+        hdim_1=1
+        hdim_2=2
+    elif ndim_time==1:
+        hdim_1=0
+        hdim_2=2
+    elif ndim_time==2:
+        hdim_1=0
+        hdim_2=1
+        
+
+    dimvec_1=np.arange(variable_cube.shape[hdim_1])
+    dimvec_2=np.arange(variable_cube.shape[hdim_2])
+    
+
+
+    for coord in coord_names:
+        if variable_cube.coord(coord).ndim==1:
+
+            if variable_cube.coord_dims(coord)==(hdim_1,):
+                t[coord]=np.nan            
+                f=interp1d(dimvec_1,variable_cube.coord(coord).points)
+                for i, row in t.iterrows():
+                    t.loc[i,coord]=float(f(row['x']))
+
+            if variable_cube.coord_dims(coord)==(hdim_2,):
+                t[coord]=np.nan            
+                f=interp1d(dimvec_2,variable_cube.coord(coord).points)
+                for i, row in t.iterrows():
+                    t.loc[i,coord]=float(f(row['y']))
+
+
+
+
+        elif variable_cube.coord(coord).ndim==2:
+            t[coord]=np.nan            
+            if variable_cube.coord_dims(coord)==(hdim_1,hdim_2):
+                f=interp2d(dimvec_1,dimvec_2,variable_cube(coord).points)
+                for i, row in t.iterrows():
+                    t.loc[i,coord]=float(f(row['x'],row['y']))
+            if variable_cube.coord_dims(coord)==(hdim_2,hdim_1):
+                f=interp2d(dimvec_2,dimvec_1,variable_cube(coord).points)
+                for i, row in t.iterrows():
+                    t.loc[i,coord]=float(f(row['x'],row['y']))
+        elif variable_cube.coord(coord).ndim==3:
+            t[coord]=np.nan
+            # mainly workaround for wrf latitude and longitude (possibly switch to do things by timestep)
+            if variable_cube.coord_dims(coord)==(ndim_time,hdim_1,hdim_2):
+                f=interp2d(dimvec_1,dimvec_2,variable_cube[0,:,:].coord(coord).points)
+                for i, row in t.iterrows():
+                    t.loc[i,coord]=float(f(row['x'],row['y']))
+            if variable_cube.coord_dims(coord)==(hdim_1,ndim_time,hdim_2):
+                f=interp2d(dimvec_1,dimvec_2,variable_cube[:,0,:].coord(coord).points)
+                for i, row in t.iterrows():
+                    t.loc[i,coord]=float(f(row['x'],row['y']))
+            if variable_cube.coord_dims(coord)==(hdim_1,hdim_2,ndim_time):
+                f=interp2d(dimvec_1,dimvec_2,variable_cube[:,:,0].coord(coord).points)
+                for i, row in t.iterrows():
+                    t.loc[i,coord]=float(f(row['x'],row['y']))
+                
+                
     return t
 
 
 def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',v_max=10,memory=3,stubs=5,
               min_mass=0, min_signal=0,
-              order=1,extrapolate=0
-              ):
+              order=1,extrapolate=0,
+              parameters_features=False
+                            ):
     """
     Function using watershedding to determine cloud volumes associated with tracked updrafts
     
     Parameters:
-    Field_in:     iris.cube.Cube 
+    field_in:     iris.cube.Cube 
                   2D input field tracking is performed on
     grid_spacing: float
                   grid spacing in input data (m)
@@ -190,10 +189,6 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',v_max=10
         
     dt=np.diff(field_in.coord('time').points)[0]*24*3600
 
-    data=field_in.data
-
-    frames=data
-
     # Settings for the tracking algorithm thresholds etc..)
     diameter_pix=round(int(diameter/dxy)/2)*2+1
 
@@ -212,7 +207,14 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',v_max=10
     else:
         raise ValueError('target has to be either maximum or minimum')
         
-    f = tp.batch(frames, diameter_pix, invert=invert,
+        
+        
+    
+    # locate features for each timestep and then combine
+    list_features=[]   
+    data_time=field_in.slices_over('time')
+    for i,data_i in enumerate(data_time):
+        f_i=tp.locate(data_i.data, diameter_pix, invert=invert,
                  minmass=0, maxsize=None, separation=None,
 #                 noise_size=1, smoothing_size=None, threshold=None, 
 #                  invert=True
@@ -220,9 +222,23 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',v_max=10
 #                 filter_before=None, filter_after=True, characterize=True,
 #                 engine='auto', output=None, meta=None
                   )
-# Linking of the features in the individual frames to trajectories
+        f_i['frame']=int(i)
+        list_features.append(f_i)
+    f=pd.concat(list_features)
     
+#     f = tp.batch(frames, diameter_pix, invert=invert,
+#                  minmass=0, maxsize=None, separation=None,
+# #                 noise_size=1, smoothing_size=None, threshold=None, 
+# #                  invert=True
+# #                 percentile=64, topn=None, preprocess=True, max_iterations=10,
+# #                 filter_before=None, filter_after=True, characterize=True,
+# #                 engine='auto', output=None, meta=None
+#                   )
+# Linking of the features in the individual frames to trajectories
+    # f.rename(columns={"frame":"timestep","x":"hdim_1","y":"hdim_2"})
     t = tp.link_df(f, search_range, memory=memory
+                   # pos_columns=['hdim_1','hdim_2'],
+                   # t_column='frame'
 #                   neighbor_strategy='KDTree', link_strategy='auto',
 #                   predictor=None, adaptive_stop=None, adaptive_step=0.95,
 #                   copy_features=False, diagnostics=False, pos_columns=None,
@@ -230,7 +246,8 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',v_max=10
 #                   retain_index=False
                     )
     # Add 1 to all particle numbers to avoid problems with particle "0" in some later stages of the analysis (watershedding)
-    t['particle']=t['particle']+1
+    if t['particle'].min()==0:
+        t['particle']=t['particle']+1
                   
 # Filter trajectories to exclude short trajectories that are likely to be spurious
     t1 = tp.filter_stubs(t,threshold=stubs)
@@ -248,8 +265,11 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',v_max=10
     
     # Restrict output and further treatment to relevant columns:
     t2['mass']=t2['mass']*(dxy*dxy)
-    t2=t2[['x','y','frame','particle','mass','signal']]
+    t2['size']=t2['size']*(dxy)
     
+    if not parameters_features:
+        t2=t2.drop(['mass','signal','size','ecc'],axis=1)
+
     #Interpolate to fill the gaps in the trajectories (left from allowing memory in the linking)
     t2=fill_gaps(t2,order=order,extrapolate=extrapolate,frame_max=field_in.shape[0],x_max=field_in.shape[1],y_max=field_in.shape[2])
     
