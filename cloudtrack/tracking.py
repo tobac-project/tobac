@@ -105,11 +105,11 @@ def add_coordinates(t,variable_cube):
         elif variable_cube.coord(coord).ndim==2:
             t[coord]=np.nan            
             if variable_cube.coord_dims(coord)==(hdim_1,hdim_2):
-                f=interp2d(dimvec_1,dimvec_2,variable_cube(coord).points)
+                f=interp2d(dimvec_1,dimvec_2,variable_cube.coord(coord).points)
                 for i, row in t.iterrows():
                     t.loc[i,coord]=float(f(row['x'],row['y']))
             if variable_cube.coord_dims(coord)==(hdim_2,hdim_1):
-                f=interp2d(dimvec_2,dimvec_1,variable_cube(coord).points)
+                f=interp2d(dimvec_2,dimvec_1,variable_cube.coord(coord).points)
                 for i, row in t.iterrows():
                     t.loc[i,coord]=float(f(row['x'],row['y']))
         elif variable_cube.coord(coord).ndim==3:
