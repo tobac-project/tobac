@@ -10,7 +10,7 @@ from datetime import datetime
 #from pathos.multiprocessing import ProcessingPool as Pool
 import logging
 
-def fill_gaps(t,order=1,extrapolate=0,frame_max=None,x_max=None,y_max=None):
+def fill_gaps(t,order=1,extrapolate=0,frame_max=None,hdim_1_max=None,hdim_2_max=None):
     from scipy.interpolate import InterpolatedUnivariateSpline
     t_grouped=t.groupby('particle')
     t_list=[]
@@ -19,10 +19,10 @@ def fill_gaps(t,order=1,extrapolate=0,frame_max=None,x_max=None,y_max=None):
     for particle,track in t_grouped:        
         
         frame_in=track['frame'].as_matrix()
-        x_in=track['x'].as_matrix()
-        y_in=track['y'].as_matrix()
-        s_x = InterpolatedUnivariateSpline(frame_in, x_in, k=order)
-        s_y = InterpolatedUnivariateSpline(frame_in, y_in, k=order)
+        hdim_1_in=track['hdim_1'].as_matrix()
+        hdim_2_in=track['hdim_2'].as_matrix()
+        s_x = InterpolatedUnivariateSpline(frame_in, hdim_1_in, k=order)
+        s_y = InterpolatedUnivariateSpline(frame_in, hdim_2_in, k=order)
         track=track.set_index('frame', drop=False)
         
         index_min=min(track.index)-extrapolate
@@ -34,14 +34,14 @@ def fill_gaps(t,order=1,extrapolate=0,frame_max=None,x_max=None,y_max=None):
         track['frame']=new_index
 #        track=track.interpolate(method='linear')
         frame_out=track['frame'].as_matrix()
-        x_out=s_x(frame_out)
-        y_out=s_y(frame_out)
-        track['x']=x_out
-        track['y']=y_out
+        hdim_1_out=s_x(frame_out)
+        hdim_2_out=s_y(frame_out)
+        track['hdim_1']=hdim_1_out
+        track['hdim_2']=hdim_2_out
         track['particle']=particle
         t_list.append(track)
     t_out=pd.concat(t_list)
-    t_out=t_out.loc[(t_out['x']<x_max) & (t_out['y']<y_max) &(t_out['x']>0) & (t_out['y']>0)]         
+    t_out=t_out.loc[(t_out['hdim_1']<hdim_1_max) & (t_out['hdim_2']<hdim_2_max) &(t_out['hdim_1']>0) & (t_out['hdim_2']>0)]         
     t_out=t_out.reset_index(drop=True)
     return t_out
 
@@ -77,7 +77,9 @@ def add_coordinates(t,variable_cube):
     elif ndim_time==2:
         hdim_1=0
         hdim_2=1
-        
+    
+    logging.debug('hdim_1: ' + str(hdim_1))
+    logging.debug('hdim_2: ' + str(hdim_2))
 
     dimvec_1=np.arange(variable_cube.shape[hdim_1])
     dimvec_2=np.arange(variable_cube.shape[hdim_2])
@@ -94,21 +96,13 @@ def add_coordinates(t,variable_cube):
                 t[coord]=np.nan            
                 f=interp1d(dimvec_1,variable_cube.coord(coord).points,fill_value="extrapolate")
                 for i, row in t.iterrows():
-                    # logging.debug("%s : %s",datetime.now().strftime('%Y-%m-%d %H:%M:%S'),"row['y']: "+str(row['y']))
-                    # if row['y'] < np.amin(dimvec_1) or row['y'] > np.amax(dimvec_1):
-                    #     t.drop(df.index[i])
-                    # else:
-                    t.loc[i,coord]=float(f(row['y']))
+                    t.loc[i,coord]=float(f(row['hdim_1']))
 
             if variable_cube.coord_dims(coord)==(hdim_2,):
                 t[coord]=np.nan            
                 f=interp1d(dimvec_2,variable_cube.coord(coord).points,fill_value="extrapolate")
                 for i, row in t.iterrows():
-                    # logging.debug("%s : %s",datetime.now().strftime('%Y-%m-%d %H:%M:%S'),"row['x']: "+str(row['x']))
-                    # if row['x'] < np.amin(dimvec_2) or row['x'] > np.amax(dimvec_2):
-                    #     t.drop(df.index[i])
-                    # else:
-                    t.loc[i,coord]=float(f(row['x']))
+                    t.loc[i,coord]=float(f(row['hdim_2']))
 
 
 
@@ -121,11 +115,13 @@ def add_coordinates(t,variable_cube):
             if variable_cube.coord_dims(coord)==(hdim_1,hdim_2):
                 f=interp2d(dimvec_2,dimvec_1,variable_cube.coord(coord).points)
                 for i, row in t.iterrows():
-                    t.loc[i,coord]=float(f(row['y'],row['x']))
+                    t.loc[i,coord]=float(f(row['hdim_1'],row['hdim_2']))
             if variable_cube.coord_dims(coord)==(hdim_2,hdim_1):
                 f=interp2d(dimvec_2,dimvec_1,variable_cube.coord(coord).points)
                 for i, row in t.iterrows():
-                    t.loc[i,coord]=float(f(row['y'],row['x']))
+                    t.loc[i,coord]=float(f(row['hdim_2'],row['hdim_1']))
+        
+        
         elif variable_cube.coord(coord).ndim==3:
             # logging.debug("%s : %s",datetime.now().strftime('%Y-%m-%d %H:%M:%S'),str(variable_cube.coord(coord)))
             # logging.debug("%s : %s",datetime.now().strftime('%Y-%m-%d %H:%M:%S'),str(variable_cube.coord(coord).points.shape))
@@ -134,19 +130,46 @@ def add_coordinates(t,variable_cube):
             t[coord]=np.nan
             # mainly workaround for wrf latitude and longitude (possibly switch to do things by timestep)
             if variable_cube.coord_dims(coord)==(ndim_time,hdim_1,hdim_2):
+                # logging.debug(str(coord))
+                # logging.debug('ndim_time,hdim_1,hdim_2')
+                # logging.debug('dimvec_1.shape: '+ str(dimvec_1.shape))
+                # logging.debug('dimvec_2.shape: '+ str(dimvec_2.shape))
+                # logging.debug('variable_cube.shape: '+str(variable_cube.shape))
                 f=interp2d(dimvec_2,dimvec_1,variable_cube[0,:,:].coord(coord).points)
                 for i, row in t.iterrows():
-                    t.loc[i,coord]=float(f(row['y'],row['x']))
+                    t.loc[i,coord]=float(f(row['hdim_2'],row['hdim_1']))
+            
+            if variable_cube.coord_dims(coord)==(ndim_time,hdim_2,hdim_1):
+                # logging.debug(str(coord))
+                # logging.debug('ndim_time,hdim_2,hdim_1')
+                # logging.debug('dimvec_1.shape: '+str(dimvec_1.shape))
+                # logging.debug('dimvec_2.shape: '+str(dimvec_1.shape))
+                # logging.debug('variable_cube.shape: '+str(variable_cube.shape))
+                f=interp2d(dimvec_1,dimvec_2,variable_cube[0,:,:].coord(coord).points)
+                for i, row in t.iterrows():
+                    t.loc[i,coord]=float(f(row['hdim_1'],row['hdim_2']))
+        
             if variable_cube.coord_dims(coord)==(hdim_1,ndim_time,hdim_2):
                 f=interp2d(dimvec_2,dimvec_1,variable_cube[:,0,:].coord(coord).points)
                 for i, row in t.iterrows():
-                    t.loc[i,coord]=float(f(row['y'],row['x']))
+                    t.loc[i,coord]=float(f(row['hdim_2'],row['hdim_1']))
+                    
             if variable_cube.coord_dims(coord)==(hdim_1,hdim_2,ndim_time):
                 f=interp2d(dimvec_2,dimvec_1,variable_cube[:,:,0].coord(coord).points)
                 for i, row in t.iterrows():
-                    t.loc[i,coord]=float(f(row['y'],row['x']))
-                
-                
+                    t.loc[i,coord]=float(f(row['hdim_1'],row['hdim_2']))
+                    
+                    
+            if variable_cube.coord_dims(coord)==(hdim_2,ndim_time,hdim_1):
+                f=interp2d(dimvec_1,dimvec_2,variable_cube[:,0,:].coord(coord).points)
+                for i, row in t.iterrows():
+                    t.loc[i,coord]=float(f(row['hdim_1'],row['hdim_2']))
+                    
+            if variable_cube.coord_dims(coord)==(hdim_2,hdim_1,ndim_time):
+                f=interp2d(dimvec_1,dimvec_2,variable_cube[:,:,0].coord(coord).points)
+                for i, row in t.iterrows():
+                    t.loc[i,coord]=float(f(row['hdim_1'],row['hdim_2']))
+
     return t
 
 
@@ -168,7 +191,7 @@ def feature_detection_trackpy(field_in,diameter,dxy,target='maximum'):
     list_features=[]   
     data_time=field_in.slices_over('time')
     for i,data_i in enumerate(data_time):
-        # logging.debug("%s : %s",datetime.now().strftime('%Y-%m-%d %H:%M:%S'),'data_i.shape: '+ str(data_i.shape))
+        # logging.debug('feature detection for timestep '+ str(i))
         f_i=tp.locate(data_i.data, diameter_pix, invert=invert,
                  minmass=0, maxsize=None, separation=None,
 #                 noise_size=1, smoothing_size=None, threshold=None, 
@@ -178,8 +201,11 @@ def feature_detection_trackpy(field_in,diameter,dxy,target='maximum'):
 #                 engine='auto', output=None, meta=None
                   )
         f_i['frame']=int(i)
-        list_features.append(f_i)
+        list_features.append(f_i)        
+    logging.debug('feature detection: merging DataFrames')
     features=pd.concat(list_features)
+    features.rename(columns={'x':'hdim_1', 'y':'hdim_2'}, inplace =True)
+    logging.debug('feature detection completed')
     return features
 
 
@@ -202,7 +228,7 @@ def feature_detection_blob(field_in,threshold,dxy,target='maximum'):
     list_features=[]   
     data_time=field_in.slices_over('time')
     for i,data_i in enumerate(data_time):
-        # logging.debug("%s : %s",datetime.now().strftime('%Y-%m-%d %H:%M:%S'),'data_i.shape: '+ str(data_i.shape))
+        logging.debug('feature detection for timestep '+ str(i))
         testW = data_i.data
         testW[testW < threshold] = 0 # only include w greater than X m/s
         testW = testW/np.max(testW) # make into -1 to 1 image (for image processing)
@@ -212,13 +238,15 @@ def feature_detection_blob(field_in,threshold,dxy,target='maximum'):
         # all_labels = measure.label(blobs) # create image labels
         blobs_labels = measure.label(blobs, background=0)
         xxx = np.unique(blobs_labels[:,:].ravel())
-        for j in np.arange(0,len(xxx)):        
+        for j in np.arange(1,len(xxx)):        
             cur_idx = xxx[j];
             [a,b] = np.where(blobs_labels[:,:] == cur_idx)
-            data_frame={'frame': int(i),'x': a[0],'y':b[0]}
+            data_frame={'frame': int(i),'hdim_1': np.mean(a),'hdim_2':np.mean(b)}
             f_i=pd.DataFrame(data=data_frame,index=[i])
             list_features.append(f_i)
+    logging.debug('feature detection: merging DataFrames')
     features=pd.concat(list_features)
+    logging.debug('feature detection completed')
     return features
 
 
@@ -228,11 +256,12 @@ def trajectory_linking(features,v_max,dt,dxy,memory,subnetwork_size=None):
     # from trackpy import predict
     import trackpy
     search_range=int(dt*v_max/dxy)
+    logging.debug('start feature linking')
 
     # pred = predict.NearestVelocityPredict()
     if subnetwork_size is not None:
         trackpy.linking.Linker.MAX_SUB_NET_SIZE=subnetwork_size
-    trajectories = tp.link_df(features, search_range, memory=memory)
+    trajectories = tp.link_df(features, search_range, memory=memory,pos_columns=['hdim_2','hdim_1'])
     # trajectories = pred.link_df(features, search_range, memory=memory)
                # pos_columns=['hdim_1','hdim_2'],
                # t_column='frame'
@@ -242,6 +271,8 @@ def trajectory_linking(features,v_max,dt,dxy,memory,subnetwork_size=None):
 #                   t_column=None, hash_size=None, box_size=None, verify_integrity=True,
 #                   retain_index=False
                 # )
+    logging.debug('feature linking completed')
+
     return trajectories
 
 
@@ -308,7 +339,7 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',v_max=10
     if method=="trackpy":
         features=feature_detection_trackpy(field_in,diameter=diameter,dxy=dxy,target='maximum')
     
-    if method == "blob":
+    elif method == "blob":
         features=feature_detection_blob(field_in,threshold=threshold,dxy=dxy,target='maximum')
 
     # Linking of the features in the individual frames to trajectories
@@ -320,6 +351,7 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',v_max=10
 # Filter trajectories to exclude short trajectories that are likely to be spurious
     trajectories_filtered = tp.filter_stubs(trajectories_unfiltered,threshold=stubs)
     trajectories_filtered=trajectories_filtered.reset_index(drop=True)
+
 
 # Filter trajectories based on a minimum mass (not ne been seen as sth physical) and signal within the trajectory
     if method=="trackpy":
@@ -348,16 +380,20 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',v_max=10
         
     trajectories_filtered['particle_old']=trajectories_filtered['particle']
     
+
     for i,particle in enumerate(pd.Series.unique(trajectories_filtered['particle_old'])):
         particle_new=int(i+cell_number_start)
-        logging.debug("%s : %s",datetime.now().strftime('%Y-%m-%d %H:%M:%S'),'i,particle,paerticle_new'+str([i,particle,particle_new]))
+        # logging.debug("%s : %s",datetime.now().strftime('%Y-%m-%d %H:%M:%S'),'i,particle,paerticle_new'+str([i,particle,particle_new]))
         trajectories_filtered.loc[trajectories_filtered['particle_old']==particle,'particle']=particle_new
 
-    #Interpolate to fill the gaps in the trajectories (left from allowing memory in the linking)
-    trajectories_filtered=fill_gaps(trajectories_filtered,order=order,extrapolate=extrapolate,frame_max=field_in.shape[0],x_max=field_in.shape[1],y_max=field_in.shape[2])
 
+    #Interpolate to fill the gaps in the trajectories (left from allowing memory in the linking)
+    trajectories_filtered=fill_gaps(trajectories_filtered,order=order,extrapolate=extrapolate,frame_max=field_in.shape[0],hdim_1_max=field_in.shape[1],hdim_2_max=field_in.shape[2])
+    
     trajectories_filtered=add_coordinates(trajectories_filtered,field_in)
+
     features_identified=add_coordinates(features,field_in)
+    features_identified=features
 
     return trajectories_filtered, features_identified
 

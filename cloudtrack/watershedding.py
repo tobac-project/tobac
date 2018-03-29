@@ -44,7 +44,7 @@ def watershedding_3D(Track,Field_in,threshold=3e-3,target='maximum',level=None,c
     maximum_value=Field_in.collapsed(cooridinates,MAX).data
     minimum_value=Field_in.collapsed(cooridinates,MIN).data
     range_value=maximum_value-minimum_value
-
+    Track['ncells']=0
     for i, time in enumerate(Field_in.coord('time').points):        
 #        print('doing watershedding for',WC.coord('time').units.num2date(time).strftime('%Y-%m-%d %H:%M:%S'))
         Tracks_i=Track[Track['frame']==i]
@@ -58,7 +58,7 @@ def watershedding_3D(Track,Field_in,threshold=3e-3,target='maximum',level=None,c
             raise ValueError('unknown type of target')
         markers = np.zeros_like(unmasked).astype(np.int16)
         for index, row in Tracks_i.iterrows():
-            markers[:,int(row.y), int(row.x)]=row.particle
+            markers[:,int(row['hdim_1']), int(row['hdim_2'])]=row.particle
         markers[~unmasked]=0
         maximum_value=np.amax(data_i)
         minimum_value=np.amin(data_i)
@@ -82,8 +82,15 @@ def watershedding_3D(Track,Field_in,threshold=3e-3,target='maximum',level=None,c
         else:
             print('unknown method')
         Watershed_out.data[i,:]=res1
-    return Watershed_out
+        values, count = np.unique(res1, return_counts=True)
+        counts=dict(zip(values, count))
 
+        for index, row in Tracks_i.iterrows():
+            if row['particle'] in counts.keys():
+                Track.loc[index,'ncells']=counts[row['particle']]
+                
+    return Watershed_out,Track
+            
 def watershedding_2D(Track,Field_in,threshold=0,target='maximum',compactness=0,method='watershed'):
     """
     Function using watershedding to determine cloud volumes associated with tracked updrafts
@@ -119,6 +126,8 @@ def watershedding_2D(Track,Field_in,threshold=0,target='maximum',compactness=0,m
     maximum_value=Field_in.collapsed(cooridinates,MAX).data
     minimum_value=Field_in.collapsed(cooridinates,MIN).data
     range_value=maximum_value-minimum_value
+    
+    Track['ncells']=0
 
     for i, time in enumerate(Field_in.coord('time').points):        
 #        print('doing watershedding for',WC.coord('time').units.num2date(time).strftime('%Y-%m-%d %H:%M:%S'))
@@ -133,7 +142,7 @@ def watershedding_2D(Track,Field_in,threshold=0,target='maximum',compactness=0,m
             raise ValueError('unknown type of target')
         markers = np.zeros_like(unmasked).astype(np.int16)
         for index, row in Tracks_i.iterrows():
-            markers[int(row.y), int(row.x)]=row.particle
+            markers[int(row['hdim_2']), int(row['hdim_1'])]=row.particle
         markers[~unmasked]=0
         if target == 'maximum':
             data_i_watershed=1000-(data_i-minimum_value)*1000/range_value
@@ -156,7 +165,15 @@ def watershedding_2D(Track,Field_in,threshold=0,target='maximum',compactness=0,m
         else:
             print('unknown method')
         Watershed_out.data[i,:]=res1
-    return Watershed_out
+        
+        values, count = np.unique(res1, return_counts=True)
+        counts=dict(zip(values, count))
+
+        for index, row in Tracks_i.iterrows():
+            if row['particle'] in counts.keys():
+                Track.loc[index,'ncells']=counts[row['particle']]
+
+    return Watershed_out,Track
 
 def mask_cube_particle(variable_cube,Mask,particle):
     import numpy as np 
