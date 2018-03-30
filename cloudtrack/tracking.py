@@ -38,10 +38,19 @@ def fill_gaps(t,order=1,extrapolate=0,frame_max=None,hdim_1_max=None,hdim_2_max=
         hdim_2_out=s_y(frame_out)
         track['hdim_1']=hdim_1_out
         track['hdim_2']=hdim_2_out
-        track['particle']=particle
-        t_list.append(track)
+        track['particle']=particle        
+        # add relative time since start of track:
+        track['time_cell']=np.nan
+        track['time_rel']=track['time']-track.loc[0,'time']
+        t_list.append(track)    
+        
+
     t_out=pd.concat(t_list)
-    t_out=t_out.loc[(t_out['hdim_1']<hdim_1_max) & (t_out['hdim_2']<hdim_2_max) &(t_out['hdim_1']>0) & (t_out['hdim_2']>0)]         
+    t_out=t_out.loc[(t_out['hdim_1']<hdim_1_max) & (t_out['hdim_2']<hdim_2_max) &(t_out['hdim_1']>0) & (t_out['hdim_2']>0)]
+    
+    
+    
+    
     t_out=t_out.reset_index(drop=True)
     return t_out
 
