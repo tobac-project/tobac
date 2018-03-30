@@ -68,10 +68,10 @@ def plot_tracks_mask_field(track,field,Mask,axes=None,axis_extent=None,text_mass
         axes.plot(row['longitude'],row['latitude'],color=color,marker='x')
     
     
-    if not text_mass_signal:        
-        particle_string='     '+str(int(row['particle']))
-    if text_mass_signal:        
-        particle_string='     '+str(int(row['particle']))+'('+"{0:0.4}".format(row['mass'])+','+"{0:0.4}".format(row['signal'])+')'
+        if not text_mass_signal:        
+            particle_string='     '+str(int(row['particle']))
+        if text_mass_signal:        
+            particle_string='     '+str(int(row['particle']))+'('+"{0:0.4}".format(row['mass'])+','+"{0:0.4}".format(row['signal'])+')'
     
     axes.text(row['longitude'],row['latitude'],particle_string,color=color,fontsize=6)
 
