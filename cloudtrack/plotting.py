@@ -62,29 +62,34 @@ def plot_tracks_mask_field(track,field,Mask,axes=None,axis_extent=None,text_mass
     
     colors_mask=['darkred','orange','crimson','red','darkorange']
     
-    for i_row,row in track.iterrows():        
-        particle=row['particle']
-        color=colors_mask[int(particle%len(colors_mask))]
+    for i_row,row in track.iterrows():
+        if 'particle' in row:
+            particle=row['particle']
+            color=colors_mask[int(particle%len(colors_mask))]
+        
+        
+            if not text_mass_signal:        
+                particle_string='     '+str(int(row['particle']))
+            if text_mass_signal:        
+                particle_string='     '+str(int(row['particle']))+'('+"{0:0.4}".format(row['mass'])+','+"{0:0.4}".format(row['signal'])+')'
+        
+            axes.text(row['longitude'],row['latitude'],particle_string,color=color,fontsize=6)
+            Mask_i=None
+            if Mask.ndim==2:
+                Mask_i=mask_particle(Mask,particle,masked=False)
+            elif Mask.ndim==3:
+                Mask_i=mask_particle_surface(Mask,particle,masked=False,z_coord='model_level_number')
+            else:
+                raise ValueError('mask has shape that cannot be understood')
+                
+            iplt.contour(Mask_i,coords=['longitude','latitude'],
+                         levels=[0,particle],colors=color,axes=axes)
+
+        else:
+            color=colors_mask[0]
+        
         axes.plot(row['longitude'],row['latitude'],color=color,marker='x')
-    
-    
-        if not text_mass_signal:        
-            particle_string='     '+str(int(row['particle']))
-        if text_mass_signal:        
-            particle_string='     '+str(int(row['particle']))+'('+"{0:0.4}".format(row['mass'])+','+"{0:0.4}".format(row['signal'])+')'
-    
-    axes.text(row['longitude'],row['latitude'],particle_string,color=color,fontsize=6)
 
-    Mask_i=None
-    if Mask.ndim==2:
-        Mask_i=mask_particle(Mask,particle,masked=False)
-    elif Mask.ndim==3:
-        Mask_i=mask_particle_surface(Mask,particle,masked=False,z_coord='model_level_number')
-    else:
-        raise ValueError('mask has shape that cannot be understood')
-
-    iplt.contour(Mask_i,coords=['longitude','latitude'],
-                     levels=[0,particle],colors=color,axes=axes)
 
     cbar=plt.colorbar(plot_field,orientation='horizontal')
     cbar.ax.set_xlabel(field.name()+ '('+field.units.symbol +')') 
