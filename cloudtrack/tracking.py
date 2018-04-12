@@ -189,7 +189,6 @@ def add_coordinates(t,variable_cube):
 
     return t
 
-
 def feature_detection_trackpy(field_in,diameter,dxy,target='maximum'):
     diameter_pix=round(int(diameter/dxy)/2)*2+1
 
@@ -224,7 +223,6 @@ def feature_detection_trackpy(field_in,diameter,dxy,target='maximum'):
     features.rename(columns={'x':'hdim_1', 'y':'hdim_2'}, inplace =True)
     logging.debug('feature detection completed')
     return features
-
 
 def feature_detection_blob(field_in,threshold,dxy,target='maximum'):
     # Image processing
@@ -269,19 +267,18 @@ def feature_detection_blob(field_in,threshold,dxy,target='maximum'):
     logging.debug('feature detection completed')
     return features
 
-
-
-    
 def trajectory_linking(features,v_max,dt,dxy,memory,subnetwork_size=None):
     # from trackpy import predict
     import trackpy
+    from copy import deepcopy
     search_range=int(dt*v_max/dxy)
     logging.debug('start feature linking')
     
     # pred = predict.NearestVelocityPredict()
     if subnetwork_size is not None:
         trackpy.linking.Linker.MAX_SUB_NET_SIZE=subnetwork_size
-    trajectories = tp.link_df(features, search_range, memory=memory,pos_columns=['hdim_2','hdim_1'],copy_features=True)
+    features_linking=deepcopy(features)
+    trajectories = tp.link_df(features_linking, search_range, memory=memory,pos_columns=['hdim_2','hdim_1'])
     # trajectories = pred.link_df(features, search_range, memory=memory)
                # pos_columns=['hdim_1','hdim_2'],
                # t_column='frame'
@@ -294,7 +291,6 @@ def trajectory_linking(features,v_max,dt,dxy,memory,subnetwork_size=None):
     logging.debug('feature linking completed')
 
     return trajectories
-
 
 def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',
               v_max=10,memory=3,stubs=5,
