@@ -51,15 +51,8 @@ def add_cell_time(t):
     t_grouped=t.groupby('particle')
     t['time_cell']=np.nan
     for particle,track in t_grouped:
-        print(t)
-        print(track)
         track_0=track.head(n=1)
         for i,row in track.iterrows():
-            print(i)
-            print(t.loc[i,'time_cell'])
-            print(row['time'])
-            print(track.head(n=1)['time'])
-            print(row['time']-track.head(n=1)['time'])
             t.loc[i,'time_cell']=row['time']-track_0.loc[track_0.index[0],'time']
     return t
 
