@@ -5,7 +5,6 @@ import numpy as np
 #from scipy.ndimage.measurements import watershed_ift
 from scipy.interpolate import interp2d, interp1d
 import pandas as pd
-from datetime import datetime
 
 #from pathos.multiprocessing import ProcessingPool as Pool
 import logging
@@ -327,10 +326,11 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',
                  Tracked updrafts, one row per timestep and updraft, includes dimensions 'time','latitude','longitude','projection_x_variable', 'projection_y_variable' based on w cube. 
                  'x' and 'y' are used for watershedding in next step, not equivalent to actual x and y in the model, rather to the order of data storage in the model output
     """
-    
+    from copy import deepcopy
     logger = logging.getLogger('trackpy')
     logger.propagate = False
     logger.setLevel(logging.WARNING)
+    
 
     coord_names=[coord.name() for coord in  field_in.coords()]
     if ('projection_x_coordinate' in coord_names and 'projection_y_coordinate' in coord_names):
@@ -349,7 +349,8 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',
  
     if method=="trackpy":
         features=feature_detection_trackpy(field_in,diameter=diameter,dxy=dxy,target='maximum')
-    
+        features_filtered = deepcopy(features)
+
     elif method == "blob":
         features=feature_detection_blob(field_in,threshold=threshold,dxy=dxy,target='maximum')
         features_filtered = features.drop(features[features['num'] < min_num].index)
