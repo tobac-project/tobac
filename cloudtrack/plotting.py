@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import logging
 
-def plot_tracks_mask_field_loop(track,field,Mask,axes=None,axis_extent=None,text_mass_signal=False,vmin=None,vmax=None,n_levels=50,name=None,plot_dir='./',figsize=(10,10)):
+def plot_tracks_mask_field_loop(track,field,Mask,axes=None,name=None,plot_dir='./',figsize=(10,10),**kwargs):
     import matplotlib.pyplot as plt
     import cartopy.crs as ccrs
     import os
@@ -11,7 +11,7 @@ def plot_tracks_mask_field_loop(track,field,Mask,axes=None,axis_extent=None,text
     for i in range(len(time.points)):
         fig1,ax1=plt.subplots(ncols=1, nrows=1,figsize=figsize, subplot_kw={'projection': ccrs.PlateCarree()})
         datestring_file=time.units.num2date(time.points[i]).strftime('%Y-%m-%d_%H:%M:%S')
-        ax1=plot_tracks_mask_field(track[track['frame']==i],field[i],Mask[i],axes=ax1,axis_extent=axis_extent,text_mass_signal=text_mass_signal,vmin=vmin,vmax=vmax,n_levels=n_levels)
+        ax1=plot_tracks_mask_field(track[track['frame']==i],field[i],Mask[i],axes=ax1,**kwargs)
         savepath_png=os.path.join(plot_dir,name+'_'+datestring_file+'.png')
         fig1.savefig(savepath_png,dpi=600)
         logging.debug('Figure '+str(i) + ' plotted to ' + str(savepath_png))
