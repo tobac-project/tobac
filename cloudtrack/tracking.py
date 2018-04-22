@@ -87,9 +87,6 @@ def add_coordinates(t,variable_cube):
         hdim_1=0
         hdim_2=1
     
-    logging.debug('hdim_1: ' + str(hdim_1))
-    logging.debug('hdim_2: ' + str(hdim_2))
-
     dimvec_1=np.arange(variable_cube.shape[hdim_1])
     dimvec_2=np.arange(variable_cube.shape[hdim_2])
     # logging.debug("%s : %s",datetime.now().strftime('%Y-%m-%d %H:%M:%S'),'dimvec1 [x]'+str(dimvec_1))
@@ -253,7 +250,6 @@ def feature_detection_blob(field_in,threshold,dxy,target='maximum'):
             data_frame={'frame': int(i),'hdim_1': np.mean(a),'hdim_2':np.mean(b),'num':counts[cur_idx]}
             f_i=pd.DataFrame(data=data_frame,index=[i])
             list_features.append(f_i)
-            logging.debug(str(data_frame['frame'])+ ' '+str(data_frame['hdim_1'])+ ' '+str(data_frame['hdim_2'])+ ' '+str(data_frame['num']))
     logging.debug('feature detection: merging DataFrames')
     features=pd.concat(list_features)
     logging.debug('feature detection completed')
@@ -396,7 +392,6 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',
 
     for i,particle in enumerate(pd.Series.unique(trajectories_filtered['particle_old'])):
         particle_new=int(i+cell_number_start)
-        # logging.debug("%s : %s",datetime.now().strftime('%Y-%m-%d %H:%M:%S'),'i,particle,paerticle_new'+str([i,particle,particle_new]))
         trajectories_filtered.loc[trajectories_filtered['particle_old']==particle,'particle']=particle_new
 
 
