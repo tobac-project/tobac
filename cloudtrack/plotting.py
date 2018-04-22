@@ -21,7 +21,7 @@ def plot_tracks_mask_field_loop(track,field,Mask,axes=None,name=None,plot_dir='.
 
 
 def plot_tracks_mask_field(track,field,Mask,axes=None,axis_extent=None,
-                           plot_outline=True,plot_marker=True,marker_track='x',plot_number=False,
+                           plot_outline=True,plot_marker=True,marker_track='x',plot_number=True,
                            vmin=None,vmax=None,n_levels=50):
     import cartopy
     from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
