@@ -22,7 +22,7 @@ def plot_tracks_mask_field_loop(track,field,Mask,axes=None,name=None,plot_dir='.
 
 def plot_tracks_mask_field(track,field,Mask,axes=None,axis_extent=None,
                            plot_outline=True,plot_marker=True,marker_track='x',plot_number=True,
-                           vmin=None,vmax=None,n_levels=50):
+                           vmin=None,vmax=None,n_levels=50,orientation_colorbar='horizontal',pad_colorbar=0.2):
     import cartopy
     from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
     import iris.plot as iplt
@@ -91,7 +91,7 @@ def plot_tracks_mask_field(track,field,Mask,axes=None,axis_extent=None,
             axes.plot(row['longitude'],row['latitude'],color=color,marker=marker_track)
 
 
-    cbar=plt.colorbar(plot_field,orientation='horizontal')
+    cbar=plt.colorbar(plot_field,orientation=orientation_colorbar, pad=pad_colorbar)
     cbar.ax.set_xlabel(field.name()+ '('+field.units.symbol +')') 
     tick_locator = ticker.MaxNLocator(nbins=5)
     cbar.locator = tick_locator

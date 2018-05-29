@@ -46,11 +46,12 @@ def watershedding_3D(Track,Field_in,threshold=3e-3,target='maximum',level=None,c
     minimum_value=Field_in.collapsed(cooridinates,MIN).data
     range_value=maximum_value-minimum_value
     Track['ncells']=0
-    for i, time in enumerate(Field_in.coord('time').points):        
+    for i, time in enumerate(Field_in.coord('time').points): 
+
 #        print('doing watershedding for',WC.coord('time').units.num2date(time).strftime('%Y-%m-%d %H:%M:%S'))
         Tracks_i=Track[Track['frame']==i]
         data_i=Field_in[i,:].data
- 
+
         if target == 'maximum':
             unmasked=data_i>threshold
         elif target == 'minimum':
@@ -59,7 +60,7 @@ def watershedding_3D(Track,Field_in,threshold=3e-3,target='maximum',level=None,c
             raise ValueError('unknown type of target')
         markers = np.zeros_like(unmasked).astype(np.int32)
         for index, row in Tracks_i.iterrows():
-            markers[:,int(row['hdim_1']), int(row['hdim_2'])]=row.particle
+             markers[:,int(row['hdim_1']), int(row['hdim_2'])]=row.particle
         markers[~unmasked]=0
         maximum_value=np.amax(data_i)
         minimum_value=np.amin(data_i)
