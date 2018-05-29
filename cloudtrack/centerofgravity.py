@@ -1,12 +1,7 @@
 def calculate_cog(Tracks,mass,Mask):
-#    import numpy as np
     from .watershedding import mask_cube_particle
     from iris import Constraint
-    Tracks_out=Tracks[['time','frame','particle']]
-#    Tracks_out['x_M']=np.nan
-#    Tracks_out['y_M']=np.nan
-#    Tracks_out['z_M']=np.nan
-#    Tracks_out['mass']=np.nan
+    Tracks_out=Tracks[['time','frame','particle','time_cell']]
     for i_row,row in Tracks_out.iterrows():        
         particle=row['particle']
         constraint_time=Constraint(time=row['time'])
@@ -21,14 +16,12 @@ def calculate_cog(Tracks,mass,Mask):
     return Tracks_out
     
 def calculate_cog_untracked(mass,Mask):
-#    import numpy as np
     import pandas as pd
     from .watershedding import mask_cube_untracked
     from iris import Constraint
     Tracks_out=pd.DataFrame()
     time_coord=mass.coord('time')
     Tracks_out['frame']=range(len(time_coord.points))
-#    Tracks_out.assign(x_M=np.nan,y_M=np.nan,z_M=np.nan,mass=np.nan)
     for i_row,row in Tracks_out.iterrows():
         time_i=time_coord.units.num2date(time_coord[int(row['frame'])].points[0])
         constraint_time=Constraint(time=time_i)
@@ -44,14 +37,12 @@ def calculate_cog_untracked(mass,Mask):
     return Tracks_out
 
 def calculate_cog_domain(mass):
-#    import numpy as np
     import pandas as pd
     from iris import Constraint
     time_coord=mass.coord('time')
 
     Tracks_out=pd.DataFrame()
     Tracks_out['frame']=range(len(time_coord.points))
-#    Tracks_out.assign(x_M=np.nan,y_M=np.nan,z_M=np.nan,mass=np.nan)
     for i_row,row in Tracks_out.iterrows():  
         time_i=time_coord.units.num2date(time_coord[int(row['frame'])].points[0])
         constraint_time=Constraint(time=time_i)
