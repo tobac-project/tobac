@@ -89,14 +89,11 @@ def add_coordinates(t,variable_cube):
     
     dimvec_1=np.arange(variable_cube.shape[hdim_1])
     dimvec_2=np.arange(variable_cube.shape[hdim_2])
-    # logging.debug("%s : %s",datetime.now().strftime('%Y-%m-%d %H:%M:%S'),'dimvec1 [x]'+str(dimvec_1))
-    # logging.debug("%s : %s",datetime.now().strftime('%Y-%m-%d %H:%M:%S'),'dimvec2 [y]'+str(dimvec_2))
 
 
 
     for coord in coord_names:
         if variable_cube.coord(coord).ndim==1:
-            # logging.debug("%s : %s",datetime.now().strftime('%Y-%m-%d %H:%M:%S'),str(variable_cube.coord(coord)))
 
             if variable_cube.coord_dims(coord)==(hdim_1,):
                 t[coord]=np.nan            
@@ -114,8 +111,6 @@ def add_coordinates(t,variable_cube):
 
 
         elif variable_cube.coord(coord).ndim==2:
-            # logging.debug("%s : %s",datetime.now().strftime('%Y-%m-%d %H:%M:%S'),str(variable_cube.coord(coord)))
-            # logging.debug("%s : %s",datetime.now().strftime('%Y-%m-%d %H:%M:%S'),str(variable_cube.coord(coord).points.shape))
 
             t[coord]=np.nan            
             if variable_cube.coord_dims(coord)==(hdim_1,hdim_2):
@@ -129,28 +124,15 @@ def add_coordinates(t,variable_cube):
         
         
         elif variable_cube.coord(coord).ndim==3:
-            # logging.debug("%s : %s",datetime.now().strftime('%Y-%m-%d %H:%M:%S'),str(variable_cube.coord(coord)))
-            # logging.debug("%s : %s",datetime.now().strftime('%Y-%m-%d %H:%M:%S'),str(variable_cube.coord(coord).points.shape))
-
 
             t[coord]=np.nan
             # mainly workaround for wrf latitude and longitude (possibly switch to do things by timestep)
             if variable_cube.coord_dims(coord)==(ndim_time,hdim_1,hdim_2):
-                # logging.debug(str(coord))
-                # logging.debug('ndim_time,hdim_1,hdim_2')
-                # logging.debug('dimvec_1.shape: '+ str(dimvec_1.shape))
-                # logging.debug('dimvec_2.shape: '+ str(dimvec_2.shape))
-                # logging.debug('variable_cube.shape: '+str(variable_cube.shape))
                 f=interp2d(dimvec_2,dimvec_1,variable_cube[0,:,:].coord(coord).points)
                 for i, row in t.iterrows():
                     t.loc[i,coord]=float(f(row['hdim_2'],row['hdim_1']))
             
             if variable_cube.coord_dims(coord)==(ndim_time,hdim_2,hdim_1):
-                # logging.debug(str(coord))
-                # logging.debug('ndim_time,hdim_2,hdim_1')
-                # logging.debug('dimvec_1.shape: '+str(dimvec_1.shape))
-                # logging.debug('dimvec_2.shape: '+str(dimvec_1.shape))
-                # logging.debug('variable_cube.shape: '+str(variable_cube.shape))
                 f=interp2d(dimvec_1,dimvec_2,variable_cube[0,:,:].coord(coord).points)
                 for i, row in t.iterrows():
                     t.loc[i,coord]=float(f(row['hdim_1'],row['hdim_2']))
@@ -196,7 +178,6 @@ def feature_detection_trackpy(field_in,diameter,dxy,target='maximum'):
     list_features=[]   
     data_time=field_in.slices_over('time')
     for i,data_i in enumerate(data_time):
-        # logging.debug('feature detection for timestep '+ str(i))
         f_i=tp.locate(data_i.data, diameter_pix, invert=invert,
                  minmass=0, maxsize=None, separation=None,
 #                 noise_size=1, smoothing_size=None, threshold=None, 
@@ -209,8 +190,10 @@ def feature_detection_trackpy(field_in,diameter,dxy,target='maximum'):
         list_features.append(f_i)        
     logging.debug('feature detection: merging DataFrames')
     features=pd.concat(list_features)
-    features.rename(columns={'x':'hdim_1', 'y':'hdim_2'}, inplace =True)
+    features.rename(columns={'y':'hdim_1', 'x':'hdim_2'}, inplace =True)
     logging.debug('feature detection completed')
+    features=features.reset_index(drop=True)
+
     return features
 
 def feature_detection_blob(field_in,threshold,dxy,target='maximum'):
@@ -253,6 +236,8 @@ def feature_detection_blob(field_in,threshold,dxy,target='maximum'):
     logging.debug('feature detection: merging DataFrames')
     features=pd.concat(list_features)
     logging.debug('feature detection completed')
+    features=features.reset_index(drop=True)
+
     return features
 
 def trajectory_linking(features,v_max,dt,dxy,memory,subnetwork_size=None):
@@ -353,7 +338,7 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',
 
     # Linking of the features in the individual frames to trajectories
     trajectories_unfiltered=trajectory_linking(features_filtered,v_max=v_max,dt=dt,dxy=dxy,memory=memory,subnetwork_size=subnetwork_size)
-    
+
     # f.rename(columns={"frame":"timestep","x":"hdim_1","y":"hdim_2"})
     # Reset particle numbers from the arbitray numbers at the end of the feature detection and linking to consecutive numbers, keep 'particle' for reference to the feature detection step.
                       
