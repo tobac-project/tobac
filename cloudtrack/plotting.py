@@ -100,8 +100,9 @@ def plot_tracks_mask_field(track,field,Mask,axes=None,axis_extent=None,
     return axes
 
 def plot_track_cell_w_max_TWP_mask(particle,Track, COG, Mask_total,
-                                    w_max, TWP, width=30000,
-                                    name= 'test', plotdir='./', n_core=1):
+                                    w_max, TWP, width=10000,
+                                    name= 'test', plotdir='./',
+                                    n_core=1,file_format=['png']):
         from iris import Constraint
         from numpy import unique
         import os
@@ -110,7 +111,7 @@ def plot_track_cell_w_max_TWP_mask(particle,Track, COG, Mask_total,
             
             constraint_time = Constraint(time=row['time'])
             constraint_x = Constraint(projection_x_coordinate = lambda cell: row['projection_x_coordinate']-width < cell < row['projection_x_coordinate']+width)
-            constraint_y = Constraint(projection_x_coordinate = lambda cell: row['projection_y_coordinate']-width < cell < row['projection_y_coordinate']+width)
+            constraint_y = Constraint(projection_y_coordinate = lambda cell: row['projection_y_coordinate']-width < cell < row['projection_y_coordinate']+width)
             constraint = constraint_time & constraint_x & constraint_y
             Mask_total_i=Mask_total.extract(constraint)
             if w_max is None:
@@ -125,7 +126,9 @@ def plot_track_cell_w_max_TWP_mask(particle,Track, COG, Mask_total,
             cells=list(unique(Mask_total_i.core_data()))
             cells.remove(0)
             track_i=Track[Track['particle'].isin(cells)]
+            track_i[track_i['time']==row['time']]
             cog_i=COG[COG['particle'].isin(cells)]
+            cog_i[cog_i['time']==row['time']]
 
             fig1, ax1 = plt.subplots(ncols=1, nrows=1, figsize=(10/2.54, 10/2.54))
             fig1.subplots_adjust(left=0.1, bottom=0.1, right=0.85, top=0.85)
@@ -140,12 +143,14 @@ def plot_track_cell_w_max_TWP_mask(particle,Track, COG, Mask_total,
                    
             out_dir = os.path.join(plotdir, name)
             os.makedirs(out_dir, exist_ok=True)
-            savepath_png = os.path.join(out_dir, name  + '_' + datestring + '.png')
-            fig1.savefig(savepath_png, dpi=600)
-            logging.debug('w_max TWP Mask plot saved to ' + savepath_png)
-            savepath_pdf = os.path.join(out_dir, name  + '_' + datestring + '.pdf')
-            fig1.savefig(savepath_pdf, dpi=600)
-            logging.debug('w_max TWP Mask plot saved to ' + savepath_pdf)
+            if 'png' in file_format:
+                savepath_png = os.path.join(out_dir, name  + '_' + datestring + '.png')
+                fig1.savefig(savepath_png, dpi=600)
+                logging.debug('w_max TWP Mask plot saved to ' + savepath_png)
+            if 'pdf' in file_format:
+                savepath_pdf = os.path.join(out_dir, name  + '_' + datestring + '.pdf')
+                fig1.savefig(savepath_pdf, dpi=600)
+                logging.debug('w_max TWP Mask plot saved to ' + savepath_pdf)
             plt.close()
             plt.clf()
 
