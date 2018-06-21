@@ -30,13 +30,14 @@ def watershedding_3D(Track,Field_in,threshold=3e-3,target='maximum',level=None,c
     from skimage.segmentation import random_walker
     from iris.analysis import MIN,MAX
     import logging
-#    from scipy.ndimage.measurements import watershed_ift
+
+    logging.info('Start wateshedding 3D')
 
     #Set level at which to create "Seed" for each cloud and threshold in total water content:
     # If none, use all levels (later reduced to the ones fulfilling the theshold conditions)
     if level==None:
         level=slice(None)
-         
+        
     Watershed_out=copy.deepcopy(Field_in)
     Watershed_out.rename('watershedding_output_mask')
     Watershed_out.data[:]=0
@@ -74,7 +75,6 @@ def watershedding_3D(Track,Field_in,threshold=3e-3,target='maximum',level=None,c
 
         data_i_watershed[~unmasked]=2000
         data_i_watershed=data_i_watershed.astype(np.uint32)
-        #res1 = watershed_ift(data_i_watershed, markers)
         
         if method=='watershed':
             res1 = watershed(data_i_watershed,markers.astype(np.int32), mask=unmasked,compactness=compactness)
@@ -90,7 +90,8 @@ def watershedding_3D(Track,Field_in,threshold=3e-3,target='maximum',level=None,c
         for index, row in Tracks_i.iterrows():
             if row['particle'] in counts.keys():
                 Track.loc[index,'ncells']=counts[row['particle']]
-                
+        
+        logging.info('Finished wateshedding 3D')
     return Watershed_out,Track
             
 def watershedding_2D(Track,Field_in,threshold=0,target='maximum',compactness=0,method='watershed'):
@@ -117,9 +118,11 @@ def watershedding_2D(Track,Field_in,threshold=0,target='maximum',compactness=0,m
     from skimage.morphology import watershed
     from skimage.segmentation import random_walker
     from iris.analysis import MIN,MAX
+    import logging
+
+    logging.info('Start wateshedding 2D')
 
 #    from scipy.ndimage.measurements import watershed_ift
-
     Watershed_out=copy.deepcopy(Field_in)
     Watershed_out.rename('watershedding_output_mask')
     Watershed_out.data[:]=0
@@ -128,7 +131,7 @@ def watershedding_2D(Track,Field_in,threshold=0,target='maximum',compactness=0,m
     maximum_value=Field_in.collapsed(cooridinates,MAX).data
     minimum_value=Field_in.collapsed(cooridinates,MIN).data
     range_value=maximum_value-minimum_value
-    
+
     Track['ncells']=0
 
     for i, time in enumerate(Field_in.coord('time').points):        
@@ -155,9 +158,6 @@ def watershedding_2D(Track,Field_in,threshold=0,target='maximum',compactness=0,m
 
         data_i_watershed[~unmasked]=2000
         data_i_watershed=data_i_watershed.astype(np.uint16)
-
-        data_i_watershed=data_i_watershed.astype(np.uint16)
-        #res1 = watershed_ift(data_i_watershed, markers)
         
         if method=='watershed':
             res1 = watershed(data_i_watershed,markers.astype(np.int8), mask=unmasked,compactness=compactness)
@@ -174,6 +174,7 @@ def watershedding_2D(Track,Field_in,threshold=0,target='maximum',compactness=0,m
         for index, row in Tracks_i.iterrows():
             if row['particle'] in counts.keys():
                 Track.loc[index,'ncells']=counts[row['particle']]
+        logging.info('Finished wateshedding 2D')
 
     return Watershed_out,Track
 
