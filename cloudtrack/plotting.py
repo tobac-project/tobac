@@ -203,7 +203,7 @@ def plot_tracks_w_max_TWP_mask(Track, COG, Mask_total,
         particle = int(row['particle'])
         color = colors_mask[int(particle % len(colors_mask))]
         axes.plot(row['projection_x_coordinate']/1000, row['projection_y_coordinate']/1000, 'o', color=color,markersize=4)
-        z_coord = 'bottom_top'
+        z_coord = 'model_level_number'
         Mask_total_i_surface = mask_particle_surface(Mask_total, particle, masked=False, z_coord=z_coord)
         axes.contour(Mask_total.coord('projection_x_coordinate').points/1000, Mask_total.coord('projection_y_coordinate').points/1000, Mask_total_i_surface.data, 
                     levels=[0, particle], colors=color, linestyles='-',linewidth=1)
