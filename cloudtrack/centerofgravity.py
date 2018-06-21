@@ -1,7 +1,13 @@
+import logging
+
 def calculate_cog(Tracks,mass,Mask):
     from .watershedding import mask_cube_particle
-    from iris import Constraint
+    from iris import Constraint    
+    
+    logging.info('start calculating centre of gravity for tracked cells')
+
     Tracks_out=Tracks[['time','frame','particle','time_cell']]
+
     for i_row,row in Tracks_out.iterrows():        
         particle=row['particle']
         constraint_time=Constraint(time=row['time'])
@@ -13,12 +19,18 @@ def calculate_cog(Tracks,mass,Mask):
         Tracks_out.loc[i_row,'y_M']=float(y_M)
         Tracks_out.loc[i_row,'z_M']=float(z_M)
         Tracks_out.loc[i_row,'mass']=float(mass_M)
+        
+    logging.info('Finished calculating centre of gravity for tracked cells')
+
     return Tracks_out
     
 def calculate_cog_untracked(mass,Mask):
     import pandas as pd
     from .watershedding import mask_cube_untracked
     from iris import Constraint
+
+    logging.info('start calculating centre of gravity for untracked parts of the domain')
+
     Tracks_out=pd.DataFrame()
     time_coord=mass.coord('time')
     Tracks_out['frame']=range(len(time_coord.points))
@@ -34,11 +46,17 @@ def calculate_cog_untracked(mass,Mask):
         Tracks_out.loc[i_row,'y_M']=float(y_M)
         Tracks_out.loc[i_row,'z_M']=float(z_M)
         Tracks_out.loc[i_row,'mass']=float(mass_M)
+    
+    logging.info('Finished calculating centre of gravity for untracked parts of the domain')
+    
     return Tracks_out
 
 def calculate_cog_domain(mass):
     import pandas as pd
     from iris import Constraint
+    
+    logging.info('start calculating centre of gravity for entire domain')
+
     time_coord=mass.coord('time')
 
     Tracks_out=pd.DataFrame()
@@ -53,6 +71,9 @@ def calculate_cog_domain(mass):
         Tracks_out.loc[i_row,'y_M']=float(y_M)
         Tracks_out.loc[i_row,'z_M']=float(z_M)
         Tracks_out.loc[i_row,'mass']=float(mass_M)
+        
+    logging.info('Finished calculating centre of gravity for entire domain')
+
     return Tracks_out
 
 def center_of_gravity(mass_in):
