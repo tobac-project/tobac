@@ -102,7 +102,7 @@ def plot_tracks_mask_field(track,field,Mask,axes=None,axis_extent=None,
 def plot_track_cell_w_max_TWP_mask(particle,Track, COG, Mask_total,
                                     w_max, TWP, width=10000,
                                     name= 'test', plotdir='./',
-                                    n_core=1,file_format=['png']):
+                                    n_core=1,file_format=['png'],**kwargs):
         from iris import Constraint
         from numpy import unique
         import os
@@ -137,9 +137,9 @@ def plot_track_cell_w_max_TWP_mask(particle,Track, COG, Mask_total,
             title=name + ' ' + datestring
             fig1.suptitle(title)
 
-            ax1=plot_tracks_w_max_TWP_mask(track_i, cog_i, 
+            ax1=plot_tracks_w_max_TWP_mask(particle,track_i, cog_i, 
                                            Mask_total_i,w_max_i, TWP_i,
-                                           axes=ax1)
+                                           axes=ax1,**kwargs)
                    
             out_dir = os.path.join(plotdir, name)
             os.makedirs(out_dir, exist_ok=True)
@@ -155,7 +155,7 @@ def plot_track_cell_w_max_TWP_mask(particle,Track, COG, Mask_total,
             plt.clf()
 
 
-def plot_tracks_w_max_TWP_mask(Track, COG, Mask_total,
+def plot_tracks_w_max_TWP_mask(particle_i,Track, COG, Mask_total,
                                w_max, TWP,
                                axes=plt.gca(),
                                vmin_w_max=0,vmax_w_max=50,levels_w_max=None,
@@ -203,10 +203,14 @@ def plot_tracks_w_max_TWP_mask(Track, COG, Mask_total,
 
 
     
-    colors_mask = ['pink','darkred', 'orange', 'red', 'darkorange']
+#    colors_mask = ['pink','darkred', 'orange', 'red', 'darkorange']
     for i_row, row in Track.iterrows():
         particle = int(row['particle'])
-        color = colors_mask[int(particle % len(colors_mask))]
+        if particle==particle_i:
+            color='darkred'
+        else:
+            particle='darkorange'
+#        color = colors_mask[int(particle % len(colors_mask))]
         axes.plot(row['projection_x_coordinate']/1000, row['projection_y_coordinate']/1000, 'o', color=color,markersize=4)
         z_coord = 'model_level_number'
         Mask_total_i_surface = mask_particle_surface(Mask_total, particle, masked=False, z_coord=z_coord)
