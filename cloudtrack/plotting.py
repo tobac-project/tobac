@@ -209,7 +209,7 @@ def plot_tracks_w_max_TWP_mask(particle_i,Track, COG, Mask_total,
         if particle==particle_i:
             color='darkred'
         else:
-            particle='darkorange'
+            color='darkorange'
 #        color = colors_mask[int(particle % len(colors_mask))]
         axes.plot(row['projection_x_coordinate']/1000, row['projection_y_coordinate']/1000, 'o', color=color,markersize=4)
         z_coord = 'model_level_number'
@@ -222,7 +222,7 @@ def plot_tracks_w_max_TWP_mask(particle_i,Track, COG, Mask_total,
         if particle==particle_i:
             color='darkred'
         else:
-            particle='darkorange'
+            color='darkorange'
 #        color = colors_mask[int(particle % len(colors_mask))]
         axes.plot(row['x_M']/1000, row['y_M']/1000, 'o', markeredgecolor=color, markerfacecolor='None',markersize=4)
 
