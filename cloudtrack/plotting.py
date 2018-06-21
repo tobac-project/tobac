@@ -126,9 +126,9 @@ def plot_track_cell_w_max_TWP_mask(particle,Track, COG, Mask_total,
             cells=list(unique(Mask_total_i.core_data()))
             cells.remove(0)
             track_i=Track[Track['particle'].isin(cells)]
-            track_i[track_i['time']==row['time']]
+            track_i=track_i[track_i['time']==row['time']]
             cog_i=COG[COG['particle'].isin(cells)]
-            cog_i[cog_i['time']==row['time']]
+            cog_i=cog_i[cog_i['time']==row['time']]
 
             fig1, ax1 = plt.subplots(ncols=1, nrows=1, figsize=(10/2.54, 10/2.54))
             fig1.subplots_adjust(left=0.1, bottom=0.1, right=0.85, top=0.85)
