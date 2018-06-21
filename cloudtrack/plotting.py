@@ -107,6 +107,7 @@ def plot_track_cell_w_max_TWP_mask(particle,Track, COG, Mask_total,
         import os
         track_cell=Track[Track['particle']==particle]
         for i_row,row in track_cell.iterrows():
+            
             constraint_time = Constraint(time=row['time'])
             constraint_x = Constraint(projection_x_coordinate = lambda cell: row['projection_x_coordinate']-width < cell < row['projection_x_coordinate']+width)
             constraint_y = Constraint(projection_x_coordinate = lambda cell: row['projection_y_coordinate']-width < cell < row['projection_y_coordinate']+width)
@@ -123,8 +124,8 @@ def plot_track_cell_w_max_TWP_mask(particle,Track, COG, Mask_total,
 
             cells=list(unique(Mask_total_i.core_data()))
             cells.remove(0)
-            track_i=Track[Track['particle'].is_in(cells)]
-            cog_i=COG[COG['particle'].is_in(cells)]
+            track_i=Track[Track['particle'].isin(cells)]
+            cog_i=COG[COG['particle'].isin(cells)]
 
             fig1, ax1 = plt.subplots(ncols=1, nrows=1, figsize=(10/2.54, 10/2.54))
             fig1.subplots_adjust(left=0.1, bottom=0.1, right=0.85, top=0.85)
