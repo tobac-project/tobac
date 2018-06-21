@@ -13,6 +13,7 @@ def fill_gaps(t,order=1,extrapolate=0,frame_max=None,hdim_1_max=None,hdim_2_max=
     from scipy.interpolate import InterpolatedUnivariateSpline
     t_grouped=t.groupby('particle')
     t_list=[]
+    logging.debug('start filling gaps')
     if frame_max==None:
         frame_max=t['frame'].max()
     for particle,track in t_grouped:        
@@ -46,7 +47,9 @@ def fill_gaps(t,order=1,extrapolate=0,frame_max=None,hdim_1_max=None,hdim_2_max=
     return t_out
 
 def add_cell_time(t):
-    # add cell time
+    # add cell time    
+    logging.debug('start adding time relative to cell initiation')
+
     t_grouped=t.groupby('particle')
     t['time_cell']=np.nan
     for particle,track in t_grouped:
@@ -64,6 +67,8 @@ def add_coordinates(t,variable_cube):
                    Cube containing the dimensions 'time','longitude','latitude','x_projection_coordinate','y_projection_coordinate', usually cube that the tracking is performed on
 
     '''
+    logging.debug('start adding coordinates from cube to tracking output')
+
     time_in=variable_cube.coord('time')
     ndim_time=variable_cube.coord_dims('time')[0]
     
@@ -162,6 +167,8 @@ def add_coordinates(t,variable_cube):
 
 def feature_detection_trackpy(field_in,diameter,dxy,target='maximum'):
     diameter_pix=round(int(diameter/dxy)/2)*2+1
+    
+    logging.debug('start feature detection based on trackpy functions')
 
     # set invert to True when tracking minima, False when tracking maxima
     if target=='maximum':
@@ -200,6 +207,7 @@ def feature_detection_blob(field_in,threshold,dxy,target='maximum'):
     # Image processing
     from skimage import filters, measure
 
+    logging.debug('start feature detection based thresholds')
 
 
     # set invert to True when tracking minima, False when tracking maxima
@@ -245,7 +253,8 @@ def trajectory_linking(features,v_max,dt,dxy,memory,subnetwork_size=None):
     import trackpy
     from copy import deepcopy
     search_range=int(dt*v_max/dxy)
-    logging.debug('start feature linking')
+    
+    logging.debug('start linking features into trajectories')
     
     # pred = predict.NearestVelocityPredict()
     if subnetwork_size is not None:
@@ -388,6 +397,9 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',
     trajectories_filtered=add_cell_time(trajectories_filtered)
 
     features_identified=add_coordinates(features,field_in)
+    
+    logging.debug('Finished tracking')
+
 
     return trajectories_filtered, features_identified
 
