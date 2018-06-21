@@ -219,7 +219,11 @@ def plot_tracks_w_max_TWP_mask(particle_i,Track, COG, Mask_total,
 
     for i_row, row in COG.iterrows():
         particle = row['particle']
-        color = colors_mask[int(particle % len(colors_mask))]
+        if particle==particle_i:
+            color='darkred'
+        else:
+            particle='darkorange'
+#        color = colors_mask[int(particle % len(colors_mask))]
         axes.plot(row['x_M']/1000, row['y_M']/1000, 'o', markeredgecolor=color, markerfacecolor='None',markersize=4)
 
     axes.set_xlabel('x (km)')
