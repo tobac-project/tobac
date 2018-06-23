@@ -131,11 +131,9 @@ def plot_track_cell_w_max_TWP_mask(particle,Track, COG, Mask_total,
             cog_i=cog_i[cog_i['time']==row['time']]
 
             fig1, ax1 = plt.subplots(ncols=1, nrows=1, figsize=(10/2.54, 10/2.54))
-            fig1.subplots_adjust(left=0.1, bottom=0.1, right=0.85, top=0.85)
+            fig1.subplots_adjust(left=0.2, bottom=0.15, right=0.90, top=0.90)
             
             datestring = row['time'].strftime('%Y-%m-%d %H:%M:%S')
-            title=name + ' ' + datestring
-            fig1.suptitle(title)
 
             ax1=plot_tracks_w_max_TWP_mask(particle,track_i, cog_i, 
                                            Mask_total_i,w_max_i, TWP_i,
@@ -169,14 +167,19 @@ def plot_tracks_w_max_TWP_mask(particle_i,Track, COG, Mask_total,
     
     
     divider = make_axes_locatable(axes)
-    cax1 = divider.append_axes("right", size="5%", pad=0.1)
-    cax2 = divider.append_axes("bottom", size="5%", pad=0.1)
     
+    x_pos=row['projection_x_coordinate']
+    y_pos=row['projection_y_coordinate']
+
     if TWP is not None:
         if levels_TWP is None:
             levels_TWP=np.linspace(vmin_TWP,vmax_TWP, 10)
-        plot_TWP = axes.contourf(TWP.coord('projection_x_coordinate').points/1000, TWP.coord('projection_y_coordinate').points/1000,
+        plot_TWP = axes.contourf((TWP.coord('projection_x_coordinate').points-x_pos)/1000,
+                                 (TWP.coord('projection_y_coordinate').points-y_pos)/1000,
                                 TWP.data, levels=levels_TWP, cmap='Blues', vmin=vmin_TWP, vmax=vmax_TWP)    
+        
+        
+        cax1 = divider.append_axes("right", size="5%", pad=0.1)
         norm1= Normalize(vmin=vmin_TWP, vmax=vmax_TWP)
         sm1= plt.cm.ScalarMappable(norm=norm1, cmap = plot_TWP.cmap)
         sm1.set_array([])
@@ -188,12 +191,14 @@ def plot_tracks_w_max_TWP_mask(particle_i,Track, COG, Mask_total,
     if w_max is not None:
         if levels_w_max is None:
             levels_w_max=np.linspace(vmin_w_max, vmax_w_max, 5)
-        plot_w_max = axes.contour(w_max.coord('projection_x_coordinate').points/1000, w_max.coord('projection_y_coordinate').points/1000, w_max.data,
+        plot_w_max = axes.contour((w_max.coord('projection_x_coordinate').points-x_pos)/1000,
+                                  (w_max.coord('projection_y_coordinate').points-y_pos)/1000,
                                  cmap='summer',levels=levels_w_max, vmin=vmin_w_max, vmax=vmax_w_max,linewidths=0.8)
         
         if contour_labels:
             axes.clabel(plot_w_max, fontsize=10)
-
+    
+        cax2 = divider.append_axes("bottom", size="5%", pad=0.1)
         norm2= Normalize(vmin=vmin_w_max, vmax=vmax_w_max)
         sm2= plt.cm.ScalarMappable(norm=norm2, cmap = plot_w_max.cmap)
         sm2.set_array([])
@@ -211,11 +216,17 @@ def plot_tracks_w_max_TWP_mask(particle_i,Track, COG, Mask_total,
         else:
             color='darkorange'
 #        color = colors_mask[int(particle % len(colors_mask))]
-        axes.plot(row['projection_x_coordinate']/1000, row['projection_y_coordinate']/1000, 'o', color=color,markersize=4)
+            
+        particle_string='     '+str(int(row['particle']))
+        axes.text(1,1,particle_string,color=color,fontsize=6)
+
+        axes.plot(0, 0, 'o', color=color,markersize=4)
         z_coord = 'model_level_number'
         Mask_total_i_surface = mask_particle_surface(Mask_total, particle, masked=False, z_coord=z_coord)
-        axes.contour(Mask_total.coord('projection_x_coordinate').points/1000, Mask_total.coord('projection_y_coordinate').points/1000, Mask_total_i_surface.data, 
-                    levels=[0, particle], colors=color, linestyles='-',linewidth=1)
+        axes.contour((Mask_total.coord('projection_x_coordinate').points-x_pos)/1000,
+                     (Mask_total.coord('projection_x_coordinate').points-x_pos)/1000,
+                     Mask_total_i_surface.data, 
+                     levels=[0, particle], colors=color, linestyles='-',linewidth=1)
 
     for i_row, row in COG.iterrows():
         particle = row['particle']
@@ -224,12 +235,12 @@ def plot_tracks_w_max_TWP_mask(particle_i,Track, COG, Mask_total,
         else:
             color='darkorange'
 #        color = colors_mask[int(particle % len(colors_mask))]
-        axes.plot(row['x_M']/1000, row['y_M']/1000, 'o', markeredgecolor=color, markerfacecolor='None',markersize=4)
+        axes.plot((row['x_M']-x_pos)/1000, (row['y_M']-y_pos)/1000, 'o', markeredgecolor=color, markerfacecolor='None',markersize=4)
 
     axes.set_xlabel('x (km)')
     axes.set_ylabel('y (km)')        
-    axes.set_xlim([w_max.coord('projection_x_coordinate').points[0]/1000, w_max.coord('projection_x_coordinate').points[-1]/1000])
-    axes.set_ylim([w_max.coord('projection_y_coordinate').points[0]/1000, w_max.coord('projection_y_coordinate').points[-1]/1000])
+    axes.set_xlim([(w_max.coord('projection_x_coordinate').points[0]-x_pos)/1000, (w_max.coord('projection_x_coordinate').points[-1]-x_pos)/1000])
+    axes.set_ylim([(w_max.coord('projection_y_coordinate').points[0]-y_pos)/1000, (w_max.coord('projection_y_coordinate').points[-1]-y_pos)/1000])
     axes.xaxis.set_label_position('top') 
     axes.xaxis.set_ticks_position('top')
  
