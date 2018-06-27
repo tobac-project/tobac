@@ -5,6 +5,7 @@ def plot_tracks_mask_field_loop(track,field,Mask,axes=None,name=None,plot_dir='.
     import matplotlib.pyplot as plt
     import cartopy.crs as ccrs
     import os
+    os.makedirs(plot_dir,exist_ok=True)
     time=field.coord('time')
     if name is None:
         name=field.name()
@@ -18,7 +19,6 @@ def plot_tracks_mask_field_loop(track,field,Mask,axes=None,name=None,plot_dir='.
 
         plt.close()
     plt.close() 
-
 
 def plot_tracks_mask_field(track,field,Mask,axes=None,axis_extent=None,
                            plot_outline=True,plot_marker=True,marker_track='x',plot_number=True,
@@ -100,79 +100,92 @@ def plot_tracks_mask_field(track,field,Mask,axes=None,axis_extent=None,
     return axes
 
 def plot_mask_cell_track_follow(particle,track, cog, features, mask_total,
-                                    w_max, TWP, width=10000,
+                                    field_1, field_2, 
+                                    field_1_label=None,field_2_label=None,
+                                    width=10000,
                                     name= 'test', plotdir='./',
                                     n_core=1,file_format=['png'],**kwargs):
-        from iris import Constraint
-        from numpy import unique
-        import os
-        track_cell=track[track['particle']==particle]
-        for i_row,row in track_cell.iterrows():
+    '''Make plots for all cells centred around cell and with one background field as filling and one background field as contrours
+    Input:
+    Output:
+    '''
+    from iris import Constraint
+    from numpy import unique
+    import os
+    track_cell=track[track['particle']==particle]
+    for i_row,row in track_cell.iterrows():
+        
+        constraint_time = Constraint(time=row['time'])
+        constraint_x = Constraint(projection_x_coordinate = lambda cell: row['projection_x_coordinate']-width < cell < row['projection_x_coordinate']+width)
+        constraint_y = Constraint(projection_y_coordinate = lambda cell: row['projection_y_coordinate']-width < cell < row['projection_y_coordinate']+width)
+        constraint = constraint_time & constraint_x & constraint_y
+        mask_total_i=mask_total.extract(constraint)
+        if field_1 is None:
+            field_1_i=None
+        else:
+            field_1_i=field_1.extract(constraint)
+        if field_2 is None:
+            field_2_i=None
+        else:
+            field_2_i=field_2.extract(constraint)
+
+        cells=list(unique(mask_total_i.core_data()))
+        if particle not in cells:
+            cells.append(particle)
+        cells.remove(0)
+        track_i=track[track['particle'].isin(cells)]
+        track_i=track_i[track_i['time']==row['time']]
+        if cog is None:
+           cog_i=None
+        else:
+            cog_i=cog[cog['particle'].isin(cells)]
+            cog_i=cog_i[cog_i['time']==row['time']]
             
-            constraint_time = Constraint(time=row['time'])
-            constraint_x = Constraint(projection_x_coordinate = lambda cell: row['projection_x_coordinate']-width < cell < row['projection_x_coordinate']+width)
-            constraint_y = Constraint(projection_y_coordinate = lambda cell: row['projection_y_coordinate']-width < cell < row['projection_y_coordinate']+width)
-            constraint = constraint_time & constraint_x & constraint_y
-            mask_total_i=mask_total.extract(constraint)
-            if w_max is None:
-                w_max_i=None
-            else:
-                w_max_i=w_max.extract(constraint)
-            if TWP is None:
-                TWP_i=None
-            else:
-                TWP_i=TWP.extract(constraint)
-
-            cells=list(unique(mask_total_i.core_data()))
-            if particle not in cells:
-                cells.append(particle)
-            cells.remove(0)
-            track_i=track[track['particle'].isin(cells)]
-            track_i=track_i[track_i['time']==row['time']]
-            if cog is None:
-               cog_i=None
-            else:
-                cog_i=cog[cog['particle'].isin(cells)]
-                cog_i=cog_i[cog_i['time']==row['time']]
-                
-            if features is None:
-                features_i=None
-            else:
-                features_i=features[features['time']==row['time']]
+        if features is None:
+            features_i=None
+        else:
+            features_i=features[features['time']==row['time']]
 
 
-            fig1, ax1 = plt.subplots(ncols=1, nrows=1, figsize=(10/2.54, 10/2.54))
-            fig1.subplots_adjust(left=0.2, bottom=0.15, right=0.85, top=0.85)
-            
-            datestring = row['time'].strftime('%Y-%m-%d %H:%M:%S')
+        fig1, ax1 = plt.subplots(ncols=1, nrows=1, figsize=(10/2.54, 10/2.54))
+        fig1.subplots_adjust(left=0.2, bottom=0.15, right=0.85, top=0.85)
+        
+        datestring = row['time'].strftime('%Y-%m-%d %H:%M:%S')
 
-            ax1=plot_mask_cell_individual_follow(particle_i=particle,track=track_i, cog=cog_i,features=features_i,
-                                           mask_total=mask_total_i,
-                                           w_max=w_max_i, TWP=TWP_i,
-                                           width=width,
-                                           axes=ax1,**kwargs)
-                   
-            out_dir = os.path.join(plotdir, name)
-            os.makedirs(out_dir, exist_ok=True)
-            if 'png' in file_format:
-                savepath_png = os.path.join(out_dir, name  + '_' + datestring + '.png')
-                fig1.savefig(savepath_png, dpi=600)
-                logging.debug('w_max TWP Mask plot saved to ' + savepath_png)
-            if 'pdf' in file_format:
-                savepath_pdf = os.path.join(out_dir, name  + '_' + datestring + '.pdf')
-                fig1.savefig(savepath_pdf, dpi=600)
-                logging.debug('w_max TWP Mask plot saved to ' + savepath_pdf)
-            plt.close()
-            plt.clf()
+        ax1=plot_mask_cell_individual_follow(particle_i=particle,track=track_i, cog=cog_i,features=features_i,
+                                       mask_total=mask_total_i,
+                                       field_1=field_1_i, field_2=field_2_i,
+                                       field_1_label=field_1_label, field_2_label=field_2_label,
+                                       width=width,
+                                       axes=ax1,**kwargs)
+               
+        out_dir = os.path.join(plotdir, name)
+        os.makedirs(out_dir, exist_ok=True)
+        if 'png' in file_format:
+            savepath_png = os.path.join(out_dir, name  + '_' + datestring + '.png')
+            fig1.savefig(savepath_png, dpi=600)
+            logging.debug('field_1 field_2 Mask plot saved to ' + savepath_png)
+        if 'pdf' in file_format:
+            savepath_pdf = os.path.join(out_dir, name  + '_' + datestring + '.pdf')
+            fig1.savefig(savepath_pdf, dpi=600)
+            logging.debug('field_1 field_2 Mask plot saved to ' + savepath_pdf)
+        plt.close()
+        plt.clf()
 
 
 def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
-                               w_max, TWP, width=10000,
+                               field_1, field_2, 
+                               field_1_label=None, field_2_label=None,
+                               width=10000,
                                axes=plt.gca(),
-                               vmin_w_max=0,vmax_w_max=50,levels_w_max=None,
+                               vmin_field_1=0,vmax_field_1=50,levels_field_1=None,
                                contour_labels=False,
-                               vmin_TWP=0,vmax_TWP=100,levels_TWP=None
-                               ):   
+                               vmin_field_2=0,vmax_field_2=100,levels_field_2=None
+                               ): 
+    '''Make individual plot for cell centred around cell and with one background field as filling and one background field as contrours
+    Input:
+    Output:
+    '''
     import numpy as np
     from cloudtrack.watershedding  import mask_particle_surface
     from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -183,55 +196,53 @@ def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
     
     x_pos=track[track['particle']==particle_i]['projection_x_coordinate'].item()
     y_pos=track[track['particle']==particle_i]['projection_y_coordinate'].item()
-    if TWP is not None:
-        if levels_TWP is None:
-            levels_TWP=np.linspace(vmin_TWP,vmax_TWP, 10)
-        plot_TWP = axes.contourf((TWP.coord('projection_x_coordinate').points-x_pos)/1000,
-                                 (TWP.coord('projection_y_coordinate').points-y_pos)/1000,
-                                 TWP.data,
-                                 levels=levels_TWP, cmap='Blues', vmin=vmin_TWP, vmax=vmax_TWP)    
+    if field_2 is not None:
+        if levels_field_2 is None:
+            levels_field_2=np.linspace(vmin_field_2,vmax_field_2, 10)
+        plot_field_2 = axes.contourf((field_2.coord('projection_x_coordinate').points-x_pos)/1000,
+                                 (field_2.coord('projection_y_coordinate').points-y_pos)/1000,
+                                 field_2.data,
+                                 levels=levels_field_2, cmap='Blues', vmin=vmin_field_2, vmax=vmax_field_2)    
         
         
         cax1 = divider.append_axes("right", size="5%", pad=0.1)
-        norm1= Normalize(vmin=vmin_TWP, vmax=vmax_TWP)
-        sm1= plt.cm.ScalarMappable(norm=norm1, cmap = plot_TWP.cmap)
+        norm1= Normalize(vmin=vmin_field_2, vmax=vmax_field_2)
+        sm1= plt.cm.ScalarMappable(norm=norm1, cmap = plot_field_2.cmap)
         sm1.set_array([])
         
-        cbar_TWP = plt.colorbar(sm1, orientation='vertical',cax=cax1)
-        cbar_TWP.ax.set_ylabel('TWP (kg/m$^2$)')
-        cbar_TWP.set_clim(vmin_TWP, vmax_TWP)
+        cbar_field_2 = plt.colorbar(sm1, orientation='vertical',cax=cax1)
+        cbar_field_2.ax.set_ylabel(field_2_label)
+        cbar_field_2.set_clim(vmin_field_2, vmax_field_2)
 
-    if w_max is not None:
-        if levels_w_max is None:
-            levels_w_max=np.linspace(vmin_w_max, vmax_w_max, 5)
-        plot_w_max = axes.contour((w_max.coord('projection_x_coordinate').points-x_pos)/1000,
-                                  (w_max.coord('projection_y_coordinate').points-y_pos)/1000,
-                                  w_max.data,
+    if field_1 is not None:
+        if levels_field_1 is None:
+            levels_field_1=np.linspace(vmin_field_1, vmax_field_1, 5)
+        plot_field_1 = axes.contour((field_1.coord('projection_x_coordinate').points-x_pos)/1000,
+                                  (field_1.coord('projection_y_coordinate').points-y_pos)/1000,
+                                  field_1.data,
                                   cmap='summer',
-                                  levels=levels_w_max,vmin=vmin_w_max, vmax=vmax_w_max,
+                                  levels=levels_field_1,vmin=vmin_field_1, vmax=vmax_field_1,
                                   linewidths=0.8)
         
         if contour_labels:
-            axes.clabel(plot_w_max, fontsize=10)
+            axes.clabel(plot_field_1, fontsize=10)
     
         cax2 = divider.append_axes("bottom", size="5%", pad=0.1)
-        norm2= Normalize(vmin=vmin_w_max, vmax=vmax_w_max)
-        sm2= plt.cm.ScalarMappable(norm=norm2, cmap = plot_w_max.cmap)
+        norm2= Normalize(vmin=vmin_field_1, vmax=vmax_field_1)
+        sm2= plt.cm.ScalarMappable(norm=norm2, cmap = plot_field_1.cmap)
         sm2.set_array([])
         cbar_w = plt.colorbar(sm2, orientation='horizontal',cax=cax2)
-        cbar_w.ax.set_xlabel('w_max (m/s)')
-        cbar_w.set_clim(vmin_w_max, vmax_w_max)
+        cbar_w.ax.set_xlabel(field_1_label)
+        cbar_w.set_clim(vmin_field_1, vmax_field_1)
 
 
     
-#    colors_mask = ['pink','darkred', 'orange', 'red', 'darkorange']
     for i_row, row in track.iterrows():
         particle = int(row['particle'])
         if particle==particle_i:
             color='darkred'
         else:
             color='darkorange'
-#        color = colors_mask[int(particle % len(colors_mask))]
             
         particle_string='   '+str(int(row['particle']))
         axes.text((row['projection_x_coordinate']-x_pos)/1000,
@@ -283,86 +294,106 @@ def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
     return axes
 
 def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
-                                    w_max, TWP, width=10000,
+                                    field_1, field_2,
+                                    field_1_label=None, field_2_label=None,
+                                    width=10000,
                                     name= 'test', plotdir='./',
                                     n_core=1,file_format=['png'],**kwargs):
-        from iris import Constraint
-        from numpy import unique
-        import os
-        track_cell=track[track['particle']==particle]
-        x_min=track_cell['projection_x_coordinate'].min()-width
-        x_max=track_cell['projection_x_coordinate'].max()+width
-        y_min=track_cell['projection_y_coordinate'].min()-width
-        y_max=track_cell['projection_y_coordinate'].max()+width
+    '''Make plots for all cells with fixed frame including entire development of the cell and with one background field as filling and one background field as contrours
+    Input:
+    Output:
+    '''
+    from iris import Constraint
+    from numpy import unique
+    import os
+    track_cell=track[track['particle']==particle]
+    x_min=track_cell['projection_x_coordinate'].min()-width
+    x_max=track_cell['projection_x_coordinate'].max()+width
+    y_min=track_cell['projection_y_coordinate'].min()-width
+    y_max=track_cell['projection_y_coordinate'].max()+width
+    
+    for i_row,row in track_cell.iterrows():
         
-        for i_row,row in track_cell.iterrows():
-            
-            constraint_time = Constraint(time=row['time'])
-            constraint_x = Constraint(projection_x_coordinate = lambda cell: x_min < cell < x_max)
-            constraint_y = Constraint(projection_y_coordinate = lambda cell: y_min < cell < y_max)
-            constraint = constraint_time & constraint_x & constraint_y
-            mask_total_i=mask_total.extract(constraint)
-            if w_max is None:
-                w_max_i=None
-            else:
-                w_max_i=w_max.extract(constraint)
-            if TWP is None:
-                TWP_i=None
-            else:
-                TWP_i=TWP.extract(constraint)
+        constraint_time = Constraint(time=row['time'])
+        constraint_x = Constraint(projection_x_coordinate = lambda cell: x_min < cell < x_max)
+        constraint_y = Constraint(projection_y_coordinate = lambda cell: y_min < cell < y_max)
+        constraint = constraint_time & constraint_x & constraint_y            
 
-            cells=list(unique(mask_total_i.core_data()))
-            if particle not in cells:
-                cells.append(particle)
-            cells.remove(0)
-            track_i=track[track['particle'].isin(cells)]
-            track_i=track_i[track_i['time']==row['time']]
-            
-            if cog is None:
-                cog_i=None
-            else:
-                cog_i=cog[cog['particle'].isin(cells)]
-                cog_i=cog_i[cog_i['time']==row['time']]
+        mask_total_i=mask_total.extract(constraint)
+        if field_1 is None:
+            field_1_i=None
+        else:
+            field_1_i=field_1.extract(constraint)
+        if field_2 is None:
+            field_2_i=None
+        else:
+            field_2_i=field_2.extract(constraint)
 
-            if features is None:
-                features_i=None
-            else:
-                features_i=features[features['time']==row['time']]
+        
+        track_i=track[track['time']==row['time']]
+        
+        cells_mask=list(unique(mask_total_i.core_data()))
+        track_cells=track_i.loc[(track_i['projection_x_coordinate'] > x_min)  & (track_i['projection_x_coordinate'] < x_max) & (track_i['projection_y_coordinate'] > y_min) & (track_i['projection_y_coordinate'] < y_max)]
+        cells_track=list(track_cells['particle'].as_matrix())
+        cells=list(set( cells_mask + cells_track ))
+        if particle not in cells:
+            cells.append(particle)
+        cells.remove(0)
+        track_i=track_i[track_i['particle'].isin(cells)]
+        
+        if cog is None:
+            cog_i=None
+        else:
+            cog_i=cog[cog['particle'].isin(cells)]
+            cog_i=cog_i[cog_i['time']==row['time']]
+
+        if features is None:
+            features_i=None
+        else:
+            features_i=features[features['time']==row['time']]
 
 
-            fig1, ax1 = plt.subplots(ncols=1, nrows=1, figsize=(10/2.54, 10/2.54))
-            fig1.subplots_adjust(left=0.2, bottom=0.15, right=0.85, top=0.85)
-            
-            datestring = row['time'].strftime('%Y-%m-%d %H:%M:%S')
+        fig1, ax1 = plt.subplots(ncols=1, nrows=1, figsize=(10/2.54, 10/2.54))
+        fig1.subplots_adjust(left=0.2, bottom=0.15, right=0.85, top=0.85)
+        
+        datestring = row['time'].strftime('%Y-%m-%d %H:%M:%S')
 
-            ax1=plot_mask_cell_individual_static(particle_i=particle,
-                                                 track=track_i, cog=cog_i,features=features_i, 
-                                                 mask_total=mask_total_i,
-                                                 w_max=w_max_i, TWP=TWP_i,
-                                                 xlim=[x_min/1000,x_max/1000],ylim=[y_min/1000,y_max/1000],
-                                                 axes=ax1,**kwargs)
-                   
-            out_dir = os.path.join(plotdir, name)
-            os.makedirs(out_dir, exist_ok=True)
-            if 'png' in file_format:
-                savepath_png = os.path.join(out_dir, name  + '_' + datestring + '.png')
-                fig1.savefig(savepath_png, dpi=600)
-                logging.debug('w_max TWP Mask plot saved to ' + savepath_png)
-            if 'pdf' in file_format:
-                savepath_pdf = os.path.join(out_dir, name  + '_' + datestring + '.pdf')
-                fig1.savefig(savepath_pdf, dpi=600)
-                logging.debug('w_max TWP Mask plot saved to ' + savepath_pdf)
-            plt.close()
-            plt.clf()
+        ax1=plot_mask_cell_individual_static(particle_i=particle,
+                                             track=track_i, cog=cog_i,features=features_i, 
+                                             mask_total=mask_total_i,
+                                             field_1=field_1_i, field_2=field_2_i,
+                                             field_1_label=field_1_label, field_2_label=field_2_label,
+                                             xlim=[x_min/1000,x_max/1000],ylim=[y_min/1000,y_max/1000],
+                                             axes=ax1,**kwargs)
+               
+        out_dir = os.path.join(plotdir, name)
+        os.makedirs(out_dir, exist_ok=True)
+        if 'png' in file_format:
+            savepath_png = os.path.join(out_dir, name  + '_' + datestring + '.png')
+            fig1.savefig(savepath_png, dpi=600)
+            logging.debug('Mask static plot saved to ' + savepath_png)
+        if 'pdf' in file_format:
+            savepath_pdf = os.path.join(out_dir, name  + '_' + datestring + '.pdf')
+            fig1.savefig(savepath_pdf, dpi=600)
+            logging.debug('Mask static plot saved to ' + savepath_pdf)
+        plt.close()
+        plt.clf()
 
 
 def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total,
-                               w_max, TWP,
+                               field_1, field_2,
+                               field_1_label=None,
+                               field_2_label=None,
                                axes=plt.gca(),xlim=None,ylim=None,
-                               vmin_w_max=0,vmax_w_max=50,levels_w_max=None,
+                               vmin_field_1=0,vmax_field_1=50,levels_field_1=None,
                                contour_labels=False,
-                               vmin_TWP=0,vmax_TWP=100,levels_TWP=None
-                               ):   
+                               vmin_field_2=0,vmax_field_2=100,levels_field_2=None
+                               ):  
+    '''Make plots for cell in fixed frame and with one background field as filling and one background field as contrours
+    Input:
+    Output:
+    '''
+
     import numpy as np
     from cloudtrack.watershedding  import mask_particle_surface
     from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -371,55 +402,53 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
     
     divider = make_axes_locatable(axes)
     
-    if TWP is not None:
-        if levels_TWP is None:
-            levels_TWP=np.linspace(vmin_TWP,vmax_TWP, 10)
-        plot_TWP = axes.contourf(TWP.coord('projection_x_coordinate').points/1000,
-                                 TWP.coord('projection_y_coordinate').points/1000,
-                                 TWP.data,
-                                 levels=levels_TWP, cmap='Blues', vmin=vmin_TWP, vmax=vmax_TWP)    
+    if field_2 is not None:
+        if levels_field_2 is None:
+            levels_field_2=np.linspace(vmin_field_2,vmax_field_2, 10)
+        plot_field_2 = axes.contourf(field_2.coord('projection_x_coordinate').points/1000,
+                                 field_2.coord('projection_y_coordinate').points/1000,
+                                 field_2.data,
+                                 levels=levels_field_2, cmap='Blues', vmin=vmin_field_2, vmax=vmax_field_2)    
         
         
         cax1 = divider.append_axes("right", size="5%", pad=0.1)
-        norm1= Normalize(vmin=vmin_TWP, vmax=vmax_TWP)
-        sm1= plt.cm.ScalarMappable(norm=norm1, cmap = plot_TWP.cmap)
+        norm1= Normalize(vmin=vmin_field_2, vmax=vmax_field_2)
+        sm1= plt.cm.ScalarMappable(norm=norm1, cmap = plot_field_2.cmap)
         sm1.set_array([])
         
-        cbar_TWP = plt.colorbar(sm1, orientation='vertical',cax=cax1)
-        cbar_TWP.ax.set_ylabel('TWP (kg/m$^2$)')
-        cbar_TWP.set_clim(vmin_TWP, vmax_TWP)
+        cbar_field_2 = plt.colorbar(sm1, orientation='vertical',cax=cax1)
+        cbar_field_2.ax.set_ylabel(field_2_label)
+        cbar_field_2.set_clim(vmin_field_2, vmax_field_2)
 
-    if w_max is not None:
-        if levels_w_max is None:
-            levels_w_max=np.linspace(vmin_w_max, vmax_w_max, 5)
-        plot_w_max = axes.contour(w_max.coord('projection_x_coordinate').points/1000,
-                                  w_max.coord('projection_y_coordinate').points/1000,
-                                  w_max.data,
+    if field_1 is not None:
+        if levels_field_1 is None:
+            levels_field_1=np.linspace(vmin_field_1, vmax_field_1, 5)
+        plot_field_1 = axes.contour(field_1.coord('projection_x_coordinate').points/1000,
+                                  field_1.coord('projection_y_coordinate').points/1000,
+                                  field_1.data,
                                   cmap='summer',
-                                  levels=levels_w_max,vmin=vmin_w_max, vmax=vmax_w_max,
+                                  levels=levels_field_1,vmin=vmin_field_1, vmax=vmax_field_1,
                                   linewidths=0.8)
         
         if contour_labels:
-            axes.clabel(plot_w_max, fontsize=10)
+            axes.clabel(plot_field_1, fontsize=10)
     
         cax2 = divider.append_axes("bottom", size="5%", pad=0.1)
-        norm2= Normalize(vmin=vmin_w_max, vmax=vmax_w_max)
-        sm2= plt.cm.ScalarMappable(norm=norm2, cmap = plot_w_max.cmap)
+        norm2= Normalize(vmin=vmin_field_1, vmax=vmax_field_1)
+        sm2= plt.cm.ScalarMappable(norm=norm2, cmap = plot_field_1.cmap)
         sm2.set_array([])
         cbar_w = plt.colorbar(sm2, orientation='horizontal',cax=cax2)
-        cbar_w.ax.set_xlabel('w_max (m/s)')
-        cbar_w.set_clim(vmin_w_max, vmax_w_max)
+        cbar_w.ax.set_xlabel(field_1_label)
+        cbar_w.set_clim(vmin_field_1, vmax_field_1)
 
 
     
-#    colors_mask = ['pink','darkred', 'orange', 'red', 'darkorange']
     for i_row, row in track.iterrows():
         particle = int(row['particle'])
         if particle==particle_i:
             color='darkred'
         else:
             color='darkorange'
-#        color = colors_mask[int(particle % len(colors_mask))]
             
         particle_string='   '+str(int(row['particle']))
         axes.text(row['projection_x_coordinate']/1000,
