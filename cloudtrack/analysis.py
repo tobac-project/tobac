@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import logging
 import os
 
@@ -6,6 +7,8 @@ from .watershedding import mask_particle,mask_particle_surface,mask_cube_particl
 
 def cell_statistics(Input_cubes,Track,Mask,dimensions,aggregators,output_path='./',output_name='Profiles',**kwargs):
     from iris.cube import Cube,CubeList
+    from iris.coords import AuxCoord
+    from iris import Constraint,save
     # If input is single cube, turn into cubelist
     if type(Input_cubes) is Cube:
         Input_cubes=CubeList([Input_cubes])
@@ -16,7 +19,7 @@ def cell_statistics(Input_cubes,Track,Mask,dimensions,aggregators,output_path='.
         Track_i=Track[Track['particle']==particle]
         def time_condition(cell):
             return Track_i.loc[Track_i.index[0],'time'] <= cell <= Track_i.loc[Track_i.index[-1],'time']
-        constraint_time=iris.Constraint(time=time_condition)
+        constraint_time=Constraint(time=time_condition)
         constraint=constraint_time
         Mask_i=Mask.extract(constraint)
         Mask_particle_i=mask_particle(Mask_i,particle,masked=False)
@@ -25,9 +28,9 @@ def cell_statistics(Input_cubes,Track,Mask,dimensions,aggregators,output_path='.
         minutes=(Track_i['time_cell']/pd.Timedelta(minutes=1)).as_matrix()
         latitude=Track_i['latitude'].as_matrix()
         longitude=Track_i['longitude'].as_matrix()
-        minutes_coord=iris.coords.AuxCoord(minutes,long_name='cell_time',units='min')
-        latitude_coord=iris.coords.AuxCoord(latitude,long_name='latitude',units='degrees')
-        longitude_coord=iris.coords.AuxCoord(longitude,long_name='longitude',units='degrees')
+        minutes_coord=AuxCoord(minutes,long_name='cell_time',units='min')
+        latitude_coord=AuxCoord(latitude,long_name='latitude',units='degrees')
+        longitude_coord=AuxCoord(longitude,long_name='longitude',units='degrees')
 
         cubes_profile={}
         for aggregator in aggregators:
@@ -51,41 +54,41 @@ def cell_statistics(Input_cubes,Track,Mask,dimensions,aggregators,output_path='.
         for aggregator_name in cubes_profile.keys():
             os.makedirs(os.path.join(output_path,output_name,aggregator_name),exist_ok=True)
             savefile=os.path.join(output_path,output_name,aggregator_name,output_name+'_'+ aggregator_name+'_'+str(int(particle))+'.nc')
-            iris.save(cubes_profile[aggregator_name],savefile)
+            save(cubes_profile[aggregator_name],savefile)
 
-def cog_cell(particle,
-             Tracks=None,
-             M_total=None,
-             M_liquid=None,
+def cog_cell(particle,Tracks=None,M_total=None,M_liquid=None,
              M_frozen=None,
              Mask=None,
              savedir=None):
-                        logging.debug('Start calculating COG for '+str(particle))
-                        Track=Tracks[Tracks['particle']==particle]
-                        constraint_time=iris.Constraint(time=lambda cell: Track.head(1)['time'].as_matrix()[0] <= cell <= Track.tail(1)['time'].as_matrix()[0])
-                        M_total_i=M_total.extract(constraint_time)
-                        M_liquid_i=M_liquid.extract(constraint_time)
-                        M_frozen_i=M_frozen.extract(constraint_time)
-                        Mask_i=Mask.extract(constraint_time)
+    
+    
+    from iris import Constraint
+    logging.debug('Start calculating COG for '+str(particle))
+    Track=Tracks[Tracks['particle']==particle]
+    constraint_time=Constraint(time=lambda cell: Track.head(1)['time'].as_matrix()[0] <= cell <= Track.tail(1)['time'].as_matrix()[0])
+    M_total_i=M_total.extract(constraint_time)
+    M_liquid_i=M_liquid.extract(constraint_time)
+    M_frozen_i=M_frozen.extract(constraint_time)
+    Mask_i=Mask.extract(constraint_time)
 
-                        savedir_cell=os.path.join(savedir,'cells',str(int(particle)))
-                        os.makedirs(savedir_cell,exist_ok=True)
-                        savefile_COG_total_i=os.path.join(savedir_cell,'COG_total'+'_'+str(int(particle))+'.h5')
-                        savefile_COG_liquid_i=os.path.join(savedir_cell,'COG_liquid'+'_'+str(int(particle))+'.h5')
-                        savefile_COG_frozen_i=os.path.join(savedir_cell,'COG_frozen'+'_'+str(int(particle))+'.h5')
-                        
-                        Tracks_COG_total_i=calculate_cog(Track,M_total_i,Mask_i)
-#                        Tracks_COG_total_list.append(Tracks_COG_total_i)
-                        logging.debug('COG total loaded for ' +str(particle))
-                        
-                        Tracks_COG_liquid_i=calculate_cog(Track,M_liquid_i,Mask_i)
-#                        Tracks_COG_liquid_list.append(Tracks_COG_liquid_i)
-                        logging.debug('COG liquid loaded for ' +str(particle))
-                        Tracks_COG_frozen_i=calculate_cog(Track,M_frozen_i,Mask_i)
-#                        Tracks_COG_frozen_list.append(Tracks_COG_frozen_i)
-                        logging.debug('COG frozen loaded for ' +str(particle))
-                        
-                        Tracks_COG_total_i.to_hdf(savefile_COG_total_i,'table')
-                        Tracks_COG_liquid_i.to_hdf(savefile_COG_liquid_i,'table')
-                        Tracks_COG_frozen_i.to_hdf(savefile_COG_frozen_i,'table')
-                        logging.debug('individual COG calculated and saved to '+ savedir_cell)
+    savedir_cell=os.path.join(savedir,'cells',str(int(particle)))
+    os.makedirs(savedir_cell,exist_ok=True)
+    savefile_COG_total_i=os.path.join(savedir_cell,'COG_total'+'_'+str(int(particle))+'.h5')
+    savefile_COG_liquid_i=os.path.join(savedir_cell,'COG_liquid'+'_'+str(int(particle))+'.h5')
+    savefile_COG_frozen_i=os.path.join(savedir_cell,'COG_frozen'+'_'+str(int(particle))+'.h5')
+    
+    Tracks_COG_total_i=calculate_cog(Track,M_total_i,Mask_i)
+#   Tracks_COG_total_list.append(Tracks_COG_total_i)
+    logging.debug('COG total loaded for ' +str(particle))
+    
+    Tracks_COG_liquid_i=calculate_cog(Track,M_liquid_i,Mask_i)
+#   Tracks_COG_liquid_list.append(Tracks_COG_liquid_i)
+    logging.debug('COG liquid loaded for ' +str(particle))
+    Tracks_COG_frozen_i=calculate_cog(Track,M_frozen_i,Mask_i)
+#   Tracks_COG_frozen_list.append(Tracks_COG_frozen_i)
+    logging.debug('COG frozen loaded for ' +str(particle))
+    
+    Tracks_COG_total_i.to_hdf(savefile_COG_total_i,'table')
+    Tracks_COG_liquid_i.to_hdf(savefile_COG_liquid_i,'table')
+    Tracks_COG_frozen_i.to_hdf(savefile_COG_frozen_i,'table')
+    logging.debug('individual COG calculated and saved to '+ savedir_cell)
