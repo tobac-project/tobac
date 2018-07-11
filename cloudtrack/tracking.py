@@ -137,11 +137,14 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',
                                     extrapolate=extrapolate,frame_max=field_in.shape[0],
                                     hdim_1_max=field_in.shape[1],hdim_2_max=field_in.shape[2])
     # add coorinates from input fields to output trajectories (time,dimensions)
+    logging.debug('start adding coordinates to trajectories')
     trajectories_filtered=add_coordinates(trajectories_filtered,field_in)
     # add time coordinate relative to cell initiation:
+    logging.debug('start adding cell time to trajectories')
     trajectories_filtered=add_cell_time(trajectories_filtered)
 
     # add coordinate to raw features identified:
+    logging.debug('start adding coordinates to detected features')
     features_identified=add_coordinates(features,field_in)
 
     logging.debug('Finished tracking')
@@ -151,7 +154,7 @@ def feature_detection_trackpy(field_in,diameter,dxy,target='maximum'):
     from trackpy import locate
     diameter_pix=round(int(diameter/dxy)/2)*2+1
     
-    logging.debug('start feature detection based on trackpy functions')
+    logging.debug('start feature detection based on trackpy function')
 
     # set invert to True when tracking minima, False when tracking maxima
     if target=='maximum':
@@ -204,7 +207,7 @@ def feature_detection_blob(field_in,threshold,dxy,target='maximum'):
     from skimage import filters, measure
     from iris.analysis import MIN,MAX
 
-    logging.debug('start feature detection based thresholds')
+    logging.debug('start feature detection based on thresholds')
 
     # locate features for each timestep and then combine:
     list_features=[]
@@ -410,23 +413,31 @@ def add_coordinates(t,variable_cube):
     '''
     from scipy.interpolate import interp2d, interp1d
 
-    logging.debug('start adding coordinates from cube to tracking output')
+    logging.debug('start adding coordinates from cube')
 
     # pull time as datetime object and timestr from input data and add it to DataFrame:    
     t['time']=None
     t['timestr']=None
     
+    
+    logging.debug('adding time coordinate')
+
     time_in=variable_cube.coord('time')
+    time_in_datetime=time_in.units.num2date(time_in.points)
+    time_in_datestr=time_in_datetime.strftime('%Y-%m-%d %H:%M:%S')
 
     for i, row in t.iterrows():
-        t.loc[i,'time']=time_in.units.num2date(time_in[int(row['frame'])].points[0])
-        t.loc[i,'timestr']=time_in.units.num2date(time_in[int(row['frame'])].points[0]).strftime('%Y-%m-%d %H:%M:%S')
+#        logging.debug('adding time coordinate for row '+str(i))
+        t.loc[i,'time']=time_in_datetime[int(row['frame'])]
+        t.loc[i,'timestr']=time_in_datestr[int(row['frame'])]
 
 
     # Get list of all coordinates in input cube except for time (already treated):
     coord_names=[coord.name() for coord in  variable_cube.coords()]
     coord_names.remove('time')
     
+    logging.debug('time coordinate added')
+
     # chose right dimension for horizontal axis based on time dimension:    
     ndim_time=variable_cube.coord_dims('time')[0]
     if ndim_time==0:
@@ -445,7 +456,7 @@ def add_coordinates(t,variable_cube):
 
     # loop over coordinates in input data:
     for coord in coord_names:
-        logging.debug('coord: '+ coord)
+        logging.debug('adding coord: '+ coord)
         # interpolate 2D coordinates:
         if variable_cube.coord(coord).ndim==1:
 
@@ -510,5 +521,7 @@ def add_coordinates(t,variable_cube):
                 f=interp2d(dimvec_1,dimvec_2,variable_cube[:,:,0].coord(coord).points)
                 for i, row in t.iterrows():
                     t.loc[i,coord]=float(f(row['hdim_1'],row['hdim_2']))
+        logging.debug('added coord: '+ coord)
+
     return t
 
