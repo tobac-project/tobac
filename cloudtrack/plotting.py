@@ -150,23 +150,25 @@ def plot_mask_cell_track_follow(particle,track, cog, features, mask_total,
         fig1, ax1 = plt.subplots(ncols=1, nrows=1, figsize=(10/2.54, 10/2.54))
         fig1.subplots_adjust(left=0.2, bottom=0.15, right=0.85, top=0.85)
         
-        datestring = row['time'].strftime('%Y-%m-%d %H:%M:%S')
+        datestring_stamp = row['time'].strftime('%Y-%m-%d %H:%M:%S')
+        datestring_file = row['time'].strftime('%Y-%m-%d_%H%M%S')
 
         ax1=plot_mask_cell_individual_follow(particle_i=particle,track=track_i, cog=cog_i,features=features_i,
                                        mask_total=mask_total_i,
                                        field_1=field_1_i, field_2=field_2_i,
                                        field_1_label=field_1_label, field_2_label=field_2_label,
                                        width=width,
-                                       axes=ax1,**kwargs)
+                                       axes=ax1,title=datestring_stamp,
+                                       **kwargs)
                
         out_dir = os.path.join(plotdir, name)
         os.makedirs(out_dir, exist_ok=True)
         if 'png' in file_format:
-            savepath_png = os.path.join(out_dir, name  + '_' + datestring + '.png')
+            savepath_png = os.path.join(out_dir, name  + '_' + datestring_file + '.png')
             fig1.savefig(savepath_png, dpi=600)
             logging.debug('field_1 field_2 Mask plot saved to ' + savepath_png)
         if 'pdf' in file_format:
-            savepath_pdf = os.path.join(out_dir, name  + '_' + datestring + '.pdf')
+            savepath_pdf = os.path.join(out_dir, name  + '_' + datestring_file + '.pdf')
             fig1.savefig(savepath_pdf, dpi=600)
             logging.debug('field_1 field_2 Mask plot saved to ' + savepath_pdf)
         plt.close()
@@ -180,7 +182,8 @@ def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
                                axes=plt.gca(),
                                vmin_field_1=0,vmax_field_1=50,levels_field_1=None,
                                contour_labels=False,
-                               vmin_field_2=0,vmax_field_2=100,levels_field_2=None
+                               vmin_field_2=0,vmax_field_2=100,levels_field_2=None,
+                               title=None
                                ): 
     '''Make individual plot for cell centred around cell and with one background field as filling and one background field as contrours
     Input:
@@ -257,7 +260,10 @@ def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
         
         #Create surface projection of mask for the respective cell and plot it in the right color
         z_coord = 'model_level_number'
-        mask_total_i_surface = mask_particle_surface(mask_total, particle, masked=False, z_coord=z_coord)
+        if len(mask_total.shape)==4: 
+            mask_total_i_surface = mask_particle_surface(mask_total, particle, masked=False, z_coord=z_coord)
+        elif len(mask_total.shape)==3:            
+            mask_total_i_surface=mask_total
         axes.contour((mask_total_i_surface.coord('projection_x_coordinate').points-x_pos)/1000,
                      (mask_total_i_surface.coord('projection_y_coordinate').points-y_pos)/1000,
                      mask_total_i_surface.data, 
@@ -290,6 +296,7 @@ def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
     axes.set_ylim([-1*width/1000, width/1000])
     axes.xaxis.set_label_position('top') 
     axes.xaxis.set_ticks_position('top')
+    axes.set_title(title)
  
     return axes
 
@@ -356,7 +363,8 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
         fig1, ax1 = plt.subplots(ncols=1, nrows=1, figsize=(10/2.54, 10/2.54))
         fig1.subplots_adjust(left=0.2, bottom=0.15, right=0.85, top=0.85)
         
-        datestring = row['time'].strftime('%Y-%m-%d %H:%M:%S')
+        datestring_stamp = row['time'].strftime('%Y-%m-%d %H:%M:%S')
+        datestring_file = row['time'].strftime('%Y-%m-%d_%H%M%S')
 
         ax1=plot_mask_cell_individual_static(particle_i=particle,
                                              track=track_i, cog=cog_i,features=features_i, 
@@ -364,16 +372,16 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
                                              field_1=field_1_i, field_2=field_2_i,
                                              field_1_label=field_1_label, field_2_label=field_2_label,
                                              xlim=[x_min/1000,x_max/1000],ylim=[y_min/1000,y_max/1000],
-                                             axes=ax1,**kwargs)
-               
+                                             axes=ax1,title=datestring_stamp,**kwargs)
+        
         out_dir = os.path.join(plotdir, name)
         os.makedirs(out_dir, exist_ok=True)
         if 'png' in file_format:
-            savepath_png = os.path.join(out_dir, name  + '_' + datestring + '.png')
+            savepath_png = os.path.join(out_dir, name  + '_' + datestring_file + '.png')
             fig1.savefig(savepath_png, dpi=600)
             logging.debug('Mask static plot saved to ' + savepath_png)
         if 'pdf' in file_format:
-            savepath_pdf = os.path.join(out_dir, name  + '_' + datestring + '.pdf')
+            savepath_pdf = os.path.join(out_dir, name  + '_' + datestring_file + '.pdf')
             fig1.savefig(savepath_pdf, dpi=600)
             logging.debug('Mask static plot saved to ' + savepath_pdf)
         plt.close()
@@ -387,7 +395,8 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
                                axes=plt.gca(),xlim=None,ylim=None,
                                vmin_field_1=0,vmax_field_1=50,levels_field_1=None,
                                contour_labels=False,
-                               vmin_field_2=0,vmax_field_2=100,levels_field_2=None
+                               vmin_field_2=0,vmax_field_2=100,levels_field_2=None,
+                               title=None
                                ):  
     '''Make plots for cell in fixed frame and with one background field as filling and one background field as contrours
     Input:
@@ -463,7 +472,10 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
         
         #Create surface projection of mask for the respective cell and plot it in the right color
         z_coord = 'model_level_number'
-        mask_total_i_surface = mask_particle_surface(mask_total, particle, masked=False, z_coord=z_coord)
+        if len(mask_total.shape)==4: 
+            mask_total_i_surface = mask_particle_surface(mask_total, particle, masked=False, z_coord=z_coord)
+        elif len(mask_total.shape)==3:            
+            mask_total_i_surface=mask_total
         axes.contour(mask_total_i_surface.coord('projection_x_coordinate').points/1000,
                      mask_total_i_surface.coord('projection_y_coordinate').points/1000,
                      mask_total_i_surface.data, 
@@ -495,5 +507,6 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
     axes.set_ylim(ylim)
     axes.xaxis.set_label_position('top') 
     axes.xaxis.set_ticks_position('top')
- 
+    axes.set_title(title)
+
     return axes
