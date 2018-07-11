@@ -39,18 +39,19 @@ def watershedding_3D(track,field_in,threshold=3e-3,target='maximum',level=None,c
     # If none, use all levels (later reduced to the ones fulfilling the theshold conditions)
     if level==None:
         level=slice(None)
-        
-    watershed_out=copy.deepcopy(field_in)
+    
+    field=copy.deepcopy(field_in)
+    watershed_out=copy.deepcopy(field)
     watershed_out.rename('watershedding_output_mask')
     watershed_out.data[:]=0
     watershed_out.units=1
-    cooridinates=field_in.coords(dim_coords=True)
-    maximum_value=field_in.collapsed(cooridinates,MAX).data
-    minimum_value=field_in.collapsed(cooridinates,MIN).data
+    cooridinates=field.coords(dim_coords=True)
+    maximum_value=field.collapsed(cooridinates,MAX).data
+    minimum_value=field.collapsed(cooridinates,MIN).data
     
     range_value=maximum_value-minimum_value
     track['ncells']=0
-    field_time=field_in.slices_over('time')
+    field_time=field.slices_over('time')
     for i,field_i in enumerate(field_time):
         data_i=field_i.core_data()
         time_i=field_i.coord('time').units.num2date(field_i.coord('time').points[0])
@@ -130,18 +131,19 @@ def watershedding_2D(track,field_in,threshold=0,target='maximum',compactness=0,m
 
     logging.info('Start wateshedding 2D')
 
-    watershed_out=copy.deepcopy(field_in)
+    field=copy.deepcopy(field_in)
+    watershed_out=copy.deepcopy(field)
     watershed_out.rename('watershedding_output_mask')
     watershed_out.data[:]=0
     watershed_out.units=1
-    cooridinates=field_in.coords(dim_coords=True)
-    maximum_value=field_in.collapsed(cooridinates,MAX).data
-    minimum_value=field_in.collapsed(cooridinates,MIN).data
+    cooridinates=field.coords(dim_coords=True)
+    maximum_value=field.collapsed(cooridinates,MAX).data
+    minimum_value=field.collapsed(cooridinates,MIN).data
     range_value=maximum_value-minimum_value
 
     track['ncells']=0
 
-    field_time=field_in.slices_over('time')
+    field_time=field.slices_over('time')
     for i,field_i in enumerate(field_time):
         data_i=field_i.core_data()
         time_i=field_i.coord('time').units.num2date(field_i.coord('time').points[0])
