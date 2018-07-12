@@ -298,7 +298,7 @@ def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
     axes.set_ylim([-1*width/1000, width/1000])
     axes.xaxis.set_label_position('top') 
     axes.xaxis.set_ticks_position('top')
-    axes.set_title(title)
+    axes.set_title(title,pad=20)
  
     return axes
 
@@ -475,9 +475,9 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
         
         #Create surface projection of mask for the respective cell and plot it in the right color
         z_coord = 'model_level_number'
-        if len(mask_total.shape)==4: 
+        if len(mask_total.shape)==3: 
             mask_total_i_surface = mask_particle_surface(mask_total, particle, masked=False, z_coord=z_coord)
-        elif len(mask_total.shape)==3:            
+        elif len(mask_total.shape)==2:            
             mask_total_i_surface=mask_total
         axes.contour(mask_total_i_surface.coord('projection_x_coordinate').points/1000,
                      mask_total_i_surface.coord('projection_y_coordinate').points/1000,
@@ -510,6 +510,6 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
     axes.set_ylim(ylim)
     axes.xaxis.set_label_position('top') 
     axes.xaxis.set_ticks_position('top')
-    axes.set_title(title)
+    axes.set_title(title,pad=20)
 
     return axes
