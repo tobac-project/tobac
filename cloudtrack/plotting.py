@@ -132,7 +132,8 @@ def plot_mask_cell_track_follow(particle,track, cog, features, mask_total,
         cells=list(unique(mask_total_i.core_data()))
         if particle not in cells:
             cells.append(particle)
-        cells.remove(0)
+        if 0 in cells:    
+            cells.remove(0)
         track_i=track[track['particle'].isin(cells)]
         track_i=track_i[track_i['time']==row['time']]
         if cog is None:
@@ -260,9 +261,10 @@ def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
         
         #Create surface projection of mask for the respective cell and plot it in the right color
         z_coord = 'model_level_number'
-        if len(mask_total.shape)==4: 
+        print(len(mask_total.shape))
+        if len(mask_total.shape)==3: 
             mask_total_i_surface = mask_particle_surface(mask_total, particle, masked=False, z_coord=z_coord)
-        elif len(mask_total.shape)==3:            
+        elif len(mask_total.shape)==2:            
             mask_total_i_surface=mask_total
         axes.contour((mask_total_i_surface.coord('projection_x_coordinate').points-x_pos)/1000,
                      (mask_total_i_surface.coord('projection_y_coordinate').points-y_pos)/1000,
@@ -345,7 +347,8 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
         cells=list(set( cells_mask + cells_track ))
         if particle not in cells:
             cells.append(particle)
-        cells.remove(0)
+        if 0 in cells:    
+            cells.remove(0)
         track_i=track_i[track_i['particle'].isin(cells)]
         
         if cog is None:
