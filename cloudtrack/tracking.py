@@ -424,12 +424,11 @@ def add_coordinates(t,variable_cube):
 
     time_in=variable_cube.coord('time')
     time_in_datetime=time_in.units.num2date(time_in.points)
-    time_in_datestr=time_in_datetime.strftime('%Y-%m-%d %H:%M:%S')
-
+    
     for i, row in t.iterrows():
 #        logging.debug('adding time coordinate for row '+str(i))
         t.loc[i,'time']=time_in_datetime[int(row['frame'])]
-        t.loc[i,'timestr']=time_in_datestr[int(row['frame'])]
+        t.loc[i,'timestr']=time_in_datetime[int(row['frame'])].strftime('%Y-%m-%d %H:%M:%S')
 
 
     # Get list of all coordinates in input cube except for time (already treated):
