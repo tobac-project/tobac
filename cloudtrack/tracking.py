@@ -80,13 +80,13 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',
     ### Start Tracking
     # Feature detection:
     if method_detection=="trackpy":
-        features=feature_detection_trackpy(field_in,diameter=diameter,dxy=dxy,target='maximum')
+        features=feature_detection_trackpy(field_in,diameter=diameter,dxy=dxy,target=target)
         features_filtered = features.drop(features[features['num'] < min_num].index)
 
         features_filtered = deepcopy(features)
 
     elif method_detection == "blob":
-        features=feature_detection_blob(field_in,threshold=threshold,dxy=dxy,target='maximum')
+        features=feature_detection_blob(field_in,threshold=threshold,dxy=dxy,target=target)
         features_filtered = features.drop(features[features['num'] < min_num].index)
 
     # Link the features in the individual frames to trajectories:
@@ -150,6 +150,7 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',
     logging.debug('Finished tracking')
 
     return trajectories_filtered, features_identified, trajectories_filtered_unfilled
+
 def feature_detection_trackpy(field_in,diameter,dxy,target='maximum'):
     from trackpy import locate
     diameter_pix=round(int(diameter/dxy)/2)*2+1
