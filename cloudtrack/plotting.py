@@ -60,7 +60,7 @@ def plot_tracks_mask_field(track,field,Mask,axes=None,axis_extent=None,
     axes.set_extent(axis_extent)
     
     plot_field=iplt.contourf(field,coords=['longitude','latitude'],
-                        levels=np.linspace(vmin,vmax,num=n_levels),axes=axes,cmap='viridis',vmin=vmin,vmax=vmax)
+                        levels=np.linspace(vmin,vmax,num=n_levels),axes=axes,cmap='viridis',vmin=vmin,vmax=vmax,extend='both')
     
     colors_mask=['darkred','orange','crimson','red','darkorange']
     
