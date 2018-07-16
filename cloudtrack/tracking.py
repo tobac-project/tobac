@@ -89,6 +89,9 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',
         features=feature_detection_threshold(field_in,threshold=threshold,dxy=dxy,target=target)
         features_filtered = features.drop(features[features['num'] < min_num].index)
 
+    else:
+        raise ValueError('method_detection unknown, has to be either trackpy or threshold')
+
     # Link the features in the individual frames to trajectories:
     trajectories_unfiltered=trajectory_linking(features_filtered,v_max=v_max,dt=dt,dxy=dxy,memory=memory,
                                                subnetwork_size=subnetwork_size,
