@@ -120,7 +120,24 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',
         
         # Restrict output and further treatment to relevant columns:
         trajectories_filtered['mass']=trajectories_filtered['mass']*(dxy*dxy)
-        trajectories_filtered['size']=trajectories_filtered['size']*(dxy)
+        trajectories_filtered['size']=trajectorie2018-07-16 14:59:09,972 - root - DEBUG - Finished feature detection for 2013-06-19_18:15:21
+2018-07-16 14:59:09,974 - root - DEBUG - Finished feature detection for 2013-06-19_18:15:21
+2018-07-16 14:59:09,976 - root - DEBUG - Finished feature detection for 2013-06-19_18:15:21
+2018-07-16 14:59:09,978 - root - DEBUG - Finished feature detection for 2013-06-19_18:15:21
+2018-07-16 14:59:09,980 - root - DEBUG - Finished feature detection for 2013-06-19_18:15:21
+2018-07-16 14:59:09,982 - root - DEBUG - Finished feature detection for 2013-06-19_18:15:21
+2018-07-16 14:59:09,984 - root - DEBUG - Finished feature detection for 2013-06-19_18:15:21
+2018-07-16 14:59:09,985 - root - DEBUG - Finished feature detection for 2013-06-19_18:15:21
+2018-07-16 14:59:09,988 - root - DEBUG - Finished feature detection for 2013-06-19_18:15:21
+2018-07-16 14:59:09,990 - root - DEBUG - Finished feature detection for 2013-06-19_18:15:21
+2018-07-16 14:59:09,992 - root - DEBUG - Finished feature detection for 2013-06-19_18:15:21
+2018-07-16 14:59:09,993 - root - DEBUG - Finished feature detection for 2013-06-19_18:15:21
+2018-07-16 14:59:09,995 - root - DEBUG - Finished feature detection for 2013-06-19_18:15:21
+2018-07-16 14:59:09,997 - root - DEBUG - Finished feature detection for 2013-06-19_18:15:21
+2018-07-16 14:59:09,999 - root - DEBUG - Finished feature detection for 2013-06-19_18:15:21
+2018-07-16 14:59:10,001 - root - DEBUG - Finished feature detection for 2013-06-19_18:15:21
+2018-07-16 14:59:10,003 - root - DEBUG - Finished feature detection for 2013-06-19_18:15:21
+s_filtered['size']*(dxy)
     
         if not parameters_features:
             trajectories_filtered=trajectories_filtered.drop(['mass','signal','size','ecc'],axis=1)
@@ -260,7 +277,7 @@ def feature_detection_threshold(field_in,threshold,dxy,target='maximum'):
             data_frame={'frame': int(i),'hdim_1': hdim1_index,'hdim_2':hdim2_index,'num':counts[cur_idx]}
             f_i=pd.DataFrame(data=data_frame,index=[i])
             list_features.append(f_i)
-            logging.debug('Finished feature detection for '+time_i.strftime('%Y-%m-%d_%H:%M:%S'))
+        logging.debug('Finished feature detection for '+time_i.strftime('%Y-%m-%d_%H:%M:%S'))
 
             
     logging.debug('feature detection: merging DataFrames')
