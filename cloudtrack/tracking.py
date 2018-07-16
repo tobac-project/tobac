@@ -216,7 +216,7 @@ def feature_detection_threshold(field_in,threshold,dxy,target='maximum'):
     # loop over timesteps for feature identification:
     data_time=field_in.slices_over('time')
     for i,data_i in enumerate(data_time):
-        logging.debug('feature detection for timestep '+ str(i))
+        time_i=data_i.coord('time').units.num2date(data_i.coord('time').points[0])
         track_data = data_i.data
         # if looking for minima, set values above threshold to 0 and scale by data minimum:
         if target is 'maximum':
@@ -231,7 +231,6 @@ def feature_detection_threshold(field_in,threshold,dxy,target='maximum'):
         # detect individual regions, label  and count the number of pixels included:
         blobs_labels = measure.label(blobs, background=0)
         values, count = np.unique(blobs_labels[:,:].ravel(), return_counts=True)
-        logging.debug('values '+ str(values))
 
         counts=dict(zip(values, count))
         for j in np.arange(1,len(values)):        
@@ -256,6 +255,8 @@ def feature_detection_threshold(field_in,threshold,dxy,target='maximum'):
             data_frame={'frame': int(i),'hdim_1': hdim1_index,'hdim_2':hdim2_index,'num':counts[cur_idx]}
             f_i=pd.DataFrame(data=data_frame,index=[i])
             list_features.append(f_i)
+            logging.debug('Finished feature detection for '+time_i.strftime('%Y-%m-%d_%H:%M:%S'))
+
             
     logging.debug('feature detection: merging DataFrames')
     # concatenate features from different timesteps into one pandas DataFrame, if not features are detected raise error
