@@ -2,17 +2,18 @@ import numpy as np
 import pandas as pd
 
 import logging
-def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',
-              v_max=10,memory=3,stubs=5,
-              min_mass=0, min_signal=0,
-              min_num=0,
-              order=1,extrapolate=0,
-              parameters_features=False,
-              cell_number_start=1,
-              subnetwork_size=None,
+def maketrack(field_in,
+              grid_spacing=None,time_spacing=None,
+              target='maximum',              
+              v_max=10,memory=3,stubs=5,              
+              order=1,extrapolate=0,              
               method_detection="trackpy",
-              method_linking="random",
-              threshold=1):
+              diameter=5000,min_mass=0, min_signal=0,parameters_features=False,
+              threshold=1, min_num=0,              
+              method_linking="random",            
+              cell_number_start=1,              
+              subnetwork_size=None              
+              ):
     """
     Function using watershedding to determine cloud volumes associated with tracked updrafts
     
@@ -21,6 +22,8 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',
                   2D input field tracking is performed on
     grid_spacing: float
                   grid spacing in input data (m)
+    time_spacing: float
+                  time resolution of input data (s)
     diameter:     float
                   Assumed diameter of tracked objects (m)
     target        string
@@ -60,9 +63,10 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',
     
     ### Prepare Tracking
 
+    # set horizontal grid spacing of input data
     # If cartesian x and y corrdinates are present, use these to determine dxy (vertical grid spacing used to transfer pixel distances to real distances):
     coord_names=[coord.name() for coord in  field_in.coords()]
-    if ('projection_x_coordinate' in coord_names and 'projection_y_coordinate' in coord_names):
+    if (('projection_x_coordinate' in coord_names and 'projection_y_coordinate' in coord_names) and  (grid_spacing is None)):
         x_coord=deepcopy(field_in.coord('projection_x_coordinate'))
         x_coord.convert_units('metre')
         dx=np.diff(field_in.coord('projection_y_coordinate')[0:2].points)[0]
@@ -75,10 +79,15 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',
     else:
         ValueError('no information about grid spacing, need either input cube with projection_x_coord and projection_y_coord or keyword argument grid_spacing')
     
-    # get time resolution of input data from input cube:
-    time_coord=field_in.coord('time')
-    dt=(time_coord.units.num2date(time_coord.points[1])-time_coord.units.num2date(time_coord.points[0])).seconds
-
+    # set horizontal grid spacing of input data
+    if (time_spacing is None):    
+        # get time resolution of input data from first to steps of input cube:
+        time_coord=field_in.coord('time')
+        dt=(time_coord.units.num2date(time_coord.points[1])-time_coord.units.num2date(time_coord.points[0])).seconds
+    elif (time_spacing is not None):
+        # use value of time_spacing for dt:
+        dt=time_spacing
+        
     ### Start Tracking
     # Feature detection:
     if method_detection=="trackpy":
