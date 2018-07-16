@@ -1,28 +1,41 @@
 import matplotlib.pyplot as plt
 import logging
 
-def plot_tracks_mask_field_loop(track,field,Mask,axes=None,name=None,plot_dir='./',figsize=(10,10),**kwargs):
+def plot_tracks_mask_field_loop(track,field,mask,features,axes=None,name=None,plot_dir='./',figsize=(10,10),**kwargs):
     import matplotlib.pyplot as plt
     import cartopy.crs as ccrs
     import os
+    from iris import Constraint
     os.makedirs(plot_dir,exist_ok=True)
     time=field.coord('time')
     if name is None:
         name=field.name()
-    for i in range(len(time.points)):
+    for time_i in time.points:
+        datetime_i=time.units.num2date(time_i)
+        constraint_time = Constraint(time=datetime_i)
         fig1,ax1=plt.subplots(ncols=1, nrows=1,figsize=figsize, subplot_kw={'projection': ccrs.PlateCarree()})
-        datestring_file=time.units.num2date(time.points[i]).strftime('%Y-%m-%d_%H:%M:%S')
-        ax1=plot_tracks_mask_field(track[track['frame']==i],field[i],Mask[i],axes=ax1,**kwargs)
+        datestring_file=datetime_i.strftime('%Y-%m-%d_%H:%M:%S')
+        field_i=field.extract(constraint_time)
+        mask_i=mask.extract(constraint_time)
+        track_i=track[track['time']==datetime_i]
+        features_i=features[features['time']==datetime_i]        
+        ax1=plot_tracks_mask_field(track=track_i,field=field_i,mask=mask_i,features=features_i,
+                                   axes=ax1,**kwargs)
         savepath_png=os.path.join(plot_dir,name+'_'+datestring_file+'.png')
         fig1.savefig(savepath_png,dpi=600)
-        logging.debug('Figure '+str(i) + ' plotted to ' + str(savepath_png))
+        logging.debug('Figure plotted to ' + str(savepath_png))
 
         plt.close()
     plt.close() 
 
-def plot_tracks_mask_field(track,field,Mask,axes=None,axis_extent=None,
-                           plot_outline=True,plot_marker=True,marker_track='x',plot_number=True,
-                           vmin=None,vmax=None,n_levels=50,orientation_colorbar='horizontal',pad_colorbar=0.2):
+def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
+                           plot_outline=True,
+                           plot_marker=True,marker_track='x',markersize_track=4,
+                           plot_number=True,
+                           plot_features=False,marker_feature=None,markersize_feature=None,
+                           vmin=None,vmax=None,n_levels=50,
+                           cmap='viridis',extend='neither',
+                           orientation_colorbar='horizontal',pad_colorbar=0.2):
     import cartopy
     from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
     import iris.plot as iplt
@@ -56,47 +69,66 @@ def plot_tracks_mask_field(track,field,Mask,axes=None,axis_extent=None,
     axes.set_xlabel('longitude')
     axes.set_ylabel('latitude')  
 
+    # Plot the background field
+    if np.any(~np.isnan(field.data)): # check if field to plot is not only nan, which causes error:
 
-    axes.set_extent(axis_extent)
+        plot_field=iplt.contourf(field,coords=['longitude','latitude'],
+                            levels=np.linspace(vmin,vmax,num=n_levels),extend=extend,
+                            axes=axes,
+                            cmap=cmap,vmin=vmin,vmax=vmax
+                            )
+        # greate colorbar for background field:
+        cbar=plt.colorbar(plot_field,orientation=orientation_colorbar, pad=pad_colorbar)
+        cbar.ax.set_xlabel(field.name()+ '('+field.units.symbol +')') 
+        tick_locator = ticker.MaxNLocator(nbins=5)
+        cbar.locator = tick_locator
+        cbar.update_ticks()
     
-    plot_field=iplt.contourf(field,coords=['longitude','latitude'],
-                        levels=np.linspace(vmin,vmax,num=n_levels),axes=axes,cmap='viridis',vmin=vmin,vmax=vmax,extend='both')
-    
+
     colors_mask=['darkred','orange','crimson','red','darkorange']
     
+    #if marker_feature is not explicitly given, set it to marker_track (will then be overwritten by the coloured markers)
+    if marker_feature is None:
+        maker_feature=marker_track
+    if markersize_feature is None:
+        makersize_feature=markersize_track
+
+    #Plot the identified features by looping over rows of DataFrame:
+    if plot_features:
+        for i_row,row in features.iterrows():
+            axes.plot(row['longitude'],row['latitude'],
+                      color='grey',marker=maker_feature,markersize=makersize_feature)
+
+    #Plot tracked features by looping over rows of Dataframe
     for i_row,row in track.iterrows():
         if 'particle' in row:
             particle=row['particle']
             color=colors_mask[int(particle%len(colors_mask))]
         
             if plot_number:        
-                particle_string='     '+str(int(row['particle']))
+                particle_string='  '+str(int(row['particle']))
                 axes.text(row['longitude'],row['latitude'],particle_string,color=color,fontsize=6)
             if plot_outline:
-                Mask_i=None
-                if Mask.ndim==2:
-                    Mask_i=mask_particle(Mask,particle,masked=False)
-                elif Mask.ndim==3:
-                    Mask_i=mask_particle_surface(Mask,particle,masked=False,z_coord='model_level_number')
+                mask_i=None
+                # if mask is 3D, create surface projection, if mask is 2D keep the mask
+                if mask.ndim==2:
+                    mask_i=mask_particle(mask,particle,masked=False)
+                elif mask.ndim==3:
+                    mask_i=mask_particle_surface(mask,particle,masked=False,z_coord='model_level_number')
                 else:
                     raise ValueError('mask has shape that cannot be understood')
-                    
-                iplt.contour(Mask_i,coords=['longitude','latitude'],
+                # plot countour lines around the edges of the mask    
+                iplt.contour(mask_i,coords=['longitude','latitude'],
                              levels=[0,particle],colors=color,axes=axes)
-
         else:
-            color=colors_mask[0]
+            color='grey'
         
         if plot_marker:
-            axes.plot(row['longitude'],row['latitude'],color=color,marker=marker_track)
+            axes.plot(row['longitude'],row['latitude'],
+                      color=color,marker=marker_track,markersize=markersize_track)
 
+    axes.set_extent(axis_extent)
 
-    cbar=plt.colorbar(plot_field,orientation=orientation_colorbar, pad=pad_colorbar)
-    cbar.ax.set_xlabel(field.name()+ '('+field.units.symbol +')') 
-    tick_locator = ticker.MaxNLocator(nbins=5)
-    cbar.locator = tick_locator
-    cbar.update_ticks()
-    
     return axes
 
 def plot_mask_cell_track_follow(particle,track, cog, features, mask_total,
