@@ -27,10 +27,9 @@ def watershedding_3D(track,field_in,threshold=3e-3,target='maximum',level=None,c
     """
     
     import numpy as np
-    import copy
+    from copy import deepcopy
     from skimage.morphology import watershed
 #    from skimage.segmentation import random_walker
-    from iris.analysis import MIN,MAX
     import logging
 
     logging.info('Start wateshedding 3D')
@@ -40,45 +39,34 @@ def watershedding_3D(track,field_in,threshold=3e-3,target='maximum',level=None,c
     if level==None:
         level=slice(None)
     
-    field=copy.deepcopy(field_in)
-    watershed_out=copy.deepcopy(field)
+    field=deepcopy(field_in)
+    watershed_out=deepcopy(field)
     watershed_out.rename('watershedding_output_mask')
     watershed_out.data[:]=0
     watershed_out.units=1
-    cooridinates=field.coords(dim_coords=True)
-    maximum_value=field.collapsed(cooridinates,MAX).data
-    minimum_value=field.collapsed(cooridinates,MIN).data
-    
-    range_value=maximum_value-minimum_value
     track['ncells']=0
     field_time=field.slices_over('time')
     for i,field_i in enumerate(field_time):
-        data_i=field_i.core_data()
-        time_i=field_i.coord('time').units.num2date(field_i.coord('time').points[0])
+        field_i_copy=deepcopy(field_i)
+        data_i=field_i_copy.core_data()
+        time_i=field_i_copy.coord('time').units.num2date(field_i_copy.coord('time').points[0])
         tracks_i=track[track['time']==time_i]
-
+        
+        # mask data outside region above/below threshold and invert data if tracking maxima:
         if target == 'maximum':
             unmasked=data_i>threshold
+            data_i_watershed=-1*data_i
         elif target == 'minimum':
             unmasked=data_i<threshold
+            data_i_watershed=data_i
         else:
+            raise ValueError('unknown type of target')
+
             raise ValueError('unknown type of target')
         markers = np.zeros_like(unmasked).astype(np.int32)
         for index, row in tracks_i.iterrows():
              markers[:,int(row['hdim_1']), int(row['hdim_2'])]=row.particle
         markers[~unmasked]=0
-        maximum_value=np.amax(data_i)
-        minimum_value=np.amin(data_i)
-        range_value=maximum_value-minimum_value
-        if target == 'maximum':
-            data_i_watershed=1500-(data_i-minimum_value)*1000/range_value
-        elif target == 'minimum':
-            data_i_watershed=1500-(maximum_value-data_i)*1000/range_value
-        else:
-            raise ValueError('unknown type of target')
-
-        data_i_watershed[~unmasked]=2000
-        data_i_watershed=data_i_watershed.astype(np.uint32)
         
         if method=='watershed':
             res1 = watershed(data_i_watershed,markers.astype(np.int32), mask=unmasked,compactness=compactness)
@@ -123,52 +111,42 @@ def watershedding_2D(track,field_in,threshold=0,target='maximum',compactness=0,m
 
     
     import numpy as np
-    import copy
+    from copy import deepcopy
     from skimage.morphology import watershed
 #    from skimage.segmentation import random_walker
-    from iris.analysis import MIN,MAX
     import logging
 
     logging.info('Start wateshedding 2D')
 
-    field=copy.deepcopy(field_in)
-    watershed_out=copy.deepcopy(field)
+    field=deepcopy(field_in)
+    watershed_out=deepcopy(field)
     watershed_out.rename('watershedding_output_mask')
     watershed_out.data[:]=0
     watershed_out.units=1
-    cooridinates=field.coords(dim_coords=True)
-    maximum_value=field.collapsed(cooridinates,MAX).data
-    minimum_value=field.collapsed(cooridinates,MIN).data
-    range_value=maximum_value-minimum_value
 
     track['ncells']=0
 
     field_time=field.slices_over('time')
     for i,field_i in enumerate(field_time):
-        data_i=field_i.core_data()
-        time_i=field_i.coord('time').units.num2date(field_i.coord('time').points[0])
+        field_i_copy=deepcopy(field_i)
+        data_i=field_i_copy.core_data()
+        time_i=field_i_copy.coord('time').units.num2date(field_i_copy.coord('time').points[0])
         tracks_i=track[track['time']==time_i]
         
+        # mask data outside region above/below threshold and invert data if tracking maxima:
         if target == 'maximum':
             unmasked=data_i>threshold
+            data_i_watershed=-1*data_i
         elif target == 'minimum':
             unmasked=data_i<threshold
+            data_i_watershed=data_i
         else:
             raise ValueError('unknown type of target')
-        markers = np.zeros_like(unmasked).astype(np.int16)
+        markers = np.zeros_like(unmasked).astype(np.int32)
         for index, row in tracks_i.iterrows():
-            markers[int(row['hdim_2']), int(row['hdim_1'])]=row.particle
+            markers[int(row['hdim_1']), int(row['hdim_2'])]=row.particle
         markers[~unmasked]=0
-        if target == 'maximum':
-            data_i_watershed=1000-(data_i-minimum_value)*1000/range_value
-        elif target == 'minimum':
-            data_i_watershed=1000-(maximum_value-data_i)*1000/range_value
-        else:
-            raise ValueError('unknown type of target')
 
-        data_i_watershed[~unmasked]=2000
-        data_i_watershed=data_i_watershed.astype(np.uint16)
-        
         if method=='watershed':
             res1 = watershed(data_i_watershed,markers.astype(np.int8), mask=unmasked,compactness=compactness)
 #        elif method=='random_walker':
