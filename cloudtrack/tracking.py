@@ -35,6 +35,8 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',
                   Minumum "mass" of tracked object to be reached over its lifetime (not actually a physical mass, integrated maximum vertical velocity in this case so units (m/s*m^2=m^3/s)
     min_signal:   float
                   Minumum signal of tracked object to be reached over its lifetime (related to contrast between objects and background)
+    min_num:      int
+                  Minumum number of cells above threshold in the feature to be tracked
     order:        int
                   order if interpolation spline to fill gaps in tracking(from allowing memory to be larger than 0)
     extrapolate   int
