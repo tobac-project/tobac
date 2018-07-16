@@ -39,7 +39,7 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',
                   order if interpolation spline to fill gaps in tracking(from allowing memory to be larger than 0)
     extrapolate   int
                   number of points to extrapolate individual tracks by
-    method_detection: str('trackpy' or 'blob')
+    method_detection: str('trackpy' or 'threshold')
                       flag choosing method used for feature detection
     method_linking:   str('predicted' or 'random')
                       flag choosing method used for trajectory linking
@@ -85,8 +85,8 @@ def maketrack(field_in,grid_spacing=None,diameter=5000,target='maximum',
 
         features_filtered = deepcopy(features)
 
-    elif method_detection == "blob":
-        features=feature_detection_blob(field_in,threshold=threshold,dxy=dxy,target=target)
+    elif method_detection == "threshold":
+        features=feature_detection_threshold(field_in,threshold=threshold,dxy=dxy,target=target)
         features_filtered = features.drop(features[features['num'] < min_num].index)
 
     # Link the features in the individual frames to trajectories:
@@ -187,7 +187,7 @@ def feature_detection_trackpy(field_in,diameter,dxy,target='maximum'):
 
     return features
 
-def feature_detection_blob(field_in,threshold,dxy,target='maximum'):
+def feature_detection_threshold(field_in,threshold,dxy,target='maximum'):
     ''' Function to perform feature detection based on contiguous regions above/below a threshold
     Input:
     field_in:      iris.cube.Cube
@@ -206,50 +206,61 @@ def feature_detection_blob(field_in,threshold,dxy,target='maximum'):
     '''
     
     from skimage import filters, measure
-    from iris.analysis import MIN,MAX
 
     logging.debug('start feature detection based on thresholds')
+    logging.debug('target: '+str(target))
 
     # locate features for each timestep and then combine:
     list_features=[]
-    
-    # get minimum and maximum data from the entire input field:
-    
-    cooridinates=field_in.coords(dim_coords=True)
-    data_max=field_in.collapsed(cooridinates,MAX).data
-    data_min=field_in.collapsed(cooridinates,MIN).data
-    
-    # loof over timesteps for feature identification:
+        
+    # loop over timesteps for feature identification:
     data_time=field_in.slices_over('time')
     for i,data_i in enumerate(data_time):
         logging.debug('feature detection for timestep '+ str(i))
         track_data = data_i.data
         # if looking for minima, set values above threshold to 0 and scale by data minimum:
         if target is 'maximum':
-            track_data[track_data < threshold] = 0 # only include values greater than threshold        
-            track_data = track_data/data_max # make into -1 to 1 image (for image processing)
-            im = filters.gaussian(track_data, sigma=0.5) #smooth data slightly to create rounded, continuous updrafts
-            blobs = im > im.mean() # Find target regions in image
-            
+            mask=1*(track_data >= threshold)
+            blobs=mask
+
         # if looking for minima, set values above threshold to 0 and scale by data minimum:
-        elif target is 'minimum':
-            track_data[track_data > threshold] = 0 # only include values smaller than threshold
-            track_data = track_data/data_min # make into -1 to 1 image (for image processing)
-            im = filters.gaussian(track_data, sigma=0.5) #smooth data slightly to create rounded, continuous updrafts
-            blobs = im < im.mean() # Find target regions in image
+        elif target is 'minimum':            
+            mask=1*(track_data <= threshold)  # only include values greater than threshold    
+            blobs=mask
+            
         # detect individual regions, label  and count the number of pixels included:
         blobs_labels = measure.label(blobs, background=0)
         values, count = np.unique(blobs_labels[:,:].ravel(), return_counts=True)
+        logging.debug('values '+ str(values))
+
         counts=dict(zip(values, count))
         for j in np.arange(1,len(values)):        
             cur_idx = values[j];
-            [a,b] = np.where(blobs_labels[:,:] == cur_idx)
-            data_frame={'frame': int(i),'hdim_1': np.mean(a),'hdim_2':np.mean(b),'num':counts[cur_idx]}
+            [a,b] = np.nonzero(blobs_labels[:,:] == cur_idx)
+            
+            # get position as geometrical centre of identified region:
+            hdim1_index=np.mean(a)
+            hdim2_index=np.mean(b)
+            
+            #get positin as max/min position inside the identified region:
+#            if target is 'maximum':
+#                index=np.argmax(track_data[blobs_labels[:,:] == cur_idx])
+#                hdim1_index=a[index]
+#                hdim2_index=b[index]
+#                
+#            if target is 'minimum':
+#                index=np.argmin(track_data[blobs_labels[:,:] == cur_idx])
+#                hdim1_index=a[index]
+#                hdim2_index=b[index]
+            
+            data_frame={'frame': int(i),'hdim_1': hdim1_index,'hdim_2':hdim2_index,'num':counts[cur_idx]}
             f_i=pd.DataFrame(data=data_frame,index=[i])
             list_features.append(f_i)
             
     logging.debug('feature detection: merging DataFrames')
-    # concatenate features from different timesteps into one pandas DataFrame:
+    # concatenate features from different timesteps into one pandas DataFrame, if not features are detected raise error
+    if not list_features:
+        raise ValueError('No features detected')
     features=pd.concat(list_features)    
     features=features.reset_index(drop=True)
     
@@ -276,14 +287,13 @@ def trajectory_linking(features,v_max,dt,dxy,memory,subnetwork_size=None,method_
                   number of output timesteps features allowed to vanish for to be still considered tracked
     subnetwork_size int
                     maximim size of subnetwork for linking  
-    method_detection: str('trackpy' or 'blob')
+    method_detection: str('trackpy' or 'threshold')
                       flag choosing method used for feature detection
     method_linking:   str('predicted' or 'random')
                       flag choosing method used for trajectory linking
     """
     # calculate search range based on timestep and grid spacing
     search_range=int(dt*v_max/dxy)
-    print(search_range)
     
     logging.debug('start linking features into trajectories')
     
@@ -304,7 +314,7 @@ def trajectory_linking(features,v_max,dt,dxy,memory,subnetwork_size=None,method_
                               pos_columns=['hdim_2','hdim_1'])
     elif method_linking is 'predicted':
 
-        pred = tp.predict.NearestVelocityPredict()
+        pred = tp.predict.NearestVelocityPredict(span=1)
         trajectories = pred.link_df(features_linking, search_range=search_range, memory=memory,
                                  pos_columns=['hdim_1','hdim_2'],
                                  t_column='frame',
@@ -313,7 +323,9 @@ def trajectory_linking(features,v_max,dt,dxy,memory,subnetwork_size=None,method_
 #                                 copy_features=False, diagnostics=False,
 #                                 hash_size=None, box_size=None, verify_integrity=True,
 #                                 retain_index=False
-                                  )
+                                 )
+    else:
+        raise ValueError('method_linking unknown')
     logging.debug('feature linking completed')
 
     return trajectories
