@@ -46,7 +46,7 @@ def maketrack(field_in,
                   number of points to extrapolate individual tracks by
     method_detection: str('trackpy' or 'threshold')
                       flag choosing method used for feature detection
-    method_linking:   str('predicted' or 'random')
+    method_linking:   str('predict' or 'random')
                       flag choosing method used for trajectory linking
 
     Output
@@ -304,7 +304,7 @@ def trajectory_linking(features,v_max,dt,dxy,memory,subnetwork_size=None,method_
                     maximim size of subnetwork for linking  
     method_detection: str('trackpy' or 'threshold')
                       flag choosing method used for feature detection
-    method_linking:   str('predicted' or 'random')
+    method_linking:   str('predict' or 'random')
                       flag choosing method used for trajectory linking
     """
     # calculate search range based on timestep and grid spacing
@@ -327,7 +327,7 @@ def trajectory_linking(features,v_max,dt,dxy,memory,subnetwork_size=None,method_
                                memory=memory, 
                               t_column='frame',
                               pos_columns=['hdim_2','hdim_1'])
-    elif method_linking is 'predicted':
+    elif method_linking is 'predict':
 
         pred = tp.predict.NearestVelocityPredict(span=1)
         trajectories = pred.link_df(features_linking, search_range=search_range, memory=memory,
