@@ -7,7 +7,8 @@ def maketrack(field_in,
               target='maximum',              
               v_max=10,memory=3,stubs=5,              
               order=1,extrapolate=0,              
-              method_detection="trackpy",
+              method_detection="threshold",
+              position_threshold='center',
               diameter=5000,min_mass=0, min_signal=0,parameters_features=False,
               threshold=1, min_num=0,              
               method_linking="random",            
@@ -46,13 +47,15 @@ def maketrack(field_in,
                   number of points to extrapolate individual tracks by
     method_detection: str('trackpy' or 'threshold')
                       flag choosing method used for feature detection
+    position_threshold: str('extreme', 'weighted' or 'center')
+                      flag choosing method used for the position of the tracked feature
     method_linking:   str('predict' or 'random')
                       flag choosing method used for trajectory linking
 
     Output
     Tracks:      pandas.DataFrame
                  Tracked updrafts, one row per timestep and updraft, includes dimensions 'time','latitude','longitude','projection_x_variable', 'projection_y_variable' based on w cube. 
-                 'x' and 'y' are used for watershedding in next step, not equivalent to actual x and y in the model, rather to the order of data storage in the model output
+                 'hdim_1' and 'hdim_2' are used for watershedding step.
     """
     from copy import deepcopy
     from trackpy import filter_stubs,filter
@@ -201,7 +204,7 @@ def feature_detection_trackpy(field_in,diameter,dxy,target='maximum'):
 
     return features
 
-def feature_detection_threshold(field_in,threshold,dxy,target='maximum'):
+def feature_detection_threshold(field_in,threshold,dxy,target='maximum', position_threshold='center'):
     ''' Function to perform feature detection based on contiguous regions above/below a threshold
     Input:
     field_in:      iris.cube.Cube
@@ -213,6 +216,8 @@ def feature_detection_threshold(field_in,threshold,dxy,target='maximum'):
                    grid spacing of the input data (m)
     target:        str ('minimum' or 'maximum')
                    flag to determine if tracking is targetting minima or maxima in the data
+    position_threshold: str('extreme', 'weighted' or 'center')
+                      flag choosing method used for the position of the tracked feature
 
     Output:
     features:      pandas DataFrame 
@@ -249,23 +254,34 @@ def feature_detection_threshold(field_in,threshold,dxy,target='maximum'):
         counts=dict(zip(values, count))
         for j in np.arange(1,len(values)):        
             cur_idx = values[j];
-            [a,b] = np.nonzero(blobs_labels[:,:] == cur_idx)
+            region=blobs_labels[:,:] == cur_idx
+            [a,b] = np.nonzero(region)
+          
             
-            # get position as geometrical centre of identified region:
-            hdim1_index=np.mean(a)
-            hdim2_index=np.mean(b)
+            if position_threshold=='center':
+                # get position as geometrical centre of identified region:
+                hdim1_index=np.mean(a)
+                hdim2_index=np.mean(b)
             
-            #get positin as max/min position inside the identified region:
-#            if target is 'maximum':
-#                index=np.argmax(track_data[blobs_labels[:,:] == cur_idx])
-#                hdim1_index=a[index]
-#                hdim2_index=b[index]
-#                
-#            if target is 'minimum':
-#                index=np.argmin(track_data[blobs_labels[:,:] == cur_idx])
-#                hdim1_index=a[index]
-#                hdim2_index=b[index]
-            
+            elif position_threshold=='extreme':
+                #get positin as max/min position inside the identified region:
+                if target is 'maximum':
+                    index=np.argmax(track_data[region])
+                    hdim1_index=a[index]
+                    hdim2_index=b[index]
+                    
+                if target is 'minimum':
+                    index=np.argmin(track_data[region])
+                    hdim1_index=a[index]
+                    hdim2_index=b[index]
+                    
+            elif position_threshold=='weighted':
+                # get position as centre of identified region, weighted by difference from the threshold:
+                hdim1_index=np.average(a,abs(track_data[region]-threshold))
+                hdim2_index=np.average(a,abs(track_data[region]-threshold))
+            else:
+                raise ValueError('position_threshold must be center or extreme')
+                
             data_frame={'frame': int(i),'hdim_1': hdim1_index,'hdim_2':hdim2_index,'num':counts[cur_idx]}
             f_i=pd.DataFrame(data=data_frame,index=[i])
             list_features.append(f_i)
