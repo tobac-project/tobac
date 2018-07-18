@@ -47,7 +47,7 @@ def maketrack(field_in,
                   number of points to extrapolate individual tracks by
     method_detection: str('trackpy' or 'threshold')
                       flag choosing method used for feature detection
-    position_threshold: str('extreme', 'weighted' or 'center')
+    position_threshold: str('extreme', 'weighted_diff', 'weighted_abs' or 'center')
                       flag choosing method used for the position of the tracked feature
     method_linking:   str('predict' or 'random')
                       flag choosing method used for trajectory linking
@@ -216,7 +216,7 @@ def feature_detection_threshold(field_in,threshold,dxy,target='maximum', positio
                    grid spacing of the input data (m)
     target:        str ('minimum' or 'maximum')
                    flag to determine if tracking is targetting minima or maxima in the data
-    position_threshold: str('extreme', 'weighted' or 'center')
+    position_threshold: str('extreme', 'weighted_diff', 'weighted_abs' or 'center')
                       flag choosing method used for the position of the tracked feature
 
     Output:
@@ -275,10 +275,16 @@ def feature_detection_threshold(field_in,threshold,dxy,target='maximum', positio
                     hdim1_index=a[index]
                     hdim2_index=b[index]
                     
-            elif position_threshold=='weighted':
+            elif position_threshold=='weighted_diff':
                 # get position as centre of identified region, weighted by difference from the threshold:
                 hdim1_index=np.average(a,abs(track_data[region]-threshold))
                 hdim2_index=np.average(a,abs(track_data[region]-threshold))
+                
+            elif position_threshold=='weighted_abs':
+                # get position as centre of identified region, weighted by absolute values if the field:
+                hdim1_index=np.average(a,abs(track_data[region]))
+                hdim2_index=np.average(a,abs(track_data[region]))
+
             else:
                 raise ValueError('position_threshold must be center or extreme')
                 
