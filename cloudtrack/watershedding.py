@@ -74,7 +74,7 @@ def watershedding_3D(track,field_in,threshold=3e-3,target='maximum',level=None,c
             #res1 = random_walker(Mask, markers,mode='cg')
 #             res1=random_walker(data_i_watershed, markers.astype(np.int32), beta=130, mode='bf', tol=0.001, copy=True, multichannel=False, return_full_prob=False, spacing=None)
         else:                
-            print('unknown method')
+            raise ValueError('unknown method, must be watershed')
         watershed_out.data[i,:]=res1
         values, count = np.unique(res1, return_counts=True)
         counts=dict(zip(values, count))
@@ -153,7 +153,7 @@ def watershedding_2D(track,field_in,threshold=0,target='maximum',compactness=0,m
 #            #res1 = random_walker(Mask, markers,mode='cg')
 #              res1=random_walker(data_i_watershed, markers.astype(np.int8), beta=130, mode='bf', tol=0.001, copy=True, multichannel=False, return_full_prob=False, spacing=None)
         else:
-            print('unknown method')
+            raise ValueError('unknown method, must be watershed')
         watershed_out.data[i,:]=res1
         
         values, count = np.unique(res1, return_counts=True)

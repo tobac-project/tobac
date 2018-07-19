@@ -293,7 +293,6 @@ def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
         
         #Create surface projection of mask for the respective cell and plot it in the right color
         z_coord = 'model_level_number'
-        print(len(mask_total.shape))
         if len(mask_total.shape)==3: 
             mask_total_i_surface = mask_particle_surface(mask_total, particle, masked=False, z_coord=z_coord)
         elif len(mask_total.shape)==2:            
