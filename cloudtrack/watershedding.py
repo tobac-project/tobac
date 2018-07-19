@@ -83,7 +83,7 @@ def watershedding_3D(track,field_in,threshold=3e-3,target='maximum',level=None,c
             if row['particle'] in counts.keys():
                 track.loc[index,'ncells']=counts[row['particle']]
         
-        logging.debug('Finished wateshedding 3D for'+time_i.strftime('%Y-%m-%d_%H:%M:%S'))
+        logging.debug('Finished wateshedding 3D for '+time_i.strftime('%Y-%m-%d_%H:%M:%S'))
     return watershed_out,track
             
 def watershedding_2D(track,field_in,threshold=0,target='maximum',compactness=0,method='watershed'):
@@ -162,7 +162,7 @@ def watershedding_2D(track,field_in,threshold=0,target='maximum',compactness=0,m
         for index, row in tracks_i.iterrows():
             if row['particle'] in counts.keys():
                 track.loc[index,'ncells']=counts[row['particle']]
-        logging.debug('Finished wateshedding 2D for'+time_i.strftime('%Y-%m-%d_%H:%M:%S'))
+        logging.debug('Finished wateshedding 2D for '+time_i.strftime('%Y-%m-%d_%H:%M:%S'))
 
     return watershed_out,track
 
