@@ -63,7 +63,7 @@ def watershedding_3D(track,field_in,threshold=3e-3,target='maximum',level=None,c
             raise ValueError('unknown type of target')
 
             raise ValueError('unknown type of target')
-        markers = np.zeros_like(unmasked)
+        markers = np.zeros_like(unmasked).astype(np.int32)
         for index, row in tracks_i.iterrows():
              markers[:,int(row['hdim_1']), int(row['hdim_2'])]=row.particle
         markers[~unmasked]=0
@@ -142,7 +142,7 @@ def watershedding_2D(track,field_in,threshold=0,target='maximum',compactness=0,m
             data_i_watershed=data_i
         else:
             raise ValueError('unknown type of target')
-        markers = np.zeros_like(unmasked)
+        markers = np.zeros_like(unmasked).astype(np.int32)
         for index, row in tracks_i.iterrows():
             markers[int(row['hdim_1']), int(row['hdim_2'])]=row.particle
         markers[~unmasked]=0
