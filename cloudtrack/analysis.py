@@ -25,9 +25,9 @@ def cell_statistics(Input_cubes,Track,Mask,dimensions,aggregators,output_path='.
         Mask_particle_i=mask_particle(Mask_i,particle,masked=False)
 #       Mask_particle_surface_i=mask_particle_surface(Mask_w_i,particle,masked=False,z_coord='model_level_number')
         Input_cubes_i=Input_cubes.extract(constraint)
-        minutes=(Track_i['time_cell']/pd.Timedelta(minutes=1)).values()
-        latitude=Track_i['latitude'].values()
-        longitude=Track_i['longitude'].values()
+        minutes=(Track_i['time_cell']/pd.Timedelta(minutes=1)).values
+        latitude=Track_i['latitude'].values
+        longitude=Track_i['longitude'].values
         minutes_coord=AuxCoord(minutes,long_name='cell_time',units='min')
         latitude_coord=AuxCoord(latitude,long_name='latitude',units='degrees')
         longitude_coord=AuxCoord(longitude,long_name='longitude',units='degrees')
@@ -65,7 +65,7 @@ def cog_cell(particle,Tracks=None,M_total=None,M_liquid=None,
     from iris import Constraint
     logging.debug('Start calculating COG for '+str(particle))
     Track=Tracks[Tracks['particle']==particle]
-    constraint_time=Constraint(time=lambda cell: Track.head(1)['time'].values()[0] <= cell <= Track.tail(1)['time'].values()[0])
+    constraint_time=Constraint(time=lambda cell: Track.head(1)['time'].values[0] <= cell <= Track.tail(1)['time'].values[0])
     M_total_i=M_total.extract(constraint_time)
     M_liquid_i=M_liquid.extract(constraint_time)
     M_frozen_i=M_frozen.extract(constraint_time)

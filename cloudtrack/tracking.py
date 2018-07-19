@@ -398,9 +398,9 @@ def fill_gaps(t,order=1,extrapolate=0,frame_max=None,hdim_1_max=None,hdim_2_max=
     for particle,track in t_grouped:        
         
         # Setup interpolator from existing points (of order given as keyword)      
-        frame_in=track['frame'].values()
-        hdim_1_in=track['hdim_1'].values()
-        hdim_2_in=track['hdim_2'].values()
+        frame_in=track['frame'].values
+        hdim_1_in=track['hdim_1'].values
+        hdim_2_in=track['hdim_2'].values
         s_x = InterpolatedUnivariateSpline(frame_in, hdim_1_in, k=order)
         s_y = InterpolatedUnivariateSpline(frame_in, hdim_2_in, k=order)        
         
