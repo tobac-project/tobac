@@ -375,7 +375,7 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
         
         cells_mask=list(unique(mask_total_i.core_data()))
         track_cells=track_i.loc[(track_i['projection_x_coordinate'] > x_min)  & (track_i['projection_x_coordinate'] < x_max) & (track_i['projection_y_coordinate'] > y_min) & (track_i['projection_y_coordinate'] < y_max)]
-        cells_track=list(track_cells['particle'].as_matrix())
+        cells_track=list(track_cells['particle'].values())
         cells=list(set( cells_mask + cells_track ))
         if particle not in cells:
             cells.append(particle)
