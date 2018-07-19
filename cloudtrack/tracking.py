@@ -229,7 +229,8 @@ def feature_detection_threshold(field_in,threshold,dxy,target='maximum', positio
                    detected features
     '''
     
-    from skimage import filters, measure
+    from skimage. measure import label
+    from scipy.ndimage.filters import gaussian_filter
     logging.debug('start feature detection based on thresholds')
     logging.debug('target: '+str(target))
 
@@ -242,7 +243,7 @@ def feature_detection_threshold(field_in,threshold,dxy,target='maximum', positio
         time_i=data_i.coord('time').units.num2date(data_i.coord('time').points[0])
         track_data = data_i.data
         
-        track_data=filters.gaussian(track_data, sigma=sigma_threshold) #smooth data slightly to create rounded, continuous field
+        track_data=gaussian_filter(track_data, sigma=sigma_threshold) #smooth data slightly to create rounded, continuous field
         
         # if looking for minima, set values above threshold to 0 and scale by data minimum:
         if target is 'maximum':
@@ -255,7 +256,7 @@ def feature_detection_threshold(field_in,threshold,dxy,target='maximum', positio
             blobs=mask
             
         # detect individual regions, label  and count the number of pixels included:
-        blobs_labels = measure.label(blobs, background=0)
+        blobs_labels = label(blobs, background=0)
         values, count = np.unique(blobs_labels[:,:].ravel(), return_counts=True)
         values_counts=dict(zip(values, count))
         logging.debug(str(values_counts))
@@ -289,13 +290,20 @@ def feature_detection_threshold(field_in,threshold,dxy,target='maximum', positio
                         
                 elif position_threshold=='weighted_diff':
                     # get position as centre of identified region, weighted by difference from the threshold:
-                    hdim1_index=np.average(a,abs(track_data[region]-threshold))
-                    hdim2_index=np.average(a,abs(track_data[region]-threshold))
+                    weights=abs(track_data[region]-threshold)
+                    if sum(weights)==0:
+                        weights=None
+                    hdim1_index=np.average(a,weights=weights)
+                    hdim2_index=np.average(b,weights=weights)
                     
                 elif position_threshold=='weighted_abs':
                     # get position as centre of identified region, weighted by absolute values if the field:
-                    hdim1_index=np.average(a,abs(track_data[region]))
-                    hdim2_index=np.average(a,abs(track_data[region]))
+                    weights=abs(track_data[region])
+                    if sum(weights)==0:
+                        weights=None
+                    hdim1_index=np.average(a,weights=weights)
+                    hdim2_index=np.average(b,weights=weights)
+
     
                 else:
                     raise ValueError('position_threshold must be center or extreme')
