@@ -9,6 +9,7 @@ def maketrack(field_in,
               order=1,extrapolate=0,              
               method_detection="threshold",
               position_threshold='center',
+              sigma_threshold=0.5,
               diameter=5000,min_mass=0, min_signal=0,parameters_features=False,
               threshold=1, min_num=0,              
               method_linking="random",            
@@ -49,6 +50,8 @@ def maketrack(field_in,
                       flag choosing method used for feature detection
     position_threshold: str('extreme', 'weighted_diff', 'weighted_abs' or 'center')
                       flag choosing method used for the position of the tracked feature
+    sigma_threshold: float
+                     standard deviation for intial filtering step
     method_linking:   str('predict' or 'random')
                       flag choosing method used for trajectory linking
 
@@ -100,7 +103,8 @@ def maketrack(field_in,
         features_filtered = deepcopy(features)
 
     elif method_detection == "threshold":
-        features=feature_detection_threshold(field_in,threshold=threshold,dxy=dxy,target=target)
+        features=feature_detection_threshold(field_in,target=target,threshold=threshold,dxy=dxy,
+                                             position_threshold=position_threshold,sigma_threshold=sigma_threshold)
         features_filtered = features.drop(features[features['num'] < min_num].index)
 
     else:
@@ -204,7 +208,7 @@ def feature_detection_trackpy(field_in,diameter,dxy,target='maximum'):
 
     return features
 
-def feature_detection_threshold(field_in,threshold,dxy,target='maximum', position_threshold='center'):
+def feature_detection_threshold(field_in,threshold,dxy,target='maximum', position_threshold='center',sigma_threshold=0.5):
     ''' Function to perform feature detection based on contiguous regions above/below a threshold
     Input:
     field_in:      iris.cube.Cube
@@ -218,14 +222,14 @@ def feature_detection_threshold(field_in,threshold,dxy,target='maximum', positio
                    flag to determine if tracking is targetting minima or maxima in the data
     position_threshold: str('extreme', 'weighted_diff', 'weighted_abs' or 'center')
                       flag choosing method used for the position of the tracked feature
-
+    sigma_threshold: float
+                     standard deviation for intial filtering step
     Output:
     features:      pandas DataFrame 
                    detected features
     '''
     
     from skimage import filters, measure
-
     logging.debug('start feature detection based on thresholds')
     logging.debug('target: '+str(target))
 
@@ -237,6 +241,9 @@ def feature_detection_threshold(field_in,threshold,dxy,target='maximum', positio
     for i,data_i in enumerate(data_time):
         time_i=data_i.coord('time').units.num2date(data_i.coord('time').points[0])
         track_data = data_i.data
+        
+        track_data=filters.gaussian(track_data, sigma=sigma_threshold) #smooth data slightly to create rounded, continuous field
+        
         # if looking for minima, set values above threshold to 0 and scale by data minimum:
         if target is 'maximum':
             mask=1*(track_data >= threshold)
@@ -250,48 +257,53 @@ def feature_detection_threshold(field_in,threshold,dxy,target='maximum', positio
         # detect individual regions, label  and count the number of pixels included:
         blobs_labels = measure.label(blobs, background=0)
         values, count = np.unique(blobs_labels[:,:].ravel(), return_counts=True)
-
-        counts=dict(zip(values, count))
-        for j in np.arange(1,len(values)):        
-            cur_idx = values[j];
-            region=blobs_labels[:,:] == cur_idx
-            [a,b] = np.nonzero(region)
-          
-            
-            if position_threshold=='center':
-                # get position as geometrical centre of identified region:
-                hdim1_index=np.mean(a)
-                hdim2_index=np.mean(b)
-            
-            elif position_threshold=='extreme':
-                #get positin as max/min position inside the identified region:
-                if target is 'maximum':
-                    index=np.argmax(track_data[region])
-                    hdim1_index=a[index]
-                    hdim2_index=b[index]
-                    
-                if target is 'minimum':
-                    index=np.argmin(track_data[region])
-                    hdim1_index=a[index]
-                    hdim2_index=b[index]
-                    
-            elif position_threshold=='weighted_diff':
-                # get position as centre of identified region, weighted by difference from the threshold:
-                hdim1_index=np.average(a,abs(track_data[region]-threshold))
-                hdim2_index=np.average(a,abs(track_data[region]-threshold))
+        values_counts=dict(zip(values, count))
+        logging.debug(str(values_counts))
+        #check if not entire domain filled as feature
+        if 0 in values_counts:
+            #Remove background counts:
+            values_counts.pop(0)
+            #loop over individual regions:
+            for cur_idx,count in values_counts.items():
+                logging.debug(str(cur_idx))
+                logging.debug(str(count))
+                region=blobs_labels[:,:] == cur_idx
+                [a,b] = np.nonzero(region)
+              
+                if position_threshold=='center':
+                    # get position as geometrical centre of identified region:
+                    hdim1_index=np.mean(a)
+                    hdim2_index=np.mean(b)
                 
-            elif position_threshold=='weighted_abs':
-                # get position as centre of identified region, weighted by absolute values if the field:
-                hdim1_index=np.average(a,abs(track_data[region]))
-                hdim2_index=np.average(a,abs(track_data[region]))
-
-            else:
-                raise ValueError('position_threshold must be center or extreme')
+                elif position_threshold=='extreme':
+                    #get positin as max/min position inside the identified region:
+                    if target is 'maximum':
+                        index=np.argmax(track_data[region])
+                        hdim1_index=a[index]
+                        hdim2_index=b[index]
+                        
+                    if target is 'minimum':
+                        index=np.argmin(track_data[region])
+                        hdim1_index=a[index]
+                        hdim2_index=b[index]
+                        
+                elif position_threshold=='weighted_diff':
+                    # get position as centre of identified region, weighted by difference from the threshold:
+                    hdim1_index=np.average(a,abs(track_data[region]-threshold))
+                    hdim2_index=np.average(a,abs(track_data[region]-threshold))
+                    
+                elif position_threshold=='weighted_abs':
+                    # get position as centre of identified region, weighted by absolute values if the field:
+                    hdim1_index=np.average(a,abs(track_data[region]))
+                    hdim2_index=np.average(a,abs(track_data[region]))
+    
+                else:
+                    raise ValueError('position_threshold must be center or extreme')
                 
-            data_frame={'frame': int(i),'hdim_1': hdim1_index,'hdim_2':hdim2_index,'num':counts[cur_idx]}
-            f_i=pd.DataFrame(data=data_frame,index=[i])
-            list_features.append(f_i)
-        logging.debug('Finished feature detection for '+time_i.strftime('%Y-%m-%d_%H:%M:%S'))
+                data_frame={'frame': int(i),'hdim_1': hdim1_index,'hdim_2':hdim2_index,'num':count}
+                f_i=pd.DataFrame(data=data_frame,index=[i])
+                list_features.append(f_i)
+            logging.debug('Finished feature detection for '+time_i.strftime('%Y-%m-%d_%H:%M:%S'))
 
             
     logging.debug('feature detection: merging DataFrames')
@@ -347,8 +359,8 @@ def trajectory_linking(features,v_max,dt,dxy,memory,subnetwork_size=None,method_
         trajectories = tp.link(features_linking, 
                                search_range=search_range, 
                                memory=memory, 
-                              t_column='frame',
-                              pos_columns=['hdim_2','hdim_1'])
+                               t_column='frame',
+                               pos_columns=['hdim_2','hdim_1'])
     elif method_linking is 'predict':
 
         pred = tp.predict.NearestVelocityPredict(span=1)
