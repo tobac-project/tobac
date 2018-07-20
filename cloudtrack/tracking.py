@@ -14,7 +14,9 @@ def maketrack(field_in,
               threshold=1, min_num=0,              
               method_linking="random",            
               cell_number_start=1,              
-              subnetwork_size=None              
+              subnetwork_size=None,
+              adaptive_stop=None,
+              adaptive_step=None,            
               ):
     """
     Function using watershedding to determine cloud volumes associated with tracked updrafts
@@ -113,7 +115,10 @@ def maketrack(field_in,
     # Link the features in the individual frames to trajectories:
     trajectories_unfiltered=trajectory_linking(features_filtered,v_max=v_max,dt=dt,dxy=dxy,memory=memory,
                                                subnetwork_size=subnetwork_size,
-                                               method_linking=method_linking)
+                                               method_linking=method_linking,
+                                               adaptive_stop=adaptive_stop,
+                                               adaptive_step=adaptive_step            
+                                               )
 
     # Filter trajectories to exclude short trajectories that are likely to be spurious
     trajectories_filtered = filter_stubs(trajectories_unfiltered,threshold=stubs)
@@ -324,7 +329,11 @@ def feature_detection_threshold(field_in,threshold,dxy,target='maximum', positio
     logging.debug('feature detection completed')
     return features
 
-def trajectory_linking(features,v_max,dt,dxy,memory,subnetwork_size=None,method_linking='random'):
+def trajectory_linking(features,v_max,dt,dxy,
+                       memory,subnetwork_size=None,
+                       method_linking='random',
+                       adaptive_step=None,adaptive_stop=None
+                       ):
 #    from trackpy import link_df
     import trackpy as tp
     from copy import deepcopy
@@ -368,7 +377,10 @@ def trajectory_linking(features,v_max,dt,dxy,memory,subnetwork_size=None,method_
                                search_range=search_range, 
                                memory=memory, 
                                t_column='frame',
-                               pos_columns=['hdim_2','hdim_1'])
+                               pos_columns=['hdim_2','hdim_1'],
+                               adaptive_step=adaptive_step,adaptive_stop=adaptive_stop,
+                               neighbor_strategy='KDTree', link_strategy='auto'
+                               )
     elif method_linking is 'predict':
 
         pred = tp.predict.NearestVelocityPredict(span=1)
@@ -376,7 +388,7 @@ def trajectory_linking(features,v_max,dt,dxy,memory,subnetwork_size=None,method_
                                  pos_columns=['hdim_1','hdim_2'],
                                  t_column='frame',
                                  neighbor_strategy='KDTree', link_strategy='auto',
-                                 adaptive_stop=None, adaptive_step=0.95,
+                                 adaptive_step=adaptive_step,adaptive_stop=adaptive_stop
 #                                 copy_features=False, diagnostics=False,
 #                                 hash_size=None, box_size=None, verify_integrity=True,
 #                                 retain_index=False
