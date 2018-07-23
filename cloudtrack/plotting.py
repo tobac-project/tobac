@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import logging
+from .analysis import lifetime_histogram
+import numpy as np
 
 def plot_tracks_mask_field_loop(track,field,mask,features,axes=None,name=None,plot_dir='./',
                                 figsize=(10./2.54,10./2.54),dpi=300,
@@ -556,3 +558,13 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
     axes.set_title(title,pad=20)
 
     return axes
+
+def plot_histogram(Track,axes=plt.gca(),bin_edges=np.arange(0,200,20),**kwargs):
+    hist, bin_edges = lifetime_histogram(Track,bin_edges=bin_edges)
+    plot_hist=axes.plot(bin_edges[:-1]+0.5*np.diff(bin_edges), hist,**kwargs)
+    return plot_hist
+
+def plot_histogram_bar(Track,axes=plt.gca(),bin_edges=np.arange(0,200,20),width_bar=1,shift=0.5,**kwargs):
+    hist, bin_edges = lifetime_histogram(Track,bin_edges=bin_edges)
+    plot_hist=axes.bar(bin_edges[:-1]+0.5*np.diff(bin_edges)+shift,**kwargs)
+    return plot_hist
