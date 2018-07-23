@@ -1,7 +1,10 @@
 import matplotlib.pyplot as plt
 import logging
 
-def plot_tracks_mask_field_loop(track,field,mask,features,axes=None,name=None,plot_dir='./',figsize=(10,10),**kwargs):
+def plot_tracks_mask_field_loop(track,field,mask,features,axes=None,name=None,plot_dir='./',
+                                figsize=(10./2.54,10./2.54),dpi=300,
+                                margin_left=0.05,margin_right=0.05,margin_bottom=0.05,margin_top=0.05,
+                                **kwargs):
     import matplotlib.pyplot as plt
     import cartopy.crs as ccrs
     import os
@@ -18,11 +21,12 @@ def plot_tracks_mask_field_loop(track,field,mask,features,axes=None,name=None,pl
         field_i=field.extract(constraint_time)
         mask_i=mask.extract(constraint_time)
         track_i=track[track['time']==datetime_i]
-        features_i=features[features['time']==datetime_i]        
+        features_i=features[features['time']==datetime_i]   
         ax1=plot_tracks_mask_field(track=track_i,field=field_i,mask=mask_i,features=features_i,
-                                   axes=ax1,**kwargs)
+                                   axes=ax1,**kwargs)        
+        fig1.subplots_adjust(left=margin_left, bottom=margin_bottom, right=1-margin_right, top=1-margin_top)
         savepath_png=os.path.join(plot_dir,name+'_'+datestring_file+'.png')
-        fig1.savefig(savepath_png,dpi=600)
+        fig1.savefig(savepath_png,dpi=dpi)
         logging.debug('Figure plotted to ' + str(savepath_png))
 
         plt.close()
@@ -35,7 +39,8 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
                            plot_features=False,marker_feature=None,markersize_feature=None,
                            vmin=None,vmax=None,n_levels=50,
                            cmap='viridis',extend='neither',
-                           orientation_colorbar='horizontal',pad_colorbar=0.2):
+                           orientation_colorbar='horizontal',pad_colorbar=0.05,label_colorbar=None
+                           ):
     import cartopy
     from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
     import iris.plot as iplt
@@ -79,7 +84,12 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
                             )
         # greate colorbar for background field:
         cbar=plt.colorbar(plot_field,orientation=orientation_colorbar, pad=pad_colorbar)
-        cbar.ax.set_xlabel(field.name()+ '('+field.units.symbol +')') 
+        if label_colorbar is None:
+            label_colorbar=field.name()+ '('+field.units.symbol +')'
+        if orientation_colorbar is 'horizontal':
+            cbar.ax.set_xlabel(label_colorbar) 
+        elif orientation_colorbar is 'vertical':
+            cbar.ax.set_ylabel(label_colorbar) 
         tick_locator = ticker.MaxNLocator(nbins=5)
         cbar.locator = tick_locator
         cbar.update_ticks()
@@ -136,7 +146,8 @@ def plot_mask_cell_track_follow(particle,track, cog, features, mask_total,
                                     field_1_label=None,field_2_label=None,
                                     width=10000,
                                     name= 'test', plotdir='./',
-                                    n_core=1,file_format=['png'],**kwargs):
+                                    n_core=1,file_format=['png'],figsize=(10/2.54, 10/2.54),dpi=300,
+                                    **kwargs):
     '''Make plots for all cells centred around cell and with one background field as filling and one background field as contrours
     Input:
     Output:
@@ -180,7 +191,7 @@ def plot_mask_cell_track_follow(particle,track, cog, features, mask_total,
             features_i=features[features['time']==row['time']]
 
 
-        fig1, ax1 = plt.subplots(ncols=1, nrows=1, figsize=(10/2.54, 10/2.54))
+        fig1, ax1 = plt.subplots(ncols=1, nrows=1, figsize=figsize)
         fig1.subplots_adjust(left=0.2, bottom=0.15, right=0.85, top=0.85)
         
         datestring_stamp = row['time'].strftime('%Y-%m-%d %H:%M:%S')
@@ -198,11 +209,11 @@ def plot_mask_cell_track_follow(particle,track, cog, features, mask_total,
         os.makedirs(out_dir, exist_ok=True)
         if 'png' in file_format:
             savepath_png = os.path.join(out_dir, name  + '_' + datestring_file + '.png')
-            fig1.savefig(savepath_png, dpi=600)
+            fig1.savefig(savepath_png, dpi=dpi)
             logging.debug('field_1 field_2 Mask plot saved to ' + savepath_png)
         if 'pdf' in file_format:
             savepath_pdf = os.path.join(out_dir, name  + '_' + datestring_file + '.pdf')
-            fig1.savefig(savepath_pdf, dpi=600)
+            fig1.savefig(savepath_pdf, dpi=dpi)
             logging.debug('field_1 field_2 Mask plot saved to ' + savepath_pdf)
         plt.close()
         plt.clf()
@@ -338,7 +349,8 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
                                     field_1_label=None, field_2_label=None,
                                     width=10000,
                                     name= 'test', plotdir='./',
-                                    n_core=1,file_format=['png'],**kwargs):
+                                    n_core=1,file_format=['png'],figsize=(10/2.54, 10/2.54),dpi=300,
+                                    **kwargs):
     '''Make plots for all cells with fixed frame including entire development of the cell and with one background field as filling and one background field as contrours
     Input:
     Output:
@@ -394,7 +406,7 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
             features_i=features[features['time']==row['time']]
 
 
-        fig1, ax1 = plt.subplots(ncols=1, nrows=1, figsize=(10/2.54, 10/2.54))
+        fig1, ax1 = plt.subplots(ncols=1, nrows=1, figsize=figsize)
         fig1.subplots_adjust(left=0.2, bottom=0.15, right=0.85, top=0.85)
         
         datestring_stamp = row['time'].strftime('%Y-%m-%d %H:%M:%S')
@@ -412,11 +424,11 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
         os.makedirs(out_dir, exist_ok=True)
         if 'png' in file_format:
             savepath_png = os.path.join(out_dir, name  + '_' + datestring_file + '.png')
-            fig1.savefig(savepath_png, dpi=600)
+            fig1.savefig(savepath_png, dpi=dpi)
             logging.debug('Mask static plot saved to ' + savepath_png)
         if 'pdf' in file_format:
             savepath_pdf = os.path.join(out_dir, name  + '_' + datestring_file + '.pdf')
-            fig1.savefig(savepath_pdf, dpi=600)
+            fig1.savefig(savepath_pdf, dpi=dpi)
             logging.debug('Mask static plot saved to ' + savepath_pdf)
         plt.close()
         plt.clf()
