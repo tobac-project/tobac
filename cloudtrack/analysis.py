@@ -99,13 +99,3 @@ def lifetime_histogram(Track,bin_edges=np.arange(0,200,20)):
     minutes=(Track_particle['time_cell'].max()/pd.Timedelta(minutes=1)).values
     hist, bin_edges = np.histogram(minutes, bin_edges,density=False)
     return hist,bin_edges
-    
-def plot_histogram(Track,axes=plt.gca(),bin_edges=np.arange(0,200,20),**kwargs):
-    hist, bin_edges = lifetime_histogram(Track,bin_edges=bin_edges)
-    plot_hist=axes.plot(bin_edges[:-1]+0.5*np.diff(bin_edges), hist,**kwargs)
-    return plot_hist
-
-def plot_histogram_bar(Track,axes=plt.gca(),bin_edges=np.arange(0,200,20),width_bar=1,shift=0.5,**kwargs):
-    hist, bin_edges = lifetime_histogram(Track,bin_edges=bin_edges)
-    plot_hist=axes.bar(bin_edges[:-1]+0.5*np.diff(bin_edges)+shift,**kwargs)
-    return plot_hist
