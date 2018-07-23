@@ -559,12 +559,12 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
 
     return axes
 
-def plot_histogram(Track,axes=plt.gca(),bin_edges=np.arange(0,200,20),**kwargs):
+def plot_lifetime_histogram(Track,axes=plt.gca(),bin_edges=np.arange(0,200,20),**kwargs):
     hist, bin_edges = lifetime_histogram(Track,bin_edges=bin_edges)
     plot_hist=axes.plot(bin_edges[:-1]+0.5*np.diff(bin_edges), hist,**kwargs)
     return plot_hist
 
-def plot_histogram_bar(Track,axes=plt.gca(),bin_edges=np.arange(0,200,20),width_bar=1,shift=0.5,**kwargs):
+def plot_filetime_histogram_bar(Track,axes=plt.gca(),bin_edges=np.arange(0,200,20),width_bar=1,shift=0.5,**kwargs):
     hist, bin_edges = lifetime_histogram(Track,bin_edges=bin_edges)
     plot_hist=axes.bar(bin_edges[:-1]+0.5*np.diff(bin_edges)+shift,**kwargs)
     return plot_hist
