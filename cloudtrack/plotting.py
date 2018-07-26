@@ -194,7 +194,7 @@ def plot_mask_cell_track_follow(particle,track, cog, features, mask_total,
 
 
         fig1, ax1 = plt.subplots(ncols=1, nrows=1, figsize=figsize)
-        fig1.subplots_adjust(left=0.2, bottom=0.15, right=0.85, top=0.85)
+        fig1.subplots_adjust(left=0.2, bottom=0.15, right=0.85, top=0.80)
         
         datestring_stamp = row['time'].strftime('%Y-%m-%d %H:%M:%S')
         datestring_file = row['time'].strftime('%Y-%m-%d_%H%M%S')
@@ -222,13 +222,14 @@ def plot_mask_cell_track_follow(particle,track, cog, features, mask_total,
 
 
 def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
-                               field_1, field_2, 
+                               field_1, field_2, width=10000,
                                field_1_label=None, field_2_label=None,
-                               width=10000,
                                axes=plt.gca(),
-                               vmin_field_1=0,vmax_field_1=50,levels_field_1=None,
+                               field_1_cmap='Blues',
+                               vmin_field_1=0,vmax_field_1=50,levels_field_1=None,nlevels_1=10,
                                contour_labels=False,
-                               vmin_field_2=0,vmax_field_2=100,levels_field_2=None,
+                               field_2_cmap='summer',
+                               vmin_field_2=0,vmax_field_2=100,levels_field_2=None,nlevels_2=10,
                                title=None
                                ): 
     '''Make individual plot for cell centred around cell and with one background field as filling and one background field as contrours
@@ -247,11 +248,12 @@ def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
     y_pos=track[track['particle']==particle_i]['projection_y_coordinate'].item()
     if field_2 is not None:
         if levels_field_2 is None:
-            levels_field_2=np.linspace(vmin_field_2,vmax_field_2, 10)
+            levels_field_2=np.linspace(vmin_field_2,vmax_field_2, nlevels_2)
         plot_field_2 = axes.contourf((field_2.coord('projection_x_coordinate').points-x_pos)/1000,
                                  (field_2.coord('projection_y_coordinate').points-y_pos)/1000,
                                  field_2.data,
-                                 levels=levels_field_2, cmap='Blues', vmin=vmin_field_2, vmax=vmax_field_2)    
+                                 levels=levels_field_2,
+                                 cmap=field_2_cmap, vmin=vmin_field_2, vmax=vmax_field_2)    
         
         
         cax1 = divider.append_axes("right", size="5%", pad=0.1)
@@ -265,11 +267,11 @@ def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
 
     if field_1 is not None:
         if levels_field_1 is None:
-            levels_field_1=np.linspace(vmin_field_1, vmax_field_1, 5)
+            levels_field_1=np.linspace(vmin_field_1, vmax_field_1, nlevels_1)
         plot_field_1 = axes.contour((field_1.coord('projection_x_coordinate').points-x_pos)/1000,
                                   (field_1.coord('projection_y_coordinate').points-y_pos)/1000,
                                   field_1.data,
-                                  cmap='summer',
+                                  cmap=field_1_cmap,
                                   levels=levels_field_1,vmin=vmin_field_1, vmax=vmax_field_1,
                                   linewidths=0.8)
         
@@ -342,7 +344,7 @@ def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
     axes.set_ylim([-1*width/1000, width/1000])
     axes.xaxis.set_label_position('top') 
     axes.xaxis.set_ticks_position('top')
-    axes.set_title(title,pad=20)
+    axes.set_title(title,pad=35,fontsize=10)
  
     return axes
 
@@ -409,7 +411,7 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
 
 
         fig1, ax1 = plt.subplots(ncols=1, nrows=1, figsize=figsize)
-        fig1.subplots_adjust(left=0.2, bottom=0.15, right=0.85, top=0.85)
+        fig1.subplots_adjust(left=0.2, bottom=0.15, right=0.80, top=0.85)
         
         datestring_stamp = row['time'].strftime('%Y-%m-%d %H:%M:%S')
         datestring_file = row['time'].strftime('%Y-%m-%d_%H%M%S')
@@ -439,11 +441,13 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
 def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total,
                                field_1, field_2,
                                field_1_label=None,
-                               field_2_label=None,
                                axes=plt.gca(),xlim=None,ylim=None,
-                               vmin_field_1=0,vmax_field_1=50,levels_field_1=None,
+                               field_2_label=None,                                                             
+                               field_1_cmap='Blues',
+                               vmin_field_1=0,vmax_field_1=50,levels_field_1=None,nlevels_1=10,
                                contour_labels=False,
-                               vmin_field_2=0,vmax_field_2=100,levels_field_2=None,
+                               field_2_cmap='summer',
+                               vmin_field_2=0,vmax_field_2=100,levels_field_2=None,nlevels_2=10,
                                title=None
                                ):  
     '''Make plots for cell in fixed frame and with one background field as filling and one background field as contrours
@@ -465,7 +469,8 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
         plot_field_2 = axes.contourf(field_2.coord('projection_x_coordinate').points/1000,
                                  field_2.coord('projection_y_coordinate').points/1000,
                                  field_2.data,
-                                 levels=levels_field_2, cmap='Blues', vmin=vmin_field_2, vmax=vmax_field_2)    
+                                 levels=levels_field_2, 
+                                 cmap=field_2_cmap, vmin=vmin_field_2, vmax=vmax_field_2)    
         
         
         cax1 = divider.append_axes("right", size="5%", pad=0.1)
@@ -483,7 +488,7 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
         plot_field_1 = axes.contour(field_1.coord('projection_x_coordinate').points/1000,
                                   field_1.coord('projection_y_coordinate').points/1000,
                                   field_1.data,
-                                  cmap='summer',
+                                  cmap=field_1_cmap,
                                   levels=levels_field_1,vmin=vmin_field_1, vmax=vmax_field_1,
                                   linewidths=0.8)
         
@@ -555,7 +560,7 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
     axes.set_ylim(ylim)
     axes.xaxis.set_label_position('top') 
     axes.xaxis.set_ticks_position('top')
-    axes.set_title(title,pad=20)
+    axes.set_title(title,pad=35,fontsize=10)
 
     return axes
 
