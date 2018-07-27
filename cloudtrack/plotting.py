@@ -39,6 +39,7 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
                            plot_marker=True,marker_track='x',markersize_track=4,
                            plot_number=True,
                            plot_features=False,marker_feature=None,markersize_feature=None,
+                           title=None,
                            vmin=None,vmax=None,n_levels=50,
                            cmap='viridis',extend='neither',
                            orientation_colorbar='horizontal',pad_colorbar=0.05,label_colorbar=None
@@ -57,8 +58,13 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
 
     
     datestring=field.coord('time').units.num2date(field.coord('time').points[0]).strftime('%Y-%m-%d %H:%M:%S')
-
-    axes.set_title(datestring)
+    if title is None:
+        titlestring=datestring
+    elif type(title is str):
+        titlestring=title+ '   ' + datestring
+    else:
+        raise ValueError('title must be str')
+    axes.set_title(titlestring,fontsize=10)
     
     gl = axes.gridlines(draw_labels=True)
     majorLocator = MaxNLocator(nbins=5,steps=[1,2,5,10])
@@ -85,7 +91,7 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
                             cmap=cmap,vmin=vmin,vmax=vmax
                             )
         # greate colorbar for background field:
-        cbar=plt.colorbar(plot_field,orientation=orientation_colorbar, pad=pad_colorbar)
+        cbar=plt.colorbar(plot_field,orientation=orientation_colorbar, pad=pad_colorbar,ax=axes)
         if label_colorbar is None:
             label_colorbar=field.name()+ '('+field.units.symbol +')'
         if orientation_colorbar is 'horizontal':
