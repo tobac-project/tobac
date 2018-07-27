@@ -10,6 +10,7 @@ def maketrack(field_in,
               method_detection="threshold",
               position_threshold='center',
               sigma_threshold=0.5,
+              n_erosion_threshold=0,
               diameter=5000,min_mass=0, min_signal=0,parameters_features=False,
               threshold=1, min_num=0,              
               method_linking="random",            
@@ -54,6 +55,10 @@ def maketrack(field_in,
                       flag choosing method used for the position of the tracked feature
     sigma_threshold: float
                      standard deviation for intial filtering step
+                     
+    n_erosion_threshold: int
+                         number of pixel by which to erode the identified features
+
     method_linking:   str('predict' or 'random')
                       flag choosing method used for trajectory linking
 
@@ -213,7 +218,7 @@ def feature_detection_trackpy(field_in,diameter,dxy,target='maximum'):
 
     return features
 
-def feature_detection_threshold(field_in,threshold,dxy,target='maximum', position_threshold='center',sigma_threshold=0.5):
+def feature_detection_threshold(field_in,threshold,dxy,target='maximum', position_threshold='center',sigma_threshold=0.5,n_erosion_threshold=0):
     ''' Function to perform feature detection based on contiguous regions above/below a threshold
     Input:
     field_in:      iris.cube.Cube
@@ -229,12 +234,15 @@ def feature_detection_threshold(field_in,threshold,dxy,target='maximum', positio
                       flag choosing method used for the position of the tracked feature
     sigma_threshold: float
                      standard deviation for intial filtering step
+    n_erosion_threshold: int
+                         number of pixel by which to erode the identified features
     Output:
     features:      pandas DataFrame 
                    detected features
     '''
     
-    from skimage. measure import label
+    from skimage.measure import label
+    from skimage.morphology import binary_erosion
     from scipy.ndimage.filters import gaussian_filter
     logging.debug('start feature detection based on thresholds')
     logging.debug('target: '+str(target))
@@ -253,27 +261,27 @@ def feature_detection_threshold(field_in,threshold,dxy,target='maximum', positio
         # if looking for minima, set values above threshold to 0 and scale by data minimum:
         if target is 'maximum':
             mask=1*(track_data >= threshold)
-            blobs=mask
 
         # if looking for minima, set values above threshold to 0 and scale by data minimum:
         elif target is 'minimum':            
             mask=1*(track_data <= threshold)  # only include values greater than threshold    
-            blobs=mask
+        
+        # erode selected regions by n pixels 
+        if n_erosion_threshold>0:
+            selem=np.ones((n_erosion_threshold,n_erosion_threshold))
+            mask=binary_erosion(mask,selem).astype(np.int64)
             
         # detect individual regions, label  and count the number of pixels included:
-        blobs_labels = label(blobs, background=0)
-        values, count = np.unique(blobs_labels[:,:].ravel(), return_counts=True)
+        labels = label(mask, background=0)
+        values, count = np.unique(labels[:,:].ravel(), return_counts=True)
         values_counts=dict(zip(values, count))
-        logging.debug(str(values_counts))
         #check if not entire domain filled as feature
         if 0 in values_counts:
             #Remove background counts:
             values_counts.pop(0)
             #loop over individual regions:
             for cur_idx,count in values_counts.items():
-                logging.debug(str(cur_idx))
-                logging.debug(str(count))
-                region=blobs_labels[:,:] == cur_idx
+                region=labels[:,:] == cur_idx
                 [a,b] = np.nonzero(region)
               
                 if position_threshold=='center':
