@@ -94,8 +94,26 @@ def cog_cell(particle,Tracks=None,M_total=None,M_liquid=None,
     logging.debug('individual COG calculated and saved to '+ savedir_cell)
 
 
-def lifetime_histogram(Track,bin_edges=np.arange(0,200,20)):
+def lifetime_histogram(Track,bin_edges=np.arange(0,200,20),density=False):
     Track_particle=Track.groupby('particle')
     minutes=(Track_particle['time_cell'].max()/pd.Timedelta(minutes=1)).values
-    hist, bin_edges = np.histogram(minutes, bin_edges,density=False)
+    hist, bin_edges = np.histogram(minutes, bin_edges,density=density)
+    return hist,bin_edges
+
+
+def histogram_cellwise(Track,variable=None,bin_edges=None,quantity='max',density=False):
+    Track_particle=Track.groupby('particle')
+    if quantity=='max':
+        variable_particle=Track_particle[variable].max().values
+    elif quantity=='min':
+        variable_particle=Track_particle[variable].min().values
+    elif quantity=='mean':
+        variable_particle=Track_particle[variable].mean().values
+    else:
+        raise ValueError('quantity unknown, must be max, min or mean')
+    hist, bin_edges = np.histogram(variable_particle, bin_edges,density=density)
+    return hist,bin_edges
+
+def histogram_featurewise(Track,variable=None,bin_edges=None,density=False):
+    hist, bin_edges = np.histogram(Track[variable].values, bin_edges,density=density)
     return hist,bin_edges
