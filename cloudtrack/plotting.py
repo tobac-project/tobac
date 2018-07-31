@@ -205,6 +205,8 @@ def plot_mask_cell_track_follow(particle,track, cog, features, mask_total,
         fig1.subplots_adjust(left=0.2, bottom=0.15, right=0.85, top=0.80)
         
         datestring_stamp = row['time'].strftime('%Y-%m-%d %H:%M:%S')
+        celltime_stamp = row['time_cell'].strftime('%H:%M:%S')
+        title=celltime_stamp + ' , ' + datestring_stamp
         datestring_file = row['time'].strftime('%Y-%m-%d_%H%M%S')
 
         ax1=plot_mask_cell_individual_follow(particle_i=particle,track=track_i, cog=cog_i,features=features_i,
@@ -212,7 +214,7 @@ def plot_mask_cell_track_follow(particle,track, cog, features, mask_total,
                                        field_1=field_1_i, field_2=field_2_i,
                                        field_1_label=field_1_label, field_2_label=field_2_label,
                                        width=width,
-                                       axes=ax1,title=datestring_stamp,
+                                       axes=ax1,title=title,
                                        **kwargs)
                
         out_dir = os.path.join(plotdir, name)
@@ -422,6 +424,8 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
         fig1.subplots_adjust(left=0.2, bottom=0.15, right=0.80, top=0.85)
         
         datestring_stamp = row['time'].strftime('%Y-%m-%d %H:%M:%S')
+        celltime_stamp = row['time_cell'].strftime('%H:%M:%S')
+        title=celltime_stamp + ' , ' + datestring_stamp
         datestring_file = row['time'].strftime('%Y-%m-%d_%H%M%S')
 
         ax1=plot_mask_cell_individual_static(particle_i=particle,
@@ -430,7 +434,7 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
                                              field_1=field_1_i, field_2=field_2_i,
                                              field_1_label=field_1_label, field_2_label=field_2_label,
                                              xlim=[x_min/1000,x_max/1000],ylim=[y_min/1000,y_max/1000],
-                                             axes=ax1,title=datestring_stamp,**kwargs)
+                                             axes=ax1,title=title,**kwargs)
         
         out_dir = os.path.join(plotdir, name)
         os.makedirs(out_dir, exist_ok=True)
