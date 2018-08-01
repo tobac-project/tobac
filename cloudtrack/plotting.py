@@ -612,7 +612,8 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
     time_min=track_cell['time'].min()
     time_max=track_cell['time'].max()
 
-    track_variable_cell=track_variable[(track_variable['time']>=time_min) & (track_variable['time']<=time_max)] 
+    track_variable_cell=track_variable[track_variable['particle']==particle]
+#    track_variable_cell=track_variable_cell[(track_variable_cell['time']>=time_min) & (track_variable_cell['time']<=time_max)] 
 
     for i_row,row in track_cell.iterrows():
         
@@ -657,7 +658,7 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
 
 
         fig1, ax1 = plt.subplots(ncols=2, nrows=1, figsize=figsize)
-        fig1.subplots_adjust(left=0.2, bottom=0.15, right=0.80, top=0.85)
+        fig1.subplots_adjust(left=0.2, bottom=0.15, right=0.80, top=0.85,wspace=0.2)
         
         datestring_stamp = row['time'].strftime('%Y-%m-%d %H:%M:%S')
         celltime_stamp = "%02d:%02d:%02d" % (row['time_cell'].total_seconds() // 3600,
@@ -677,7 +678,7 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
                                              axes=ax1[0],title=title,**kwargs)
         
         # 
-        track_variable_past=track_variable_cell[track_variable_cell['time']<=row['time']]       
+        track_variable_past=track_variable_cell[(track_variable_cell['time']>=time_min)  & (track_variable_cell['time']<=row['time'])]       
         track_variable_current=track_variable_cell[track_variable_cell['time']==row['time']]   
         track_variable_past.plot(ax=ax1[1],x='time_cell',y=variable,color='navy',linestyle='-')
         track_variable_current.plot(ax=ax1[1],x='time_cell',y=variable,color='navy',marker='o',fillstyle='full')
