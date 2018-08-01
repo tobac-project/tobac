@@ -119,6 +119,13 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
             axes.plot(row['longitude'],row['latitude'],
                       color='grey',marker=maker_feature,markersize=makersize_feature)
 
+    # restrict features to featues inside axis extent  
+    track=track.loc[(track['longitude'] > axis_extent[0])  
+                  & (track['longitude'] < axis_extent[1]) 
+                  & (track['latitude'] > axis_extent[2]) 
+                  & (track['latitude'] < axis_extent[3])]
+
+
     #Plot tracked features by looping over rows of Dataframe
     for i_row,row in track.iterrows():
         if 'particle' in row:
@@ -205,7 +212,7 @@ def plot_mask_cell_track_follow(particle,track, cog, features, mask_total,
         fig1.subplots_adjust(left=0.2, bottom=0.15, right=0.85, top=0.80)
         
         datestring_stamp = row['time'].strftime('%Y-%m-%d %H:%M:%S')
-        celltime_stamp = row['time_cell'].strftime('%H:%M:%S')
+        celltime_stamp = "%02d:%02d:%02d" % (row['time_cell'].total_seconds() // 3600,(row['time_cell'].total_seconds() % 3600) // 60, row['time_cell'].total_seconds()  % 60 )
         title=celltime_stamp + ' , ' + datestring_stamp
         datestring_file = row['time'].strftime('%Y-%m-%d_%H%M%S')
 
@@ -424,9 +431,11 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
         fig1.subplots_adjust(left=0.2, bottom=0.15, right=0.80, top=0.85)
         
         datestring_stamp = row['time'].strftime('%Y-%m-%d %H:%M:%S')
-        celltime_stamp = row['time_cell'].strftime('%H:%M:%S')
+        celltime_stamp = "%02d:%02d:%02d" % (row['time_cell'].total_seconds() // 3600,
+                                             (row['time_cell'].total_seconds() % 3600) // 60,
+                                             row['time_cell'].total_seconds()  % 60 )
         title=celltime_stamp + ' , ' + datestring_stamp
-        datestring_file = row['time'].strftime('%Y-%m-%d_%H%M%S')
+        datestring_file = row['time'].strftime('%Y-%m-%d_%H%file_formatM%S')
 
         ax1=plot_mask_cell_individual_static(particle_i=particle,
                                              track=track_i, cog=cog_i,features=features_i, 
@@ -453,7 +462,7 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
 def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total,
                                field_1, field_2,
                                field_1_label=None,
-                               axes=plt.gca(),xlim=None,ylim=None,
+                               axes=plt.gca(),xlim=None,ylimfile_format=None,
                                field_2_label=None,                                                             
                                field_1_cmap='Blues',
                                vmin_field_1=0,vmax_field_1=50,levels_field_1=None,nlevels_1=10,
@@ -504,7 +513,7 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
                                   levels=levels_field_1,vmin=vmin_field_1, vmax=vmax_field_1,
                                   linewidths=0.8)
         
-        if contour_labels:
+        if contour_labels:file_format
             axes.clabel(plot_field_1, fontsize=10)
     
         cax2 = divider.append_axes("bottom", size="5%", pad=0.1)
@@ -552,7 +561,7 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
             
             if particle==particle_i:
                 color='darkred'
-            else:
+            else:file_format
                 color='darkorange'
             # plot marker for centre of gravity as a circle    
             axes.plot(row['x_M']/1000, row['y_M']/1000,
@@ -575,6 +584,10 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
     axes.set_title(title,pad=35,fontsize=10)
 
     return axes
+
+
+
+
 
 def plot_lifetime_histogram(track,axes=plt.gca(),bin_edges=np.arange(0,200,20),density=False,**kwargs):
     hist, bin_edges = lifetime_histogram(track,bin_edges=bin_edges,density=density)
