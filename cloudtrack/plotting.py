@@ -435,7 +435,7 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
                                              (row['time_cell'].total_seconds() % 3600) // 60,
                                              row['time_cell'].total_seconds()  % 60 )
         title=celltime_stamp + ' , ' + datestring_stamp
-        datestring_file = row['time'].strftime('%Y-%m-%d_%H%file_formatM%S')
+        datestring_file = row['time'].strftime('%Y-%m-%d_%H%M%S')
 
         ax1=plot_mask_cell_individual_static(particle_i=particle,
                                              track=track_i, cog=cog_i,features=features_i, 
@@ -462,7 +462,7 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
 def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total,
                                field_1, field_2,
                                field_1_label=None,
-                               axes=plt.gca(),xlim=None,ylimfile_format=None,
+                               axes=plt.gca(),xlim=None,ylim=None,
                                field_2_label=None,                                                             
                                field_1_cmap='Blues',
                                vmin_field_1=0,vmax_field_1=50,levels_field_1=None,nlevels_1=10,
@@ -513,7 +513,7 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
                                   levels=levels_field_1,vmin=vmin_field_1, vmax=vmax_field_1,
                                   linewidths=0.8)
         
-        if contour_labels:file_format
+        if contour_labels:
             axes.clabel(plot_field_1, fontsize=10)
     
         cax2 = divider.append_axes("bottom", size="5%", pad=0.1)
@@ -561,7 +561,7 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
             
             if particle==particle_i:
                 color='darkred'
-            else:file_format
+            else:
                 color='darkorange'
             # plot marker for centre of gravity as a circle    
             axes.plot(row['x_M']/1000, row['y_M']/1000,
@@ -584,6 +584,123 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
     axes.set_title(title,pad=35,fontsize=10)
 
     return axes
+
+def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_total,
+                                           field_1, field_2,
+                                           field_1_label=None, field_2_label=None,
+                                           track_variable=None,variable=None,variable_label=None,
+                                           width=10000,
+                                           name= 'test', plotdir='./',
+                                           n_core=1,file_format=['png'],figsize=(20/2.54, 10/2.54),dpi=300,
+                                           **kwargs):
+    '''Make plots for all cells with fixed frame including entire development of the cell and with one background field as filling and one background field as contrours
+    Input:
+    Output:
+    '''
+    '''Make plots for all cells with fixed frame including entire development of the cell and with one background field as filling and one background field as contrours
+    Input:
+    Output:
+    '''
+    from iris import Constraint
+    from numpy import unique
+    import os
+    track_cell=track[track['particle']==particle]
+    x_min=track_cell['projection_x_coordinate'].min()-width
+    x_max=track_cell['projection_x_coordinate'].max()+width
+    y_min=track_cell['projection_y_coordinate'].min()-width
+    y_max=track_cell['projection_y_coordinate'].max()+width
+    time_min=track_cell['time'].min()
+    time_max=track_cell['time'].max()
+
+    track_variable_cell=track_variable[(track_variable['time']>=time_min) & (track_variable['time']<=time_max)] 
+
+    for i_row,row in track_cell.iterrows():
+        
+        constraint_time = Constraint(time=row['time'])
+        constraint_x = Constraint(projection_x_coordinate = lambda cell: x_min < cell < x_max)
+        constraint_y = Constraint(projection_y_coordinate = lambda cell: y_min < cell < y_max)
+        constraint = constraint_time & constraint_x & constraint_y            
+
+        mask_total_i=mask_total.extract(constraint)
+        if field_1 is None:
+            field_1_i=None
+        else:
+            field_1_i=field_1.extract(constraint)
+        if field_2 is None:
+            field_2_i=None
+        else:
+            field_2_i=field_2.extract(constraint)
+
+        
+        track_i=track[track['time']==row['time']]
+        
+        cells_mask=list(unique(mask_total_i.core_data()))
+        track_cells=track_i.loc[(track_i['projection_x_coordinate'] > x_min)  & (track_i['projection_x_coordinate'] < x_max) & (track_i['projection_y_coordinate'] > y_min) & (track_i['projection_y_coordinate'] < y_max)]
+        cells_track=list(track_cells['particle'].values)
+        cells=list(set( cells_mask + cells_track ))
+        if particle not in cells:
+            cells.append(particle)
+        if 0 in cells:    
+            cells.remove(0)
+        track_i=track_i[track_i['particle'].isin(cells)]
+        
+        if cog is None:
+            cog_i=None
+        else:
+            cog_i=cog[cog['particle'].isin(cells)]
+            cog_i=cog_i[cog_i['time']==row['time']]
+
+        if features is None:
+            features_i=None
+        else:
+            features_i=features[features['time']==row['time']]
+
+
+        fig1, ax1 = plt.subplots(ncols=2, nrows=1, figsize=figsize)
+        fig1.subplots_adjust(left=0.2, bottom=0.15, right=0.80, top=0.85)
+        
+        datestring_stamp = row['time'].strftime('%Y-%m-%d %H:%M:%S')
+        celltime_stamp = "%02d:%02d:%02d" % (row['time_cell'].total_seconds() // 3600,
+                                             (row['time_cell'].total_seconds() % 3600) // 60,
+                                             row['time_cell'].total_seconds()  % 60 )
+        title=celltime_stamp + ' , ' + datestring_stamp
+        datestring_file = row['time'].strftime('%Y-%m-%d_%H%M%S')
+
+        # plot evolving timeseries to second axis:
+
+        ax1[0]=plot_mask_cell_individual_static(particle_i=particle,
+                                             track=track_i, cog=cog_i,features=features_i, 
+                                             mask_total=mask_total_i,
+                                             field_1=field_1_i, field_2=field_2_i,
+                                             field_1_label=field_1_label, field_2_label=field_2_label,
+                                             xlim=[x_min/1000,x_max/1000],ylim=[y_min/1000,y_max/1000],
+                                             axes=ax1[0],title=title,**kwargs)
+        
+        # 
+        track_variable_past=track_variable_cell[track_variable_cell['time']<=row['time']]       
+        track_variable_current=track_variable_cell[track_variable_cell['time']==row['time']]   
+        track_variable_past.plot(ax=ax1[1],x='time_cell',y=variable,color='navy',linestyle='-')
+        track_variable_current.plot(ax=ax1[1],x='time_cell',y=variable,color='navy',marker='o',fillstyle='full')
+        ax1[1].set_xlim([0,2*1e9*3600])
+        ax1[1].set_xticks(1e9*3600*np.arange(0,2,0.25))
+        ax1[1].set_ylim([0,max(10,1.1*track_variable_cell[variable].max())])
+        ax1[1].set_xlabel('cell lifetime (min)')
+        if variable_label==None:
+            variable_label=variable
+        ax1[1].set_ylabel(variable_label)
+
+        out_dir = os.path.join(plotdir, name)
+        os.makedirs(out_dir, exist_ok=True)
+        if 'png' in file_format:
+            savepath_png = os.path.join(out_dir, name  + '_' + datestring_file + '.png')
+            fig1.savefig(savepath_png, dpi=dpi)
+            logging.debug('Mask static plot saved to ' + savepath_png)
+        if 'pdf' in file_format:
+            savepath_pdf = os.path.join(out_dir, name  + '_' + datestring_file + '.pdf')
+            fig1.savefig(savepath_pdf, dpi=dpi)
+            logging.debug('Mask static plot saved to ' + savepath_pdf)
+        plt.close()
+        plt.clf()
 
 
 
