@@ -3,7 +3,7 @@ import numpy as np
 import logging
 import os
 
-from .watershedding import mask_particle,mask_particle_surface,mask_cube_particle
+from .segmentation import mask_particle,mask_particle_surface,mask_cube_particle
 
 def cell_statistics(Input_cubes,Track,Mask,dimensions,aggregators,output_path='./',output_name='Profiles',**kwargs):
     from iris.cube import Cube,CubeList
