@@ -20,7 +20,7 @@ def maketrack(field_in,
               adaptive_step=None,            
               ):
     """
-    Function using watershedding to determine cloud volumes associated with tracked updrafts
+    Function identifiying features  andlinking them into trajectories
     
     Parameters:
     field_in:     iris.cube.Cube 
@@ -65,7 +65,7 @@ def maketrack(field_in,
     Output
     Tracks:      pandas.DataFrame
                  Tracked updrafts, one row per timestep and updraft, includes dimensions 'time','latitude','longitude','projection_x_variable', 'projection_y_variable' based on w cube. 
-                 'hdim_1' and 'hdim_2' are used for watershedding step.
+                 'hdim_1' and 'hdim_2' are used for segementation step.
     """
     from copy import deepcopy
     from trackpy import filter_stubs,filter
