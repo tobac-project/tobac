@@ -1,6 +1,6 @@
-def watershedding_3D(track,field_in,threshold=3e-3,target='maximum',level=None,compactness=0,method='watershed'):
+def segmentation_3D(track,field_in,threshold=3e-3,target='maximum',level=None,compactness=0,method='watershed'):
     """
-    Function using watershedding to determine cloud volumes associated with tracked updrafts
+    Function using watershedding or random walker to determine cloud volumes associated with tracked updrafts
     
     Parameters:
     track:         pandas.DataFrame 
@@ -21,7 +21,7 @@ def watershedding_3D(track,field_in,threshold=3e-3,target='maximum',level=None,c
                    flag determining the algorithm to use (currently watershedding implemented)
 
     Output:
-    watershed_out: iris.cube.Cube
+    segmentation_out: iris.cube.Cube
                    Cloud mask, 0 outside and integer numbers according to track inside the clouds
     
     """
@@ -40,10 +40,10 @@ def watershedding_3D(track,field_in,threshold=3e-3,target='maximum',level=None,c
         level=slice(None)
     
     field=deepcopy(field_in)
-    watershed_out=deepcopy(field)
-    watershed_out.rename('watershedding_output_mask')
-    watershed_out.data[:]=0
-    watershed_out.units=1
+    segmentation_out=deepcopy(field)
+    segmentation_out.rename('watershedding_output_mask')
+    segmentation_out.data[:]=0
+    segmentation_out.units=1
     track['ncells']=0
     field_time=field.slices_over('time')
     for i,field_i in enumerate(field_time):
@@ -55,10 +55,10 @@ def watershedding_3D(track,field_in,threshold=3e-3,target='maximum',level=None,c
         # mask data outside region above/below threshold and invert data if tracking maxima:
         if target == 'maximum':
             unmasked=data_i>threshold
-            data_i_watershed=-1*data_i
+            data_i_segmentation=-1*data_i
         elif target == 'minimum':
             unmasked=data_i<threshold
-            data_i_watershed=data_i
+            data_i_segmentation=data_i
         else:
             raise ValueError('unknown type of target')
 
@@ -69,13 +69,13 @@ def watershedding_3D(track,field_in,threshold=3e-3,target='maximum',level=None,c
         markers[~unmasked]=0
         
         if method=='watershed':
-            res1 = watershed(data_i_watershed,markers.astype(np.int32), mask=unmasked,compactness=compactness)
+            res1 = watershed(data_i_segmentation,markers.astype(np.int32), mask=unmasked,compactness=compactness)
 #        elif method=='random_walker':
-            #res1 = random_walker(Mask, markers,mode='cg')
-#             res1=random_walker(data_i_watershed, markers.astype(np.int32), beta=130, mode='bf', tol=0.001, copy=True, multichannel=False, return_full_prob=False, spacing=None)
+#             res1=random_walker(data_i_segmentation, markers.astype(np.int32),
+#                                beta=130, mode='bf', tol=0.001, copy=True, multichannel=False, return_full_prob=False, spacing=None)
         else:                
             raise ValueError('unknown method, must be watershed')
-        watershed_out.data[i,:]=res1
+        segmentation_out.data[i,:]=res1
         values, count = np.unique(res1, return_counts=True)
         counts=dict(zip(values, count))
 
@@ -83,12 +83,12 @@ def watershedding_3D(track,field_in,threshold=3e-3,target='maximum',level=None,c
             if row['particle'] in counts.keys():
                 track.loc[index,'ncells']=counts[row['particle']]
         
-        logging.debug('Finished wateshedding 3D for '+time_i.strftime('%Y-%m-%d_%H:%M:%S'))
-    return watershed_out,track
+        logging.debug('Finished segmentation 3D for '+time_i.strftime('%Y-%m-%d_%H:%M:%S'))
+    return segmentation_out,track
             
-def watershedding_2D(track,field_in,threshold=0,target='maximum',compactness=0,method='watershed'):
+def segmentation_2D(track,field_in,threshold=0,target='maximum',compactness=0,method='watershed'):
     """
-    Function using watershedding to determine cloud volumes associated with tracked updrafts
+    Function using watershedding or random walker to determine cloud volumes associated with tracked updrafts
     Parameters:
     track:         pandas.DataFrame 
                    output from trackpy/maketrack
@@ -104,12 +104,10 @@ def watershedding_2D(track,field_in,threshold=0,target='maximum',compactness=0,m
                    flag determining the algorithm to use (currently watershedding implemented)
     
     Output:
-    watershed_out: iris.cube.Cube
+    segmentation_out: iris.cube.Cube
                    Cloud mask, 0 outside and integer numbers according to track inside the clouds
     
-    """
-
-    
+    """  
     import numpy as np
     from copy import deepcopy
     from skimage.morphology import watershed
@@ -119,10 +117,10 @@ def watershedding_2D(track,field_in,threshold=0,target='maximum',compactness=0,m
     logging.info('Start wateshedding 2D')
 
     field=deepcopy(field_in)
-    watershed_out=deepcopy(field)
-    watershed_out.rename('watershedding_output_mask')
-    watershed_out.data[:]=0
-    watershed_out.units=1
+    segmentation_out=deepcopy(field)
+    segmentation_out.rename('watershedding_output_mask')
+    segmentation_out.data[:]=0
+    segmentation_out.units=1
 
     track['ncells']=0
 
@@ -136,10 +134,10 @@ def watershedding_2D(track,field_in,threshold=0,target='maximum',compactness=0,m
         # mask data outside region above/below threshold and invert data if tracking maxima:
         if target == 'maximum':
             unmasked=data_i>threshold
-            data_i_watershed=-1*data_i
+            data_i_segmentation=-1*data_i
         elif target == 'minimum':
             unmasked=data_i<threshold
-            data_i_watershed=data_i
+            data_i_segmentation=data_i
         else:
             raise ValueError('unknown type of target')
         markers = np.zeros_like(unmasked).astype(np.int32)
@@ -148,13 +146,14 @@ def watershedding_2D(track,field_in,threshold=0,target='maximum',compactness=0,m
         markers[~unmasked]=0
 
         if method=='watershed':
-            res1 = watershed(data_i_watershed,markers.astype(np.int32), mask=unmasked,compactness=compactness)
+            res1 = watershed(data_i_segmentation,markers.astype(np.int32), mask=unmasked,compactness=compactness)
 #        elif method=='random_walker':
 #            #res1 = random_walker(Mask, markers,mode='cg')
-#              res1=random_walker(data_i_watershed, markers.astype(np.int8), beta=130, mode='bf', tol=0.001, copy=True, multichannel=False, return_full_prob=False, spacing=None)
+#             res1=random_walker(data_i_segmentation, markers.astype(np.int32),
+#                                beta=130, mode='bf', tol=0.001, copy=True, multichannel=False, return_full_prob=False, spacing=None)
         else:
             raise ValueError('unknown method, must be watershed')
-        watershed_out.data[i,:]=res1
+        segmentation_out.data[i,:]=res1
         
         values, count = np.unique(res1, return_counts=True)
         counts=dict(zip(values, count))
@@ -164,7 +163,18 @@ def watershedding_2D(track,field_in,threshold=0,target='maximum',compactness=0,m
                 track.loc[index,'ncells']=counts[row['particle']]
         logging.debug('Finished wateshedding 2D for '+time_i.strftime('%Y-%m-%d_%H:%M:%S'))
 
-    return watershed_out,track
+    return segmentation_out,track
+
+#functions for backwards compatibility
+
+def watershedding_3D(track,field_in,**kwargs):
+    kwargs.pop('method',None)
+    return segmentation_3D(track,field_in,method='watershed',**kwargs)
+
+def watershedding_2D(track,field_in,**kwargs):
+    kwargs.pop('method',None)
+    return segmentation_2D(track,field_in,method='watershed',**kwargs)
+
 
 def mask_cube_particle(variable_cube,mask,particle):
     ''' Mask cube for tracked volume of an individual cell   
