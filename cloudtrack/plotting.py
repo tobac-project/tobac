@@ -604,6 +604,7 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
     from iris import Constraint
     from numpy import unique
     import os
+    import pandas as pd
     track_cell=track[track['particle']==particle]
     x_min=track_cell['projection_x_coordinate'].min()-width
     x_max=track_cell['projection_x_coordinate'].max()+width
@@ -613,6 +614,7 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
     time_max=track_cell['time'].max()
 
     track_variable_cell=track_variable[track_variable['particle']==particle]
+    track_variable_cell['time_cell']=pd.to_timedelta(track_variable_cell['time_cell'])
 #    track_variable_cell=track_variable_cell[(track_variable_cell['time']>=time_min) & (track_variable_cell['time']<=time_max)] 
 
     for i_row,row in track_cell.iterrows():
@@ -658,7 +660,7 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
 
 
         fig1, ax1 = plt.subplots(ncols=2, nrows=1, figsize=figsize)
-        fig1.subplots_adjust(left=0.2, bottom=0.15, right=0.80, top=0.85,wspace=0.2)
+        fig1.subplots_adjust(left=0.1, bottom=0.15, right=0.90, top=0.85,wspace=0.3)
         
         datestring_stamp = row['time'].strftime('%Y-%m-%d %H:%M:%S')
         celltime_stamp = "%02d:%02d:%02d" % (row['time_cell'].total_seconds() // 3600,
@@ -667,8 +669,7 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
         title=celltime_stamp + ' , ' + datestring_stamp
         datestring_file = row['time'].strftime('%Y-%m-%d_%H%M%S')
 
-        # plot evolving timeseries to second axis:
-
+        # plot evolving timeseries of variable to second axis:
         ax1[0]=plot_mask_cell_individual_static(particle_i=particle,
                                              track=track_i, cog=cog_i,features=features_i, 
                                              mask_total=mask_total_i,
@@ -677,13 +678,19 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
                                              xlim=[x_min/1000,x_max/1000],ylim=[y_min/1000,y_max/1000],
                                              axes=ax1[0],title=title,**kwargs)
         
-        # 
         track_variable_past=track_variable_cell[(track_variable_cell['time']>=time_min)  & (track_variable_cell['time']<=row['time'])]       
         track_variable_current=track_variable_cell[track_variable_cell['time']==row['time']]   
-        track_variable_past.plot(ax=ax1[1],x='time_cell',y=variable,color='navy',linestyle='-')
-        track_variable_current.plot(ax=ax1[1],x='time_cell',y=variable,color='navy',marker='o',fillstyle='full')
-        ax1[1].set_xlim([0,2*1e9*3600])
-        ax1[1].set_xticks(1e9*3600*np.arange(0,2,0.25))
+#        track_variable_past.plot(ax=ax1[1],x='time_cell',y=variable,color='navy',linestyle='-')
+#        track_variable_current.plot(ax=ax1[1],x='time_cell',y=variable,color='navy',marker='o',fillstyle='full')        
+#        ax1[1].set_xlim([0,2*1e9*3600])
+#        ax1[1].set_xticks(1e9*3600*np.arange(0,2,0.25))
+        
+        ax1[1].plot(track_variable_past['time_cell'].dt.total_seconds()/ 60.,track_variable_past[variable].values,color='navy',linestyle='-')
+        ax1[1].plot(track_variable_current['time_cell'].dt.total_seconds()/ 60.,track_variable_current[variable].values,color='navy',marker='o',markersize=4,fillstyle='full')
+        ax1[1].yaxis.tick_right()
+        ax1[1].yaxis.set_label_position("right")
+        ax1[1].set_xlim([0,2*60])
+        ax1[1].set_xticks(np.arange(0,120,15))
         ax1[1].set_ylim([0,max(10,1.1*track_variable_cell[variable].max())])
         ax1[1].set_xlabel('cell lifetime (min)')
         if variable_label==None:
