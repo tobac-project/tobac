@@ -254,7 +254,7 @@ def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
     Output:
     '''
     import numpy as np
-    from cloudtrack.watershedding  import mask_particle_surface
+    from cloudtrack.segmentation  import mask_particle_surface
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     from matplotlib.colors import Normalize
     
@@ -368,7 +368,7 @@ def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
 def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
                                     field_1, field_2,
                                     field_1_label=None, field_2_label=None,
-                                    width=10000,
+                                    width=10000,n_extend=1,
                                     name= 'test', plotdir='./',
                                     n_core=1,file_format=['png'],figsize=(10/2.54, 10/2.54),dpi=300,
                                     **kwargs):
@@ -385,9 +385,22 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
     y_min=track_cell['projection_y_coordinate'].min()-width
     y_max=track_cell['projection_y_coordinate'].max()+width
     
-    for i_row,row in track_cell.iterrows():
-        
-        constraint_time = Constraint(time=row['time'])
+    #set up looping over time based on mask's time coordinate to allow for one timestep before and after the track
+    time_coord=mask_total.coord('time')
+    time=time_coord.units.num2date(time_coord.points)
+    i_start=max(0,np.where(time==track_cell['time'].values[0])[0][0]-n_extend)
+    i_end=min(len(time)-1,np.where(time==track_cell['time'].values[-1])[0][0]+n_extend+1)
+    time_cell=time[slice(i_start,i_end)]
+    logging.debug(str(i_start))
+    logging.debug(str(i_end))
+    logging.debug(str(time_cell))
+    for time_i in time_cell:
+
+#    for i_row,row in track_cell.iterrows():
+#        time_i=row['time']
+#        constraint_time = Constraint(time=row['time'])
+        constraint_time = Constraint(time=time_i)
+
         constraint_x = Constraint(projection_x_coordinate = lambda cell: x_min < cell < x_max)
         constraint_y = Constraint(projection_y_coordinate = lambda cell: y_min < cell < y_max)
         constraint = constraint_time & constraint_x & constraint_y            
@@ -403,8 +416,8 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
             field_2_i=field_2.extract(constraint)
 
         
-        track_i=track[track['time']==row['time']]
-        
+        track_i=track[track['time']==time_i]
+
         cells_mask=list(unique(mask_total_i.core_data()))
         track_cells=track_i.loc[(track_i['projection_x_coordinate'] > x_min)  & (track_i['projection_x_coordinate'] < x_max) & (track_i['projection_y_coordinate'] > y_min) & (track_i['projection_y_coordinate'] < y_max)]
         cells_track=list(track_cells['particle'].values)
@@ -419,23 +432,27 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
             cog_i=None
         else:
             cog_i=cog[cog['particle'].isin(cells)]
-            cog_i=cog_i[cog_i['time']==row['time']]
+            cog_i=cog_i[cog_i['time']==time_i]
 
         if features is None:
             features_i=None
         else:
-            features_i=features[features['time']==row['time']]
+            features_i=features[features['time']==time_i]
 
 
         fig1, ax1 = plt.subplots(ncols=1, nrows=1, figsize=figsize)
         fig1.subplots_adjust(left=0.2, bottom=0.15, right=0.80, top=0.85)
         
-        datestring_stamp = row['time'].strftime('%Y-%m-%d %H:%M:%S')
-        celltime_stamp = "%02d:%02d:%02d" % (row['time_cell'].total_seconds() // 3600,
-                                             (row['time_cell'].total_seconds() % 3600) // 60,
-                                             row['time_cell'].total_seconds()  % 60 )
+        datestring_stamp = time_i.strftime('%Y-%m-%d %H:%M:%S')
+        if time_i in track_cell['time']:
+            time_cell_i=track_cell[track_cell['time']==time_i]['time_cell']
+            celltime_stamp = "%02d:%02d:%02d" % (time_cell_i.total_seconds() // 3600,
+                                             (time_cell_i.total_seconds() % 3600) // 60,
+                                             time_cell_i.total_seconds()  % 60 )
+        else:
+            celltime_stamp=' - '
         title=celltime_stamp + ' , ' + datestring_stamp
-        datestring_file = row['time'].strftime('%Y-%m-%d_%H%M%S')
+        datestring_file = time_i.strftime('%Y-%m-%d_%H%M%S')
 
         ax1=plot_mask_cell_individual_static(particle_i=particle,
                                              track=track_i, cog=cog_i,features=features_i, 
@@ -477,7 +494,7 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
     '''
 
     import numpy as np
-    from cloudtrack.watershedding  import mask_particle_surface
+    from cloudtrack.segmentation  import mask_particle_surface
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     from matplotlib.colors import Normalize
     
@@ -589,7 +606,7 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
                                            field_1, field_2,
                                            field_1_label=None, field_2_label=None,
                                            track_variable=None,variable=None,variable_label=None,
-                                           width=10000,
+                                           width=10000,n_extend=1,
                                            name= 'test', plotdir='./',
                                            n_core=1,file_format=['png'],figsize=(20/2.54, 10/2.54),dpi=300,
                                            **kwargs):
@@ -617,9 +634,15 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
     track_variable_cell['time_cell']=pd.to_timedelta(track_variable_cell['time_cell'])
 #    track_variable_cell=track_variable_cell[(track_variable_cell['time']>=time_min) & (track_variable_cell['time']<=time_max)] 
 
-    for i_row,row in track_cell.iterrows():
-        
-        constraint_time = Constraint(time=row['time'])
+    #set up looping over time based on mask's time coordinate to allow for one timestep before and after the track
+    time_coord=mask_total.coord('time')
+    time=time_coord.units.num2date(time_coord.points)
+    i_start=max(0,np.where(time==track_cell['time'].values[0])[0][0]-n_extend)
+    i_end=min(len(time)-1,np.where(time==track_cell['time'].values[-1])[0][0]+n_extend+1)
+    time_cell=time[slice(i_start,i_end)]
+    for time_i in time_cell:
+                
+        constraint_time = Constraint(time=time_i)
         constraint_x = Constraint(projection_x_coordinate = lambda cell: x_min < cell < x_max)
         constraint_y = Constraint(projection_y_coordinate = lambda cell: y_min < cell < y_max)
         constraint = constraint_time & constraint_x & constraint_y            
@@ -635,7 +658,7 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
             field_2_i=field_2.extract(constraint)
 
         
-        track_i=track[track['time']==row['time']]
+        track_i=track[track['time']==time_i]
         
         cells_mask=list(unique(mask_total_i.core_data()))
         track_cells=track_i.loc[(track_i['projection_x_coordinate'] > x_min)  & (track_i['projection_x_coordinate'] < x_max) & (track_i['projection_y_coordinate'] > y_min) & (track_i['projection_y_coordinate'] < y_max)]
@@ -651,23 +674,27 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
             cog_i=None
         else:
             cog_i=cog[cog['particle'].isin(cells)]
-            cog_i=cog_i[cog_i['time']==row['time']]
+            cog_i=cog_i[cog_i['time']==time_i]
 
         if features is None:
             features_i=None
         else:
-            features_i=features[features['time']==row['time']]
+            features_i=features[features['time']==time_i]
 
 
         fig1, ax1 = plt.subplots(ncols=2, nrows=1, figsize=figsize)
         fig1.subplots_adjust(left=0.1, bottom=0.15, right=0.90, top=0.85,wspace=0.3)
         
-        datestring_stamp = row['time'].strftime('%Y-%m-%d %H:%M:%S')
-        celltime_stamp = "%02d:%02d:%02d" % (row['time_cell'].total_seconds() // 3600,
-                                             (row['time_cell'].total_seconds() % 3600) // 60,
-                                             row['time_cell'].total_seconds()  % 60 )
+        datestring_stamp = time_i.strftime('%Y-%m-%d %H:%M:%S')
+        if time_i in track_cell['time']:
+            time_cell_i=track_cell[track_cell['time']==time_i]['time_cell']
+            celltime_stamp = "%02d:%02d:%02d" % (time_cell_i.total_seconds() // 3600,
+                                             (time_cell_i.total_seconds() % 3600) // 60,
+                                             time_cell_i.total_seconds()  % 60 )
+        else:
+            celltime_stamp=' - '
         title=celltime_stamp + ' , ' + datestring_stamp
-        datestring_file = row['time'].strftime('%Y-%m-%d_%H%M%S')
+        datestring_file = time_i.strftime('%Y-%m-%d_%H%M%S')
 
         # plot evolving timeseries of variable to second axis:
         ax1[0]=plot_mask_cell_individual_static(particle_i=particle,
@@ -678,8 +705,8 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
                                              xlim=[x_min/1000,x_max/1000],ylim=[y_min/1000,y_max/1000],
                                              axes=ax1[0],title=title,**kwargs)
         
-        track_variable_past=track_variable_cell[(track_variable_cell['time']>=time_min)  & (track_variable_cell['time']<=row['time'])]       
-        track_variable_current=track_variable_cell[track_variable_cell['time']==row['time']]   
+        track_variable_past=track_variable_cell[(track_variable_cell['time']>=time_min)  & (track_variable_cell['time']<=time_i)]       
+        track_variable_current=track_variable_cell[track_variable_cell['time']==time_i]   
 #        track_variable_past.plot(ax=ax1[1],x='time_cell',y=variable,color='navy',linestyle='-')
 #        track_variable_current.plot(ax=ax1[1],x='time_cell',y=variable,color='navy',marker='o',fillstyle='full')        
 #        ax1[1].set_xlim([0,2*1e9*3600])
