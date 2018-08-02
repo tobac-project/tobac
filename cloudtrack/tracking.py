@@ -660,6 +660,8 @@ def add_cell_time(t):
         track_0=track.head(n=1)
         for i,row in track.iterrows():
             t.loc[i,'time_cell']=row['time']-track_0.loc[track_0.index[0],'time']
+    # turn series into pandas timedelta DataSeries
+    t['time_cell']=pd.to_timedelta(t['time_cell'])
     return t
 
 def add_coordinates(t,variable_cube):     
