@@ -1,4 +1,4 @@
-def segmentation_3D(track,field_in,threshold=3e-3,target='maximum',level=None,compactness=0,method='watershed'):
+def segmentation_3D(track,field,threshold=3e-3,target='maximum',level=None,compactness=0,method='watershed'):
     """
     Function using watershedding or random walker to determine cloud volumes associated with tracked updrafts
     
@@ -27,11 +27,11 @@ def segmentation_3D(track,field_in,threshold=3e-3,target='maximum',level=None,co
     """
     
     import numpy as np
-    from copy import deepcopy
     from skimage.morphology import watershed
 #    from skimage.segmentation import random_walker
     import logging
-
+#    from iris.cube import Cube
+#    from copy import deepcopy
     logging.info('Start watershedding 3D')
 
     #Set level at which to create "Seed" for each cloud and threshold in total water content:
@@ -39,17 +39,18 @@ def segmentation_3D(track,field_in,threshold=3e-3,target='maximum',level=None,co
     if level==None:
         level=slice(None)
     
-    field=deepcopy(field_in)
-    segmentation_out=deepcopy(field)
+    segmentation_out=1*field
     segmentation_out.rename('watershedding_output_mask')
-    segmentation_out.data[:]=0
     segmentation_out.units=1
+    
     track['ncells']=0
     field_time=field.slices_over('time')
     for i,field_i in enumerate(field_time):
-        field_i_copy=deepcopy(field_i)
-        data_i=field_i_copy.core_data()
-        time_i=field_i_copy.coord('time').units.num2date(field_i_copy.coord('time').points[0])
+#        field_i_copy=deepcopy(field_i)
+#        data_i=field_i_copy.core_data()
+#        time_i=field_i_copy.coord('time').units.num2date(field_i_copy.coord('time').points[0])
+        data_i=field_i.core_data()
+        time_i=field_i.coord('time').units.num2date(field_i.coord('time').points[0])
         tracks_i=track[track['time']==time_i]
         
         # mask data outside region above/below threshold and invert data if tracking maxima:
@@ -84,9 +85,10 @@ def segmentation_3D(track,field_in,threshold=3e-3,target='maximum',level=None,co
                 track.loc[index,'ncells']=counts[row['particle']]
         
         logging.debug('Finished segmentation 3D for '+time_i.strftime('%Y-%m-%d_%H:%M:%S'))
+
     return segmentation_out,track
             
-def segmentation_2D(track,field_in,threshold=0,target='maximum',compactness=0,method='watershed'):
+def segmentation_2D(track,field,threshold=0,target='maximum',compactness=0,method='watershed'):
     """
     Function using watershedding or random walker to determine cloud volumes associated with tracked updrafts
     Parameters:
@@ -113,14 +115,21 @@ def segmentation_2D(track,field_in,threshold=0,target='maximum',compactness=0,me
     from skimage.morphology import watershed
 #    from skimage.segmentation import random_walker
     import logging
+#    from iris.cube import Cube
 
     logging.info('Start wateshedding 2D')
 
-    field=deepcopy(field_in)
-    segmentation_out=deepcopy(field)
+
+    segmentation_out=1*field
     segmentation_out.rename('watershedding_output_mask')
     segmentation_out.data[:]=0
     segmentation_out.units=1
+#    
+#    segmentation_out=Cube(np.zeros(field.shape))
+#    segmentation_out.coords=field.coords
+#    segmentation_out.rename('watershedding_output_mask')
+#    segmentation_out.units=1
+
 
     track['ncells']=0
 
@@ -174,6 +183,35 @@ def watershedding_3D(track,field_in,**kwargs):
 def watershedding_2D(track,field_in,**kwargs):
     kwargs.pop('method',None)
     return segmentation_2D(track,field_in,method='watershed',**kwargs)
+
+def column_mask_from2D(mask_2D,cube,z_coord='model_level_number'):
+    '''     function to turn 2D watershedding mask into a 3D mask of selected columns
+    Input:
+    cube:              iris.cube.Cube 
+                       data cube
+    mask_2D:           iris.cube.Cube 
+                       2D cube containing mask (int id for tacked volumes 0 everywhere else)
+    z_coord:           str
+                       name of the vertical coordinate in the cube
+    Output:
+    mask_2D:           iris.cube.Cube 
+                       3D cube containing columns of 2D mask (int id for tacked volumes 0 everywhere else)
+    '''
+    from copy import deepcopy
+    mask_3D=deepcopy(cube)
+    mask_3D.rename('watershedding_output_mask')
+    dim=mask_3D.coord_dims(z_coord)[0]
+    for i in range(len(mask_3D.coord(z_coord).points)):
+        slc = [slice(None)] * len(mask_3D.shape)
+        print(i)
+        print(dim)
+        slc[dim] = slice(i,i+1)    
+        print(slc)
+        print(mask_2D.shape)
+        mask_out=mask_3D[slc]
+        print(mask_out.shape)
+        mask_3D.data[slc]=mask_2D.core_data()
+    return mask_3D
 
 
 def mask_cube_particle(variable_cube,mask,particle):
