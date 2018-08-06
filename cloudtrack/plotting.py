@@ -176,6 +176,7 @@ def plot_mask_cell_track_follow(particle,track, cog, features, mask_total,
     track_cell=track[track['particle']==particle]
     for i_row,row in track_cell.iterrows():
         
+        
         constraint_time = Constraint(time=row['time'])
         constraint_x = Constraint(projection_x_coordinate = lambda cell: row['projection_x_coordinate']-width < cell < row['projection_x_coordinate']+width)
         constraint_y = Constraint(projection_y_coordinate = lambda cell: row['projection_y_coordinate']-width < cell < row['projection_y_coordinate']+width)
@@ -212,8 +213,11 @@ def plot_mask_cell_track_follow(particle,track, cog, features, mask_total,
         fig1, ax1 = plt.subplots(ncols=1, nrows=1, figsize=figsize)
         fig1.subplots_adjust(left=0.2, bottom=0.15, right=0.85, top=0.80)
         
+
+        
+        
         datestring_stamp = row['time'].strftime('%Y-%m-%d %H:%M:%S')
-        celltime_stamp = "%02d:%02d:%02d" % (row['time_cell'].total_seconds() // 3600,(row['time_cell'].total_seconds() % 3600) // 60, row['time_cell'].total_seconds()  % 60 )
+        celltime_stamp = "%02d:%02d:%02d" % (row['time_cell'].dt.total_seconds() // 3600,(row['time_cell'].dt.total_seconds() % 3600) // 60, row['time_cell'].dt.total_seconds()  % 60 )
         title=celltime_stamp + ' , ' + datestring_stamp
         datestring_file = row['time'].strftime('%Y-%m-%d_%H%M%S')
 
