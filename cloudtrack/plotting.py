@@ -14,7 +14,7 @@ def plot_tracks_mask_field_loop(track,field,mask,features,axes=None,name=None,pl
     import os
     from iris import Constraint
     os.makedirs(plot_dir,exist_ok=True)
-    time=field.coord('time')
+    time=mask.coord('time')
     if name is None:
         name=field.name()
     for time_i in time.points:
@@ -25,10 +25,11 @@ def plot_tracks_mask_field_loop(track,field,mask,features,axes=None,name=None,pl
         field_i=field.extract(constraint_time)
         mask_i=mask.extract(constraint_time)
         track_i=track[track['time']==datetime_i]
-        features_i=features[features['time']==datetime_i]   
+        features_i=features[features['time']==datetime_i]
         ax1=plot_tracks_mask_field(track=track_i,field=field_i,mask=mask_i,features=features_i,
                                    axes=ax1,**kwargs)        
         fig1.subplots_adjust(left=margin_left, bottom=margin_bottom, right=1-margin_right, top=1-margin_top)
+        os.makedirs(plot_dir, exist_ok=True)
         savepath_png=os.path.join(plot_dir,name+'_'+datestring_file+'.png')
         fig1.savefig(savepath_png,dpi=dpi)
         logging.debug('Figure plotted to ' + str(savepath_png))
@@ -391,9 +392,6 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
     i_start=max(0,np.where(time==track_cell['time'].values[0])[0][0]-n_extend)
     i_end=min(len(time)-1,np.where(time==track_cell['time'].values[-1])[0][0]+n_extend+1)
     time_cell=time[slice(i_start,i_end)]
-    logging.debug(str(i_start))
-    logging.debug(str(i_end))
-    logging.debug(str(time_cell))
     for time_i in time_cell:
 
 #    for i_row,row in track_cell.iterrows():
@@ -444,11 +442,11 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
         fig1.subplots_adjust(left=0.2, bottom=0.15, right=0.80, top=0.85)
         
         datestring_stamp = time_i.strftime('%Y-%m-%d %H:%M:%S')
-        if time_i in track_cell['time']:
-            time_cell_i=track_cell[track_cell['time']==time_i]['time_cell']
-            celltime_stamp = "%02d:%02d:%02d" % (time_cell_i.total_seconds() // 3600,
-                                             (time_cell_i.total_seconds() % 3600) // 60,
-                                             time_cell_i.total_seconds()  % 60 )
+        if time_i in track_cell['time'].values:
+            time_cell_i=track_cell[track_cell['time'].values==time_i]['time_cell']
+            celltime_stamp = "%02d:%02d:%02d" % (time_cell_i.dt.total_seconds() // 3600,
+                                             (time_cell_i.dt.total_seconds() % 3600) // 60,
+                                             time_cell_i.dt.total_seconds()  % 60 )
         else:
             celltime_stamp=' - '
         title=celltime_stamp + ' , ' + datestring_stamp
@@ -686,11 +684,11 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
         fig1.subplots_adjust(left=0.1, bottom=0.15, right=0.90, top=0.85,wspace=0.3)
         
         datestring_stamp = time_i.strftime('%Y-%m-%d %H:%M:%S')
-        if time_i in track_cell['time']:
-            time_cell_i=track_cell[track_cell['time']==time_i]['time_cell']
-            celltime_stamp = "%02d:%02d:%02d" % (time_cell_i.total_seconds() // 3600,
-                                             (time_cell_i.total_seconds() % 3600) // 60,
-                                             time_cell_i.total_seconds()  % 60 )
+        if time_i in track_cell['time'].values:
+            time_cell_i=track_cell[track_cell['time'].values==time_i]['time_cell']
+            celltime_stamp = "%02d:%02d:%02d" % (time_cell_i.dt.total_seconds() // 3600,
+                                             (time_cell_i.dt.total_seconds() % 3600) // 60,
+                                             time_cell_i.dt.total_seconds()  % 60 )
         else:
             celltime_stamp=' - '
         title=celltime_stamp + ' , ' + datestring_stamp
@@ -707,10 +705,6 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
         
         track_variable_past=track_variable_cell[(track_variable_cell['time']>=time_min)  & (track_variable_cell['time']<=time_i)]       
         track_variable_current=track_variable_cell[track_variable_cell['time']==time_i]   
-#        track_variable_past.plot(ax=ax1[1],x='time_cell',y=variable,color='navy',linestyle='-')
-#        track_variable_current.plot(ax=ax1[1],x='time_cell',y=variable,color='navy',marker='o',fillstyle='full')        
-#        ax1[1].set_xlim([0,2*1e9*3600])
-#        ax1[1].set_xticks(1e9*3600*np.arange(0,2,0.25))
         
         ax1[1].plot(track_variable_past['time_cell'].dt.total_seconds()/ 60.,track_variable_past[variable].values,color='navy',linestyle='-')
         ax1[1].plot(track_variable_current['time_cell'].dt.total_seconds()/ 60.,track_variable_current[variable].values,color='navy',marker='o',markersize=4,fillstyle='full')
