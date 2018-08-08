@@ -30,8 +30,8 @@ def segmentation_3D(track,field,threshold=3e-3,target='maximum',level=None,compa
     from skimage.morphology import watershed
 #    from skimage.segmentation import random_walker
     import logging
-#    from iris.cube import Cube
-#    from copy import deepcopy
+    from iris.cube import CubeList
+    from iris.util import new_axis
     logging.info('Start watershedding 3D')
 
     #Set level at which to create "Seed" for each cloud and threshold in total water content:
@@ -39,17 +39,21 @@ def segmentation_3D(track,field,threshold=3e-3,target='maximum',level=None,compa
     if level==None:
         level=slice(None)
     
-    segmentation_out=1*field
-    segmentation_out.rename('watershedding_output_mask')
-    segmentation_out.units=1
+    # CubeList to store individual segmentation masks
+    segmentation_out_list=CubeList()
     
     track['ncells']=0
     field_time=field.slices_over('time')
     for i,field_i in enumerate(field_time):
-#        field_i_copy=deepcopy(field_i)
-#        data_i=field_i_copy.core_data()
-#        time_i=field_i_copy.coord('time').units.num2date(field_i_copy.coord('time').points[0])
-        data_i=field_i.core_data()
+
+        # Create cube of the same dimensions and coordinates as input data to store mask:        
+        segmentation_out_i=1*field_i
+        segmentation_out_i.rename('watershedding_output_mask')
+        segmentation_out_i.units=1
+
+#        data_i=field_i.core_data()
+        data_i=field_i.data
+
         time_i=field_i.coord('time').units.num2date(field_i.coord('time').points[0])
         tracks_i=track[track['time']==time_i]
         
@@ -76,16 +80,30 @@ def segmentation_3D(track,field,threshold=3e-3,target='maximum',level=None,compa
 #                                beta=130, mode='bf', tol=0.001, copy=True, multichannel=False, return_full_prob=False, spacing=None)
         else:                
             raise ValueError('unknown method, must be watershed')
-        segmentation_out.data[i,:]=res1
+            
+        #Write resulting mass into Cube and append to CubeList collecting masks for individual timesteps
+        
+        segmentation_out_i.data=res1
+        
+        # using merge throws error, so cubes with time promoted to DimCoord and using concatenate:
+#        segmentation_out_list.append(segmentation_out_i)
+        segmentation_out_i_temp=new_axis(segmentation_out_i, scalar_coord='time')
+        segmentation_out_list.append(segmentation_out_i_temp)
+
+        # count number of grid cells asoociated to each tracked cell and write that into DataFrame:
         values, count = np.unique(res1, return_counts=True)
         counts=dict(zip(values, count))
-
         for index, row in tracks_i.iterrows():
             if row['particle'] in counts.keys():
                 track.loc[index,'ncells']=counts[row['particle']]
         
         logging.debug('Finished segmentation 3D for '+time_i.strftime('%Y-%m-%d_%H:%M:%S'))
+    #merge individual masks in CubeList into one Cube:    
+    # using merge throws error, so cubes with time promoted to DimCoord and using concatenate:
+#    segmentation_out=segmentation_out_list.merge_cube()
+    segmentation_out=segmentation_out_list.concatenate_cube()
 
+    logging.debug('Finished segmentation 3D')
     return segmentation_out,track
             
 def segmentation_2D(track,field,threshold=0,target='maximum',compactness=0,method='watershed'):
@@ -111,33 +129,29 @@ def segmentation_2D(track,field,threshold=0,target='maximum',compactness=0,metho
     
     """  
     import numpy as np
-    from copy import deepcopy
     from skimage.morphology import watershed
 #    from skimage.segmentation import random_walker
     import logging
-#    from iris.cube import Cube
+    from iris.cube import CubeList
+    from iris.util import new_axis
 
     logging.info('Start wateshedding 2D')
 
-
-    segmentation_out=1*field
-    segmentation_out.rename('watershedding_output_mask')
-    segmentation_out.data[:]=0
-    segmentation_out.units=1
-#    
-#    segmentation_out=Cube(np.zeros(field.shape))
-#    segmentation_out.coords=field.coords
-#    segmentation_out.rename('watershedding_output_mask')
-#    segmentation_out.units=1
-
+    # CubeList to store individual segmentation masks
+    segmentation_out_list=CubeList()
 
     track['ncells']=0
 
     field_time=field.slices_over('time')
     for i,field_i in enumerate(field_time):
-        field_i_copy=deepcopy(field_i)
-        data_i=field_i_copy.core_data()
-        time_i=field_i_copy.coord('time').units.num2date(field_i_copy.coord('time').points[0])
+        
+        # Create cube of the same dimensions and coordinates as input data to store mask:        
+        segmentation_out_i=1*field_i
+        segmentation_out_i.rename('watershedding_output_mask')
+        segmentation_out_i.units=1
+        
+        data_i=field_i.core_data()
+        time_i=field_i.coord('time').units.num2date(field_i.coord('time').points[0])
         tracks_i=track[track['time']==time_i]
         
         # mask data outside region above/below threshold and invert data if tracking maxima:
@@ -162,15 +176,27 @@ def segmentation_2D(track,field,threshold=0,target='maximum',compactness=0,metho
 #                                beta=130, mode='bf', tol=0.001, copy=True, multichannel=False, return_full_prob=False, spacing=None)
         else:
             raise ValueError('unknown method, must be watershed')
-        segmentation_out.data[i,:]=res1
+            
+        segmentation_out_i.data=res1
+        # using merge throws error, so cubes with time promoted to DimCoord and using concatenate:
+#        segmentation_out_list.append(segmentation_out_i)
+        segmentation_out_i_temp=new_axis(segmentation_out_i, scalar_coord='time')
+        segmentation_out_list.append(segmentation_out_i_temp)
         
+        # count number of grid cells asoociated to each tracked cell and write that into DataFrame:
         values, count = np.unique(res1, return_counts=True)
         counts=dict(zip(values, count))
-
         for index, row in tracks_i.iterrows():
             if row['particle'] in counts.keys():
                 track.loc[index,'ncells']=counts[row['particle']]
         logging.debug('Finished wateshedding 2D for '+time_i.strftime('%Y-%m-%d_%H:%M:%S'))
+    
+    #merge individual masks in CubeList into one Cube:    
+    # using merge throws error, so cubes with time promoted to DimCoord and using concatenate:
+#    segmentation_out=segmentation_out_list.merge_cube()
+    segmentation_out=segmentation_out_list.concatenate_cube()
+
+    logging.debug('Finished segmentation 3D')
 
     return segmentation_out,track
 
