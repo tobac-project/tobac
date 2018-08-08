@@ -259,7 +259,7 @@ def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
     Output:
     '''
     import numpy as np
-    from cloudtrack.segmentation  import mask_particle_surface
+    from .utils  import mask_particle_surface
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     from matplotlib.colors import Normalize
     
@@ -496,7 +496,7 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
     '''
 
     import numpy as np
-    from cloudtrack.segmentation  import mask_particle_surface
+    from .utils  import mask_particle_surface
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     from matplotlib.colors import Normalize
     
@@ -607,7 +607,7 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
 def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_total,
                                            field_1, field_2,
                                            field_1_label=None, field_2_label=None,
-                                           track_variable=None,variable=None,variable_label=None,
+                                           track_variable=None,variable=None,variable_label=None,variable_color=None,
                                            width=10000,n_extend=1,
                                            name= 'test', plotdir='./',
                                            n_core=1,file_format=['png'],figsize=(20/2.54, 10/2.54),dpi=300,
@@ -635,7 +635,7 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
     track_variable_cell=track_variable[track_variable['particle']==particle]
     track_variable_cell['time_cell']=pd.to_timedelta(track_variable_cell['time_cell'])
 #    track_variable_cell=track_variable_cell[(track_variable_cell['time']>=time_min) & (track_variable_cell['time']<=time_max)] 
-
+        
     #set up looping over time based on mask's time coordinate to allow for one timestep before and after the track
     time_coord=mask_total.coord('time')
     time=time_coord.units.num2date(time_coord.points)
@@ -710,13 +710,23 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
         track_variable_past=track_variable_cell[(track_variable_cell['time']>=time_min)  & (track_variable_cell['time']<=time_i)]       
         track_variable_current=track_variable_cell[track_variable_cell['time']==time_i]   
         
-        ax1[1].plot(track_variable_past['time_cell'].dt.total_seconds()/ 60.,track_variable_past[variable].values,color='navy',linestyle='-')
-        ax1[1].plot(track_variable_current['time_cell'].dt.total_seconds()/ 60.,track_variable_current[variable].values,color='navy',marker='o',markersize=4,fillstyle='full')
+        if variable_color is None:
+            variable_color='navy'
+
+        if type(variable) is str:
+            variable=[variable]
+            if type(variable_color) is str:
+                variable_color={variable:variable_color}
+
+        for variable_i in variable:
+            color=variable_color[variable_i]
+            ax1[1].plot(track_variable_past['time_cell'].dt.total_seconds()/ 60.,track_variable_past[variable_i].values,color=color,linestyle='-')
+            ax1[1].plot(track_variable_current['time_cell'].dt.total_seconds()/ 60.,track_variable_current[variable_i].values,color=color,marker='o',markersize=4,fillstyle='full')
         ax1[1].yaxis.tick_right()
         ax1[1].yaxis.set_label_position("right")
         ax1[1].set_xlim([0,2*60])
         ax1[1].set_xticks(np.arange(0,120,15))
-        ax1[1].set_ylim([0,max(10,1.1*track_variable_cell[variable].max())])
+        ax1[1].set_ylim([0,max(10,1.1*track_variable_cell[variable].max().max())])
         ax1[1].set_xlabel('cell lifetime (min)')
         if variable_label==None:
             variable_label=variable
