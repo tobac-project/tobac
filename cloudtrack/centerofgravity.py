@@ -13,7 +13,7 @@ def calculate_cog(tracks,mass,mask):
     tracks_out  pandas.DataFrame
                 Dataframe containing t,x,y,z positions of centre of gravity and total cloud mass each tracked cells at each timestep
     '''
-    from .watershedding import mask_cube_particle
+    from .utils import mask_cube_particle
     from iris import Constraint    
     
     logging.info('start calculating centre of gravity for tracked cells')
@@ -49,7 +49,7 @@ def calculate_cog_untracked(mass,mask):
                 Dataframe containing t,x,y,z positions of centre of gravity and total cloud mass for untracked part of dimain
     '''
     from pandas import DataFrame
-    from .watershedding import mask_cube_untracked
+    from .utils import mask_cube_untracked
     from iris import Constraint
     
     logging.info('start calculating centre of gravity for untracked parts of the domain')
