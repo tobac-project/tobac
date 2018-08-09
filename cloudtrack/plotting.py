@@ -607,7 +607,7 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
 def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_total,
                                            field_1, field_2,
                                            field_1_label=None, field_2_label=None,
-                                           track_variable=None,variable=None,variable_label=None,variable_color=None,
+                                           track_variable=None,variable=None,variable_ylabel=None,variable_label=[None],variable_legend=False,variable_color=None,
                                            width=10000,n_extend=1,
                                            name= 'test', plotdir='./',
                                            n_core=1,file_format=['png'],figsize=(20/2.54, 10/2.54),dpi=300,
@@ -624,6 +624,7 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
     from numpy import unique
     import os
     import pandas as pd
+        
     track_cell=track[track['particle']==particle]
     x_min=track_cell['projection_x_coordinate'].min()-width
     x_max=track_cell['projection_x_coordinate'].max()+width
@@ -713,24 +714,33 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
         if variable_color is None:
             variable_color='navy'
 
-        if type(variable) is str:
-            variable=[variable]
+        if type(variable) is str:  
+            logging.debug('variable: '+str(variable))
             if type(variable_color) is str:
                 variable_color={variable:variable_color}
+            variable=[variable]
 
-        for variable_i in variable:
+        for i_variable,variable_i in enumerate(variable):
             color=variable_color[variable_i]
-            ax1[1].plot(track_variable_past['time_cell'].dt.total_seconds()/ 60.,track_variable_past[variable_i].values,color=color,linestyle='-')
+            ax1[1].plot(track_variable_past['time_cell'].dt.total_seconds()/ 60.,track_variable_past[variable_i].values,color=color,linestyle='-',label=variable_label[i_variable])
             ax1[1].plot(track_variable_current['time_cell'].dt.total_seconds()/ 60.,track_variable_current[variable_i].values,color=color,marker='o',markersize=4,fillstyle='full')
         ax1[1].yaxis.tick_right()
         ax1[1].yaxis.set_label_position("right")
         ax1[1].set_xlim([0,2*60])
         ax1[1].set_xticks(np.arange(0,120,15))
-        ax1[1].set_ylim([0,max(10,1.1*track_variable_cell[variable].max().max())])
+        ax1[1].set_ylim([0,max(10,1.25*track_variable_cell[variable].max().max())])
         ax1[1].set_xlabel('cell lifetime (min)')
-        if variable_label==None:
-            variable_label=variable
-        ax1[1].set_ylabel(variable_label)
+        if variable_ylabel==None:
+            variable_ylabel=variable
+        ax1[1].set_ylabel(variable_ylabel)
+        
+        # insert legend, if flag is True
+        if variable_legend:
+            if (len(variable_label)<5):
+                ncol=1
+            else:
+                ncol=2
+            ax1[1].legend(loc='upper right', bbox_to_anchor=(1, 1),ncol=ncol,fontsize=8)
 
         out_dir = os.path.join(plotdir, name)
         os.makedirs(out_dir, exist_ok=True)
