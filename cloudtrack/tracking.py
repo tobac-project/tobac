@@ -18,7 +18,8 @@ def maketrack(field_in,
               cell_number_start=1,              
               subnetwork_size=None,
               adaptive_stop=None,
-              adaptive_step=None,            
+              adaptive_step=None, 
+              return_intermediate=False,
               ):
     """
     Function identifiying features  andlinking them into trajectories
@@ -62,11 +63,22 @@ def maketrack(field_in,
 
     method_linking:   str('predict' or 'random')
                       flag choosing method used for trajectory linking
+    
+    return_intermediate: boolean
+                         flag to tetermine if only final tracjectories are output (False, default) or if detected features, filtered features and unfilled tracks are returned additionally (True)
 
-    Output
-    Tracks:      pandas.DataFrame
+    Output:
+    trajectories_final: pandas.DataFrame
                  Tracked updrafts, one row per timestep and updraft, includes dimensions 'time','latitude','longitude','projection_x_variable', 'projection_y_variable' based on w cube. 
                  'hdim_1' and 'hdim_2' are used for segementation step.
+    
+    Optional output:             
+    features_filtered: pandas.DataFrame
+    
+    features_unfiltered: pandas.DataFrame
+    
+    trajectories_filtered_unfilled: pandas.DataFrame
+    
     """
     from copy import deepcopy
     from trackpy import filter_stubs,filter
@@ -167,7 +179,6 @@ def maketrack(field_in,
 
     #Interpolate to fill the gaps in the trajectories (left from allowing memory in the linking)
     trajectories_filtered_unfilled=deepcopy(trajectories_filtered)
-    trajectories_filtered_unfilled=add_coordinates(trajectories_filtered_unfilled,field_in)
 
     
     trajectories_filtered=fill_gaps(trajectories_filtered,order=order,
@@ -178,16 +189,21 @@ def maketrack(field_in,
     trajectories_filtered=add_coordinates(trajectories_filtered,field_in)
     # add time coordinate relative to cell initiation:
     logging.debug('start adding cell time to trajectories')
-    trajectories_filtered=add_cell_time(trajectories_filtered)
+    trajectories_final=add_cell_time(trajectories_filtered)
 
     # add coordinate to raw features identified:
     logging.debug('start adding coordinates to detected features')
-    features_unfiltered=add_coordinates(features,field_in)
-    features_filtered=add_coordinates(features_filtered,field_in)
+    if return_intermediate:
+        features_unfiltered=add_coordinates(features,field_in)
+        features_filtered=add_coordinates(features_filtered,field_in)
+        trajectories_filtered_unfilled=add_coordinates(trajectories_filtered_unfilled,field_in)
 
     logging.debug('Finished tracking')
-
-    return trajectories_filtered, features_filtered,features_unfiltered, trajectories_filtered_unfilled
+    
+    if return_intermediate:
+        return trajectories_final, features_filtered,features_unfiltered, trajectories_filtered_unfilled
+    else: 
+        return trajectories_final
 
 def feature_detection_trackpy(field_in,diameter,dxy,target='maximum'):
     from trackpy import locate
