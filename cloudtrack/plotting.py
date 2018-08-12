@@ -160,12 +160,11 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
     return axes
 
 def plot_mask_cell_track_follow(particle,track, cog, features, mask_total,
-                                    field_1, field_2, 
-                                    field_1_label=None,field_2_label=None,
-                                    width=10000,
-                                    name= 'test', plotdir='./',
-                                    n_core=1,file_format=['png'],figsize=(10/2.54, 10/2.54),dpi=300,
-                                    **kwargs):
+                                field_contour, field_filled, 
+                                width=10000,
+                                name= 'test', plotdir='./',
+                                file_format=['png'],figsize=(10/2.54, 10/2.54),dpi=300,
+                                **kwargs):
     '''Make plots for all cells centred around cell and with one background field as filling and one background field as contrours
     Input:
     Output:
@@ -182,14 +181,14 @@ def plot_mask_cell_track_follow(particle,track, cog, features, mask_total,
         constraint_y = Constraint(projection_y_coordinate = lambda cell: row['projection_y_coordinate']-width < cell < row['projection_y_coordinate']+width)
         constraint = constraint_time & constraint_x & constraint_y
         mask_total_i=mask_total.extract(constraint)
-        if field_1 is None:
-            field_1_i=None
+        if field_contour is None:
+            field_contour_i=None
         else:
-            field_1_i=field_1.extract(constraint)
-        if field_2 is None:
-            field_2_i=None
+            field_contour_i=field_contour.extract(constraint)
+        if field_filled is None:
+            field_filled_i=None
         else:
-            field_2_i=field_2.extract(constraint)
+            field_filled_i=field_filled.extract(constraint)
 
         cells=list(unique(mask_total_i.core_data()))
         if particle not in cells:
@@ -223,8 +222,7 @@ def plot_mask_cell_track_follow(particle,track, cog, features, mask_total,
 
         ax1=plot_mask_cell_individual_follow(particle_i=particle,track=track_i, cog=cog_i,features=features_i,
                                        mask_total=mask_total_i,
-                                       field_1=field_1_i, field_2=field_2_i,
-                                       field_1_label=field_1_label, field_2_label=field_2_label,
+                                       field_contour=field_contour_i, field_filled=field_filled_i,
                                        width=width,
                                        axes=ax1,title=title,
                                        **kwargs)
@@ -234,24 +232,22 @@ def plot_mask_cell_track_follow(particle,track, cog, features, mask_total,
         if 'png' in file_format:
             savepath_png = os.path.join(out_dir, name  + '_' + datestring_file + '.png')
             fig1.savefig(savepath_png, dpi=dpi)
-            logging.debug('field_1 field_2 Mask plot saved to ' + savepath_png)
+            logging.debug('field_contour field_filled Mask plot saved to ' + savepath_png)
         if 'pdf' in file_format:
             savepath_pdf = os.path.join(out_dir, name  + '_' + datestring_file + '.pdf')
             fig1.savefig(savepath_pdf, dpi=dpi)
-            logging.debug('field_1 field_2 Mask plot saved to ' + savepath_pdf)
+            logging.debug('field_contour field_filled Mask plot saved to ' + savepath_pdf)
         plt.close()
         plt.clf()
 
 
 def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
-                               field_1, field_2, width=10000,
-                               field_1_label=None, field_2_label=None,
-                               axes=plt.gca(),
-                               field_1_cmap='Blues',
-                               vmin_field_1=0,vmax_field_1=50,levels_field_1=None,nlevels_1=10,
-                               contour_labels=False,
-                               field_2_cmap='summer',
-                               vmin_field_2=0,vmax_field_2=100,levels_field_2=None,nlevels_2=10,
+                               field_contour, field_filled, 
+                               axes=plt.gca(),width=10000,                               
+                               label_field_contour=None, cmap_field_contour='Blues',contour_labels=False,
+                               vmin_field_contour=0,vmax_field_contour=50,levels_field_contour=None,nlevels_field_contour=10,
+                               label_field_filled=None,cmap_field_filled='summer',
+                               vmin_field_filled=0,vmax_field_filled=100,levels_field_filled=None,nlevels_field_filled=10,
                                title=None
                                ): 
     '''Make individual plot for cell centred around cell and with one background field as filling and one background field as contrours
@@ -268,45 +264,45 @@ def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
     
     x_pos=track[track['particle']==particle_i]['projection_x_coordinate'].item()
     y_pos=track[track['particle']==particle_i]['projection_y_coordinate'].item()
-    if field_2 is not None:
-        if levels_field_2 is None:
-            levels_field_2=np.linspace(vmin_field_2,vmax_field_2, nlevels_2)
-        plot_field_2 = axes.contourf((field_2.coord('projection_x_coordinate').points-x_pos)/1000,
-                                 (field_2.coord('projection_y_coordinate').points-y_pos)/1000,
-                                 field_2.data,
-                                 levels=levels_field_2,
-                                 cmap=field_2_cmap, vmin=vmin_field_2, vmax=vmax_field_2)    
+    if field_filled is not None:
+        if levels_field_filled is None:
+            levels_field_filled=np.linspace(vmin_field_filled,vmax_field_filled, nlevels_field_filled)
+        plot_field_filled = axes.contourf((field_filled.coord('projection_x_coordinate').points-x_pos)/1000,
+                                 (field_filled.coord('projection_y_coordinate').points-y_pos)/1000,
+                                 field_filled.data,
+                                 levels=levels_field_filled,
+                                 cmap=cmap_field_filled, vmin=vmin_field_filled, vmax=vmax_field_filled)    
         
         
         cax1 = divider.append_axes("right", size="5%", pad=0.1)
-        norm1= Normalize(vmin=vmin_field_2, vmax=vmax_field_2)
-        sm1= plt.cm.ScalarMappable(norm=norm1, cmap = plot_field_2.cmap)
+        norm1= Normalize(vmin=vmin_field_filled, vmax=vmax_field_filled)
+        sm1= plt.cm.ScalarMappable(norm=norm1, cmap = plot_field_filled.cmap)
         sm1.set_array([])
         
-        cbar_field_2 = plt.colorbar(sm1, orientation='vertical',cax=cax1)
-        cbar_field_2.ax.set_ylabel(field_2_label)
-        cbar_field_2.set_clim(vmin_field_2, vmax_field_2)
+        cbar_field_filled = plt.colorbar(sm1, orientation='vertical',cax=cax1)
+        cbar_field_filled.ax.set_ylabel(label_field_filled)
+        cbar_field_filled.set_clim(vmin_field_filled, vmax_field_filled)
 
-    if field_1 is not None:
-        if levels_field_1 is None:
-            levels_field_1=np.linspace(vmin_field_1, vmax_field_1, nlevels_1)
-        plot_field_1 = axes.contour((field_1.coord('projection_x_coordinate').points-x_pos)/1000,
-                                  (field_1.coord('projection_y_coordinate').points-y_pos)/1000,
-                                  field_1.data,
-                                  cmap=field_1_cmap,
-                                  levels=levels_field_1,vmin=vmin_field_1, vmax=vmax_field_1,
+    if field_contour is not None:
+        if levels_field_contour is None:
+            levels_field_contour=np.linspace(vmin_field_contour, vmax_field_contour, nlevels_field_contour)
+        plot_field_contour = axes.contour((field_contour.coord('projection_x_coordinate').points-x_pos)/1000,
+                                  (field_contour.coord('projection_y_coordinate').points-y_pos)/1000,
+                                  field_contour.data,
+                                  cmap=cmap_field_contour,
+                                  levels=levels_field_contour,vmin=vmin_field_contour, vmax=vmax_field_contour,
                                   linewidths=0.8)
         
         if contour_labels:
-            axes.clabel(plot_field_1, fontsize=10)
+            axes.clabel(plot_field_contour, fontsize=10)
     
         cax2 = divider.append_axes("bottom", size="5%", pad=0.1)
-        norm2= Normalize(vmin=vmin_field_1, vmax=vmax_field_1)
-        sm2= plt.cm.ScalarMappable(norm=norm2, cmap = plot_field_1.cmap)
+        norm2= Normalize(vmin=vmin_field_contour, vmax=vmax_field_contour)
+        sm2= plt.cm.ScalarMappable(norm=norm2, cmap = plot_field_contour.cmap)
         sm2.set_array([])
         cbar_w = plt.colorbar(sm2, orientation='horizontal',cax=cax2)
-        cbar_w.ax.set_xlabel(field_1_label)
-        cbar_w.set_clim(vmin_field_1, vmax_field_1)
+        cbar_w.ax.set_xlabel(label_field_contour)
+        cbar_w.set_clim(vmin_field_contour, vmax_field_contour)
 
 
     
@@ -371,11 +367,10 @@ def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
     return axes
 
 def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
-                                    field_1, field_2,
-                                    field_1_label=None, field_2_label=None,
+                                    field_contour, field_filled,
                                     width=10000,n_extend=1,
                                     name= 'test', plotdir='./',
-                                    n_core=1,file_format=['png'],figsize=(10/2.54, 10/2.54),dpi=300,
+                                    file_format=['png'],figsize=(10/2.54, 10/2.54),dpi=300,
                                     **kwargs):
     '''Make plots for all cells with fixed frame including entire development of the cell and with one background field as filling and one background field as contrours
     Input:
@@ -408,14 +403,14 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
         constraint = constraint_time & constraint_x & constraint_y            
 
         mask_total_i=mask_total.extract(constraint)
-        if field_1 is None:
-            field_1_i=None
+        if field_contour is None:
+            field_contour_i=None
         else:
-            field_1_i=field_1.extract(constraint)
-        if field_2 is None:
-            field_2_i=None
+            field_contour_i=field_contour.extract(constraint)
+        if field_filled is None:
+            field_filled_i=None
         else:
-            field_2_i=field_2.extract(constraint)
+            field_filled_i=field_filled.extract(constraint)
 
         
         track_i=track[track['time']==time_i]
@@ -459,8 +454,7 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
         ax1=plot_mask_cell_individual_static(particle_i=particle,
                                              track=track_i, cog=cog_i,features=features_i, 
                                              mask_total=mask_total_i,
-                                             field_1=field_1_i, field_2=field_2_i,
-                                             field_1_label=field_1_label, field_2_label=field_2_label,
+                                             field_contour=field_contour_i, field_filled=field_filled_i,
                                              xlim=[x_min/1000,x_max/1000],ylim=[y_min/1000,y_max/1000],
                                              axes=ax1,title=title,**kwargs)
         
@@ -479,15 +473,12 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
 
 
 def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total,
-                               field_1, field_2,
-                               field_1_label=None,
+                               field_contour, field_filled,
                                axes=plt.gca(),xlim=None,ylim=None,
-                               field_2_label=None,                                                             
-                               field_1_cmap='Blues',
-                               vmin_field_1=0,vmax_field_1=50,levels_field_1=None,nlevels_1=10,
-                               contour_labels=False,
-                               field_2_cmap='summer',
-                               vmin_field_2=0,vmax_field_2=100,levels_field_2=None,nlevels_2=10,
+                               label_field_contour=None, cmap_field_contour='Blues',contour_labels=False,
+                               vmin_field_contour=0,vmax_field_contour=50,levels_field_contour=None,nlevels_field_contour=10,
+                               label_field_filled=None,cmap_field_filled='summer',
+                               vmin_field_filled=0,vmax_field_filled=100,levels_field_filled=None,nlevels_field_filled=10,
                                title=None
                                ):  
     '''Make plots for cell in fixed frame and with one background field as filling and one background field as contrours
@@ -503,45 +494,46 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
     
     divider = make_axes_locatable(axes)
     
-    if field_2 is not None:
-        if levels_field_2 is None:
-            levels_field_2=np.linspace(vmin_field_2,vmax_field_2, 10)
-        plot_field_2 = axes.contourf(field_2.coord('projection_x_coordinate').points/1000,
-                                 field_2.coord('projection_y_coordinate').points/1000,
-                                 field_2.data,
-                                 levels=levels_field_2, 
-                                 cmap=field_2_cmap, vmin=vmin_field_2, vmax=vmax_field_2)    
+    if field_filled is not None:
+        if levels_field_filled is None:
+            levels_field_filled=np.linspace(vmin_field_filled,vmax_field_filled, 10)
+        plot_field_filled = axes.contourf(field_filled.coord('projection_x_coordinate').points/1000,
+                                 field_filled.coord('projection_y_coordinate').points/1000,
+                                 field_filled.data,
+                                 levels=levels_field_filled, 
+                                 cmap=cmap_field_filled, vmin=vmin_field_filled, vmax=vmax_field_filled)    
         
         
         cax1 = divider.append_axes("right", size="5%", pad=0.1)
-        norm1= Normalize(vmin=vmin_field_2, vmax=vmax_field_2)
-        sm1= plt.cm.ScalarMappable(norm=norm1, cmap = plot_field_2.cmap)
+        norm1= Normalize(vmin=vmin_field_filled, vmax=vmax_field_filled)
+        sm1= plt.cm.ScalarMappable(norm=norm1, cmap = plot_field_filled.cmap)
         sm1.set_array([])
         
-        cbar_field_2 = plt.colorbar(sm1, orientation='vertical',cax=cax1)
-        cbar_field_2.ax.set_ylabel(field_2_label)
-        cbar_field_2.set_clim(vmin_field_2, vmax_field_2)
+        cbar_field_filled = plt.colorbar(sm1, orientation='vertical',cax=cax1)
+        cbar_field_filled.ax.set_ylabel(label_field_filled)
+        cbar_field_filled.set_clim(vmin_field_filled, vmax_field_filled)
 
-    if field_1 is not None:
-        if levels_field_1 is None:
-            levels_field_1=np.linspace(vmin_field_1, vmax_field_1, 5)
-        plot_field_1 = axes.contour(field_1.coord('projection_x_coordinate').points/1000,
-                                  field_1.coord('projection_y_coordinate').points/1000,
-                                  field_1.data,
-                                  cmap=field_1_cmap,
-                                  levels=levels_field_1,vmin=vmin_field_1, vmax=vmax_field_1,
+    if field_contour is not None:
+        if levels_field_contour is None:
+            levels_field_contour=np.linspace(vmin_field_contour, vmax_field_contour, 5)
+        plot_field_contour = axes.contour(field_contour.coord('projection_x_coordinate').points/1000,
+                                  field_contour.coord('projection_y_coordinate').points/1000,
+                                  field_contour.data,
+                                  cmap=cmap_field_contour,
+                                  levels=levels_field_contour,vmin=vmin_field_contour, vmax=vmax_field_contour,
                                   linewidths=0.8)
         
         if contour_labels:
-            axes.clabel(plot_field_1, fontsize=10)
+            axes.clabel(plot_field_contour, fontsize=10)
     
         cax2 = divider.append_axes("bottom", size="5%", pad=0.1)
-        norm2= Normalize(vmin=vmin_field_1, vmax=vmax_field_1)
-        sm2= plt.cm.ScalarMappable(norm=norm2, cmap = plot_field_1.cmap)
+        norm2= Normalize(vmin=vmin_field_contour, vmax=vmax_field_contour)
+        sm2= plt.cm.ScalarMappable(norm=norm2, cmap = plot_field_contour.cmap)
         sm2.set_array([])
-        cbar_w = plt.colorbar(sm2, orientation='horizontal',cax=cax2)
-        cbar_w.ax.set_xlabel(field_1_label)
-        cbar_w.set_clim(vmin_field_1, vmax_field_1)
+        
+        cbar_field_contour = plt.colorbar(sm2, orientation='horizontal',cax=cax2)
+        cbar_field_contour.ax.set_xlabel(label_field_contour)
+        cbar_field_contour.set_clim(vmin_field_contour, vmax_field_contour)
 
 
     
@@ -605,12 +597,12 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
     return axes
 
 def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_total,
-                                           field_1, field_2,
-                                           field_1_label=None, field_2_label=None,
+                                           field_contour, field_filled,
+                                           field_contour_label=None, field_filled_label=None,
                                            track_variable=None,variable=None,variable_ylabel=None,variable_label=[None],variable_legend=False,variable_color=None,
                                            width=10000,n_extend=1,
                                            name= 'test', plotdir='./',
-                                           n_core=1,file_format=['png'],figsize=(20/2.54, 10/2.54),dpi=300,
+                                           file_format=['png'],figsize=(20/2.54, 10/2.54),dpi=300,
                                            **kwargs):
     '''Make plots for all cells with fixed frame including entire development of the cell and with one background field as filling and one background field as contrours
     Input:
@@ -631,7 +623,7 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
     y_min=track_cell['projection_y_coordinate'].min()-width
     y_max=track_cell['projection_y_coordinate'].max()+width
     time_min=track_cell['time'].min()
-    time_max=track_cell['time'].max()
+#    time_max=track_cell['time'].max()
 
     track_variable_cell=track_variable[track_variable['particle']==particle]
     track_variable_cell['time_cell']=pd.to_timedelta(track_variable_cell['time_cell'])
@@ -651,14 +643,14 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
         constraint = constraint_time & constraint_x & constraint_y            
 
         mask_total_i=mask_total.extract(constraint)
-        if field_1 is None:
-            field_1_i=None
+        if field_contour is None:
+            field_contour_i=None
         else:
-            field_1_i=field_1.extract(constraint)
-        if field_2 is None:
-            field_2_i=None
+            field_contour_i=field_contour.extract(constraint)
+        if field_filled is None:
+            field_filled_i=None
         else:
-            field_2_i=field_2.extract(constraint)
+            field_filled_i=field_filled.extract(constraint)
 
         
         track_i=track[track['time']==time_i]
@@ -703,8 +695,8 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
         ax1[0]=plot_mask_cell_individual_static(particle_i=particle,
                                              track=track_i, cog=cog_i,features=features_i, 
                                              mask_total=mask_total_i,
-                                             field_1=field_1_i, field_2=field_2_i,
-                                             field_1_label=field_1_label, field_2_label=field_2_label,
+                                             field_contour=field_contour_i, field_filled=field_filled_i,
+                                             field_contour_label=field_contour_label, field_filled_label=field_filled_label,
                                              xlim=[x_min/1000,x_max/1000],ylim=[y_min/1000,y_max/1000],
                                              axes=ax1[0],title=title,**kwargs)
         
