@@ -12,7 +12,8 @@ def maketrack(field_in,
               sigma_threshold=0.5,
               n_erosion_threshold=0,
               diameter=5000,min_mass=0, min_signal=0,parameters_features=False,
-              threshold=1, min_num=0,              
+              threshold=1, min_num=0,
+              min_distance=0,              
               method_linking="random",            
               cell_number_start=1,              
               subnetwork_size=None,
@@ -181,11 +182,12 @@ def maketrack(field_in,
 
     # add coordinate to raw features identified:
     logging.debug('start adding coordinates to detected features')
-    features_identified=add_coordinates(features,field_in)
+    features_unfiltered=add_coordinates(features,field_in)
+    features_filtered=add_coordinates(features_filtered,field_in)
 
     logging.debug('Finished tracking')
 
-    return trajectories_filtered, features_identified, trajectories_filtered_unfilled
+    return trajectories_filtered, features_filtered,features_unfiltered, trajectories_filtered_unfilled
 
 def feature_detection_trackpy(field_in,diameter,dxy,target='maximum'):
     from trackpy import locate
@@ -343,7 +345,7 @@ def feature_detection_threshold(field_in,threshold,dxy,target='maximum', positio
     logging.debug('feature detection completed')
     return features
 
-def feature_detection_multithreshold(field_in,threshold,dxy,target='maximum', position_threshold='center',sigma_threshold=0.5,n_erosion_threshold=0):
+def feature_detection_multithreshold(field_in,threshold,dxy,target='maximum', position_threshold='center',sigma_threshold=0.5,n_erosion_threshold=0,min_distance=0):
     ''' Function to perform feature detection based on contiguous regions above/below a threshold
     Input:
     field_in:      iris.cube.Cube
@@ -361,6 +363,8 @@ def feature_detection_multithreshold(field_in,threshold,dxy,target='maximum', po
                      standard deviation for intial filtering step
     n_erosion_threshold: int
                          number of pixel by which to erode the identified features
+    min_distance:  float
+                   minimum distance between detected features (m)
     Output:
     features:      pandas DataFrame 
                    detected features
@@ -469,7 +473,8 @@ def feature_detection_multithreshold(field_in,threshold,dxy,target='maximum', po
                                                               'idx':cur_idx,
                                                               'hdim_1': hdim1_index,
                                                               'hdim_2':hdim2_index,
-                                                              'num':count},
+                                                              'num':count,
+                                                              'threshold_value':threshold_i},
                                                         index=[i_time]))
 
                 #check if list of features is not empty, then merge into DataFrame and append to list for different thresholds
@@ -488,11 +493,31 @@ def feature_detection_multithreshold(field_in,threshold,dxy,target='maximum', po
                         features_i[i_threshold-1]=features_i[i_threshold-1][features_i[i_threshold-1]['idx']!=idx]
             # finished feature detection for specific threshold value:
             logging.debug('Finished feature detection for threshold '+str(i_threshold) + ' : ' + str(threshold_i) )
-        
+
         #check if list of features is not empty, then merge features from different threshold values 
         #into one DataFrame and append to list for individual timesteps:
         if features_i:
-            list_features.append(pd.concat(features_i))
+            features_i_merged=pd.concat(features_i)
+            #Loop over DataFrame to remove features that are closer than distance_min to each other:
+            for index_1, row_1 in features_i_merged.iterrows():
+                for index_2, row_2 in features_i_merged.iterrows():
+                    if index_1 is not index_2:
+                        distance=(row_1['hdim_1']-row_2['hdim_1'])**2+(row_1['hdim_2']-row_2['hdim_2'])**2
+                        if distance <= min_distance/dxy:
+                            if row_1['threshold_value']>row_2['threshold_value']:
+                                features_i_merged.drop(index_2,inplace=True)
+                            elif row_1['threshold_value']<row_2['threshold_value']:
+                                features_i_merged.drop(index_1,inplace=True)
+                            elif row_1['threshold_value']==row_2['threshold_value']:
+                                if row_1['num']>row_2['num']:
+                                    features_i_merged.drop(index_2,inplace=True)
+                                elif row_1['num']<row_2['num']:
+                                    features_i_merged.drop(index_1,inplace=True)
+                                elif row_1['num']==row_2['num']:
+                                    features_i_merged.drop(index_2,inplace=True)
+            list_features.append(features_i_merged)
+
+            
         else:
             list_features.append([])
         logging.debug('Finished feature detection for ' + time_i.strftime('%Y-%m-%d_%H:%M:%S'))
