@@ -11,7 +11,6 @@ def maketrack(field_in,
               position_threshold='center',
               sigma_threshold=0.5,
               n_erosion_threshold=0,
-              diameter=5000,min_mass=0, min_signal=0,parameters_features=False,
               threshold=1, min_num=0,
               min_distance=0,              
               method_linking="random",            
@@ -31,8 +30,6 @@ def maketrack(field_in,
                   grid spacing in input data (m)
     time_spacing: float
                   time resolution of input data (s)
-    diameter:     float
-                  Assumed diameter of tracked objects (m)
     target        string
                   Switch to determine if algorithm looks for maxima or minima in input field (maximum: look for maxima (default), minimum: look for minima)
     v_max:        float
@@ -41,17 +38,13 @@ def maketrack(field_in,
                   Number of timesteps for which objects can be missed by the algorithm to still give a constistent track
     stubs:        float
                   Minumum number of timesteps for which objects have to be detected to not be filtered out as spurious
-    min_mass:     float
-                  Minumum "mass" of tracked object to be reached over its lifetime (not actually a physical mass, integrated maximum vertical velocity in this case so units (m/s*m^2=m^3/s)
-    min_signal:   float
-                  Minumum signal of tracked object to be reached over its lifetime (related to contrast between objects and background)
     min_num:      int
                   Minumum number of cells above threshold in the feature to be tracked
     order:        int
                   order if interpolation spline to fill gaps in tracking(from allowing memory to be larger than 0)
     extrapolate   int
                   number of points to extrapolate individual tracks by
-    method_detection: str('trackpy' or 'threshold')
+    method_detection: str('threshold' or 'threshold_multi')
                       flag choosing method used for feature detection
     position_threshold: str('extreme', 'weighted_diff', 'weighted_abs' or 'center')
                       flag choosing method used for the position of the tracked feature
@@ -81,7 +74,7 @@ def maketrack(field_in,
     
     """
     from copy import deepcopy
-    from trackpy import filter_stubs,filter
+    from trackpy import filter_stubs
     
     logger = logging.getLogger('trackpy')
     logger.propagate = False
@@ -113,16 +106,10 @@ def maketrack(field_in,
     elif (time_spacing is not None):
         # use value of time_spacing for dt:
         dt=time_spacing
-        
+
     ### Start Tracking
     # Feature detection:
-    if method_detection=="trackpy":
-        features=feature_detection_trackpy(field_in,diameter=diameter,dxy=dxy,target=target)
-        features_filtered = features.drop(features[features['num'] < min_num].index)
-
-        features_filtered = deepcopy(features)
-
-    elif method_detection == "threshold":
+    if method_detection == "threshold":
         features=feature_detection_threshold(field_in,target=target,threshold=threshold,dxy=dxy,
                                              position_threshold=position_threshold,sigma_threshold=sigma_threshold)
         features_filtered = features.drop(features[features['num'] < min_num].index)
@@ -146,28 +133,6 @@ def maketrack(field_in,
     # Filter trajectories to exclude short trajectories that are likely to be spurious
     trajectories_filtered = filter_stubs(trajectories_unfiltered,threshold=stubs)
     trajectories_filtered=trajectories_filtered.reset_index(drop=True)
-
-
-    if method_detection=="trackpy":    
-        # Filter trajectories based on a minimum mass (not ne been seen as sth physical) and signal within the trajectory
-        #Filters:
-        min_mass_pix=min_mass/(dxy*dxy)
-        min_signal_pix=min_signal
-
-        condition = lambda x: (
-                (x['mass'].max() > min_mass_pix) 
-                &   
-                (x['signal'].max() > min_signal_pix)
-                )
-        trajectories_filtered = filter(trajectories_filtered, condition)
-        trajectories_filtered=trajectories_filtered.reset_index(drop=True)
-        
-        # Restrict output and further treatment to relevant columns:
-        trajectories_filtered['mass']=trajectories_filtered['mass']*(dxy*dxy)
-        trajectories_filtered['size']=trajectories_filtered['size']*(dxy)
-    
-        if not parameters_features:
-            trajectories_filtered=trajectories_filtered.drop(['mass','signal','size','ecc'],axis=1)
         
     # Reset particle numbers from the arbitray numbers at the end of the feature detection and linking to consecutive numbers
     # keep 'particle' for reference to the feature detection step.
@@ -184,6 +149,7 @@ def maketrack(field_in,
     trajectories_filtered=fill_gaps(trajectories_filtered,order=order,
                                     extrapolate=extrapolate,frame_max=field_in.shape[0],
                                     hdim_1_max=field_in.shape[1],hdim_2_max=field_in.shape[2])
+    
     # add coorinates from input fields to output trajectories (time,dimensions)
     logging.debug('start adding coordinates to trajectories')
     trajectories_filtered=add_coordinates(trajectories_filtered,field_in)
@@ -204,42 +170,6 @@ def maketrack(field_in,
         return trajectories_final, features_filtered,features_unfiltered, trajectories_filtered_unfilled
     else: 
         return trajectories_final
-
-def feature_detection_trackpy(field_in,diameter,dxy,target='maximum'):
-    from trackpy import locate
-    diameter_pix=round(int(diameter/dxy)/2)*2+1
-    
-    logging.debug('start feature detection based on trackpy function')
-
-    # set invert to True when tracking minima, False when tracking maxima
-    if target=='maximum':
-        invert= False
-    elif target =='minimum':
-        invert= True
-    else:
-        raise ValueError('target has to be either maximum or minimum')
-
-    # locate features for each timestep and then combine
-    list_features=[]   
-    data_time=field_in.slices_over('time')
-    for i_time,data_i in enumerate(data_time):
-        f_i=locate(data_i.data, diameter_pix, invert=invert,
-                 minmass=0, maxsize=None, separation=None,
-#                 noise_size=1, smoothing_size=None, threshold=None, 
-#                  invert=True
-#                 percentile=64, topn=None, preprocess=True, max_iterations=10,
-#                 filter_before=None, filter_after=True, characterize=True,
-#                 engine='auto', output=None, meta=None
-                  )
-        f_i['frame']=int(i_time)
-        list_features.append(f_i)        
-    logging.debug('feature detection: merging DataFrames')
-    features=pd.concat(list_features)
-    features.rename(columns={'y':'hdim_1', 'x':'hdim_2'}, inplace =True)
-    logging.debug('feature detection completed')
-    features=features.reset_index(drop=True)
-
-    return features
 
 def feature_detection_threshold(field_in,threshold,dxy,target='maximum', position_threshold='center',sigma_threshold=0.5,n_erosion_threshold=0):
     ''' Function to perform feature detection based on contiguous regions above/below a threshold
