@@ -135,7 +135,8 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
         
             if plot_number:        
                 particle_string='  '+str(int(row['particle']))
-                axes.text(row['longitude'],row['latitude'],particle_string,color=color,fontsize=6)
+                axes.text(row['longitude'],row['latitude'],particle_string,
+                          color=color,fontsize=6, clip_on=True)
             if plot_outline:
                 mask_i=None
                 # if mask is 3D, create surface projection, if mask is 2D keep the mask
@@ -327,7 +328,7 @@ def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
         particle_string='   '+str(int(row['particle']))
         axes.text((row['projection_x_coordinate']-x_pos)/1000,
                   (row['projection_y_coordinate']-y_pos)/1000,
-                  particle_string,color=color,fontsize=6)
+                  particle_string,color=color,fontsize=6, clip_on=True)
 
         # Plot marker for tracked cell centre as a cross
         axes.plot((row['projection_x_coordinate']-x_pos)/1000,
@@ -567,7 +568,7 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
         particle_string='   '+str(int(row['particle']))
         axes.text(row['projection_x_coordinate']/1000,
                   row['projection_y_coordinate']/1000,
-                  particle_string,color=color,fontsize=6)
+                  particle_string,color=color,fontsize=6, clip_on=True)
 
         # Plot marker for tracked cell centre as a cross
         axes.plot(row['projection_x_coordinate']/1000,
