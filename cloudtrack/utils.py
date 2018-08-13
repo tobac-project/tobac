@@ -13,7 +13,7 @@ def column_mask_from2D(mask_2D,cube,z_coord='model_level_number'):
     '''
     from copy import deepcopy
     mask_3D=deepcopy(cube)
-    mask_3D.rename('watershedding_output_mask')
+    mask_3D.rename('segmentation_mask')
     dim=mask_3D.coord_dims(z_coord)[0]
     for i in range(len(mask_3D.coord(z_coord).points)):
         slc = [slice(None)] * len(mask_3D.shape)
@@ -28,14 +28,14 @@ def column_mask_from2D(mask_2D,cube,z_coord='model_level_number'):
     return mask_3D
 
 
-def mask_cube_particle(variable_cube,mask,particle):
+def mask_cube_cell(variable_cube,mask,cell):
     ''' Mask cube for tracked volume of an individual cell   
     Input:
     variable_cube:     iris.cube.Cube 
                        unmasked data cube
     mask:              iris.cube.Cube 
                        cube containing mask (int id for tacked volumes 0 everywhere else)
-    particle:          int
+    cell:          int
                        interger id of cell to create masked cube for
     Output:
     variable_cube_out: iris.cube.Cube 
@@ -44,7 +44,7 @@ def mask_cube_particle(variable_cube,mask,particle):
     import numpy as np 
     from copy import deepcopy
     variable_cube_out=deepcopy(variable_cube)
-    mask_i=mask.data!=particle
+    mask_i=mask.data!=cell
     variable_cube_out.data=np.ma.array(variable_cube_out.data,mask=mask_i)    
     return variable_cube_out
 
@@ -86,8 +86,8 @@ def mask_cube(cube_in,mask):
     cube_out.data=ma.array(cube_in.data,mask=mask_array)
     return cube_out
 
-def mask_particle(Mask,particle,masked=False):
-    ''' create mask for specific particle
+def mask_cell(Mask,cell,masked=False):
+    ''' create mask for specific cell
     Input:
     variable_cube:     iris.cube.Cube 
                        unmasked data cube
@@ -100,12 +100,12 @@ def mask_particle(Mask,particle,masked=False):
     import numpy as np 
     from copy import deepcopy
     Mask_i=deepcopy(Mask)
-    Mask_i.data[Mask_i.data!=particle]=0
+    Mask_i.data[Mask_i.data!=cell]=0
     if masked:
         Mask_i.data=np.ma.array(Mask_i.data,mask=Mask_i.data)
     return Mask_i   
 
-def mask_particle_surface(Mask,particle,masked=False,z_coord='model_level_number'):
+def mask_cell_surface(Mask,cell,masked=False,z_coord='model_level_number'):
     ''' Mask cube for untracked volume 
     Input:
     variable_cube:     iris.cube.Cube 
@@ -120,7 +120,7 @@ def mask_particle_surface(Mask,particle,masked=False,z_coord='model_level_number
     import numpy as np 
     from copy import deepcopy
     Mask_i=deepcopy(Mask)
-    Mask_i.data[Mask_i.data!=particle]=0
+    Mask_i.data[Mask_i.data!=cell]=0
     for coord in  Mask_i.coords():
         if coord.ndim>1 and Mask_i.coord_dims(z_coord)[0] in Mask_i.coord_dims(coord):
             Mask_i.remove_coord(coord.name())
@@ -129,7 +129,7 @@ def mask_particle_surface(Mask,particle,masked=False,z_coord='model_level_number
         Mask_i_surface.data=np.ma.array(Mask_i_surface.data,mask=Mask_i_surface.data)
     return Mask_i_surface    
 
-def mask_particle_columns(Mask,particle,masked=False,z_coord='model_level_number'):
+def mask_cell_columns(Mask,cell,masked=False,z_coord='model_level_number'):
     ''' Mask cube for untracked volume 
     Input:
     variable_cube:     iris.cube.Cube 
@@ -144,7 +144,7 @@ def mask_particle_columns(Mask,particle,masked=False,z_coord='model_level_number
     import numpy as np 
     from copy import deepcopy
     Mask_i=deepcopy(Mask)
-    Mask_i.data[Mask_i.data!=particle]=0
+    Mask_i.data[Mask_i.data!=cell]=0
     for coord in  Mask_i.coords():
         if coord.ndim>1 and Mask_i.coord_dims(z_coord)[0] in Mask_i.coord_dims(coord):
             Mask_i.remove_coord(coord.name())
@@ -156,27 +156,27 @@ def mask_particle_columns(Mask,particle,masked=False,z_coord='model_level_number
     return Mask_i
 
 
-#def constraint_cell(track,mask_particle,width=None,x=None,):
+#def constraint_cell(track,mask_cell,width=None,x=None,):
 #     from iris import Constraint
 #     import numpy as np
 #    
-#     time_coord=mask_particle.coord('time')
+#     time_coord=mask_cell.coord('time')
 #     time_units=time_coord.units
 #    
 #     def time_condition(cell):
 #         return time_units.num2date(track.head(n=1)['time']) <= cell <= time_units.num2date(track.tail(n=1)['time'])
 #
 #     constraint_time=Constraint(time=time_condition)
-##     mask_particle_i=mask_particle.extract(constraint_time)
-#     mask_particle_surface_i=mask_particle_surface.extract(constraint_time)
+##     mask_cell_i=mask_cell.extract(constraint_time)
+#     mask_cell_surface_i=mask_cell_surface.extract(constraint_time)
 #    
-#     x_dim=mask_particle_surface_i.coord_dims('projection_x_coordinate')[0]
-#     y_dim=mask_particle_surface_i.coord_dims('projection_y_coordinate')[0]
-#     x_coord=mask_particle_surface_i.coord('projection_x_coordinate')
-#     y_coord=mask_particle_surface_i.coord('projection_y_coordinate')
+#     x_dim=mask_cell_surface_i.coord_dims('projection_x_coordinate')[0]
+#     y_dim=mask_cell_surface_i.coord_dims('projection_y_coordinate')[0]
+#     x_coord=mask_cell_surface_i.coord('projection_x_coordinate')
+#     y_coord=mask_cell_surface_i.coord('projection_y_coordinate')
 #    
-#     if (mask_particle_surface_i.core_data()>0).any():
-#         box_mask_i=get_bounding_box(mask_particle_surface_i.core_data(),buffer=1)
+#     if (mask_cell_surface_i.core_data()>0).any():
+#         box_mask_i=get_bounding_box(mask_cell_surface_i.core_data(),buffer=1)
 #
 #         box_mask=[[x_coord.points[box_mask_i[x_dim][0]],x_coord.points[box_mask_i[x_dim][1]]],
 #                  [y_coord.points[box_mask_i[y_dim][0]],y_coord.points[box_mask_i[y_dim][1]]]]

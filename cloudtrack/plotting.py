@@ -53,7 +53,7 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
     from matplotlib.ticker import MaxNLocator
     import cartopy.feature as cfeature
     import numpy as np
-    from cloudtrack import mask_particle,mask_particle_surface
+    from cloudtrack import mask_cell,mask_cell_surface
     from matplotlib import ticker
     
     if type(axes) is not cartopy.mpl.geoaxes.GeoAxesSubplot:
@@ -129,26 +129,26 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
 
     #Plot tracked features by looping over rows of Dataframe
     for i_row,row in track.iterrows():
-        if 'particle' in row:
-            particle=row['particle']
-            color=colors_mask[int(particle%len(colors_mask))]
+        if 'cell' in row:
+            cell=row['cell']
+            color=colors_mask[int(cell%len(colors_mask))]
         
             if plot_number:        
-                particle_string='  '+str(int(row['particle']))
-                axes.text(row['longitude'],row['latitude'],particle_string,
+                cell_string='  '+str(int(row['cell']))
+                axes.text(row['longitude'],row['latitude'],cell_string,
                           color=color,fontsize=6, clip_on=True)
             if plot_outline:
                 mask_i=None
                 # if mask is 3D, create surface projection, if mask is 2D keep the mask
                 if mask.ndim==2:
-                    mask_i=mask_particle(mask,particle,masked=False)
+                    mask_i=mask_cell(mask,cell,masked=False)
                 elif mask.ndim==3:
-                    mask_i=mask_particle_surface(mask,particle,masked=False,z_coord='model_level_number')
+                    mask_i=mask_cell_surface(mask,cell,masked=False,z_coord='model_level_number')
                 else:
                     raise ValueError('mask has shape that cannot be understood')
                 # plot countour lines around the edges of the mask    
                 iplt.contour(mask_i,coords=['longitude','latitude'],
-                             levels=[0,particle],colors=color,axes=axes)
+                             levels=[0,cell],colors=color,axes=axes)
         else:
             color='grey'
         
@@ -160,7 +160,7 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
 
     return axes
 
-def plot_mask_cell_track_follow(particle,track, cog, features, mask_total,
+def plot_mask_cell_track_follow(cell,track, cog, features, mask_total,
                                 field_contour, field_filled, 
                                 width=10000,
                                 name= 'test', plotdir='./',
@@ -173,7 +173,7 @@ def plot_mask_cell_track_follow(particle,track, cog, features, mask_total,
     from iris import Constraint
     from numpy import unique
     import os
-    track_cell=track[track['particle']==particle]
+    track_cell=track[track['cell']==cell]
     for i_row,row in track_cell.iterrows():
         
         
@@ -192,16 +192,16 @@ def plot_mask_cell_track_follow(particle,track, cog, features, mask_total,
             field_filled_i=field_filled.extract(constraint)
 
         cells=list(unique(mask_total_i.core_data()))
-        if particle not in cells:
-            cells.append(particle)
+        if cell not in cells:
+            cells.append(cell)
         if 0 in cells:    
             cells.remove(0)
-        track_i=track[track['particle'].isin(cells)]
+        track_i=track[track['cell'].isin(cells)]
         track_i=track_i[track_i['time']==row['time']]
         if cog is None:
            cog_i=None
         else:
-            cog_i=cog[cog['particle'].isin(cells)]
+            cog_i=cog[cog['cell'].isin(cells)]
             cog_i=cog_i[cog_i['time']==row['time']]
             
         if features is None:
@@ -221,7 +221,7 @@ def plot_mask_cell_track_follow(particle,track, cog, features, mask_total,
         title=celltime_stamp + ' , ' + datestring_stamp
         datestring_file = row['time'].strftime('%Y-%m-%d_%H%M%S')
 
-        ax1=plot_mask_cell_individual_follow(particle_i=particle,track=track_i, cog=cog_i,features=features_i,
+        ax1=plot_mask_cell_individual_follow(cell_i=cell,track=track_i, cog=cog_i,features=features_i,
                                        mask_total=mask_total_i,
                                        field_contour=field_contour_i, field_filled=field_filled_i,
                                        width=width,
@@ -242,7 +242,7 @@ def plot_mask_cell_track_follow(particle,track, cog, features, mask_total,
         plt.clf()
 
 
-def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
+def plot_mask_cell_individual_follow(cell_i,track, cog,features, mask_total,
                                field_contour, field_filled, 
                                axes=plt.gca(),width=10000,                               
                                label_field_contour=None, cmap_field_contour='Blues',norm_field_contour=None,
@@ -257,15 +257,15 @@ def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
     Output:
     '''
     import numpy as np
-    from .utils  import mask_particle_surface
+    from .utils  import mask_cell_surface
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     from matplotlib.colors import Normalize
     
     
     divider = make_axes_locatable(axes)
     
-    x_pos=track[track['particle']==particle_i]['projection_x_coordinate'].item()
-    y_pos=track[track['particle']==particle_i]['projection_y_coordinate'].item()
+    x_pos=track[track['cell']==cell_i]['projection_x_coordinate'].item()
+    y_pos=track[track['cell']==cell_i]['projection_y_coordinate'].item()
     if field_filled is not None:
         if levels_field_filled is None:
             levels_field_filled=np.linspace(vmin_field_filled,vmax_field_filled, nlevels_field_filled)
@@ -319,16 +319,16 @@ def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
 
     
     for i_row, row in track.iterrows():
-        particle = int(row['particle'])
-        if particle==particle_i:
+        cell = int(row['cell'])
+        if cell==cell_i:
             color='darkred'
         else:
             color='darkorange'
             
-        particle_string='   '+str(int(row['particle']))
+        cell_string='   '+str(int(row['cell']))
         axes.text((row['projection_x_coordinate']-x_pos)/1000,
                   (row['projection_y_coordinate']-y_pos)/1000,
-                  particle_string,color=color,fontsize=6, clip_on=True)
+                  cell_string,color=color,fontsize=6, clip_on=True)
 
         # Plot marker for tracked cell centre as a cross
         axes.plot((row['projection_x_coordinate']-x_pos)/1000,
@@ -339,20 +339,20 @@ def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
         #Create surface projection of mask for the respective cell and plot it in the right color
         z_coord = 'model_level_number'
         if len(mask_total.shape)==3: 
-            mask_total_i_surface = mask_particle_surface(mask_total, particle, masked=False, z_coord=z_coord)
+            mask_total_i_surface = mask_cell_surface(mask_total, cell, masked=False, z_coord=z_coord)
         elif len(mask_total.shape)==2:            
             mask_total_i_surface=mask_total
         axes.contour((mask_total_i_surface.coord('projection_x_coordinate').points-x_pos)/1000,
                      (mask_total_i_surface.coord('projection_y_coordinate').points-y_pos)/1000,
                      mask_total_i_surface.data, 
-                     levels=[0, particle], colors=color, linestyles=':',linewidth=1)
+                     levels=[0, cell], colors=color, linestyles=':',linewidth=1)
 
     if cog is not None:
 
         for i_row, row in cog.iterrows():
-            particle = row['particle']
+            cell = row['cell']
             
-            if particle==particle_i:
+            if cell==cell_i:
                 color='darkred'
             else:
                 color='darkorange'
@@ -378,7 +378,7 @@ def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
  
     return axes
 
-def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
+def plot_mask_cell_track_static(cell,track, cog, features, mask_total,
                                     field_contour, field_filled,
                                     width=10000,n_extend=1,
                                     name= 'test', plotdir='./',
@@ -391,7 +391,7 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
     from iris import Constraint
     from numpy import unique
     import os
-    track_cell=track[track['particle']==particle]
+    track_cell=track[track['cell']==cell]
     x_min=track_cell['projection_x_coordinate'].min()-width
     x_max=track_cell['projection_x_coordinate'].max()+width
     y_min=track_cell['projection_y_coordinate'].min()-width
@@ -429,18 +429,18 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
 
         cells_mask=list(unique(mask_total_i.core_data()))
         track_cells=track_i.loc[(track_i['projection_x_coordinate'] > x_min)  & (track_i['projection_x_coordinate'] < x_max) & (track_i['projection_y_coordinate'] > y_min) & (track_i['projection_y_coordinate'] < y_max)]
-        cells_track=list(track_cells['particle'].values)
+        cells_track=list(track_cells['cell'].values)
         cells=list(set( cells_mask + cells_track ))
-        if particle not in cells:
-            cells.append(particle)
+        if cell not in cells:
+            cells.append(cell)
         if 0 in cells:    
             cells.remove(0)
-        track_i=track_i[track_i['particle'].isin(cells)]
+        track_i=track_i[track_i['cell'].isin(cells)]
         
         if cog is None:
             cog_i=None
         else:
-            cog_i=cog[cog['particle'].isin(cells)]
+            cog_i=cog[cog['cell'].isin(cells)]
             cog_i=cog_i[cog_i['time']==time_i]
 
         if features is None:
@@ -463,7 +463,7 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
         title=celltime_stamp + ' , ' + datestring_stamp
         datestring_file = time_i.strftime('%Y-%m-%d_%H%M%S')
 
-        ax1=plot_mask_cell_individual_static(particle_i=particle,
+        ax1=plot_mask_cell_individual_static(cell_i=cell,
                                              track=track_i, cog=cog_i,features=features_i, 
                                              mask_total=mask_total_i,
                                              field_contour=field_contour_i, field_filled=field_filled_i,
@@ -484,7 +484,7 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
         plt.clf()
 
 
-def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total,
+def plot_mask_cell_individual_static(cell_i,track, cog, features, mask_total,
                                field_contour, field_filled,
                                axes=plt.gca(),xlim=None,ylim=None,
                                label_field_contour=None, cmap_field_contour='Blues',norm_field_contour=None,
@@ -500,7 +500,7 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
     '''
 
     import numpy as np
-    from .utils  import mask_particle_surface
+    from .utils  import mask_cell_surface
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     from matplotlib.colors import Normalize
     
@@ -559,16 +559,16 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
 
     
     for i_row, row in track.iterrows():
-        particle = int(row['particle'])
-        if particle==particle_i:
+        cell = int(row['cell'])
+        if cell==cell_i:
             color='darkred'
         else:
             color='darkorange'
             
-        particle_string='   '+str(int(row['particle']))
+        cell_string='   '+str(int(row['cell']))
         axes.text(row['projection_x_coordinate']/1000,
                   row['projection_y_coordinate']/1000,
-                  particle_string,color=color,fontsize=6, clip_on=True)
+                  cell_string,color=color,fontsize=6, clip_on=True)
 
         # Plot marker for tracked cell centre as a cross
         axes.plot(row['projection_x_coordinate']/1000,
@@ -579,19 +579,19 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
         #Create surface projection of mask for the respective cell and plot it in the right color
         z_coord = 'model_level_number'
         if len(mask_total.shape)==3: 
-            mask_total_i_surface = mask_particle_surface(mask_total, particle, masked=False, z_coord=z_coord)
+            mask_total_i_surface = mask_cell_surface(mask_total, cell, masked=False, z_coord=z_coord)
         elif len(mask_total.shape)==2:            
             mask_total_i_surface=mask_total
         axes.contour(mask_total_i_surface.coord('projection_x_coordinate').points/1000,
                      mask_total_i_surface.coord('projection_y_coordinate').points/1000,
                      mask_total_i_surface.data, 
-                     levels=[0, particle], colors=color, linestyles=':',linewidth=1)
+                     levels=[0, cell], colors=color, linestyles=':',linewidth=1)
     if cog is not None:
     
         for i_row, row in cog.iterrows():
-            particle = row['particle']
+            cell = row['cell']
             
-            if particle==particle_i:
+            if cell==cell_i:
                 color='darkred'
             else:
                 color='darkorange'
@@ -617,7 +617,7 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
 
     return axes
 
-def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_total,
+def plot_mask_cell_track_static_timeseries(cell,track, cog, features, mask_total,
                                            field_contour, field_filled,
                                            track_variable=None,variable=None,variable_ylabel=None,variable_label=[None],variable_legend=False,variable_color=None,
                                            width=10000,n_extend=1,
@@ -637,7 +637,7 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
     import os
     import pandas as pd
         
-    track_cell=track[track['particle']==particle]
+    track_cell=track[track['cell']==cell]
     x_min=track_cell['projection_x_coordinate'].min()-width
     x_max=track_cell['projection_x_coordinate'].max()+width
     y_min=track_cell['projection_y_coordinate'].min()-width
@@ -645,7 +645,7 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
     time_min=track_cell['time'].min()
 #    time_max=track_cell['time'].max()
 
-    track_variable_cell=track_variable[track_variable['particle']==particle]
+    track_variable_cell=track_variable[track_variable['cell']==cell]
     track_variable_cell['time_cell']=pd.to_timedelta(track_variable_cell['time_cell'])
 #    track_variable_cell=track_variable_cell[(track_variable_cell['time']>=time_min) & (track_variable_cell['time']<=time_max)] 
         
@@ -677,18 +677,18 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
         
         cells_mask=list(unique(mask_total_i.core_data()))
         track_cells=track_i.loc[(track_i['projection_x_coordinate'] > x_min)  & (track_i['projection_x_coordinate'] < x_max) & (track_i['projection_y_coordinate'] > y_min) & (track_i['projection_y_coordinate'] < y_max)]
-        cells_track=list(track_cells['particle'].values)
+        cells_track=list(track_cells['cell'].values)
         cells=list(set( cells_mask + cells_track ))
-        if particle not in cells:
-            cells.append(particle)
+        if cell not in cells:
+            cells.append(cell)
         if 0 in cells:    
             cells.remove(0)
-        track_i=track_i[track_i['particle'].isin(cells)]
+        track_i=track_i[track_i['cell'].isin(cells)]
         
         if cog is None:
             cog_i=None
         else:
-            cog_i=cog[cog['particle'].isin(cells)]
+            cog_i=cog[cog['cell'].isin(cells)]
             cog_i=cog_i[cog_i['time']==time_i]
 
         if features is None:
@@ -712,7 +712,7 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
         datestring_file = time_i.strftime('%Y-%m-%d_%H%M%S')
 
         # plot evolving timeseries of variable to second axis:
-        ax1[0]=plot_mask_cell_individual_static(particle_i=particle,
+        ax1[0]=plot_mask_cell_individual_static(cell_i=cell,
                                              track=track_i, cog=cog_i,features=features_i, 
                                              mask_total=mask_total_i,
                                              field_contour=field_contour_i, field_filled=field_filled_i,

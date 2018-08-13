@@ -13,19 +13,19 @@ def calculate_cog(tracks,mass,mask):
     tracks_out  pandas.DataFrame
                 Dataframe containing t,x,y,z positions of centre of gravity and total cloud mass each tracked cells at each timestep
     '''
-    from .utils import mask_cube_particle
+    from .utils import mask_cube_cell
     from iris import Constraint    
     
     logging.info('start calculating centre of gravity for tracked cells')
 
-    tracks_out=tracks[['time','frame','particle','time_cell']]
+    tracks_out=tracks[['time','frame','cell','time_cell']]
 
     for i_row,row in tracks_out.iterrows():        
-        particle=row['particle']
+        cell=row['cell']
         constraint_time=Constraint(time=row['time'])
         mass_i=mass.extract(constraint_time)
         mask_i=mask.extract(constraint_time)
-        mass_masked_i=mask_cube_particle(mass_i,mask_i,particle)
+        mass_masked_i=mask_cube_cell(mass_i,mask_i,cell)
         x_M,y_M,z_M,mass_M=center_of_gravity(mass_masked_i)
         tracks_out.loc[i_row,'x_M']=float(x_M)
         tracks_out.loc[i_row,'y_M']=float(y_M)

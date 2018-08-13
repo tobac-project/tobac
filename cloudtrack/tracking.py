@@ -134,12 +134,11 @@ def maketrack(field_in,
     trajectories_filtered = filter_stubs(trajectories_unfiltered,threshold=stubs)
     trajectories_filtered=trajectories_filtered.reset_index(drop=True)
         
-    # Reset particle numbers from the arbitray numbers at the end of the feature detection and linking to consecutive numbers
+    # Reset particle numbers from the arbitray numbers at the end of the feature detection and linking to consecutive cell numbers
     # keep 'particle' for reference to the feature detection step.
-    trajectories_filtered['particle_old']=trajectories_filtered['particle']
-    for i_particle,particle in enumerate(pd.Series.unique(trajectories_filtered['particle_old'])):
-        particle_new=int(i_particle+cell_number_start)
-        trajectories_filtered.loc[trajectories_filtered['particle_old']==particle,'particle']=particle_new
+    for i_particle,particle in enumerate(pd.Series.unique(trajectories_filtered['particle'])):
+        cell=int(i_particle+cell_number_start)
+        trajectories_filtered.loc[trajectories_filtered['particle']==particle,'particle']=cell
 
 
     #Interpolate to fill the gaps in the trajectories (left from allowing memory in the linking)
@@ -577,8 +576,8 @@ def fill_gaps(t,order=1,extrapolate=0,frame_max=None,hdim_1_max=None,hdim_2_max=
     t_list=[]    # empty list to store interpolated DataFrames
     
     # group by cell number and perform process for each cell individually:
-    t_grouped=t.groupby('particle')
-    for particle,track in t_grouped:        
+    t_grouped=t.groupby('cell')
+    for cell,track in t_grouped:        
         
         # Setup interpolator from existing points (of order given as keyword)      
         frame_in=track['frame'].values
@@ -604,7 +603,7 @@ def fill_gaps(t,order=1,extrapolate=0,frame_max=None,hdim_1_max=None,hdim_2_max=
         track['frame']=new_index
         track['hdim_1']=hdim_1_out
         track['hdim_2']=hdim_2_out
-        track['particle']=particle   
+        track['cell']=cell   
         # Append DataFrame to list of DataFrames
         t_list.append(track)       
     # Concatenate interpolated trajectories into one DataFrame:    
@@ -625,9 +624,9 @@ def add_cell_time(t):
     '''
 
     logging.debug('start adding time relative to cell initiation')
-    t_grouped=t.groupby('particle')
+    t_grouped=t.groupby('cell')
     t['time_cell']=np.nan
-    for particle,track in t_grouped:
+    for cell,track in t_grouped:
         track_0=track.head(n=1)
         for i,row in track.iterrows():
             t.loc[i,'time_cell']=row['time']-track_0.loc[track_0.index[0],'time']

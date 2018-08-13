@@ -14,7 +14,7 @@ def segmentation_3D(track,field,threshold=3e-3,target='maximum',level=None,compa
                    Switch to determine if algorithm looks strating from maxima or minima in input field (maximum: starting from maxima (default), minimum: starting from minima)
 
     level          slice
-                   levels at which to seed the particles for the watershedding algorithm
+                   levels at which to seed the cells for the watershedding algorithm
     compactness    float
                    parameter describing the compactness of the resulting volume
     method:        str ('method')
@@ -48,7 +48,7 @@ def segmentation_3D(track,field,threshold=3e-3,target='maximum',level=None,compa
 
         # Create cube of the same dimensions and coordinates as input data to store mask:        
         segmentation_out_i=1*field_i
-        segmentation_out_i.rename('watershedding_output_mask')
+        segmentation_out_i.rename('segmentation_mask')
         segmentation_out_i.units=1
 
 #        data_i=field_i.core_data()
@@ -70,7 +70,7 @@ def segmentation_3D(track,field,threshold=3e-3,target='maximum',level=None,compa
             raise ValueError('unknown type of target')
         markers = np.zeros_like(unmasked).astype(np.int32)
         for index, row in tracks_i.iterrows():
-             markers[:,int(row['hdim_1']), int(row['hdim_2'])]=row.particle
+             markers[:,int(row['hdim_1']), int(row['hdim_2'])]=row.cell
         markers[~unmasked]=0
         
         if method=='watershed':
@@ -94,8 +94,8 @@ def segmentation_3D(track,field,threshold=3e-3,target='maximum',level=None,compa
         values, count = np.unique(res1, return_counts=True)
         counts=dict(zip(values, count))
         for index, row in tracks_i.iterrows():
-            if row['particle'] in counts.keys():
-                track.loc[index,'ncells']=counts[row['particle']]
+            if row['cell'] in counts.keys():
+                track.loc[index,'ncells']=counts[row['cell']]
         
         logging.debug('Finished segmentation 3D for '+time_i.strftime('%Y-%m-%d_%H:%M:%S'))
     #merge individual masks in CubeList into one Cube:    
@@ -147,7 +147,7 @@ def segmentation_2D(track,field,threshold=0,target='maximum',compactness=0,metho
         
         # Create cube of the same dimensions and coordinates as input data to store mask:        
         segmentation_out_i=1*field_i
-        segmentation_out_i.rename('watershedding_output_mask')
+        segmentation_out_i.rename('segmentation_mask')
         segmentation_out_i.units=1
         
         data_i=field_i.core_data()
@@ -165,7 +165,7 @@ def segmentation_2D(track,field,threshold=0,target='maximum',compactness=0,metho
             raise ValueError('unknown type of target')
         markers = np.zeros_like(unmasked).astype(np.int32)
         for index, row in tracks_i.iterrows():
-            markers[int(row['hdim_1']), int(row['hdim_2'])]=row.particle
+            markers[int(row['hdim_1']), int(row['hdim_2'])]=row.cell
         markers[~unmasked]=0
 
         if method=='watershed':
@@ -187,8 +187,8 @@ def segmentation_2D(track,field,threshold=0,target='maximum',compactness=0,metho
         values, count = np.unique(res1, return_counts=True)
         counts=dict(zip(values, count))
         for index, row in tracks_i.iterrows():
-            if row['particle'] in counts.keys():
-                track.loc[index,'ncells']=counts[row['particle']]
+            if row['cell'] in counts.keys():
+                track.loc[index,'ncells']=counts[row['cell']]
         logging.debug('Finished wateshedding 2D for '+time_i.strftime('%Y-%m-%d_%H:%M:%S'))
     
     #merge individual masks in CubeList into one Cube:    
@@ -196,7 +196,7 @@ def segmentation_2D(track,field,threshold=0,target='maximum',compactness=0,metho
 #    segmentation_out=segmentation_out_list.merge_cube()
     segmentation_out=segmentation_out_list.concatenate_cube()
 
-    logging.debug('Finished segmentation 3D')
+    logging.debug('Finished segmentation 2D')
 
     return segmentation_out,track
 
