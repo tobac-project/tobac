@@ -136,9 +136,10 @@ def maketrack(field_in,
         
     # Reset particle numbers from the arbitray numbers at the end of the feature detection and linking to consecutive cell numbers
     # keep 'particle' for reference to the feature detection step.
+    trajectories_filtered['cell']=None
     for i_particle,particle in enumerate(pd.Series.unique(trajectories_filtered['particle'])):
         cell=int(i_particle+cell_number_start)
-        trajectories_filtered.loc[trajectories_filtered['particle']==particle,'particle']=cell
+        trajectories_filtered.loc[trajectories_filtered['particle']==particle,'cell']=cell
 
 
     #Interpolate to fill the gaps in the trajectories (left from allowing memory in the linking)
