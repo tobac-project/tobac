@@ -244,9 +244,10 @@ def plot_mask_cell_track_follow(particle,track, cog, features, mask_total,
 def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
                                field_contour, field_filled, 
                                axes=plt.gca(),width=10000,                               
-                               label_field_contour=None, cmap_field_contour='Blues',contour_labels=False,
+                               label_field_contour=None, cmap_field_contour='Blues',norm_field_contour=None,
+                               linewidths_contour=0.8,contour_labels=False,
                                vmin_field_contour=0,vmax_field_contour=50,levels_field_contour=None,nlevels_field_contour=10,
-                               label_field_filled=None,cmap_field_filled='summer',
+                               label_field_filled=None,cmap_field_filled='summer',norm_field_filled=None,
                                vmin_field_filled=0,vmax_field_filled=100,levels_field_filled=None,nlevels_field_filled=10,
                                title=None
                                ): 
@@ -270,40 +271,50 @@ def plot_mask_cell_individual_follow(particle_i,track, cog,features, mask_total,
         plot_field_filled = axes.contourf((field_filled.coord('projection_x_coordinate').points-x_pos)/1000,
                                  (field_filled.coord('projection_y_coordinate').points-y_pos)/1000,
                                  field_filled.data,
-                                 levels=levels_field_filled,
-                                 cmap=cmap_field_filled, vmin=vmin_field_filled, vmax=vmax_field_filled)    
+                                 cmap=cmap_field_filled,norm=norm_field_filled,
+                                 levels=levels_field_filled,vmin=vmin_field_filled, vmax=vmax_field_filled)    
         
         
-        cax1 = divider.append_axes("right", size="5%", pad=0.1)
-        norm1= Normalize(vmin=vmin_field_filled, vmax=vmax_field_filled)
-        sm1= plt.cm.ScalarMappable(norm=norm1, cmap = plot_field_filled.cmap)
-        sm1.set_array([])
+        cax_filled = divider.append_axes("right", size="5%", pad=0.1)
+        norm_filled= Normalize(vmin=vmin_field_filled, vmax=vmax_field_filled)
+        sm_filled= plt.cm.ScalarMappable(norm=norm_filled, cmap = plot_field_filled.cmap)
+        sm_filled.set_array([])
         
-        cbar_field_filled = plt.colorbar(sm1, orientation='vertical',cax=cax1)
+        cbar_field_filled = plt.colorbar(sm_filled, orientation='vertical',cax=cax_filled)
         cbar_field_filled.ax.set_ylabel(label_field_filled)
         cbar_field_filled.set_clim(vmin_field_filled, vmax_field_filled)
 
     if field_contour is not None:
         if levels_field_contour is None:
             levels_field_contour=np.linspace(vmin_field_contour, vmax_field_contour, nlevels_field_contour)
+        if norm_field_contour:
+            vmin_field_contour=None,
+            vmax_field_contour=None,
+
         plot_field_contour = axes.contour((field_contour.coord('projection_x_coordinate').points-x_pos)/1000,
                                   (field_contour.coord('projection_y_coordinate').points-y_pos)/1000,
                                   field_contour.data,
-                                  cmap=cmap_field_contour,
+                                  cmap=cmap_field_contour,norm=norm_field_contour,
                                   levels=levels_field_contour,vmin=vmin_field_contour, vmax=vmax_field_contour,
-                                  linewidths=0.8)
+                                  linewidths=linewidths_contour)
         
         if contour_labels:
             axes.clabel(plot_field_contour, fontsize=10)
     
-        cax2 = divider.append_axes("bottom", size="5%", pad=0.1)
-        norm2= Normalize(vmin=vmin_field_contour, vmax=vmax_field_contour)
-        sm2= plt.cm.ScalarMappable(norm=norm2, cmap = plot_field_contour.cmap)
-        sm2.set_array([])
-        cbar_w = plt.colorbar(sm2, orientation='horizontal',cax=cax2)
-        cbar_w.ax.set_xlabel(label_field_contour)
-        cbar_w.set_clim(vmin_field_contour, vmax_field_contour)
+        cax_contour = divider.append_axes("bottom", size="5%", pad=0.1)
+        if norm_field_contour:
+            vmin_field_contour=None
+            vmax_field_contour=None
+            norm_contour=norm_field_contour
+        else:
+            norm_contour= Normalize(vmin=vmin_field_contour, vmax=vmax_field_contour)
 
+        sm_contour= plt.cm.ScalarMappable(norm=norm_contour, cmap = plot_field_contour.cmap)
+        sm_contour.set_array([])
+        
+        cbar_field_contour = plt.colorbar(sm_contour, orientation='horizontal',ticks=levels_field_contour,cax=cax_contour)
+        cbar_field_contour.ax.set_xlabel(label_field_contour)
+        cbar_field_contour.set_clim(vmin_field_contour, vmax_field_contour)
 
     
     for i_row, row in track.iterrows():
@@ -475,9 +486,10 @@ def plot_mask_cell_track_static(particle,track, cog, features, mask_total,
 def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total,
                                field_contour, field_filled,
                                axes=plt.gca(),xlim=None,ylim=None,
-                               label_field_contour=None, cmap_field_contour='Blues',contour_labels=False,
+                               label_field_contour=None, cmap_field_contour='Blues',norm_field_contour=None,
+                               linewidths_contour=0.8,contour_labels=False,
                                vmin_field_contour=0,vmax_field_contour=50,levels_field_contour=None,nlevels_field_contour=10,
-                               label_field_filled=None,cmap_field_filled='summer',
+                               label_field_filled=None,cmap_field_filled='summer',norm_field_filled=None,
                                vmin_field_filled=0,vmax_field_filled=100,levels_field_filled=None,nlevels_field_filled=10,
                                title=None
                                ):  
@@ -500,18 +512,20 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
         plot_field_filled = axes.contourf(field_filled.coord('projection_x_coordinate').points/1000,
                                  field_filled.coord('projection_y_coordinate').points/1000,
                                  field_filled.data,
-                                 levels=levels_field_filled, 
+                                 levels=levels_field_filled, norm=norm_field_filled,
                                  cmap=cmap_field_filled, vmin=vmin_field_filled, vmax=vmax_field_filled)    
         
         
-        cax1 = divider.append_axes("right", size="5%", pad=0.1)
-        norm1= Normalize(vmin=vmin_field_filled, vmax=vmax_field_filled)
-        sm1= plt.cm.ScalarMappable(norm=norm1, cmap = plot_field_filled.cmap)
+        cax_filled = divider.append_axes("right", size="5%", pad=0.1)        
+        
+        norm_filled= Normalize(vmin=vmin_field_filled, vmax=vmax_field_filled)
+        sm1= plt.cm.ScalarMappable(norm=norm_filled, cmap = plot_field_filled.cmap)
         sm1.set_array([])
         
-        cbar_field_filled = plt.colorbar(sm1, orientation='vertical',cax=cax1)
+        cbar_field_filled = plt.colorbar(sm1, orientation='vertical',cax=cax_filled)
         cbar_field_filled.ax.set_ylabel(label_field_filled)
         cbar_field_filled.set_clim(vmin_field_filled, vmax_field_filled)
+        
 
     if field_contour is not None:
         if levels_field_contour is None:
@@ -519,19 +533,25 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
         plot_field_contour = axes.contour(field_contour.coord('projection_x_coordinate').points/1000,
                                   field_contour.coord('projection_y_coordinate').points/1000,
                                   field_contour.data,
-                                  cmap=cmap_field_contour,
+                                  cmap=cmap_field_contour,norm=norm_field_contour,
                                   levels=levels_field_contour,vmin=vmin_field_contour, vmax=vmax_field_contour,
-                                  linewidths=0.8)
+                                  linewidths=linewidths_contour)
         
         if contour_labels:
             axes.clabel(plot_field_contour, fontsize=10)
     
-        cax2 = divider.append_axes("bottom", size="5%", pad=0.1)
-        norm2= Normalize(vmin=vmin_field_contour, vmax=vmax_field_contour)
-        sm2= plt.cm.ScalarMappable(norm=norm2, cmap = plot_field_contour.cmap)
-        sm2.set_array([])
+        cax_contour = divider.append_axes("bottom", size="5%", pad=0.1)
+        if norm_field_contour:
+            vmin_field_contour=None
+            vmax_field_contour=None
+            norm_contour=norm_field_contour
+        else:
+            norm_contour= Normalize(vmin=vmin_field_contour, vmax=vmax_field_contour)
+
+        sm_contour= plt.cm.ScalarMappable(norm=norm_contour, cmap = plot_field_contour.cmap)
+        sm_contour.set_array([])
         
-        cbar_field_contour = plt.colorbar(sm2, orientation='horizontal',cax=cax2)
+        cbar_field_contour = plt.colorbar(sm_contour, orientation='horizontal',ticks=levels_field_contour,cax=cax_contour)
         cbar_field_contour.ax.set_xlabel(label_field_contour)
         cbar_field_contour.set_clim(vmin_field_contour, vmax_field_contour)
 
@@ -598,7 +618,6 @@ def plot_mask_cell_individual_static(particle_i,track, cog, features, mask_total
 
 def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_total,
                                            field_contour, field_filled,
-                                           field_contour_label=None, field_filled_label=None,
                                            track_variable=None,variable=None,variable_ylabel=None,variable_label=[None],variable_legend=False,variable_color=None,
                                            width=10000,n_extend=1,
                                            name= 'test', plotdir='./',
@@ -696,7 +715,6 @@ def plot_mask_cell_track_static_timeseries(particle,track, cog, features, mask_t
                                              track=track_i, cog=cog_i,features=features_i, 
                                              mask_total=mask_total_i,
                                              field_contour=field_contour_i, field_filled=field_filled_i,
-                                             field_contour_label=field_contour_label, field_filled_label=field_filled_label,
                                              xlim=[x_min/1000,x_max/1000],ylim=[y_min/1000,y_max/1000],
                                              axes=ax1[0],title=title,**kwargs)
         
