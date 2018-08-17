@@ -118,6 +118,7 @@ def maketrack(field_in,
         features=feature_detection_multithreshold(field_in,target=target,threshold=threshold,dxy=dxy,
                                              position_threshold=position_threshold,sigma_threshold=sigma_threshold)
         features_filtered = features.drop(features[features['num'] < min_num].index)
+        features_filtered.drop(columns=['idx','num','threshold_value'],inplace=True)
 
     else:
         raise ValueError('method_detection unknown, has to be either trackpy or threshold')
@@ -140,6 +141,8 @@ def maketrack(field_in,
     for i_particle,particle in enumerate(pd.Series.unique(trajectories_filtered['particle'])):
         cell=int(i_particle+cell_number_start)
         trajectories_filtered.loc[trajectories_filtered['particle']==particle,'cell']=cell
+    trajectories_filtered.drop(columns=['particle'],inplace=True)
+
 
 
     #Interpolate to fill the gaps in the trajectories (left from allowing memory in the linking)
@@ -149,7 +152,6 @@ def maketrack(field_in,
     trajectories_filtered=fill_gaps(trajectories_filtered,order=order,
                                     extrapolate=extrapolate,frame_max=field_in.shape[0],
                                     hdim_1_max=field_in.shape[1],hdim_2_max=field_in.shape[2])
-    
     # add coorinates from input fields to output trajectories (time,dimensions)
     logging.debug('start adding coordinates to trajectories')
     trajectories_filtered=add_coordinates(trajectories_filtered,field_in)
@@ -430,7 +432,6 @@ def feature_detection_multithreshold(field_in,threshold,dxy,target='maximum', po
                     features_i.append([])
 
                 # If multiple thresholds, remove "parent" features from detection with previous threshold value
-                if i_threshold>0:
                     # remove duplicates drom list of features to remove from parent threshold:
                     list_remove=list(set(list_remove))                    
                     # remove parent regions, looping over list_remove:
@@ -448,8 +449,8 @@ def feature_detection_multithreshold(field_in,threshold,dxy,target='maximum', po
             for index_1, row_1 in features_i_merged.iterrows():
                 for index_2, row_2 in features_i_merged.iterrows():
                     if index_1 is not index_2:
-                        distance=(row_1['hdim_1']-row_2['hdim_1'])**2+(row_1['hdim_2']-row_2['hdim_2'])**2
-                        if distance <= min_distance/dxy:
+                        distance=dxy*np.sqrt((row_1['hdim_1']-row_2['hdim_1'])**2+(row_1['hdim_2']-row_2['hdim_2'])**2)
+                        if distance <= min_distance:
                             if row_1['threshold_value']>row_2['threshold_value']:
                                 features_i_merged.drop(index_2,inplace=True)
                             elif row_1['threshold_value']<row_2['threshold_value']:
@@ -605,6 +606,7 @@ def fill_gaps(t,order=1,extrapolate=0,frame_max=None,hdim_1_max=None,hdim_2_max=
         track['hdim_1']=hdim_1_out
         track['hdim_2']=hdim_2_out
         track['cell']=cell   
+        
         # Append DataFrame to list of DataFrames
         t_list.append(track)       
     # Concatenate interpolated trajectories into one DataFrame:    
