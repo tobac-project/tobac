@@ -189,7 +189,7 @@ def segmentation_2D(track,field,threshold=0,target='maximum',compactness=0,metho
         for index, row in tracks_i.iterrows():
             if row['cell'] in counts.keys():
                 track.loc[index,'ncells']=counts[row['cell']]
-        logging.debug('Finished wateshedding 2D for '+time_i.strftime('%Y-%m-%d_%H:%M:%S'))
+        logging.debug('Finished segmentation 2D for '+time_i.strftime('%Y-%m-%d_%H:%M:%S'))
     
     #merge individual masks in CubeList into one Cube:    
     # using merge throws error, so cubes with time promoted to DimCoord and using concatenate:
