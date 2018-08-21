@@ -618,7 +618,7 @@ def fill_gaps(t,order=1,extrapolate=0,frame_max=None,hdim_1_max=None,hdim_2_max=
         # Create new index filling in gaps and possibly extrapolating:
         index_min=min(frame_in)-extrapolate
         index_min=max(index_min,0)
-        index_max=max(frame_in)+extrapolate 
+        index_max=max(frame_in)+extrapolate
         index_max=min(index_max,frame_max)
         new_index=range(index_min,index_max+1) # +1 here to include last value
         track=track.reindex(new_index)
