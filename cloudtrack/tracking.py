@@ -110,13 +110,22 @@ def maketrack(field_in,
     ### Start Tracking
     # Feature detection:
     if method_detection == "threshold":
-        features=feature_detection_threshold(field_in,target=target,threshold=threshold,dxy=dxy,
-                                             position_threshold=position_threshold,sigma_threshold=sigma_threshold)
+        features=feature_detection_threshold(field_in,target=target,
+                                             threshold=threshold,
+                                             dxy=dxy,
+                                             position_threshold=position_threshold,
+                                             sigma_threshold=sigma_threshold,
+                                             n_erosion_threshold=n_erosion_threshold)
         features_filtered = features.drop(features[features['num'] < min_num].index)
     
     elif method_detection == "threshold_multi":
-        features=feature_detection_multithreshold(field_in,target=target,threshold=threshold,dxy=dxy,
-                                             position_threshold=position_threshold,sigma_threshold=sigma_threshold)
+        features=feature_detection_multithreshold(field_in,target=target,
+                                                  threshold=threshold,
+                                                  dxy=dxy,
+                                                  position_threshold=position_threshold,
+                                                  sigma_threshold=sigma_threshold,
+                                                  min_distance=min_distance,
+                                                  n_erosion_threshold=n_erosion_threshold)
         features_filtered = features.drop(features[features['num'] < min_num].index)
         features_filtered.drop(columns=['idx','num','threshold_value'],inplace=True)
 
@@ -320,11 +329,12 @@ def feature_detection_multithreshold(field_in,threshold,dxy,target='maximum', po
     from skimage.measure import label
     from skimage.morphology import binary_erosion
     from scipy.ndimage.filters import gaussian_filter
+    from itertools import combinations
     logging.debug('start feature detection based on thresholds')
     logging.debug('target: '+str(target))
-
+    
     # create empty list to store features for all timesteps
-    list_features=[]
+    list_features_timesteps=[]
 
     # loop over timesteps for feature identification:
     data_time=field_in.slices_over('time')
@@ -335,7 +345,7 @@ def feature_detection_multithreshold(field_in,threshold,dxy,target='maximum', po
         track_data=gaussian_filter(track_data, sigma=sigma_threshold) #smooth data slightly to create rounded, continuous field
         # create empty lists to store regions and features for individual timestep
         regions=[]
-        features_i=[]
+        list_features_thresholds=[]
         for i_threshold,threshold_i in enumerate(threshold):
 
             # if looking for minima, set values above threshold to 0 and scale by data minimum:
@@ -361,7 +371,7 @@ def feature_detection_multithreshold(field_in,threshold,dxy,target='maximum', po
                 #Remove background counts:
                 values_counts.pop(0)
                 #create empty list to store individual features for this threshold
-                list_features_i=[]
+                list_features_threshold_i=[]
                 #create empty dict to store regions for individual features for this threshold
                 regions.append(dict())
                 #create emptry list of features to remove from parent threshold value
@@ -409,73 +419,92 @@ def feature_detection_multithreshold(field_in,threshold,dxy,target='maximum', po
                         hdim2_index=np.average(b,weights=weights)
                     else:
                         raise ValueError('position_threshold must be center,extreme,weighted_diff or weighted_abs')
-
+                    
+                    #create individual DataFrame row in tracky format for identified feature
+                    list_features_threshold_i.append(pd.DataFrame(data={'frame': int(i_time),
+                                                              'idx':cur_idx,
+                                                              'hdim_1': hdim1_index,
+                                                              'hdim_2':hdim2_index,
+                                                              'num':count,
+                                                              'threshold_value':threshold_i},
+                                                        index=[i_time]))                
                     # For multiple threshold, record "parent" feature to be removed from Dataframe later
                     if i_threshold>0:
                         for idx,region in regions[i_threshold-1].items():
                             if (any(x in regions[i_threshold-1][idx] for x in region_i)):
                                 list_remove.append(idx)
 
-                    #create individual DataFrame row in tracky format for identified feature
-                    list_features_i.append(pd.DataFrame(data={'frame': int(i_time),
-                                                              'idx':cur_idx,
-                                                              'hdim_1': hdim1_index,
-                                                              'hdim_2':hdim2_index,
-                                                              'num':count,
-                                                              'threshold_value':threshold_i},
-                                                        index=[i_time]))
-
+                    
                 #check if list of features is not empty, then merge into DataFrame and append to list for different thresholds
-                if list_features_i:
-                    features_i.append(pd.concat(list_features_i))
+                if any([x is not None for x in list_features_threshold_i]):
+                    list_features_thresholds.append(pd.concat(list_features_threshold_i, ignore_index=True))
                 else: 
-                    features_i.append([])
+                    list_features_thresholds.append(None)
+            else:
+                list_features_thresholds.append(None)
+                regions.append(None)
 
                 # If multiple thresholds, remove "parent" features from detection with previous threshold value
                     # remove duplicates drom list of features to remove from parent threshold:
-                    list_remove=list(set(list_remove))                    
-                    # remove parent regions, looping over list_remove:
+            if i_threshold>0:
+
+                list_remove=list(set(list_remove))                    
+                # remove parent regions
+                # remove from DataFrame of last threshold
+                if list_features_thresholds[i_threshold-1] is not None:
+                    list_features_thresholds[i_threshold-1]=list_features_thresholds[i_threshold-1][~list_features_thresholds[i_threshold-1]['idx'].isin(list_remove)]
+                # remove from regions
+                if regions[i_threshold-1] is not None:
                     for idx in list_remove:
                         regions[i_threshold-1].pop(idx)
-                        features_i[i_threshold-1]=features_i[i_threshold-1][features_i[i_threshold-1]['idx']!=idx]
+
             # finished feature detection for specific threshold value:
             logging.debug('Finished feature detection for threshold '+str(i_threshold) + ' : ' + str(threshold_i) )
 
         #check if list of features is not empty, then merge features from different threshold values 
         #into one DataFrame and append to list for individual timesteps:
-        if features_i:
-            features_i_merged=pd.concat(features_i)
+        if any([x is not None for x in list_features_thresholds]):
+            features_i_merged=pd.concat(list_features_thresholds, ignore_index=True)
             #Loop over DataFrame to remove features that are closer than distance_min to each other:
-            for index_1, row_1 in features_i_merged.iterrows():
-                for index_2, row_2 in features_i_merged.iterrows():
-                    if index_1 is not index_2:
-                        distance=dxy*np.sqrt((row_1['hdim_1']-row_2['hdim_1'])**2+(row_1['hdim_2']-row_2['hdim_2'])**2)
-                        if distance <= min_distance:
-                            if row_1['threshold_value']>row_2['threshold_value']:
-                                features_i_merged.drop(index_2,inplace=True)
-                            elif row_1['threshold_value']<row_2['threshold_value']:
-                                features_i_merged.drop(index_1,inplace=True)
-                            elif row_1['threshold_value']==row_2['threshold_value']:
-                                if row_1['num']>row_2['num']:
-                                    features_i_merged.drop(index_2,inplace=True)
-                                elif row_1['num']<row_2['num']:
-                                    features_i_merged.drop(index_1,inplace=True)
-                                elif row_1['num']==row_2['num']:
-                                    features_i_merged.drop(index_2,inplace=True)
-            list_features.append(features_i_merged)
+            remove_list_distance=[]
+#            for index_1, row_1 in features_i_merged.iterrows():
+            indeces=combinations(features_i_merged.index.values,2)
+
+            for index_1,index_2 in indeces:
+#                logging.debug('index_1: ' + str(index_1))
+#                logging.debug('index_2: ' + str(index_2))
+                if index_1 is not index_2:
+                    features_i_merged.loc[index_1,'hdim_1']
+                    distance=dxy*np.sqrt((features_i_merged.loc[index_1,'hdim_1']-features_i_merged.loc[index_2,'hdim_1'])**2+(features_i_merged.loc[index_1,'hdim_2']-features_i_merged.loc[index_2,'hdim_2'])**2)
+                    logging.debug('distance: ' + str(distance))
+                    if distance <= min_distance:
+#                        logging.debug('distance<= min_distance: ' + str(distance))
+                        if features_i_merged.loc[index_1,'threshold_value']>features_i_merged.loc[index_2,'threshold_value']:
+                            remove_list_distance.append(index_2)
+                        elif features_i_merged.loc[index_1,'threshold_value']<features_i_merged.loc[index_2,'threshold_value']:
+                            remove_list_distance.append(index_1)
+                        elif features_i_merged.loc[index_1,'threshold_value']==features_i_merged.loc[index_2,'threshold_value']:
+                            if features_i_merged.loc[index_1,'num']>features_i_merged.loc[index_2,'num']:
+                                remove_list_distance.append(index_2)
+                            elif features_i_merged.loc[index_1,'num']<features_i_merged.loc[index_2,'num']:
+                                remove_list_distance.append(index_1)
+                            elif features_i_merged.loc[index_1,'num']==features_i_merged.loc[index_2,'num']:
+                                remove_list_distance.append(index_2)
+            features_i_merged=features_i_merged[~features_i_merged.index.isin(remove_list_distance)]
+            list_features_timesteps.append(features_i_merged)
 
             
         else:
-            list_features.append([])
+            list_features_timesteps.append(None)
+            
         logging.debug('Finished feature detection for ' + time_i.strftime('%Y-%m-%d_%H:%M:%S'))
 
 
     logging.debug('feature detection: merging DataFrames')
     # Check if features are detected and then concatenate features from different timesteps into one pandas DataFrame
     # If no features are detected raise error
-    if list_features:    
-        features=pd.concat(list_features)   
-        features=features.reset_index(drop=True)
+    if any([x is not None for x in list_features_timesteps]):
+        features=pd.concat(list_features_timesteps, ignore_index=True)   
     else:
         raise ValueError('No features detected')
     logging.debug('feature detection completed')
@@ -551,8 +580,6 @@ def trajectory_linking(features,v_max,dt,dxy,
 
     return trajectories
 
-
-
 def fill_gaps(t,order=1,extrapolate=0,frame_max=None,hdim_1_max=None,hdim_2_max=None):
     ''' add cell time as time since the initiation of each cell   
     Input:
@@ -591,9 +618,9 @@ def fill_gaps(t,order=1,extrapolate=0,frame_max=None,hdim_1_max=None,hdim_2_max=
         # Create new index filling in gaps and possibly extrapolating:
         index_min=min(frame_in)-extrapolate
         index_min=max(index_min,0)
-        index_max=max(frame_in)+extrapolate
+        index_max=max(frame_in)+extrapolate 
         index_max=min(index_max,frame_max)
-        new_index=range(index_min,index_max)
+        new_index=range(index_min,index_max+1) # +1 here to include last value
         track=track.reindex(new_index)
         
         # Interpolate to extended index:
