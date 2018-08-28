@@ -1,4 +1,4 @@
-def segmentation_3D(track,field,threshold=3e-3,target='maximum',level=None,compactness=0,method='watershed'):
+def segmentation_3D(track,field,threshold=3e-3,target='maximum',level=None,method='watershed'):
     """
     Function using watershedding or random walker to determine cloud volumes associated with tracked updrafts
     
@@ -15,8 +15,6 @@ def segmentation_3D(track,field,threshold=3e-3,target='maximum',level=None,compa
 
     level          slice
                    levels at which to seed the cells for the watershedding algorithm
-    compactness    float
-                   parameter describing the compactness of the resulting volume
     method:        str ('method')
                    flag determining the algorithm to use (currently watershedding implemented)
 
@@ -74,7 +72,7 @@ def segmentation_3D(track,field,threshold=3e-3,target='maximum',level=None,compa
         markers[~unmasked]=0
         
         if method=='watershed':
-            res1 = watershed(data_i_segmentation,markers.astype(np.int32), mask=unmasked,compactness=compactness)
+            res1 = watershed(data_i_segmentation,markers.astype(np.int32), mask=unmasked)
 #        elif method=='random_walker':
 #             res1=random_walker(data_i_segmentation, markers.astype(np.int32),
 #                                beta=130, mode='bf', tol=0.001, copy=True, multichannel=False, return_full_prob=False, spacing=None)
@@ -106,7 +104,7 @@ def segmentation_3D(track,field,threshold=3e-3,target='maximum',level=None,compa
     logging.debug('Finished segmentation 3D')
     return segmentation_out,track
             
-def segmentation_2D(track,field,threshold=0,target='maximum',compactness=0,method='watershed'):
+def segmentation_2D(track,field,threshold=0,target='maximum',method='watershed'):
     """
     Function using watershedding or random walker to determine cloud volumes associated with tracked updrafts
     Parameters:
@@ -118,8 +116,6 @@ def segmentation_2D(track,field,threshold=0,target='maximum',compactness=0,metho
                    threshold for the watershedding field to be used for the mask
     target:        string
                    Switch to determine if algorithm looks strating from maxima or minima in input field (maximum: starting from maxima (default), minimum: starting from minima)
-    compactness    float
-                   parameter describing the compactness of the resulting volume
     method:        str ('method')
                    flag determining the algorithm to use (currently watershedding implemented)
     
@@ -169,7 +165,7 @@ def segmentation_2D(track,field,threshold=0,target='maximum',compactness=0,metho
         markers[~unmasked]=0
 
         if method=='watershed':
-            res1 = watershed(data_i_segmentation,markers.astype(np.int32), mask=unmasked,compactness=compactness)
+            res1 = watershed(data_i_segmentation,markers.astype(np.int32), mask=unmasked)
 #        elif method=='random_walker':
 #            #res1 = random_walker(Mask, markers,mode='cg')
 #             res1=random_walker(data_i_segmentation, markers.astype(np.int32),
