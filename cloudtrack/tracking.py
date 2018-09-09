@@ -686,7 +686,6 @@ def add_coordinates(t,variable_cube):
     time_in_datetime=time_in.units.num2date(time_in.points)
     
     for i, row in t.iterrows():
-#        logging.debug('adding time coordinate for row '+str(i))
         t.loc[i,'time']=time_in_datetime[int(row['frame'])]
         t.loc[i,'timestr']=time_in_datetime[int(row['frame'])].strftime('%Y-%m-%d %H:%M:%S')
 
