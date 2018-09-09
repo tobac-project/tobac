@@ -209,7 +209,6 @@ def feature_detection_threshold(field_in,threshold,dxy,target='maximum', positio
     from skimage.morphology import binary_erosion
     from scipy.ndimage.filters import gaussian_filter
     logging.debug('start feature detection based on thresholds')
-    logging.debug('target: '+str(target))
 
     # locate features for each timestep and then combine:
     list_features=[]
@@ -331,7 +330,6 @@ def feature_detection_multithreshold(field_in,threshold,dxy,target='maximum', po
     from scipy.ndimage.filters import gaussian_filter
     from itertools import combinations
     logging.debug('start feature detection based on thresholds')
-    logging.debug('target: '+str(target))
     
     # create empty list to store features for all timesteps
     list_features_timesteps=[]
@@ -466,31 +464,29 @@ def feature_detection_multithreshold(field_in,threshold,dxy,target='maximum', po
         if any([x is not None for x in list_features_thresholds]):
             features_i_merged=pd.concat(list_features_thresholds, ignore_index=True)
             #Loop over DataFrame to remove features that are closer than distance_min to each other:
-            remove_list_distance=[]
-#            for index_1, row_1 in features_i_merged.iterrows():
-            indeces=combinations(features_i_merged.index.values,2)
-
-            for index_1,index_2 in indeces:
-#                logging.debug('index_1: ' + str(index_1))
-#                logging.debug('index_2: ' + str(index_2))
-                if index_1 is not index_2:
-                    features_i_merged.loc[index_1,'hdim_1']
-                    distance=dxy*np.sqrt((features_i_merged.loc[index_1,'hdim_1']-features_i_merged.loc[index_2,'hdim_1'])**2+(features_i_merged.loc[index_1,'hdim_2']-features_i_merged.loc[index_2,'hdim_2'])**2)
-                    logging.debug('distance: ' + str(distance))
-                    if distance <= min_distance:
-#                        logging.debug('distance<= min_distance: ' + str(distance))
-                        if features_i_merged.loc[index_1,'threshold_value']>features_i_merged.loc[index_2,'threshold_value']:
-                            remove_list_distance.append(index_2)
-                        elif features_i_merged.loc[index_1,'threshold_value']<features_i_merged.loc[index_2,'threshold_value']:
-                            remove_list_distance.append(index_1)
-                        elif features_i_merged.loc[index_1,'threshold_value']==features_i_merged.loc[index_2,'threshold_value']:
-                            if features_i_merged.loc[index_1,'num']>features_i_merged.loc[index_2,'num']:
+            if (min_distance > 0):
+                remove_list_distance=[]
+                #create list of tuples with all combinations of features at the timestep:
+                indeces=combinations(features_i_merged.index.values,2)
+                #Loop over combinations to remove features that are closer together than min_distance and keep larger one (either higher threshold or larger area)
+                for index_1,index_2 in indeces:
+                    if index_1 is not index_2:
+                        features_i_merged.loc[index_1,'hdim_1']
+                        distance=dxy*np.sqrt((features_i_merged.loc[index_1,'hdim_1']-features_i_merged.loc[index_2,'hdim_1'])**2+(features_i_merged.loc[index_1,'hdim_2']-features_i_merged.loc[index_2,'hdim_2'])**2)
+                        if distance <= min_distance:
+    #                        logging.debug('distance<= min_distance: ' + str(distance))
+                            if features_i_merged.loc[index_1,'threshold_value']>features_i_merged.loc[index_2,'threshold_value']:
                                 remove_list_distance.append(index_2)
-                            elif features_i_merged.loc[index_1,'num']<features_i_merged.loc[index_2,'num']:
+                            elif features_i_merged.loc[index_1,'threshold_value']<features_i_merged.loc[index_2,'threshold_value']:
                                 remove_list_distance.append(index_1)
-                            elif features_i_merged.loc[index_1,'num']==features_i_merged.loc[index_2,'num']:
-                                remove_list_distance.append(index_2)
-            features_i_merged=features_i_merged[~features_i_merged.index.isin(remove_list_distance)]
+                            elif features_i_merged.loc[index_1,'threshold_value']==features_i_merged.loc[index_2,'threshold_value']:
+                                if features_i_merged.loc[index_1,'num']>features_i_merged.loc[index_2,'num']:
+                                    remove_list_distance.append(index_2)
+                                elif features_i_merged.loc[index_1,'num']<features_i_merged.loc[index_2,'num']:
+                                    remove_list_distance.append(index_1)
+                                elif features_i_merged.loc[index_1,'num']==features_i_merged.loc[index_2,'num']:
+                                    remove_list_distance.append(index_2)
+                features_i_merged=features_i_merged[~features_i_merged.index.isin(remove_list_distance)]
             list_features_timesteps.append(features_i_merged)
 
             
