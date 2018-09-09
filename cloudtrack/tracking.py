@@ -159,7 +159,7 @@ def maketrack(field_in,
 
     
     trajectories_filtered=fill_gaps(trajectories_filtered,order=order,
-                                    extrapolate=extrapolate,frame_max=field_in.shape[0],
+                                    extrapolate=extrapolate,frame_max=field_in.shape[0]-1,
                                     hdim_1_max=field_in.shape[1],hdim_2_max=field_in.shape[2])
     # add coorinates from input fields to output trajectories (time,dimensions)
     logging.debug('start adding coordinates to trajectories')
