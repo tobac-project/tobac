@@ -1,11 +1,11 @@
-def segmentation_3D(track,field,threshold=3e-3,target='maximum',level=None,method='watershed'):
+def segmentation_3D(track,field,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,grid_spacing=None):
     """
     Function using watershedding or random walker to determine cloud volumes associated with tracked updrafts
     
     Parameters:
     track:         pandas.DataFrame 
                    output from trackpy/maketrack
-    field_in:      iris.cube.Cube 
+    field:      iris.cube.Cube 
                    containing the field to perform the watershedding on 
     threshold:  float 
                    threshold for the watershedding field to be used for the mask
@@ -17,7 +17,10 @@ def segmentation_3D(track,field,threshold=3e-3,target='maximum',level=None,metho
                    levels at which to seed the cells for the watershedding algorithm
     method:        str ('method')
                    flag determining the algorithm to use (currently watershedding implemented)
-
+                   
+    max_distance: float
+                  Maximum distance from a marker allowed to be classified as belonging to that cell
+    
     Output:
     segmentation_out: iris.cube.Cube
                    Cloud mask, 0 outside and integer numbers according to track inside the clouds
@@ -30,12 +33,32 @@ def segmentation_3D(track,field,threshold=3e-3,target='maximum',level=None,metho
     import logging
     from iris.cube import CubeList
     from iris.util import new_axis
+    from copy import deepcopy
+    from scipy.ndimage import distance_transform_edt
+    
     logging.info('Start watershedding 3D')
 
     #Set level at which to create "Seed" for each cloud and threshold in total water content:
     # If none, use all levels (later reduced to the ones fulfilling the theshold conditions)
     if level==None:
         level=slice(None)
+        
+        
+    if max_distance is not None:
+        coord_names=[coord.name() for coord in  field.coords()]
+        if (('projection_x_coordinate' in coord_names and 'projection_y_coordinate' in coord_names) and  (grid_spacing is None)):
+            x_coord=deepcopy(field.coord('projection_x_coordinate'))
+            x_coord.convert_units('metre')
+            dx=np.diff(field.coord('projection_y_coordinate')[0:2].points)[0]
+            y_coord=deepcopy(field.coord('projection_y_coordinate'))
+            y_coord.convert_units('metre')
+            dy=np.diff(field.coord('projection_y_coordinate')[0:2].points)[0]
+            dxy=0.5*(dx+dy)
+        elif grid_spacing is not None:
+            dxy=grid_spacing
+        else:
+            ValueError('no information about grid spacing, need either input cube with projection_x_coord and projection_y_coord or keyword argument grid_spacing')
+        max_distance_pixel=np.ceil(max_distance/dxy)
     
     # CubeList to store individual segmentation masks
     segmentation_out_list=CubeList()
@@ -72,16 +95,23 @@ def segmentation_3D(track,field,threshold=3e-3,target='maximum',level=None,metho
         markers[~unmasked]=0
         
         if method=='watershed':
-            res1 = watershed(data_i_segmentation,markers.astype(np.int32), mask=unmasked)
+            segmentation_mask_i = watershed(data_i_segmentation,markers.astype(np.int32), mask=unmasked)
 #        elif method=='random_walker':
-#             res1=random_walker(data_i_segmentation, markers.astype(np.int32),
+#           segmentation_mask_i=random_walker(data_i_segmentation, markers.astype(np.int32),
 #                                beta=130, mode='bf', tol=0.001, copy=True, multichannel=False, return_full_prob=False, spacing=None)
         else:                
             raise ValueError('unknown method, must be watershed')
             
+        # remove everything from the individual masks that is more than max_distance_pixel away from the markers
+        if max_distance is not None:
+            for cell in tracks_i['cell']:
+                D=distance_transform_edt((markers!=cell).astype(int))
+                segmentation_mask_i[np.bitwise_and(segmentation_mask_i==cell, D>max_distance_pixel)]=0
+                
         #Write resulting mass into Cube and append to CubeList collecting masks for individual timesteps
+        segmentation_out_i.data=segmentation_mask_i
         
-        segmentation_out_i.data=res1
+        
         
         # using merge throws error, so cubes with time promoted to DimCoord and using concatenate:
 #        segmentation_out_list.append(segmentation_out_i)
@@ -89,7 +119,7 @@ def segmentation_3D(track,field,threshold=3e-3,target='maximum',level=None,metho
         segmentation_out_list.append(segmentation_out_i_temp)
 
         # count number of grid cells asoociated to each tracked cell and write that into DataFrame:
-        values, count = np.unique(res1, return_counts=True)
+        values, count = np.unique(segmentation_mask_i, return_counts=True)
         counts=dict(zip(values, count))
         for index, row in tracks_i.iterrows():
             if row['cell'] in counts.keys():
