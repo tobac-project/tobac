@@ -130,7 +130,7 @@ def maketrack(field_in,
         features_filtered.drop(columns=['idx','num','threshold_value'],inplace=True)
 
     else:
-        raise ValueError('method_detection unknown, has to be either trackpy or threshold')
+        raise ValueError('method_detection unknown, has to be either threshold_multi or threshold')
 
     # Link the features in the individual frames to trajectories:
     trajectories_unfiltered=trajectory_linking(features_filtered,v_max=v_max,dt=dt,dxy=dxy,memory=memory,
