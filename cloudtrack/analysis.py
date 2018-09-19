@@ -5,93 +5,99 @@ import os
 
 from .utils import mask_cell,mask_cell_surface,mask_cube_cell,get_bounding_box
 
-def cell_statistics(input_cubes,track,mask,dimensions,aggregators,output_path='./',output_name='Profiles',width=10000,z_coord='model_level_number',**kwargs):
+def cell_statistics_all(input_cubes,track,mask,aggregators,output_path='./',cell_selection=None,output_name='Profiles',width=10000,z_coord='model_level_number',dimensions=['x','y'],**kwargs):
+    if cell_selection is None:
+        cell_selection=np.unique(track['cell'])
+    for cell in cell_selection :
+        cell_statistics(input_cubes=input_cubes,track=track, mask=mask,
+                        dimensions=dimensions,aggregators=aggregators,cell=cell,
+                        output_path=output_path,output_name=output_name,
+                        width=width,z_coord=z_coord,**kwargs)
+
+def cell_statistics(input_cubes,track,mask,aggregators,cell,output_path='./',output_name='Profiles',width=10000,z_coord='model_level_number',dimensions=['x','y'],**kwargs):
     from iris.cube import Cube,CubeList
     from iris.coords import AuxCoord
-    from iris import Constraint,save
-
+    from iris import Constraint,save    
+    
     # If input is single cube, turn into cubelist
     if type(input_cubes) is Cube:
         input_cubes=CubeList([input_cubes])
-            
-    dimensions=['x','y']
-    for cell in np.unique(track['cell']):
-        logging.debug('Start calculating profiles for cell '+str(cell))
-        track_i=track[track['cell']==cell]
-        
-        cubes_profile={}
-        for aggregator in aggregators:
-            cubes_profile[aggregator.name()]=CubeList()
-            
-        for time_i in track_i['time'].values:
-            constraint_time = Constraint(time=time_i)
-            
-            mask_i=mask.extract(constraint_time)
-            mask_cell_i=mask_cell(mask_i,cell,masked=False)
-            mask_cell_surface_i=mask_cell_surface(mask_i,cell,masked=False,z_coord=z_coord)
 
-            x_dim=mask_cell_surface_i.coord_dims('projection_x_coordinate')[0]
-            y_dim=mask_cell_surface_i.coord_dims('projection_y_coordinate')[0]
-            x_coord=mask_cell_surface_i.coord('projection_x_coordinate')
-            y_coord=mask_cell_surface_i.coord('projection_y_coordinate')
-        
-            if (mask_cell_surface_i.core_data()>0).any():
-                box_mask_i=get_bounding_box(mask_cell_surface_i.core_data(),buffer=1)
-        
-                box_mask=[[x_coord.points[box_mask_i[x_dim][0]],x_coord.points[box_mask_i[x_dim][1]]],
-                         [y_coord.points[box_mask_i[y_dim][0]],y_coord.points[box_mask_i[y_dim][1]]]]
-            else:
-                box_mask=[[np.nan,np.nan],[np.nan,np.nan]]
-        
-            x=track_i[track_i['time'].values==time_i]['projection_x_coordinate'].values[0]
-            y=track_i[track_i['time'].values==time_i]['projection_y_coordinate'].values[0]
-
-            box_slice=[[x-width,x+width],[y-width,y+width]]
-                   
-            x_min=np.nanmin([box_mask[0][0],box_slice[0][0]])
-            x_max=np.nanmax([box_mask[0][1],box_slice[0][1]])
-            y_min=np.nanmin([box_mask[1][0],box_slice[1][0]])
-            y_max=np.nanmax([box_mask[1][1],box_slice[1][1]])
     
-            constraint_x=Constraint(projection_x_coordinate=lambda cell: int(x_min) < cell < int(x_max))
-            constraint_y=Constraint(projection_y_coordinate=lambda cell: int(y_min) < cell < int(y_max))
+    logging.debug('Start calculating profiles for cell '+str(cell))
+    track_i=track[track['cell']==cell]
     
-            constraint=constraint_time & constraint_x & constraint_y
-    #       Mask_cell_surface_i=mask_cell_surface(Mask_w_i,cell,masked=False,z_coord='model_level_number')
-            mask_cell_i=mask_cell_i.extract(constraint)
-            mask_cell_surface_i=mask_cell_surface_i.extract(constraint)
-
-            input_cubes_i=input_cubes.extract(constraint)
-            for cube in input_cubes_i:
-#                logging.debug(str(cube))
-#                logging.debug(str(mask_cell_i))
-                cube_masked=mask_cube_cell(cube,mask_cell_i,cell)
-                for aggregator in aggregators:
-                    cubes_profile[aggregator.name()].append(cube_masked.collapsed(dimensions,aggregator,**kwargs))
-
-
-        minutes=(track_i['time_cell']/pd.Timedelta(minutes=1)).values
-        latitude=track_i['latitude'].values
-        longitude=track_i['longitude'].values
-        minutes_coord=AuxCoord(minutes,long_name='cell_time',units='min')
-        latitude_coord=AuxCoord(latitude,long_name='latitude',units='degrees')
-        longitude_coord=AuxCoord(longitude,long_name='longitude',units='degrees')
+    cubes_profile={}
+    for aggregator in aggregators:
+        cubes_profile[aggregator.name()]=CubeList()
         
-        for aggregator in aggregators:
-            
-            cubes_profile[aggregator.name()]=cubes_profile[aggregator.name()].merge()
-            for cube in cubes_profile[aggregator.name()]:
-                for coord in  cube.coords():
-                    if (coord.ndim>1 and (cube.coord_dims(dimensions[0])[0] in cube.coord_dims(coord) or cube.coord_dims(dimensions[1])[0] in cube.coord_dims(coord))):
-                        cube.remove_coord(coord.name())
-                    
-                cube.add_aux_coord(minutes_coord,data_dims=cube.coord_dims('time'))
-                cube.add_aux_coord(latitude_coord,data_dims=cube.coord_dims('time'))
-                cube.add_aux_coord(longitude_coord,data_dims=cube.coord_dims('time'))
-            
-            os.makedirs(os.path.join(output_path,output_name,aggregator.name()),exist_ok=True)
-            savefile=os.path.join(output_path,output_name,aggregator.name(),output_name+'_'+ aggregator.name()+'_'+str(int(cell))+'.nc')
-            save(cubes_profile[aggregator.name()],savefile)
+    for time_i in track_i['time'].values:
+        constraint_time = Constraint(time=time_i)
+        
+        mask_i=mask.extract(constraint_time)
+        mask_cell_i=mask_cell(mask_i,cell,masked=False)
+        mask_cell_surface_i=mask_cell_surface(mask_i,cell,masked=False,z_coord=z_coord)
+
+        x_dim=mask_cell_surface_i.coord_dims('projection_x_coordinate')[0]
+        y_dim=mask_cell_surface_i.coord_dims('projection_y_coordinate')[0]
+        x_coord=mask_cell_surface_i.coord('projection_x_coordinate')
+        y_coord=mask_cell_surface_i.coord('projection_y_coordinate')
+    
+        if (mask_cell_surface_i.core_data()>0).any():
+            box_mask_i=get_bounding_box(mask_cell_surface_i.core_data(),buffer=1)
+    
+            box_mask=[[x_coord.points[box_mask_i[x_dim][0]],x_coord.points[box_mask_i[x_dim][1]]],
+                     [y_coord.points[box_mask_i[y_dim][0]],y_coord.points[box_mask_i[y_dim][1]]]]
+        else:
+            box_mask=[[np.nan,np.nan],[np.nan,np.nan]]
+    
+        x=track_i[track_i['time'].values==time_i]['projection_x_coordinate'].values[0]
+        y=track_i[track_i['time'].values==time_i]['projection_y_coordinate'].values[0]
+
+        box_slice=[[x-width,x+width],[y-width,y+width]]
+               
+        x_min=np.nanmin([box_mask[0][0],box_slice[0][0]])
+        x_max=np.nanmax([box_mask[0][1],box_slice[0][1]])
+        y_min=np.nanmin([box_mask[1][0],box_slice[1][0]])
+        y_max=np.nanmax([box_mask[1][1],box_slice[1][1]])
+
+        constraint_x=Constraint(projection_x_coordinate=lambda cell: int(x_min) < cell < int(x_max))
+        constraint_y=Constraint(projection_y_coordinate=lambda cell: int(y_min) < cell < int(y_max))
+
+        constraint=constraint_time & constraint_x & constraint_y
+#       Mask_cell_surface_i=mask_cell_surface(Mask_w_i,cell,masked=False,z_coord='model_level_number')
+        mask_cell_i=mask_cell_i.extract(constraint)
+        mask_cell_surface_i=mask_cell_surface_i.extract(constraint)
+
+        input_cubes_i=input_cubes.extract(constraint)
+        for cube in input_cubes_i:
+            cube_masked=mask_cube_cell(cube,mask_cell_i,cell)
+            for aggregator in aggregators:
+                cubes_profile[aggregator.name()].append(cube_masked.collapsed(dimensions,aggregator,**kwargs))
+
+
+    minutes=(track_i['time_cell']/pd.Timedelta(minutes=1)).values
+    latitude=track_i['latitude'].values
+    longitude=track_i['longitude'].values
+    minutes_coord=AuxCoord(minutes,long_name='cell_time',units='min')
+    latitude_coord=AuxCoord(latitude,long_name='latitude',units='degrees')
+    longitude_coord=AuxCoord(longitude,long_name='longitude',units='degrees')
+    
+    for aggregator in aggregators:
+        
+        cubes_profile[aggregator.name()]=cubes_profile[aggregator.name()].merge()
+        for cube in cubes_profile[aggregator.name()]:
+            for coord in  cube.coords():
+                if (coord.ndim>1 and (cube.coord_dims(dimensions[0])[0] in cube.coord_dims(coord) or cube.coord_dims(dimensions[1])[0] in cube.coord_dims(coord))):
+                    cube.remove_coord(coord.name())
+                
+            cube.add_aux_coord(minutes_coord,data_dims=cube.coord_dims('time'))
+            cube.add_aux_coord(latitude_coord,data_dims=cube.coord_dims('time'))
+            cube.add_aux_coord(longitude_coord,data_dims=cube.coord_dims('time'))
+        
+        os.makedirs(os.path.join(output_path,output_name,aggregator.name()),exist_ok=True)
+        savefile=os.path.join(output_path,output_name,aggregator.name(),output_name+'_'+ aggregator.name()+'_'+str(int(cell))+'.nc')
+        save(cubes_profile[aggregator.name()],savefile)
 
 
 def cog_cell(cell,Tracks=None,M_total=None,M_liquid=None,
