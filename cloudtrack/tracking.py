@@ -5,7 +5,8 @@ import logging
 def maketrack(field_in,
               grid_spacing=None,time_spacing=None,
               target='maximum',              
-              v_max=10,memory=3,stubs=5,              
+              v_max=None,d_max=None,
+              memory=0,stubs=5,              
               order=1,extrapolate=0,              
               method_detection="threshold",
               position_threshold='center',
@@ -133,7 +134,9 @@ def maketrack(field_in,
         raise ValueError('method_detection unknown, has to be either threshold_multi or threshold')
 
     # Link the features in the individual frames to trajectories:
-    trajectories_unfiltered=trajectory_linking(features_filtered,v_max=v_max,dt=dt,dxy=dxy,memory=memory,
+    trajectories_unfiltered=trajectory_linking(features_filtered,
+                                               v_max=v_max,d_max=d_max,
+                                               dt=dt,dxy=dxy,memory=memory,
                                                subnetwork_size=subnetwork_size,
                                                method_linking=method_linking,
                                                adaptive_stop=adaptive_stop,
@@ -506,8 +509,8 @@ def feature_detection_multithreshold(field_in,threshold,dxy,target='maximum', po
     logging.debug('feature detection completed')
     return features
 
-def trajectory_linking(features,v_max,dt,dxy,
-                       memory,subnetwork_size=None,
+def trajectory_linking_trackpy(features,dt,dxy,
+                       memory,v_max=None,d_max=None,subnetwork_size=None,
                        method_linking='random',
                        adaptive_step=None,adaptive_stop=None
                        ):
@@ -536,7 +539,13 @@ def trajectory_linking(features,v_max,dt,dxy,
                       flag choosing method used for trajectory linking
     """
     # calculate search range based on timestep and grid spacing
-    search_range=int(dt*v_max/dxy)
+    if v_max is not None:
+        search_range=int(dt*v_max/dxy)
+    
+    # calculate search range based on timestep and grid spacing
+    if d_max is not None:
+        search_range=int(d_max/dxy)
+
     
     logging.debug('start linking features into trajectories')
     
