@@ -35,8 +35,8 @@ def cell_statistics(input_cubes,track,mask,aggregators,cell,output_path='./',out
         constraint_time = Constraint(time=time_i)
         
         mask_i=mask.extract(constraint_time)
-        mask_cell_i=mask_cell(mask_i,cell,masked=False)
-        mask_cell_surface_i=mask_cell_surface(mask_i,cell,masked=False,z_coord=z_coord)
+        mask_cell_i=mask_cell(mask_i,track_i,cell,masked=False)
+        mask_cell_surface_i=mask_cell_surface(mask_i,track_i,cell,masked=False,z_coord=z_coord)
 
         x_dim=mask_cell_surface_i.coord_dims('projection_x_coordinate')[0]
         y_dim=mask_cell_surface_i.coord_dims('projection_y_coordinate')[0]

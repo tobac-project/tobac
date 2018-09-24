@@ -141,9 +141,9 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
                 mask_i=None
                 # if mask is 3D, create surface projection, if mask is 2D keep the mask
                 if mask.ndim==2:
-                    mask_i=mask_cell(mask,cell,masked=False)
+                    mask_i=mask_cell(mask,cell,track,masked=False)
                 elif mask.ndim==3:
-                    mask_i=mask_cell_surface(mask,cell,masked=False,z_coord='model_level_number')
+                    mask_i=mask_cell_surface(mask,cell,track,masked=False,z_coord='model_level_number')
                 else:
                     raise ValueError('mask has shape that cannot be understood')
                 # plot countour lines around the edges of the mask    
@@ -339,7 +339,7 @@ def plot_mask_cell_individual_follow(cell_i,track, cog,features, mask_total,
         #Create surface projection of mask for the respective cell and plot it in the right color
         z_coord = 'model_level_number'
         if len(mask_total.shape)==3: 
-            mask_total_i_surface = mask_cell_surface(mask_total, cell, masked=False, z_coord=z_coord)
+            mask_total_i_surface = mask_cell_surface(mask_total, cell, track, masked=False, z_coord=z_coord)
         elif len(mask_total.shape)==2:            
             mask_total_i_surface=mask_total
         axes.contour((mask_total_i_surface.coord('projection_x_coordinate').points-x_pos)/1000,
@@ -556,16 +556,18 @@ def plot_mask_cell_individual_static(cell_i,track, cog, features, mask_total,
         cbar_field_contour.ax.set_xlabel(label_field_contour)
         cbar_field_contour.set_clim(vmin_field_contour, vmax_field_contour)
 
-
-    
     for i_row, row in track.iterrows():
         cell = int(row['cell'])
         if cell==cell_i:
             color='darkred'
+            cell_string='   '+str(cell)
+        elif cell==np.nan:
+            color='darkgray'
+            cell_string='   '
         else:
             color='darkorange'
-            
-        cell_string='   '+str(int(row['cell']))
+            cell_string='   '+str(cell)
+
         axes.text(row['projection_x_coordinate']/1000,
                   row['projection_y_coordinate']/1000,
                   cell_string,color=color,fontsize=6, clip_on=True)
@@ -579,7 +581,7 @@ def plot_mask_cell_individual_static(cell_i,track, cog, features, mask_total,
         #Create surface projection of mask for the respective cell and plot it in the right color
         z_coord = 'model_level_number'
         if len(mask_total.shape)==3: 
-            mask_total_i_surface = mask_cell_surface(mask_total, cell, masked=False, z_coord=z_coord)
+            mask_total_i_surface = mask_cell_surface(mask_total, cell,track, masked=False, z_coord=z_coord)
         elif len(mask_total.shape)==2:            
             mask_total_i_surface=mask_total
         axes.contour(mask_total_i_surface.coord('projection_x_coordinate').points/1000,
@@ -672,9 +674,8 @@ def plot_mask_cell_track_static_timeseries(cell,track, cog, features, mask_total
         else:
             field_filled_i=field_filled.extract(constraint)
 
-        
+
         track_i=track[track['time']==time_i]
-        
         cells_mask=list(unique(mask_total_i.core_data()))
         track_cells=track_i.loc[(track_i['projection_x_coordinate'] > x_min)  & (track_i['projection_x_coordinate'] < x_max) & (track_i['projection_y_coordinate'] > y_min) & (track_i['projection_y_coordinate'] < y_max)]
         cells_track=list(track_cells['cell'].values)
