@@ -1,3 +1,5 @@
+import logging
+
 def column_mask_from2D(mask_2D,cube,z_coord='model_level_number'):
     '''     function to turn 2D watershedding mask into a 3D mask of selected columns
     Input:
@@ -86,7 +88,52 @@ def mask_cube(cube_in,mask):
     cube_out.data=ma.array(cube_in.data,mask=mask_array)
     return cube_out
 
-def mask_cell(Mask,cell,masked=False):
+def mask_cell(Mask,cell,track,masked=False):
+    ''' create mask for specific cell
+    Input:
+    variable_cube:     iris.cube.Cube 
+                       unmasked data cube
+    mask:              iris.cube.Cube 
+                       cube containing mask (int id for tacked volumes 0 everywhere else)
+    Output:
+    variable_cube_out: numpy.ndarray 
+                       Masked cube for untracked volume
+    '''
+    feature_ids=track.loc[track['cell']==cell,'feature'].values
+    Mask_i=mask_features(Mask,feature_ids,masked=masked)
+    return Mask_i   
+
+def mask_cell_surface(Mask,cell,track,masked=False,z_coord='model_level_number'):
+    ''' Mask cube for untracked volume 
+    Input:
+    variable_cube:     iris.cube.Cube 
+                       unmasked data cube
+    mask:              iris.cube.Cube 
+                       cube containing mask (int id for tacked volumes 0 everywhere else)
+    Output:
+    variable_cube_out: iris.cube.Cube 
+                       Masked cube for untracked volume
+    '''
+    feature_ids=track.loc[track['cell']==cell,'feature'].values
+    Mask_i_surface=mask_features_surface(Mask,feature_ids,masked=masked,z_coord=z_coord)
+    return Mask_i_surface
+
+def mask_cell_columns(Mask,cell,track,masked=False,z_coord='model_level_number'):
+    ''' Mask cube for untracked volume 
+    Input:
+    variable_cube:     iris.cube.Cube 
+                       unmasked data cube
+    mask:              iris.cube.Cube 
+                       cube containing mask (int id for tacked volumes 0 everywhere else)
+    Output:
+    variable_cube_out: iris.cube.Cube 
+                       Masked cube for untracked volume
+    '''
+    feature_ids=track.loc[track['cell']==cell].loc['feature']
+    Mask_i=mask_features_columns(Mask,feature_ids,masked=masked,z_coord=z_coord)
+    return Mask_i
+
+def mask_features(Mask,feature_ids,masked=False):
     ''' create mask for specific cell
     Input:
     variable_cube:     iris.cube.Cube 
@@ -100,12 +147,12 @@ def mask_cell(Mask,cell,masked=False):
     import numpy as np 
     from copy import deepcopy
     Mask_i=deepcopy(Mask)
-    Mask_i.data[Mask_i.data!=cell]=0
+    Mask_i.data[np.isin(Mask_i.data,feature_ids)]=0
     if masked:
         Mask_i.data=np.ma.array(Mask_i.data,mask=Mask_i.data)
     return Mask_i   
 
-def mask_cell_surface(Mask,cell,masked=False,z_coord='model_level_number'):
+def mask_features_surface(Mask,feature_ids,masked=False,z_coord='model_level_number'):
     ''' Mask cube for untracked volume 
     Input:
     variable_cube:     iris.cube.Cube 
@@ -120,7 +167,7 @@ def mask_cell_surface(Mask,cell,masked=False,z_coord='model_level_number'):
     import numpy as np 
     from copy import deepcopy
     Mask_i=deepcopy(Mask)
-    Mask_i.data[Mask_i.data!=cell]=0
+    Mask_i.data[np.isin(Mask_i.data,feature_ids)]=0
     for coord in  Mask_i.coords():
         if coord.ndim>1 and Mask_i.coord_dims(z_coord)[0] in Mask_i.coord_dims(coord):
             Mask_i.remove_coord(coord.name())
@@ -129,7 +176,7 @@ def mask_cell_surface(Mask,cell,masked=False,z_coord='model_level_number'):
         Mask_i_surface.data=np.ma.array(Mask_i_surface.data,mask=Mask_i_surface.data)
     return Mask_i_surface    
 
-def mask_cell_columns(Mask,cell,masked=False,z_coord='model_level_number'):
+def mask_features_columns(Mask,feature_ids,masked=False,z_coord='model_level_number'):
     ''' Mask cube for untracked volume 
     Input:
     variable_cube:     iris.cube.Cube 
@@ -144,7 +191,7 @@ def mask_cell_columns(Mask,cell,masked=False,z_coord='model_level_number'):
     import numpy as np 
     from copy import deepcopy
     Mask_i=deepcopy(Mask)
-    Mask_i.data[Mask_i.data!=cell]=0
+    Mask_i.data[np.isin(Mask_i.data,feature_ids)]=0
     for coord in  Mask_i.coords():
         if coord.ndim>1 and Mask_i.coord_dims(z_coord)[0] in Mask_i.coord_dims(coord):
             Mask_i.remove_coord(coord.name())
@@ -192,7 +239,130 @@ def mask_cell_columns(Mask,cell,masked=False,z_coord='model_level_number'):
 #
 #     constraint=constraint_time & constraint_x & constraint_y
 #     return constraint
+    
+def add_coordinates(t,variable_cube):
+    import numpy as np
+    ''' Function adding coordinates from the tracking cube to the trajectories: time, longitude&latitude, x&y dimensions
+    Input:
+    t:             pandas DataFrame
+                   trajectories/features
+    variable_cube: iris.cube.Cube 
+                   Cube containing the dimensions 'time','longitude','latitude','x_projection_coordinate','y_projection_coordinate', usually cube that the tracking is performed on
+    Output:
+    t:             pandas DataFrame 
+                   trajectories with added coordinated
+    '''
+    from scipy.interpolate import interp2d, interp1d
 
+    logging.debug('start adding coordinates from cube')
+
+    # pull time as datetime object and timestr from input data and add it to DataFrame:    
+    t['time']=None
+    t['timestr']=None
+    
+    
+    logging.debug('adding time coordinate')
+
+    time_in=variable_cube.coord('time')
+    time_in_datetime=time_in.units.num2date(time_in.points)
+    
+    for i, row in t.iterrows():
+        t.loc[i,'time']=time_in_datetime[int(row['frame'])]
+        t.loc[i,'timestr']=time_in_datetime[int(row['frame'])].strftime('%Y-%m-%d %H:%M:%S')
+
+
+    # Get list of all coordinates in input cube except for time (already treated):
+    coord_names=[coord.name() for coord in  variable_cube.coords()]
+    coord_names.remove('time')
+    
+    logging.debug('time coordinate added')
+
+    # chose right dimension for horizontal axis based on time dimension:    
+    ndim_time=variable_cube.coord_dims('time')[0]
+    if ndim_time==0:
+        hdim_1=1
+        hdim_2=2
+    elif ndim_time==1:
+        hdim_1=0
+        hdim_2=2
+    elif ndim_time==2:
+        hdim_1=0
+        hdim_2=1
+    
+    # create vectors to use to interpolate from pixels to coordinates
+    dimvec_1=np.arange(variable_cube.shape[hdim_1])
+    dimvec_2=np.arange(variable_cube.shape[hdim_2])
+
+    # loop over coordinates in input data:
+    for coord in coord_names:
+        logging.debug('adding coord: '+ coord)
+        # interpolate 2D coordinates:
+        if variable_cube.coord(coord).ndim==1:
+
+            if variable_cube.coord_dims(coord)==(hdim_1,):
+                t[coord]=np.nan            
+                f=interp1d(dimvec_1,variable_cube.coord(coord).points,fill_value="extrapolate")
+                for i, row in t.iterrows():
+                    t.loc[i,coord]=float(f(row['hdim_1']))
+
+            if variable_cube.coord_dims(coord)==(hdim_2,):
+                t[coord]=np.nan            
+                f=interp1d(dimvec_2,variable_cube.coord(coord).points,fill_value="extrapolate")
+                for i, row in t.iterrows():
+                    t.loc[i,coord]=float(f(row['hdim_2']))
+
+        # interpolate 2D coordinates:
+        elif variable_cube.coord(coord).ndim==2:
+
+            t[coord]=np.nan            
+            if variable_cube.coord_dims(coord)==(hdim_1,hdim_2):
+                f=interp2d(dimvec_2,dimvec_1,variable_cube.coord(coord).points)
+                for i, row in t.iterrows():
+                    t.loc[i,coord]=float(f(row['hdim_2'],row['hdim_1']))
+            if variable_cube.coord_dims(coord)==(hdim_2,hdim_1):
+                f=interp2d(dimvec_1,dimvec_2,variable_cube.coord(coord).points)
+                for i, row in t.iterrows():
+                    t.loc[i,coord]=float(f(row['hdim_1'],row['hdim_2']))
+        
+        # interpolate 3D coordinates:            
+        # mainly workaround for wrf latitude and longitude (to be fixed in future)
+        
+        elif variable_cube.coord(coord).ndim==3:
+
+            t[coord]=np.nan
+            if variable_cube.coord_dims(coord)==(ndim_time,hdim_1,hdim_2):
+                f=interp2d(dimvec_2,dimvec_1,variable_cube[0,:,:].coord(coord).points)
+                for i, row in t.iterrows():
+                    t.loc[i,coord]=float(f(row['hdim_2'],row['hdim_1']))
+            
+            if variable_cube.coord_dims(coord)==(ndim_time,hdim_2,hdim_1):
+                f=interp2d(dimvec_1,dimvec_2,variable_cube[0,:,:].coord(coord).points)
+                for i, row in t.iterrows():
+                    t.loc[i,coord]=float(f(row['hdim_1'],row['hdim_2']))
+        
+            if variable_cube.coord_dims(coord)==(hdim_1,ndim_time,hdim_2):
+                f=interp2d(dimvec_2,dimvec_1,variable_cube[:,0,:].coord(coord).points)
+                for i, row in t.iterrows():
+                    t.loc[i,coord]=float(f(row['hdim_2'],row['hdim_1']))
+                    
+            if variable_cube.coord_dims(coord)==(hdim_1,hdim_2,ndim_time):
+                f=interp2d(dimvec_2,dimvec_1,variable_cube[:,:,0].coord(coord).points)
+                for i, row in t.iterrows():
+                    t.loc[i,coord]=float(f(row['hdim_2'],row['hdim_1']))
+                    
+                    
+            if variable_cube.coord_dims(coord)==(hdim_2,ndim_time,hdim_1):
+                f=interp2d(dimvec_1,dimvec_2,variable_cube[:,0,:].coord(coord).points)
+                for i, row in t.iterrows():
+                    t.loc[i,coord]=float(f(row['hdim_1'],row['hdim_2']))
+                    
+            if variable_cube.coord_dims(coord)==(hdim_2,hdim_1,ndim_time):
+                f=interp2d(dimvec_1,dimvec_2,variable_cube[:,:,0].coord(coord).points)
+                for i, row in t.iterrows():
+                    t.loc[i,coord]=float(f(row['hdim_1'],row['hdim_2']))
+        logging.debug('added coord: '+ coord)
+
+    return t
 
 def get_bounding_box(x,buffer=1):
     from numpy import delete,arange,diff,nonzero,array
@@ -223,3 +393,33 @@ def get_bounding_box(x,buffer=1):
         idx_max=min(x.shape[kdim]-1,idx_i[1]+1+buffer)
         bbox.append([idx_min, idx_max])
     return bbox
+
+def get_spacings(field_in,grid_spacing=None,time_spacing=None):
+    import numpy as np
+    from copy import deepcopy
+    # set horizontal grid spacing of input data
+    # If cartesian x and y corrdinates are present, use these to determine dxy (vertical grid spacing used to transfer pixel distances to real distances):
+    coord_names=[coord.name() for coord in  field_in.coords()]
+    
+    if (('projection_x_coordinate' in coord_names and 'projection_y_coordinate' in coord_names) and  (grid_spacing is None)):
+        x_coord=deepcopy(field_in.coord('projection_x_coordinate'))
+        x_coord.convert_units('metre')
+        dx=np.diff(field_in.coord('projection_y_coordinate')[0:2].points)[0]
+        y_coord=deepcopy(field_in.coord('projection_y_coordinate'))
+        y_coord.convert_units('metre')
+        dy=np.diff(field_in.coord('projection_y_coordinate')[0:2].points)[0]
+        dxy=0.5*(dx+dy)
+    elif grid_spacing is not None:
+        dxy=grid_spacing
+    else:
+        ValueError('no information about grid spacing, need either input cube with projection_x_coord and projection_y_coord or keyword argument grid_spacing')
+    
+    # set horizontal grid spacing of input data
+    if (time_spacing is None):    
+        # get time resolution of input data from first to steps of input cube:
+        time_coord=field_in.coord('time')
+        dt=(time_coord.units.num2date(time_coord.points[1])-time_coord.units.num2date(time_coord.points[0])).seconds
+    elif (time_spacing is not None):
+        # use value of time_spacing for dt:
+        dt=time_spacing
+    return dxy,dt
