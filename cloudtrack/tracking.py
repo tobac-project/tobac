@@ -96,12 +96,13 @@ def linking_trackpy(features,field_in,dt,dxy,
 
     trajectories_bycell=trajectories_unfiltered.groupby('cell')
     for cell,trajectories_cell in trajectories_bycell:
-        logging.debug(str(stubs))
-        logging.debug(str(trajectories_cell.shape[0]))
+        logging.debug("cell: "+str(cell))
+        logging.debug("feature: "+str(trajectories_cell['feature'].values))
+        logging.debug("trajectories_cell.shape[0]: "+ str(trajectories_cell.shape[0]))
 
-        if trajectories_cell.shape[0]< stubs:
-            trajectories_unfiltered[trajectories_unfiltered['cell']==cell]['cell']=np.nan
-            trajectories_unfiltered[trajectories_unfiltered['cell']==cell]['time_cell']=np.nan
+        if trajectories_cell.shape[0] < stubs:
+            logging.debug("cell" + str(cell)+ "  is a stub ("+str(trajectories_cell.shape[0])+ "), setting cell number to Nan..")
+            trajectories_unfiltered.loc[trajectories_unfiltered['cell']==cell,'cell']=np.nan
     trajectories_filtered=trajectories_unfiltered
 
 
