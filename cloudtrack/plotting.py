@@ -52,8 +52,8 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
     import iris.plot as iplt
     from matplotlib.ticker import MaxNLocator
     import cartopy.feature as cfeature
-    import numpy as np
-    from cloudtrack import mask_cell,mask_cell_surface
+#    from cloudtrack import mask_cell,mask_cell_surface
+    from cloudtrack import mask_features,mask_features_surface
     from matplotlib import ticker
     
     if type(axes) is not cartopy.mpl.geoaxes.GeoAxesSubplot:
@@ -129,28 +129,31 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
 
     #Plot tracked features by looping over rows of Dataframe
     for i_row,row in track.iterrows():
-        if 'cell' in row:
-            cell=row['cell']
-            color=colors_mask[int(cell%len(colors_mask))]
-        
+        feature=row['feature']
+        cell=row['cell']
+        if not np.isnan(cell):
+            color=colors_mask[int(cell%len(colors_mask))]            
+            
             if plot_number:        
                 cell_string='  '+str(int(row['cell']))
                 axes.text(row['longitude'],row['latitude'],cell_string,
-                          color=color,fontsize=6, clip_on=True)
-            if plot_outline:
-                mask_i=None
-                # if mask is 3D, create surface projection, if mask is 2D keep the mask
-                if mask.ndim==2:
-                    mask_i=mask_cell(mask,cell,track,masked=False)
-                elif mask.ndim==3:
-                    mask_i=mask_cell_surface(mask,cell,track,masked=False,z_coord='model_level_number')
-                else:
-                    raise ValueError('mask has shape that cannot be understood')
-                # plot countour lines around the edges of the mask    
-                iplt.contour(mask_i,coords=['longitude','latitude'],
-                             levels=[0,cell],colors=color,axes=axes)
+                      color=color,fontsize=6, clip_on=True)
+
         else:
             color='grey'
+
+        if plot_outline:
+            mask_i=None
+            # if mask is 3D, create surface projection, if mask is 2D keep the mask
+            if mask.ndim==2:
+                mask_i=mask_features(mask,feature,masked=False)
+            elif mask.ndim==3:
+                mask_i=mask_features_surface(mask,feature,masked=False,z_coord='model_level_number')
+            else:
+                raise ValueError('mask has shape that cannot be understood')
+            # plot countour lines around the edges of the mask    
+            iplt.contour(mask_i,coords=['longitude','latitude'],
+                         levels=[0,feature],colors=color,axes=axes)
         
         if plot_marker:
             axes.plot(row['longitude'],row['latitude'],
@@ -492,7 +495,7 @@ def plot_mask_cell_individual_static(cell_i,track, cog, features, mask_total,
                                vmin_field_contour=0,vmax_field_contour=50,levels_field_contour=None,nlevels_field_contour=10,
                                label_field_filled=None,cmap_field_filled='summer',norm_field_filled=None,
                                vmin_field_filled=0,vmax_field_filled=100,levels_field_filled=None,nlevels_field_filled=10,
-                               title=None
+                               title=None,feature_number=False
                                ):  
     '''Make plots for cell in fixed frame and with one background field as filling and one background field as contrours
     Input:
@@ -500,7 +503,7 @@ def plot_mask_cell_individual_static(cell_i,track, cog, features, mask_total,
     '''
 
     import numpy as np
-    from .utils  import mask_cell_surface
+    from .utils  import mask_features,mask_features_surface
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     from matplotlib.colors import Normalize
     
@@ -557,16 +560,29 @@ def plot_mask_cell_individual_static(cell_i,track, cog, features, mask_total,
         cbar_field_contour.set_clim(vmin_field_contour, vmax_field_contour)
 
     for i_row, row in track.iterrows():
-        cell = int(row['cell'])
+        cell = row['cell']
+        feature = row['feature']
+#        logging.debug("cell: "+ str(row['cell']))
+#        logging.debug("feature: "+ str(row['feature']))
+
         if cell==cell_i:
             color='darkred'
-            cell_string='   '+str(cell)
-        elif cell==np.nan:
-            color='darkgray'
-            cell_string='   '
+            if feature_number:
+                cell_string='   '+str(int(cell))+' ('+str(int(feature))+')'
+            else:
+                cell_string='   '+str(int(cell))
+        elif np.isnan(cell):
+            color='gray'
+            if feature_number:
+                cell_string='   '+'('+str(int(feature))+')'
+            else:
+                cell_string='   '
         else:
             color='darkorange'
-            cell_string='   '+str(cell)
+            if feature_number:
+                cell_string='   '+str(int(cell))+' ('+str(int(feature))+')'
+            else:
+                cell_string='   '+str(int(cell))
 
         axes.text(row['projection_x_coordinate']/1000,
                   row['projection_y_coordinate']/1000,
@@ -581,13 +597,13 @@ def plot_mask_cell_individual_static(cell_i,track, cog, features, mask_total,
         #Create surface projection of mask for the respective cell and plot it in the right color
         z_coord = 'model_level_number'
         if len(mask_total.shape)==3: 
-            mask_total_i_surface = mask_cell_surface(mask_total, cell,track, masked=False, z_coord=z_coord)
+            mask_total_i_surface = mask_features_surface(mask_total, feature, masked=False, z_coord=z_coord)
         elif len(mask_total.shape)==2:            
-            mask_total_i_surface=mask_total
+            mask_total_i_surface=mask_features(mask_total, feature, masked=False, z_coord=z_coord)
         axes.contour(mask_total_i_surface.coord('projection_x_coordinate').points/1000,
                      mask_total_i_surface.coord('projection_y_coordinate').points/1000,
                      mask_total_i_surface.data, 
-                     levels=[0, cell], colors=color, linestyles=':',linewidth=1)
+                     levels=[0, feature], colors=color, linestyles=':',linewidth=1)
     if cog is not None:
     
         for i_row, row in cog.iterrows():
@@ -727,7 +743,7 @@ def plot_mask_cell_track_static_timeseries(cell,track, cog, features, mask_total
             variable_color='navy'
 
         if type(variable) is str:  
-            logging.debug('variable: '+str(variable))
+#            logging.debug('variable: '+str(variable))
             if type(variable_color) is str:
                 variable_color={variable:variable_color}
             variable=[variable]
