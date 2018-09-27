@@ -33,7 +33,6 @@ def segmentation_3D(track,field,dxy,threshold=3e-3,target='maximum',level=None,m
     import logging
     from iris.cube import CubeList
     from iris.util import new_axis
-    from copy import deepcopy
     from scipy.ndimage import distance_transform_edt
     
     logging.info('Start watershedding 3D')
@@ -75,10 +74,9 @@ def segmentation_3D(track,field,dxy,threshold=3e-3,target='maximum',level=None,m
         else:
             raise ValueError('unknown type of target')
 
-            raise ValueError('unknown type of target')
         markers = np.zeros_like(unmasked).astype(np.int32)
         for index, row in tracks_i.iterrows():
-             markers[:,int(row['hdim_1']), int(row['hdim_2'])]=row['feature']
+            markers[:,int(row['hdim_1']), int(row['hdim_2'])]=row['feature']
         markers[~unmasked]=0
         
         if method=='watershed':
