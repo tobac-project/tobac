@@ -67,7 +67,7 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
         titlestring=title+ '   ' + datestring
     else:
         raise ValueError('title must be str')
-    axes.set_title(titlestring,fontsize=10)
+    axes.set_title(titlestring,fontsize=10,horizontalalignment='left',loc='left')
     
     gl = axes.gridlines(draw_labels=True)
     majorLocator = MaxNLocator(nbins=5,steps=[1,2,5,10])
@@ -221,7 +221,7 @@ def plot_mask_cell_track_follow(cell,track, cog, features, mask_total,
         
         datestring_stamp = row['time'].strftime('%Y-%m-%d %H:%M:%S')
         celltime_stamp = "%02d:%02d:%02d" % (row['time_cell'].dt.total_seconds() // 3600,(row['time_cell'].dt.total_seconds() % 3600) // 60, row['time_cell'].dt.total_seconds()  % 60 )
-        title=celltime_stamp + ' , ' + datestring_stamp
+        title=datestring_stamp + ' , ' + celltime_stamp
         datestring_file = row['time'].strftime('%Y-%m-%d_%H%M%S')
 
         ax1=plot_mask_cell_individual_follow(cell_i=cell,track=track_i, cog=cog_i,features=features_i,
@@ -377,7 +377,7 @@ def plot_mask_cell_individual_follow(cell_i,track, cog,features, mask_total,
     axes.set_ylim([-1*width/1000, width/1000])
     axes.xaxis.set_label_position('top') 
     axes.xaxis.set_ticks_position('top')
-    axes.set_title(title,pad=35,fontsize=10)
+    axes.set_title(title,pad=35,fontsize=10,horizontalalignment='left',loc='left')
  
     return axes
 
@@ -463,7 +463,7 @@ def plot_mask_cell_track_static(cell,track, cog, features, mask_total,
                                              time_cell_i.dt.total_seconds()  % 60 )
         else:
             celltime_stamp=' - '
-        title=celltime_stamp + ' , ' + datestring_stamp
+        title=datestring_stamp + ' , ' + celltime_stamp
         datestring_file = time_i.strftime('%Y-%m-%d_%H%M%S')
 
         ax1=plot_mask_cell_individual_static(cell_i=cell,
@@ -631,9 +631,417 @@ def plot_mask_cell_individual_static(cell_i,track, cog, features, mask_total,
     axes.set_ylim(ylim)
     axes.xaxis.set_label_position('top') 
     axes.xaxis.set_ticks_position('top')
-    axes.set_title(title,pad=35,fontsize=10)
+    axes.set_title(title,pad=35,fontsize=10,horizontalalignment='left',loc='left')
 
     return axes
+
+def plot_mask_cell_track_2D3Dstatic(cell,track, cog, features, mask_total,
+                                    field_contour, field_filled,
+                                    width=10000,n_extend=1,
+                                    name= 'test', plotdir='./',
+                                    file_format=['png'],figsize=(10/2.54, 10/2.54),dpi=300,
+                                    **kwargs):
+    '''Make plots for all cells with fixed frame including entire development of the cell and with one background field as filling and one background field as contrours
+    Input:
+    Output:
+    '''
+    from iris import Constraint
+    from numpy import unique
+    import os
+    from mpl_toolkits.mplot3d import Axes3D
+    import matplotlib.gridspec as gridspec
+
+
+    track_cell=track[track['cell']==cell]
+    x_min=track_cell['projection_x_coordinate'].min()-width
+    x_max=track_cell['projection_x_coordinate'].max()+width
+    y_min=track_cell['projection_y_coordinate'].min()-width
+    y_max=track_cell['projection_y_coordinate'].max()+width
+    
+    #set up looping over time based on mask's time coordinate to allow for one timestep before and after the track
+    time_coord=mask_total.coord('time')
+    time=time_coord.units.num2date(time_coord.points)
+    i_start=max(0,np.where(time==track_cell['time'].values[0])[0][0]-n_extend)
+    i_end=min(len(time)-1,np.where(time==track_cell['time'].values[-1])[0][0]+n_extend+1)
+    time_cell=time[slice(i_start,i_end)]
+    for time_i in time_cell:
+
+#    for i_row,row in track_cell.iterrows():
+#        time_i=row['time']
+#        constraint_time = Constraint(time=row['time'])
+        constraint_time = Constraint(time=time_i)
+
+        constraint_x = Constraint(projection_x_coordinate = lambda cell: x_min < cell < x_max)
+        constraint_y = Constraint(projection_y_coordinate = lambda cell: y_min < cell < y_max)
+        constraint = constraint_time & constraint_x & constraint_y            
+
+        mask_total_i=mask_total.extract(constraint)
+        if field_contour is None:
+            field_contour_i=None
+        else:
+            field_contour_i=field_contour.extract(constraint)
+        if field_filled is None:
+            field_filled_i=None
+        else:
+            field_filled_i=field_filled.extract(constraint)
+
+        
+        track_i=track[track['time']==time_i]
+
+        cells_mask=list(unique(mask_total_i.core_data()))
+        track_cells=track_i.loc[(track_i['projection_x_coordinate'] > x_min)  & (track_i['projection_x_coordinate'] < x_max) & (track_i['projection_y_coordinate'] > y_min) & (track_i['projection_y_coordinate'] < y_max)]
+        cells_track=list(track_cells['cell'].values)
+        cells=list(set( cells_mask + cells_track ))
+        if cell not in cells:
+            cells.append(cell)
+        if 0 in cells:    
+            cells.remove(0)
+        track_i=track_i[track_i['cell'].isin(cells)]
+        
+        if cog is None:
+            cog_i=None
+        else:
+            cog_i=cog[cog['cell'].isin(cells)]
+            cog_i=cog_i[cog_i['time']==time_i]
+
+        if features is None:
+            features_i=None
+        else:
+            features_i=features[features['time']==time_i]
+
+
+        fig1=plt.figure(figsize=(20 / 2.54,  10 / 2.54))
+        fig1.subplots_adjust(left=0.1, bottom=0.15, right=0.9, top=0.9,wspace=0.3, hspace=0.25)
+        
+        # make two subplots for figure:
+        gs1 = gridspec.GridSpec(1, 2,width_ratios=[1,1.2])
+        fig1.add_subplot(gs1[0])
+        fig1.add_subplot(gs1[1], projection='3d')
+    
+        ax1 = fig1.get_axes()
+
+        
+        datestring_stamp = time_i.strftime('%Y-%m-%d %H:%M:%S')
+        if time_i in track_cell['time'].values:
+            time_cell_i=track_cell[track_cell['time'].values==time_i]['time_cell']
+            celltime_stamp = "%02d:%02d:%02d" % (time_cell_i.dt.total_seconds() // 3600,
+                                             (time_cell_i.dt.total_seconds() % 3600) // 60,
+                                             time_cell_i.dt.total_seconds()  % 60 )
+        else:
+            celltime_stamp=' - '
+        title=datestring_stamp + ' , ' + celltime_stamp
+        datestring_file = time_i.strftime('%Y-%m-%d_%H%M%S')
+
+        ax1[0]=plot_mask_cell_individual_static(cell_i=cell,
+                                             track=track_i, cog=cog_i,features=features_i, 
+                                             mask_total=mask_total_i,
+                                             field_contour=field_contour_i, field_filled=field_filled_i,
+                                             xlim=[x_min/1000,x_max/1000],ylim=[y_min/1000,y_max/1000],
+                                             axes=ax1[0],title=title,**kwargs)
+        
+        ax1[1]=plot_mask_cell_individual_3Dstatic(cell_i=cell,
+                                             track=track_i, cog=cog_i,features=features_i, 
+                                             mask_total=mask_total_i,
+                                             field_contour=field_contour_i, field_filled=field_filled_i,
+                                             xlim=[x_min/1000,x_max/1000],ylim=[y_min/1000,y_max/1000],
+                                             axes=ax1[1],title=title,**kwargs)
+
+        out_dir = os.path.join(plotdir, name)
+        os.makedirs(out_dir, exist_ok=True)
+        if 'png' in file_format:
+            savepath_png = os.path.join(out_dir, name  + '_' + datestring_file + '.png')
+            fig1.savefig(savepath_png, dpi=dpi)
+            logging.debug('Mask static 2d/3D plot saved to ' + savepath_png)
+        if 'pdf' in file_format:
+            savepath_pdf = os.path.join(out_dir, name  + '_' + datestring_file + '.pdf')
+            fig1.savefig(savepath_pdf, dpi=dpi)
+            logging.debug('Mask static 2d/3D plot saved to ' + savepath_pdf)
+        plt.close()
+        plt.clf()
+
+
+
+def plot_mask_cell_track_3Dstatic(cell,track, cog, features, mask_total,
+                                    field_contour, field_filled,
+                                    width=10000,n_extend=1,
+                                    name= 'test', plotdir='./',
+                                    file_format=['png'],figsize=(10/2.54, 10/2.54),dpi=300,
+                                    **kwargs):
+    '''Make plots for all cells with fixed frame including entire development of the cell and with one background field as filling and one background field as contrours
+    Input:
+    Output:
+    '''
+    from iris import Constraint
+    from numpy import unique
+    import os
+    from mpl_toolkits.mplot3d import Axes3D
+
+    track_cell=track[track['cell']==cell]
+    x_min=track_cell['projection_x_coordinate'].min()-width
+    x_max=track_cell['projection_x_coordinate'].max()+width
+    y_min=track_cell['projection_y_coordinate'].min()-width
+    y_max=track_cell['projection_y_coordinate'].max()+width
+    
+    #set up looping over time based on mask's time coordinate to allow for one timestep before and after the track
+    time_coord=mask_total.coord('time')
+    time=time_coord.units.num2date(time_coord.points)
+    i_start=max(0,np.where(time==track_cell['time'].values[0])[0][0]-n_extend)
+    i_end=min(len(time)-1,np.where(time==track_cell['time'].values[-1])[0][0]+n_extend+1)
+    time_cell=time[slice(i_start,i_end)]
+    for time_i in time_cell:
+
+#    for i_row,row in track_cell.iterrows():
+#        time_i=row['time']
+#        constraint_time = Constraint(time=row['time'])
+        constraint_time = Constraint(time=time_i)
+
+        constraint_x = Constraint(projection_x_coordinate = lambda cell: x_min < cell < x_max)
+        constraint_y = Constraint(projection_y_coordinate = lambda cell: y_min < cell < y_max)
+        constraint = constraint_time & constraint_x & constraint_y            
+
+        mask_total_i=mask_total.extract(constraint)
+        if field_contour is None:
+            field_contour_i=None
+        else:
+            field_contour_i=field_contour.extract(constraint)
+        if field_filled is None:
+            field_filled_i=None
+        else:
+            field_filled_i=field_filled.extract(constraint)
+
+        
+        track_i=track[track['time']==time_i]
+
+        cells_mask=list(unique(mask_total_i.core_data()))
+        track_cells=track_i.loc[(track_i['projection_x_coordinate'] > x_min)  & (track_i['projection_x_coordinate'] < x_max) & (track_i['projection_y_coordinate'] > y_min) & (track_i['projection_y_coordinate'] < y_max)]
+        cells_track=list(track_cells['cell'].values)
+        cells=list(set( cells_mask + cells_track ))
+        if cell not in cells:
+            cells.append(cell)
+        if 0 in cells:    
+            cells.remove(0)
+        track_i=track_i[track_i['cell'].isin(cells)]
+        
+        if cog is None:
+            cog_i=None
+        else:
+            cog_i=cog[cog['cell'].isin(cells)]
+            cog_i=cog_i[cog_i['time']==time_i]
+
+        if features is None:
+            features_i=None
+        else:
+            features_i=features[features['time']==time_i]
+
+
+#        fig1, ax1 = plt.subplots(ncols=1, nrows=1, figsize=figsize)
+#        fig1.subplots_adjust(left=0.2, bottom=0.15, right=0.80, top=0.85)
+        fig1, ax1 = plt.subplots(ncols=1, nrows=1, figsize=(10/2.54, 10/2.54), subplot_kw={'projection': '3d'})
+
+        
+        datestring_stamp = time_i.strftime('%Y-%m-%d %H:%M:%S')
+        if time_i in track_cell['time'].values:
+            time_cell_i=track_cell[track_cell['time'].values==time_i]['time_cell']
+            celltime_stamp = "%02d:%02d:%02d" % (time_cell_i.dt.total_seconds() // 3600,
+                                             (time_cell_i.dt.total_seconds() % 3600) // 60,
+                                             time_cell_i.dt.total_seconds()  % 60 )
+        else:
+            celltime_stamp=' - '
+        title=datestring_stamp + ' , ' + celltime_stamp
+        datestring_file = time_i.strftime('%Y-%m-%d_%H%M%S')
+
+        ax1=plot_mask_cell_individual_3Dstatic(cell_i=cell,
+                                             track=track_i, cog=cog_i,features=features_i, 
+                                             mask_total=mask_total_i,
+                                             field_contour=field_contour_i, field_filled=field_filled_i,
+                                             xlim=[x_min/1000,x_max/1000],ylim=[y_min/1000,y_max/1000],
+                                             axes=ax1,title=title,**kwargs)
+        
+        out_dir = os.path.join(plotdir, name)
+        os.makedirs(out_dir, exist_ok=True)
+        if 'png' in file_format:
+            savepath_png = os.path.join(out_dir, name  + '_' + datestring_file + '.png')
+            fig1.savefig(savepath_png, dpi=dpi)
+            logging.debug('Mask static plot saved to ' + savepath_png)
+        if 'pdf' in file_format:
+            savepath_pdf = os.path.join(out_dir, name  + '_' + datestring_file + '.pdf')
+            fig1.savefig(savepath_pdf, dpi=dpi)
+            logging.debug('Mask static plot saved to ' + savepath_pdf)
+        plt.close()
+        plt.clf()
+
+
+def plot_mask_cell_individual_3Dstatic(cell_i,track, cog, features, mask_total,
+                               field_contour, field_filled,
+                               axes=plt.gca(),xlim=None,ylim=None,
+                               label_field_contour=None, cmap_field_contour='Blues',norm_field_contour=None,
+                               linewidths_contour=0.8,contour_labels=False,
+                               vmin_field_contour=0,vmax_field_contour=50,levels_field_contour=None,nlevels_field_contour=10,
+                               label_field_filled=None,cmap_field_filled='summer',norm_field_filled=None,
+                               vmin_field_filled=0,vmax_field_filled=100,levels_field_filled=None,nlevels_field_filled=10,
+                               title=None,feature_number=False,
+                               ele=10.,azim=210.
+                               ):  
+    '''Make plots for cell in fixed frame and with one background field as filling and one background field as contrours
+    Input:
+    Output:
+    '''
+
+    import numpy as np
+    from .utils  import mask_features,mask_features_surface
+#    from mpl_toolkits.axes_grid1 import make_axes_locatable
+#    from matplotlib.colors import Normalize
+    from mpl_toolkits.mplot3d import Axes3D
+        
+    axes.view_init(elev=ele, azim=azim)
+    axes.grid(b=False)
+    axes.set_frame_on(False)
+    
+    # make the panes transparent
+    axes.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    axes.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    axes.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    # make the grid lines transparent
+    axes.xaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+    axes.yaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+    axes.zaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+        
+    if title is not None:
+        axes.set_title(title,horizontalalignment='left',loc='left')
+        
+#    colors_mask = ['pink','darkred', 'orange', 'darkred', 'red', 'darkorange']
+    x = mask_total.coord('projection_x_coordinate').points
+    y = mask_total.coord('projection_y_coordinate').points
+    z = mask_total.coord('model_level_number').points
+
+#    z = mask_total.coord('geopotential_height').points
+    zz, yy, xx = np.meshgrid(z, y, x, indexing='ij')
+#    z_alt = mask_total.coord('geopotential_height').points
+
+    
+#    divider = make_axes_locatable(axes)
+    
+#    if field_filled is not None:
+#        if levels_field_filled is None:
+#            levels_field_filled=np.linspace(vmin_field_filled,vmax_field_filled, 10)
+#        plot_field_filled = axes.contourf(field_filled.coord('projection_x_coordinate').points/1000,
+#                                 field_filled.coord('projection_y_coordinate').points/1000,
+#                                 field_filled.data,
+#                                 levels=levels_field_filled, norm=norm_field_filled,
+#                                 cmap=cmap_field_filled, vmin=vmin_field_filled, vmax=vmax_field_filled)    
+        
+        
+#        cax_filled = divider.append_axes("right", size="5%", pad=0.1)        
+        
+#        norm_filled= Normalize(vmin=vmin_field_filled, vmax=vmax_field_filled)
+#        sm1= plt.cm.ScalarMappable(norm=norm_filled, cmap = plot_field_filled.cmap)
+#        sm1.set_array([])
+        
+#        cbar_field_filled = plt.colorbar(sm1, orientation='vertical',cax=cax_filled)
+#        cbar_field_filled.ax.set_ylabel(label_field_filled)
+#        cbar_field_filled.set_clim(vmin_field_filled, vmax_field_filled)
+        
+
+#    if field_contour is not None:
+#        if levels_field_contour is None:
+#            levels_field_contour=np.linspace(vmin_field_contour, vmax_field_contour, 5)
+#        plot_field_contour = axes.contour(field_contour.coord('projection_x_coordinate').points/1000,
+#                                  field_contour.coord('projection_y_coordinate').points/1000,
+#                                  field_contour.data,
+#                                  cmap=cmap_field_contour,norm=norm_field_contour,
+#                                  levels=levels_field_contour,vmin=vmin_field_contour, vmax=vmax_field_contour,
+#                                  linewidths=linewidths_contour)
+        
+#        if contour_labels:
+#            axes.clabel(plot_field_contour, fontsize=10)
+    
+#        cax_contour = divider.append_axes("bottom", size="5%", pad=0.1)
+#        if norm_field_contour:
+#            vmin_field_contour=None
+#            vmax_field_contour=None
+#            norm_contour=norm_field_contour
+#        else:
+#            norm_contour= Normalize(vmin=vmin_field_contour, vmax=vmax_field_contour)
+#
+#        sm_contour= plt.cm.ScalarMappable(norm=norm_contour, cmap = plot_field_contour.cmap)
+#        sm_contour.set_array([])
+#        
+#        cbar_field_contour = plt.colorbar(sm_contour, orientation='horizontal',ticks=levels_field_contour,cax=cax_contour)
+#        cbar_field_contour.ax.set_xlabel(label_field_contour)
+#        cbar_field_contour.set_clim(vmin_field_contour, vmax_field_contour)
+#
+    for i_row, row in track.iterrows():
+        cell = row['cell']
+        feature = row['feature']
+#        logging.debug("cell: "+ str(row['cell']))
+#        logging.debug("feature: "+ str(row['feature']))
+
+        if cell==cell_i:
+            color='darkred'
+            if feature_number:
+                cell_string='   '+str(int(cell))+' ('+str(int(feature))+')'
+            else:
+                cell_string='   '+str(int(cell))
+        elif np.isnan(cell):
+            color='gray'
+            if feature_number:
+                cell_string='   '+'('+str(int(feature))+')'
+            else:
+                cell_string='   '
+        else:
+            color='darkorange'
+            if feature_number:
+                cell_string='   '+str(int(cell))+' ('+str(int(feature))+')'
+            else:
+                cell_string='   '+str(int(cell))
+
+#        axes.text(row['projection_x_coordinate']/1000,
+#                  row['projection_y_coordinate']/1000,
+#                  0,
+#                  cell_string,color=color,fontsize=6, clip_on=True)
+
+#        # Plot marker for tracked cell centre as a cross
+#        axes.plot(row['projection_x_coordinate']/1000,
+#                  row['projection_y_coordinate']/1000,
+#                  0,
+#                  'x', color=color,markersize=4)
+        
+        
+        #Create surface projection of mask for the respective cell and plot it in the right color
+#        z_coord = 'model_level_number'
+#        if len(mask_total.shape)==3: 
+#            mask_total_i_surface = mask_features_surface(mask_total, feature, masked=False, z_coord=z_coord)
+#        elif len(mask_total.shape)==2:            
+#            mask_total_i_surface=mask_features(mask_total, feature, masked=False, z_coord=z_coord)
+#        axes.contour(mask_total_i_surface.coord('projection_x_coordinate').points/1000,
+#                     mask_total_i_surface.coord('projection_y_coordinate').points/1000,
+#                     0,
+#                     mask_total_i_surface.data, 
+#                     levels=[0, feature], colors=color, linestyles=':',linewidth=1)
+        mask_feature = mask_total.data == feature
+
+        axes.scatter(
+#                    xx[mask_feature]/1000, yy[mask_feature]/1000, zz[mask_feature]/1000,
+                    xx[mask_feature]/1000, yy[mask_feature]/1000, zz[mask_feature],
+                    c=color, marker=',', 
+                    s=5,#60000.0 * TWC_i[Mask_particle],
+                    alpha=0.3, cmap='inferno', label=cell_string,rasterized=True)
+        
+    axes.set_xlim(xlim)
+    axes.set_ylim(ylim)
+    axes.set_zlim([0, 100])
+
+#    axes.set_zlim([0, 20])
+#    axes.set_zticks([0, 5,10,15, 20])
+    axes.set_xlabel('x (km)')
+    axes.set_ylabel('y (km)')
+    axes.zaxis.set_rotate_label(False)  # disable automatic rotation
+#    axes.set_zlabel('z (km)', rotation=90)
+    axes.set_zlabel('model level', rotation=90)
+
+    return axes
+
+
 
 def plot_mask_cell_track_static_timeseries(cell,track, cog, features, mask_total,
                                            field_contour, field_filled,
