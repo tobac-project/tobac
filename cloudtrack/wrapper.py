@@ -1,10 +1,7 @@
 import numpy as np
 import logging
 
-from .feature_detection import feature_detection_threshold, feature_detection_multithreshold
-from .tracking import linking_trackpy
-from .segmentation import segmentation_3D, segmentation_2D
-from .utils import get_spacings
+
 def tracking_wrapper(
              field_in_features,
              field_in_segmentation,
@@ -15,6 +12,11 @@ def tracking_wrapper(
              parameters_segmentation=None,
              ):
     
+    from .feature_detection import feature_detection_multithreshold
+    from .tracking import linking_trackpy
+    from .segmentation import segmentation_3D, segmentation_2D
+    from .utils import get_spacings
+
     logger = logging.getLogger('trackpy')
     logger.propagate = False
     logger.setLevel(logging.WARNING)
@@ -27,12 +29,8 @@ def tracking_wrapper(
     # Feature detection:
     
     method_detection=parameters_features.pop('method_detection',None)
-    if method_detection  == "threshold":
-        features=feature_detection_threshold(field_in_features,**parameters_features)
-        
-    elif parameters_features['method_detection'] == "threshold_multi":
-        features=feature_detection_threshold(field_in_features,**parameters_features)
-
+    if method_detection  in ["threshold","threshold_multi"]:
+        features=feature_detection_multithreshold(field_in_features,**parameters_features)
     else:
         raise ValueError('method_detection unknown, has to be either threshold_multi or threshold')
         
@@ -78,6 +76,9 @@ def maketrack(field_in,
               adaptive_step=None, 
               return_intermediate=False,
               ):
+    from .feature_detection import feature_detection_multithreshold
+    from .tracking import linking_trackpy
+
     """
     Function identifiying features  andlinking them into trajectories
     
@@ -167,24 +168,16 @@ def maketrack(field_in,
 
     ### Start Tracking
     # Feature detection:
-    if method_detection == "threshold":
-        features=feature_detection_threshold(field_in,target=target,
-                                             threshold=threshold,
-                                             dxy=dxy,
-                                             position_threshold=position_threshold,
-                                             sigma_threshold=sigma_threshold,
-                                             n_erosion_threshold=n_erosion_threshold)
-        features_filtered = features.drop(features[features['num'] < min_num].index)
-    
-    elif method_detection == "threshold_multi":
-        features=feature_detection_multithreshold(field_in,target=target,
+    if method_detection in ["threshold","threshold_multi"]:
+        features=feature_detection_multithreshold(field_in=field_in,
                                                   threshold=threshold,
                                                   dxy=dxy,
+                                                  target=target,
                                                   position_threshold=position_threshold,
                                                   sigma_threshold=sigma_threshold,
-                                                  min_distance=min_distance,
                                                   n_erosion_threshold=n_erosion_threshold)
-        
+        features_filtered = features.drop(features[features['num'] < min_num].index)
+
     else:
         raise ValueError('method_detection unknown, has to be either threshold_multi or threshold')
         
