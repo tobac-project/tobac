@@ -119,7 +119,7 @@ def segmentation_3D(track,field,dxy,threshold=3e-3,target='maximum',level=None,m
     logging.debug('Finished segmentation 3D')
     return segmentation_out,track
             
-def segmentation_2D(track,field,threshold=0,target='maximum',method='watershed'):
+def segmentation_2D(track,field,dxy,threshold=0,target='maximum',method='watershed',max_distance=None):
     """
     Function using watershedding or random walker to determine cloud volumes associated with tracked updrafts
     Parameters:
@@ -145,6 +145,7 @@ def segmentation_2D(track,field,threshold=0,target='maximum',method='watershed')
     import logging
     from iris.cube import CubeList
     from iris.util import new_axis
+    from scipy.ndimage import distance_transform_edt
 
     logging.info('Start wateshedding 2D')
 
@@ -152,6 +153,10 @@ def segmentation_2D(track,field,threshold=0,target='maximum',method='watershed')
     segmentation_out_list=CubeList()
 
     track['ncells']=0
+    
+    if max_distance is not None:
+        max_distance_pixel=np.ceil(max_distance/dxy)
+
 
     field_time=field.slices_over('time')
     for i,field_i in enumerate(field_time):
@@ -180,7 +185,7 @@ def segmentation_2D(track,field,threshold=0,target='maximum',method='watershed')
         markers[~unmasked]=0
 
         if method=='watershed':
-            res1 = watershed(data_i_segmentation,markers.astype(np.int32), mask=unmasked)
+            segmentation_mask_i = watershed(data_i_segmentation,markers.astype(np.int32), mask=unmasked)
 #        elif method=='random_walker':
 #            #res1 = random_walker(Mask, markers,mode='cg')
 #             res1=random_walker(data_i_segmentation, markers.astype(np.int32),
@@ -188,14 +193,21 @@ def segmentation_2D(track,field,threshold=0,target='maximum',method='watershed')
         else:
             raise ValueError('unknown method, must be watershed')
             
-        segmentation_out_i.data=res1
+            
+                # remove everything from the individual masks that is more than max_distance_pixel away from the markers
+        if max_distance is not None:
+            for feature in tracks_i['feature']:
+                D=distance_transform_edt((markers!=feature).astype(int))
+                segmentation_mask_i[np.bitwise_and(segmentation_mask_i==feature, D>max_distance_pixel)]=0
+
+        segmentation_out_i.data=segmentation_mask_i
         # using merge throws error, so cubes with time promoted to DimCoord and using concatenate:
 #        segmentation_out_list.append(segmentation_out_i)
         segmentation_out_i_temp=new_axis(segmentation_out_i, scalar_coord='time')
         segmentation_out_list.append(segmentation_out_i_temp)
         
         # count number of grid cells asoociated to each tracked cell and write that into DataFrame:
-        values, count = np.unique(res1, return_counts=True)
+        values, count = np.unique(segmentation_mask_i, return_counts=True)
         counts=dict(zip(values, count))
         for index, row in tracks_i.iterrows():
             if row['feature'] in counts.keys():
