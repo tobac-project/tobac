@@ -1,22 +1,21 @@
-trackpy
-=======
+Cloudtrack
+======
 
 What is it?
 -----------
 
-**cloudtrack** is a Python package for tracking of convective clouds in different types of gridded datasets, i.e. 3D model output from cloud resolving model simulations or 2D data of satellite observations.
+**cloudtrack** is a Python package for identification and tracking of convective clouds in different types of gridded datasets, i.e. 3D model output from cloud resolving model simulations or 2D data of satellite observations.
 
 Documentation
 -------------
-The tracking is performed on a time-varying 2D field. Examples of that could be. Depending on the nature of the field used for tracking wither maxima or minima in the field can be tracked.
-The volume/are associated with the tracked object can be determined based on a time-varying 2D or 3D field and a threshold value. As for the tracking, either regions above or below the threshold value can be targeted.
-
+Individual features are indentified as either maxima or minima in a two dimensional time varying field.
+The volume/are associated with the identified object can be determined based on a time-varying 2D or 3D field and a threshold value. The in thre tracking step, the identified objects are linked into consistent trajectories representing the cloud over its lifecycle
 
 Installation
 ------------
 Required packages: trackpy scipy numpy iris scikit-learn cartopy pandas pytables 
 
-If you are using anaconda, the following line should make sure all dependencies are met and up to date:
+If you are using anaconda, the following command should make sure all dependencies are met and up to date:
 ```
 conda install -c conda-forge trackpy scipy numpy iris scikit-learn cartopy pandas pytables 
 ```
