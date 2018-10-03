@@ -34,8 +34,8 @@ def linking_trackpy(features,field_in,dt,dxy,
     #    from trackpy import link_df
     import trackpy as tp
     from copy import deepcopy
-    from trackpy import filter_stubs
-    from .utils import add_coordinates
+#    from trackpy import filter_stubs
+#    from .utils import add_coordinates
 
     # calculate search range based on timestep and grid spacing
     if v_max is not None:
