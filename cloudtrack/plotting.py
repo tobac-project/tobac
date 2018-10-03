@@ -640,6 +640,7 @@ def plot_mask_cell_track_2D3Dstatic(cell,track, cog, features, mask_total,
                                     width=10000,n_extend=1,
                                     name= 'test', plotdir='./',
                                     file_format=['png'],figsize=(10/2.54, 10/2.54),dpi=300,
+                                    ele=10,azim=30,
                                     **kwargs):
     '''Make plots for all cells with fixed frame including entire development of the cell and with one background field as filling and one background field as contrours
     Input:
@@ -744,7 +745,9 @@ def plot_mask_cell_track_2D3Dstatic(cell,track, cog, features, mask_total,
                                              mask_total=mask_total_i,
                                              field_contour=field_contour_i, field_filled=field_filled_i,
                                              xlim=[x_min/1000,x_max/1000],ylim=[y_min/1000,y_max/1000],
-                                             axes=ax1[1],title=title,**kwargs)
+                                             axes=ax1[1],title=title,
+                                             ele=ele,azim=azim,
+                                             **kwargs)
 
         out_dir = os.path.join(plotdir, name)
         os.makedirs(out_dir, exist_ok=True)
