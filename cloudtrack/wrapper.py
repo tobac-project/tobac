@@ -182,18 +182,24 @@ def maketrack(field_in,
         raise ValueError('method_detection unknown, has to be either threshold_multi or threshold')
         
     # Link the features in the individual frames to trajectories:
-    if method_linking == 'trackpy':
-        trajectories=linking_trackpy(features_filtered,
-                                                   v_max=v_max,d_max=d_max,
-                                                   dt=dt,dxy=dxy,memory=memory,
-                                                   subnetwork_size=subnetwork_size,
-                                                   adaptive_stop=adaptive_stop,
-                                                   adaptive_step=adaptive_step            
-                                                   )
 
-        logging.debug('Finished tracking')
-    else:
-        raise ValueError('method_linking unknown, has to be trackpy')
+    trajectories=linking_trackpy(features=features_filtered,
+                                 field_in=field_in,
+                                 dxy=dxy,
+                                 dt=dt,
+                                 memory=memory,
+                                 subnetwork_size=subnetwork_size,
+                                 adaptive_stop=adaptive_stop,
+                                 adaptive_step=adaptive_step,
+                                 v_max=v_max,
+                                 d_max=d_max,
+                                 stubs=stubs,              
+                                 order=order,extrapolate=extrapolate, 
+                                 method_linking=method_linking,
+                                 cell_number_start=1
+                                 )
+
+    logging.debug('Finished tracking')
 
     return trajectories,features
 
