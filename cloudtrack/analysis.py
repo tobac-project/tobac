@@ -139,11 +139,52 @@ def cog_cell(cell,Tracks=None,M_total=None,M_liquid=None,
 
 
 def lifetime_histogram(Track,bin_edges=np.arange(0,200,20),density=False):
+    Track.at['v']=np.nan
     Track_cell=Track.groupby('cell')
     minutes=(Track_cell['time_cell'].max()/pd.Timedelta(minutes=1)).values
     hist, bin_edges = np.histogram(minutes, bin_edges,density=density)
     return hist,bin_edges
 
+def calculate_distance(feature_1,feature_2):
+    distance=np.sqrt((feature_1['projection_x_coordinate']-feature_2['projection_x_coordinate'])**2
+                     +(feature_1['projection_y_coordinate']-feature_2['projection_y_coordinate'])**2)
+    return distance
+
+def calculate_velocity(feature_old,feature_new):
+    distance=calculate_distance(feature_old,feature_new)
+    diff_time=((feature_new['time']-feature_old['time']).total_seconds())
+    velocity=distance/diff_time
+    return velocity
+
+def velocity_histogram(Track,bin_edges=np.arange(0,30,1),density=False):
+    for cell_i,Track_i in Track.groupby('cell'):
+        index=Track_i.index.values
+        for i,index_i in enumerate(index[:-1]):
+            velocity=calculate_velocity(Track_i.loc[index[i]],Track_i.loc[index[i+1]])
+            Track.at[index_i,'v']=velocity
+    velocities=Track['v'].values
+    hist, bin_edges = np.histogram(velocities[~np.isnan(velocities)], bin_edges,density=density)
+    return hist,bin_edges
+
+def nearestneighbordistance_histogram(features,bin_edges=np.arange(0,30000,500),density=False):
+    from itertools import combinations
+    features['min_distance']=np.nan
+    for time_i,features_i in features.groupby('time'):
+            indeces=combinations(features_i.index.values,2)
+            #Loop over combinations to remove features that are closer together than min_distance and keep larger one (either higher threshold or larger area)
+            distances=[]
+            for index_1,index_2 in indeces:        
+                if index_1 is not index_2:                    
+                    distance=calculate_distance(features_i.loc[index_1],features_i.loc[index_2])
+                    distances.append(pd.DataFrame({'index_1':index_1,'index_2':index_2,'distance': distance}, index=[0]))
+            if any([x is not None for x in distances]):
+                distances=pd.concat(distances, ignore_index=True)   
+                for i in features_i.index:
+                    min_distance=distances.loc[(distances['index_1']==i) | (distances['index_2']==i),'distance'].min()
+                    features.at[i,'min_distance']=min_distance
+    distances=features['min_distance'].values
+    hist, bin_edges = np.histogram(distances[~np.isnan(distances)], bin_edges,density=density)
+    return hist,bin_edges
 
 def histogram_cellwise(Track,variable=None,bin_edges=None,quantity='max',density=False):
     Track_cell=Track.groupby('cell')
