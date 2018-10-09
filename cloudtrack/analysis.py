@@ -145,28 +145,73 @@ def lifetime_histogram(Track,bin_edges=np.arange(0,200,20),density=False):
     hist, bin_edges = np.histogram(minutes, bin_edges,density=density)
     return hist,bin_edges
 
-def calculate_distance(feature_1,feature_2):
-    distance=np.sqrt((feature_1['projection_x_coordinate']-feature_2['projection_x_coordinate'])**2
-                     +(feature_1['projection_y_coordinate']-feature_2['projection_y_coordinate'])**2)
+def haversine(x, y):
+    """Computes the Haversine distance in kilometres between two points
+    :param x: first point or points as array, each as array of latitude, longitude in degrees
+    :param y: second point or points as array, each as array of latitude, longitude in degrees
+    :return: distance between the two points in kilometres
+    """
+    import math
+    RADIUS_EARTH = 6378.0
+    if x.ndim == 1:
+        lat1, lon1 = x[0], x[1]
+    else:
+        lat1, lon1 = x[:, 0], x[:, 1]
+    if y.ndim == 1:
+        lat2, lon2 = y[0], y[1]
+    else:
+        lat2, lon2 = y[:, 0], y[:, 1]
+    lat1 = lat1 * math.pi / 180
+    lat2 = lat2 * math.pi / 180
+    lon1 = lon1 * math.pi / 180
+    lon2 = lon2 * math.pi / 180
+    arclen = 2 * np.arcsin(np.sqrt((np.sin((lat2 - lat1) / 2)) ** 2 +
+                                   np.cos(lat1) * np.cos(lat2) * (np.sin((lon2 - lon1) / 2)) ** 2))
+    return arclen * RADIUS_EARTH
+
+
+def calculate_distance(feature_1,feature_2,method_distance=None):
+    
+    if method_distance is None:
+        if ('projection_x_coordinate' in feature_1.columns) and ('projection_y_coordinate' in feature_1.columns) and ('projection_x_coordinate' in feature_2.columns) and ('projection_y_coordinate' in feature_2.columns) :
+            method_distance='xy'
+        elif ('latitude' in feature_1.columns) and ('longitude' in feature_1.columns) and ('latitude' in feature_2.columns) and ('longitude' in feature_2.columns):
+            method_distance='latlon'
+        else:
+            raise ValueError('either latitude/longitude or projection_x_coordinate/projection_y_coordinate have to be present to calculate distances')
+
+
+    if method_distance=='xy':
+            distance=np.sqrt((feature_1['projection_x_coordinate']-feature_2['projection_x_coordinate'])**2
+                     +(feature_1['projection_y_coordinate']-feature_2['projection_y_coordinate'])**2)#
+    elif method_distance=='latlon':
+            distance=1000*haversine(np.array([feature_1['latitude'],feature_1['longitude']]),np.array([feature_2['latitude'],feature_2['longitude']]))
+    else:
+        raise ValueError('method undefined')
+
     return distance
 
-def calculate_velocity(feature_old,feature_new):
-    distance=calculate_distance(feature_old,feature_new)
+def calculate_velocity(feature_old,feature_new,method_distance=None):
+    distance=calculate_distance(feature_old,feature_new,method_distance=method_distance)
     diff_time=((feature_new['time']-feature_old['time']).total_seconds())
     velocity=distance/diff_time
     return velocity
 
-def velocity_histogram(Track,bin_edges=np.arange(0,30,1),density=False):
+def velocity_histogram(Track,bin_edges=np.arange(0,30,1),density=False,method_distance=None,return_values=False):
     for cell_i,Track_i in Track.groupby('cell'):
         index=Track_i.index.values
         for i,index_i in enumerate(index[:-1]):
-            velocity=calculate_velocity(Track_i.loc[index[i]],Track_i.loc[index[i+1]])
+            velocity=calculate_velocity(Track_i.loc[index[i]],Track_i.loc[index[i+1]],method_distance=method_distance)
             Track.at[index_i,'v']=velocity
     velocities=Track['v'].values
     hist, bin_edges = np.histogram(velocities[~np.isnan(velocities)], bin_edges,density=density)
-    return hist,bin_edges
+    if return_values:
+        return hist,bin_edges,velocities
+    else:
+        return hist,bin_edges
 
-def nearestneighbordistance_histogram(features,bin_edges=np.arange(0,30000,500),density=False):
+
+def nearestneighbordistance_histogram(features,bin_edges=np.arange(0,30000,500),density=False,method_distance=None,return_values=False):
     from itertools import combinations
     features['min_distance']=np.nan
     for time_i,features_i in features.groupby('time'):
@@ -175,7 +220,7 @@ def nearestneighbordistance_histogram(features,bin_edges=np.arange(0,30000,500),
             distances=[]
             for index_1,index_2 in indeces:        
                 if index_1 is not index_2:                    
-                    distance=calculate_distance(features_i.loc[index_1],features_i.loc[index_2])
+                    distance=calculate_distance(features_i.loc[index_1],features_i.loc[index_2],method_distance=method_distance)
                     distances.append(pd.DataFrame({'index_1':index_1,'index_2':index_2,'distance': distance}, index=[0]))
             if any([x is not None for x in distances]):
                 distances=pd.concat(distances, ignore_index=True)   
@@ -184,7 +229,58 @@ def nearestneighbordistance_histogram(features,bin_edges=np.arange(0,30000,500),
                     features.at[i,'min_distance']=min_distance
     distances=features['min_distance'].values
     hist, bin_edges = np.histogram(distances[~np.isnan(distances)], bin_edges,density=density)
-    return hist,bin_edges
+    if return_values:
+        return hist,bin_edges,distances
+    else:
+        return hist,bin_edges
+
+#def calculate_area(feature,mask):
+#    for time_i,features_i in features.groupby('time'):
+#        constraint_time = Constraint(time=time_i)
+#        mask_i=mask.extract(constraint_time)
+#    
+#        if len(mask_total.shape)==3:
+#            mask_total_i_surface = mask_cell_surface(mask_total, cell, track, masked=False, z_coord=z_coord)
+#        elif len(mask_total.shape)==2:            
+#            mask_i_surface=mask_i
+#    
+#        if ('projection_x_coordinate' in feature_1.columns) and ('projection_y_coordinate' in feature_1.columns) and ('projection_x_coordinate' in feature_2.columns) and ('projection_y_coordinate' in feature_2.columns) :
+#            method_distance='xy'
+#        elif ('latitude' in feature_1.columns) and ('longitude' in feature_1.columns) and ('latitude' in feature_2.columns) and ('longitude' in feature_2.columns):
+#            if len(mask.coord(latitude).shape)==1:
+#                method_distance='latlon'
+#            else:
+#                raise ValueError('2D latitude/longitude coordinates not supported')
+#        else:
+#                raise ValueError('either latitude/longitude or projection_x_coordinate/projection_y_coordinate have to be present to calculate distances')
+#    
+#    
+#        if method_area=='xy':
+#                area=np.sqrt((feature_1['projection_x_coordinate']-feature_2['projection_x_coordinate'])**2
+#                         +(feature_1['projection_y_coordinate']-feature_2['projection_y_coordinate'])**2)#
+#        elif method_area=='latlon':
+#             if not (mask.coord('latitude').has_bounds() and mask.coord('longitude').has_bounds()):
+#                 mask.coord('latitude').guess_bounds()
+#                 mask.coord('longitude').guess_bounds()
+#                 area=area_weights(mask,normalize=False)
+#        else:
+#            raise ValueError('method undefined')
+#        for i,feature in features_i.iterrrows():
+#    return area
+#
+#
+#def area_histogram(features,mask,bin_edges=np.arange(0,30000,500),density=False,method_distance=None,return_values=False):
+#    from itertools import combinations
+#    features['area']=np.nan
+#    for i in features_i.index:
+#        area=calculate_area(feature.at[i],mask):
+#        features.at[i,'area']=area
+#    areas=features['area'].values
+#    hist, bin_edges = np.histogram(distances[~np.isnan(distances)], bin_edges,density=density)
+#    if return_values:
+#        return hist,bin_edges,distances
+#    else:
+#        return hist,bin_edges
 
 def histogram_cellwise(Track,variable=None,bin_edges=None,quantity='max',density=False):
     Track_cell=Track.groupby('cell')
