@@ -4,7 +4,7 @@ import pandas as pd
 
 def feature_detection_multithreshold(field_in,
                                      dxy,
-                                     threshold,
+                                     threshold=None,
                                      min_num=0,
                                      target='maximum',
                                      position_threshold='center',
