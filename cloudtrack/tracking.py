@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 def linking_trackpy(features,field_in,dt,dxy,
-                       v_max=None,d_max=None,subnetwork_size=None,
+                       v_max=None,d_max=None,d_min=None,subnetwork_size=None,
                        memory=0,stubs=1,              
                        order=1,extrapolate=0, 
                        method_linking='random',
@@ -44,6 +44,10 @@ def linking_trackpy(features,field_in,dt,dxy,
     # calculate search range based on timestep and grid spacing
     if d_max is not None:
         search_range=int(d_max/dxy)
+    
+    # calculate search range based on timestep and grid spacing
+    if d_min is not None:
+        search_range=max(search_range,int(d_min/dxy))
 
     
     logging.debug('start linking features into trajectories')
