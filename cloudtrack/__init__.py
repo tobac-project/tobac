@@ -5,6 +5,7 @@ from .plotting import plot_tracks_mask_field,plot_tracks_mask_field_loop,plot_ma
 from .plotting import plot_lifetime_histogram,plot_lifetime_histogram_bar,plot_histogram_cellwise,plot_histogram_featurewise
 from .plotting import plot_mask_cell_track_3Dstatic,plot_mask_cell_track_2D3Dstatic
 from .analysis import cell_statistics,cog_cell,lifetime_histogram,histogram_featurewise,histogram_cellwise,velocity_histogram,nearestneighbordistance_histogram
+from .analysis import calculate_velocity,calculate_distance
 from .utils import mask_cell,mask_cell_surface,mask_cube_cell,mask_cube_untracked,mask_cube,column_mask_from2D,get_bounding_box
 from .utils import mask_features,mask_features_surface,mask_cube_features
 
