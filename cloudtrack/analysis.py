@@ -234,53 +234,60 @@ def nearestneighbordistance_histogram(features,bin_edges=np.arange(0,30000,500),
     else:
         return hist,bin_edges
 
-#def calculate_area(feature,mask):
-#    for time_i,features_i in features.groupby('time'):
-#        constraint_time = Constraint(time=time_i)
-#        mask_i=mask.extract(constraint_time)
-#    
-#        if len(mask_total.shape)==3:
-#            mask_total_i_surface = mask_cell_surface(mask_total, cell, track, masked=False, z_coord=z_coord)
-#        elif len(mask_total.shape)==2:            
-#            mask_i_surface=mask_i
-#    
-#        if ('projection_x_coordinate' in feature_1.columns) and ('projection_y_coordinate' in feature_1.columns) and ('projection_x_coordinate' in feature_2.columns) and ('projection_y_coordinate' in feature_2.columns) :
-#            method_distance='xy'
-#        elif ('latitude' in feature_1.columns) and ('longitude' in feature_1.columns) and ('latitude' in feature_2.columns) and ('longitude' in feature_2.columns):
-#            if len(mask.coord(latitude).shape)==1:
-#                method_distance='latlon'
-#            else:
-#                raise ValueError('2D latitude/longitude coordinates not supported')
-#        else:
-#                raise ValueError('either latitude/longitude or projection_x_coordinate/projection_y_coordinate have to be present to calculate distances')
-#    
-#    
-#        if method_area=='xy':
-#                area=np.sqrt((feature_1['projection_x_coordinate']-feature_2['projection_x_coordinate'])**2
-#                         +(feature_1['projection_y_coordinate']-feature_2['projection_y_coordinate'])**2)#
-#        elif method_area=='latlon':
-#             if not (mask.coord('latitude').has_bounds() and mask.coord('longitude').has_bounds()):
-#                 mask.coord('latitude').guess_bounds()
-#                 mask.coord('longitude').guess_bounds()
-#                 area=area_weights(mask,normalize=False)
-#        else:
-#            raise ValueError('method undefined')
-#        for i,feature in features_i.iterrrows():
-#    return area
+def calculate_area(features,mask):
+    from .uitls import mask_features_surface,mask_features
+    from iris import Constraint
+    from iris.analysis.cartography import area_weights
+    
+    features['area']=np.nan
+    
+    mask_coords=[coord.name() for coord in mask.coords()]
+    if ('projection_x_coordinate' in features.columns) and ('projection_y_coordinate' in features.columns) and ('projection_x_coordinate' in mask_coords) and ('projection_y_coordinate' in mask_coords):
+        method_area='xy'
+    elif ('latitude' in features.columns) and ('longitude' in features.columns) ('latitude' in mask_coords) and ('longitude' in mask_coords):
+        if mask.coord('latitude').ndim==1:
+            method_area='latlon'
+        else:
+            raise ValueError('2D latitude/longitude coordinates not supported')
+    else:
+        raise ValueError('either latitude/longitude or projection_x_coordinate/projection_y_coordinate have to be present to calculate distances')
+
+    for time_i,features_i in features.groupby('time'):
+        constraint_time = Constraint(time=time_i)
+        mask_i=mask.extract(constraint_time)
+        
+    
+    
+        if method_area=='xy':
+            if not (mask.coord('projection_x_coordinate').has_bounds() and mask.coord('projection_y_coordinate').has_bounds()):
+                mask.coord('projection_x_coordinate').guess_bounds()
+                mask.coord('projection_y_coordinate').guess_bounds()
+            area=np.outer(np.diff(mask.coord('projection_x_coordinate').bounds()),np.diff(mask.coord('projection_y_coordinate').bounds()))
+        elif method_area=='latlon':
+            if not (mask.coord('latitude').has_bounds() and mask.coord('longitude').has_bounds()):
+                 mask.coord('latitude').guess_bounds()
+                 mask.coord('longitude').guess_bounds()
+            area=1000*1000*area_weights(mask,normalize=False)
+        else:
+            raise ValueError('method undefined')
+        for i in features_i.index:
+            if len(mask_i.shape)==3:
+                mask_i_surface = mask_features_surface(mask_i, features_i.loc[i,'feature'], z_coord='model_level_number')
+            elif len(mask_i.shape)==2:            
+                mask_i_surface=mask_features(mask_i,features_i.loc[i,'feature'])
+            area_feature=np.sum(area*(mask_i_surface.data>0))
+            features.at[i,'area']=area_feature
+    return area
 #
 #
-#def area_histogram(features,mask,bin_edges=np.arange(0,30000,500),density=False,method_distance=None,return_values=False):
-#    from itertools import combinations
-#    features['area']=np.nan
-#    for i in features_i.index:
-#        area=calculate_area(feature.at[i],mask):
-#        features.at[i,'area']=area
-#    areas=features['area'].values
-#    hist, bin_edges = np.histogram(distances[~np.isnan(distances)], bin_edges,density=density)
-#    if return_values:
-#        return hist,bin_edges,distances
-#    else:
-#        return hist,bin_edges
+def area_histogram(features,mask,bin_edges=np.arange(0,30000,500),density=False,method_distance=None,return_values=False):
+    features=calculate_area(features,mask)
+    areas=features['area'].values
+    hist, bin_edges = np.histogram(areas[~np.isnan(areas)], bin_edges,density=density)
+    if return_values:
+        return hist,bin_edges,areas
+    else:
+        return hist,bin_edges
 
 def histogram_cellwise(Track,variable=None,bin_edges=None,quantity='max',density=False):
     Track_cell=Track.groupby('cell')
