@@ -1172,6 +1172,7 @@ def plot_mask_cell_track_static_timeseries(cell,track, cog, features, mask_total
         if variable_ylabel==None:
             variable_ylabel=variable
         ax1[1].set_ylabel(variable_ylabel)
+        ax1[1].set_title(title)
         
         # insert legend, if flag is True
         if variable_legend:
