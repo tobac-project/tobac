@@ -305,3 +305,41 @@ def histogram_cellwise(Track,variable=None,bin_edges=None,quantity='max',density
 def histogram_featurewise(Track,variable=None,bin_edges=None,density=False):
     hist, bin_edges = np.histogram(Track[variable].values, bin_edges,density=density)
     return hist,bin_edges
+
+def calculate_overlap(track_1,track_2,min_sum_inv_distance=None,min_mean_inv_distance=None):
+    cells_1=track_1['cell'].unique()
+#    n_cells_1_tot=len(cells_1)
+    cells_2=track_2['cell'].unique()
+    overlap=pd.DataFrame()
+    for i_cell_1,cell_1 in enumerate(cells_1):
+        for cell_2 in cells_2:
+            track_1_i=track_1[track_1['cell']==cell_1]
+            track_2_i=track_2[track_2['cell']==cell_2]
+            track_1_i=track_1_i[track_1_i['time'].isin(track_2_i['time'])]
+            track_2_i=track_2_i[track_2_i['time'].isin(track_1_i['time'])]
+            if not track_1_i.empty:
+                n_overlap=len(track_1_i)
+                distances=[]
+                for i in range(len(track_1_i)):
+                    distance=calculate_distance(track_1_i.iloc[[i]],track_2_i.iloc[[i]],method_distance='xy')
+                    distances.append(distance)
+#                mean_distance=np.mean(distances)
+                mean_inv_distance=np.mean(1/(1+np.array(distances)/1000))
+#                mean_inv_squaredistance=np.mean(1/(1+(np.array(distances)/1000)**2))
+                sum_inv_distance=np.sum(1/(1+np.array(distances)/1000))
+#                sum_inv_squaredistance=np.sum(1/(1+(np.array(distances)/1000)**2))
+                overlap=overlap.append({'cell_1':cell_1,
+                                'cell_2':cell_2,
+                                'n_overlap':n_overlap,
+#                                'mean_distance':mean_distance,
+                                'mean_inv_distance':mean_inv_distance,
+#                                'mean_inv_squaredistance':mean_inv_squaredistance,
+                                'sum_inv_distance':sum_inv_distance,
+#                                'sum_inv_squaredistance':sum_inv_squaredistance
+                               },ignore_index=True)
+    if min_sum_inv_distance:
+        overlap=overlap[(overlap['sum_inv_distance']>=min_sum_inv_distance)] 
+    if min_mean_inv_distance:
+        overlap=overlap[(overlap['mean_inv_distance']>=min_mean_inv_distance)] 
+
+    return overlap
