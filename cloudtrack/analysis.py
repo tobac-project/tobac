@@ -173,9 +173,9 @@ def haversine(x, y):
 def calculate_distance(feature_1,feature_2,method_distance=None):
     
     if method_distance is None:
-        if ('projection_x_coordinate' in feature_1.columns) and ('projection_y_coordinate' in feature_1.columns) and ('projection_x_coordinate' in feature_2.columns) and ('projection_y_coordinate' in feature_2.columns) :
+        if ('projection_x_coordinate' in feature_1) and ('projection_y_coordinate' in feature_1) and ('projection_x_coordinate' in feature_2) and ('projection_y_coordinate' in feature_2) :
             method_distance='xy'
-        elif ('latitude' in feature_1.columns) and ('longitude' in feature_1.columns) and ('latitude' in feature_2.columns) and ('longitude' in feature_2.columns):
+        elif ('latitude' in feature_1) and ('longitude' in feature_1) and ('latitude' in feature_2) and ('longitude' in feature_2):
             method_distance='latlon'
         else:
             raise ValueError('either latitude/longitude or projection_x_coordinate/projection_y_coordinate have to be present to calculate distances')
@@ -183,7 +183,7 @@ def calculate_distance(feature_1,feature_2,method_distance=None):
 
     if method_distance=='xy':
             distance=np.sqrt((feature_1['projection_x_coordinate']-feature_2['projection_x_coordinate'])**2
-                     +(feature_1['projection_y_coordinate']-feature_2['projection_y_coordinate'])**2)#
+                     +(feature_1['projection_y_coordinate']-feature_2['projection_y_coordinate'])**2)
     elif method_distance=='latlon':
             distance=1000*haversine(np.array([feature_1['latitude'],feature_1['longitude']]),np.array([feature_2['latitude'],feature_2['longitude']]))
     else:
@@ -235,16 +235,16 @@ def nearestneighbordistance_histogram(features,bin_edges=np.arange(0,30000,500),
         return hist,bin_edges
 
 def calculate_area(features,mask):
-    from .uitls import mask_features_surface,mask_features
+    from cloudtrack.utils import mask_features_surface,mask_features
     from iris import Constraint
     from iris.analysis.cartography import area_weights
     
     features['area']=np.nan
     
     mask_coords=[coord.name() for coord in mask.coords()]
-    if ('projection_x_coordinate' in features.columns) and ('projection_y_coordinate' in features.columns) and ('projection_x_coordinate' in mask_coords) and ('projection_y_coordinate' in mask_coords):
+    if ('projection_x_coordinate' in features) and ('projection_y_coordinate' in features) and ('projection_x_coordinate' in mask_coords) and ('projection_y_coordinate' in mask_coords):
         method_area='xy'
-    elif ('latitude' in features.columns) and ('longitude' in features.columns) ('latitude' in mask_coords) and ('longitude' in mask_coords):
+    elif ('latitude' in features) and ('longitude' in features) and ('latitude' in mask_coords) and ('longitude' in mask_coords):
         if mask.coord('latitude').ndim==1:
             method_area='latlon'
         else:
@@ -262,12 +262,12 @@ def calculate_area(features,mask):
             if not (mask.coord('projection_x_coordinate').has_bounds() and mask.coord('projection_y_coordinate').has_bounds()):
                 mask.coord('projection_x_coordinate').guess_bounds()
                 mask.coord('projection_y_coordinate').guess_bounds()
-            area=np.outer(np.diff(mask.coord('projection_x_coordinate').bounds()),np.diff(mask.coord('projection_y_coordinate').bounds()))
+            area=np.outer(np.diff(mask.coord('projection_x_coordinate').bounds,axis=1),np.diff(mask.coord('projection_y_coordinate').bounds,axis=1))
         elif method_area=='latlon':
             if not (mask.coord('latitude').has_bounds() and mask.coord('longitude').has_bounds()):
                  mask.coord('latitude').guess_bounds()
                  mask.coord('longitude').guess_bounds()
-            area=1000*1000*area_weights(mask,normalize=False)
+            area=area_weights(mask,normalize=False)
         else:
             raise ValueError('method undefined')
         for i in features_i.index:
@@ -277,18 +277,28 @@ def calculate_area(features,mask):
                 mask_i_surface=mask_features(mask_i,features_i.loc[i,'feature'])
             area_feature=np.sum(area*(mask_i_surface.data>0))
             features.at[i,'area']=area_feature
-    return area
+    return features
 #
 #
-def area_histogram(features,mask,bin_edges=np.arange(0,30000,500),density=False,method_distance=None,return_values=False):
-    features=calculate_area(features,mask)
+def area_histogram(features,mask,bin_edges=np.arange(0,30000,500),
+                   density=False,method_distance=None,
+                   return_values=False,representative_area=False):
+    if not 'area' in features:
+        features=calculate_area(features,mask)
+        
     areas=features['area'].values
-    hist, bin_edges = np.histogram(areas[~np.isnan(areas)], bin_edges,density=density)
-    if return_values:
-        return hist,bin_edges,areas
+    if representative_area:
+        weights=areas
     else:
-        return hist,bin_edges
+        weights=None
+    hist, bin_edges = np.histogram(areas[~np.isnan(areas)], bin_edges,density=density,weights=weights)   
+    bin_centers=bin_edges[:-1]+0.5*np.diff(bin_edges)
 
+    if return_values:
+        return hist,bin_edges,bin_centers,areas
+    else:
+        return hist,bin_edges,bin_centers
+    
 def histogram_cellwise(Track,variable=None,bin_edges=None,quantity='max',density=False):
     Track_cell=Track.groupby('cell')
     if quantity=='max':
