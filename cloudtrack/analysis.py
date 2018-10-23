@@ -139,7 +139,6 @@ def cog_cell(cell,Tracks=None,M_total=None,M_liquid=None,
 
 
 def lifetime_histogram(Track,bin_edges=np.arange(0,200,20),density=False):
-    Track.at['v']=np.nan
     Track_cell=Track.groupby('cell')
     minutes=(Track_cell['time_cell'].max()/pd.Timedelta(minutes=1)).values
     hist, bin_edges = np.histogram(minutes, bin_edges,density=density)
