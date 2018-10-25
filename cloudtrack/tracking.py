@@ -4,7 +4,7 @@ import pandas as pd
 
 def linking_trackpy(features,field_in,dt,dxy,
                        v_max=None,d_max=None,d_min=None,subnetwork_size=None,
-                       memory=0,stubs=1,              
+                       memory=0,stubs=1,time_cell_min=None,              
                        order=1,extrapolate=0, 
                        method_linking='random',
                        adaptive_step=None,adaptive_stop=None,
@@ -49,7 +49,12 @@ def linking_trackpy(features,field_in,dt,dxy,
     if d_min is not None:
         search_range=max(search_range,int(d_min/dxy))
 
+    if time_cell_min:
+        stubs=np.floor(time_cell_min/dt)+1
     
+    
+    logging.debug(f'stubs: {stubs}')
+
     logging.debug('start linking features into trajectories')
     
     
@@ -107,6 +112,7 @@ def linking_trackpy(features,field_in,dt,dxy,
         if trajectories_cell.shape[0] < stubs:
             logging.debug("cell" + str(cell)+ "  is a stub ("+str(trajectories_cell.shape[0])+ "), setting cell number to Nan..")
             trajectories_unfiltered.loc[trajectories_unfiltered['cell']==cell,'cell']=np.nan
+
     trajectories_filtered=trajectories_unfiltered
 
 
