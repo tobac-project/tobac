@@ -181,13 +181,12 @@ def calculate_distance(feature_1,feature_2,method_distance=None):
 
 
     if method_distance=='xy':
-            distance=np.sqrt((feature_1['projection_x_coordinate']-feature_2['projection_x_coordinate'])**2
-                     +(feature_1['projection_y_coordinate']-feature_2['projection_y_coordinate'])**2)
+            distance=np.sqrt((feature_1['projection_x_coordinate'].values-feature_2['projection_x_coordinate'].values)**2
+                     +(feature_1['projection_y_coordinate'].values-feature_2['projection_y_coordinate'].values)**2)
     elif method_distance=='latlon':
-            distance=1000*haversine(np.array([feature_1['latitude'],feature_1['longitude']]),np.array([feature_2['latitude'],feature_2['longitude']]))
+            distance=1000*haversine(np.array([feature_1['latitude'].values,feature_1['longitude'].values]),np.array([feature_2['latitude'].values,feature_2['longitude'].values]))
     else:
         raise ValueError('method undefined')
-
     return distance
 
 def calculate_velocity(feature_old,feature_new,method_distance=None):
