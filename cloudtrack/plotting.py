@@ -45,7 +45,9 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
                            title=None,
                            vmin=None,vmax=None,n_levels=50,
                            cmap='viridis',extend='neither',
-                           orientation_colorbar='horizontal',pad_colorbar=0.05,label_colorbar=None
+                           orientation_colorbar='horizontal',pad_colorbar=0.05,
+                           label_colorbar=None,fraction_colorbar=0.046,
+                           rasterized=True,linewidth_contour=1
                            ):
     import cartopy
     from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
@@ -91,10 +93,12 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
         plot_field=iplt.contourf(field,coords=['longitude','latitude'],
                             levels=np.linspace(vmin,vmax,num=n_levels),extend=extend,
                             axes=axes,
-                            cmap=cmap,vmin=vmin,vmax=vmax
+                            cmap=cmap,vmin=vmin,vmax=vmax,zorder=1
                             )
-        # greate colorbar for background field:
-        cbar=plt.colorbar(plot_field,orientation=orientation_colorbar, pad=pad_colorbar,ax=axes)
+        if rasterized:
+            axes.set_rasterization_zorder(1)
+        # create colorbar for background field:
+        cbar=plt.colorbar(plot_field,orientation=orientation_colorbar, pad=pad_colorbar,fraction=fraction_colorbar,ax=axes)
         if label_colorbar is None:
             label_colorbar=field.name()+ '('+field.units.symbol +')'
         if orientation_colorbar is 'horizontal':
@@ -153,7 +157,9 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
                 raise ValueError('mask has shape that cannot be understood')
             # plot countour lines around the edges of the mask    
             iplt.contour(mask_i,coords=['longitude','latitude'],
-                         levels=[0,feature],colors=color,axes=axes)
+                         levels=[0,feature],
+                         colors=color,linewidths=linewidth_contour,
+                         axes=axes)
         
         if plot_marker:
             axes.plot(row['longitude'],row['latitude'],
@@ -162,7 +168,6 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
     axes.set_extent(axis_extent)
 
     return axes
-
 def plot_mask_cell_track_follow(cell,track, cog, features, mask_total,
                                 field_contour, field_filled, 
                                 width=10000,
