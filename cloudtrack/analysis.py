@@ -35,8 +35,8 @@ def cell_statistics(input_cubes,track,mask,aggregators,cell,output_path='./',out
         constraint_time = Constraint(time=time_i)
         
         mask_i=mask.extract(constraint_time)
-        mask_cell_i=mask_cell(mask_i,track_i,cell,masked=False)
-        mask_cell_surface_i=mask_cell_surface(mask_i,track_i,cell,masked=False,z_coord=z_coord)
+        mask_cell_i=mask_cell(mask_i,cell,track_i,masked=False)
+        mask_cell_surface_i=mask_cell_surface(mask_i,cell,track_i,masked=False,z_coord=z_coord)
 
         x_dim=mask_cell_surface_i.coord_dims('projection_x_coordinate')[0]
         y_dim=mask_cell_surface_i.coord_dims('projection_y_coordinate')[0]
@@ -71,7 +71,7 @@ def cell_statistics(input_cubes,track,mask,aggregators,cell,output_path='./',out
 
         input_cubes_i=input_cubes.extract(constraint)
         for cube in input_cubes_i:
-            cube_masked=mask_cube_cell(cube,mask_cell_i,cell)
+            cube_masked=mask_cube_cell(cube,mask_cell_i,cell,track_i)
             for aggregator in aggregators:
                 cubes_profile[aggregator.name()].append(cube_masked.collapsed(dimensions,aggregator,**kwargs))
 
