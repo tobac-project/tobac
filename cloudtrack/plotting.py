@@ -9,7 +9,6 @@ def plot_tracks_mask_field_loop(track,field,mask,features,axes=None,name=None,pl
                                 figsize=(10./2.54,10./2.54),dpi=300,
                                 margin_left=0.05,margin_right=0.05,margin_bottom=0.05,margin_top=0.05,
                                 **kwargs):
-    import matplotlib.pyplot as plt
     import cartopy.crs as ccrs
     import os
     from iris import Constraint
@@ -35,7 +34,6 @@ def plot_tracks_mask_field_loop(track,field,mask,features,axes=None,name=None,pl
         logging.debug('Figure plotted to ' + str(savepath_png))
 
         plt.close()
-    plt.close() 
 
 def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
                            plot_outline=True,
