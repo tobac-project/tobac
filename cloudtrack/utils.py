@@ -19,13 +19,8 @@ def column_mask_from2D(mask_2D,cube,z_coord='model_level_number'):
     dim=mask_3D.coord_dims(z_coord)[0]
     for i in range(len(mask_3D.coord(z_coord).points)):
         slc = [slice(None)] * len(mask_3D.shape)
-        print(i)
-        print(dim)
         slc[dim] = slice(i,i+1)    
-        print(slc)
-        print(mask_2D.shape)
         mask_out=mask_3D[slc]
-        print(mask_out.shape)
         mask_3D.data[slc]=mask_2D.core_data()
     return mask_3D
 
