@@ -233,7 +233,7 @@ def nearestneighbordistance_histogram(features,bin_edges=np.arange(0,30000,500),
         return hist,bin_edges
 
 def calculate_area(features,mask):
-    from cloudtrack.utils import mask_features_surface,mask_features
+    from .utils import mask_features_surface,mask_features
     from iris import Constraint
     from iris.analysis.cartography import area_weights
     
