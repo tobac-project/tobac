@@ -52,8 +52,7 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
     import iris.plot as iplt
     from matplotlib.ticker import MaxNLocator
     import cartopy.feature as cfeature
-#    from cloudtrack import mask_cell,mask_cell_surface
-    from cloudtrack import mask_features,mask_features_surface
+    from .utils import mask_features,mask_features_surface
     from matplotlib import ticker
     
     if type(axes) is not cartopy.mpl.geoaxes.GeoAxesSubplot:
