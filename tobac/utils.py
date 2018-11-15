@@ -400,11 +400,11 @@ def get_bounding_box(x,buffer=1):
         if len(idx_i) == 0:
             idx_i=array([0,x.shape[kdim]-1])
         # for case where there is only one value in idx_i
-        if len(idx_i) == 1:
+        elif len(idx_i) == 1:
             idx_i=array([idx_i,idx_i])
         # make sure there is two values in idx_i
-        if len(idx_i) != 2:
-            raise ValueError('Algorithm failed, {} does not have 2 elements!'.format(idx_i))
+        elif len(idx_i) > 2:
+            idx_i=array([idx_i[0],idx_i[-1]])
         # caluclate min and max values for idx_i and append them to list
         idx_min=max(0,idx_i[0]+1-buffer)
         idx_max=min(x.shape[kdim]-1,idx_i[1]+1+buffer)
