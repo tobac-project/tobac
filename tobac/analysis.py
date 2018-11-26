@@ -22,9 +22,6 @@ def cell_statistics(input_cubes,track,mask,aggregators,cell,output_path='./',out
     # If input is single cube, turn into cubelist
     if type(input_cubes) is Cube:
         input_cubes=CubeList([input_cubes])
-        
-    #logging.debug(str(input_cubes))
-
     
     logging.debug('Start calculating profiles for cell '+str(cell))
     track_i=track[track['cell']==cell]
@@ -72,22 +69,15 @@ def cell_statistics(input_cubes,track,mask,aggregators,cell,output_path='./',out
         mask_cell_surface_i=mask_cell_surface_i.extract(constraint)
 
         input_cubes_i=input_cubes.extract(constraint)
-        # logging.debug(str(input_cubes_i))
         for cube in input_cubes_i:
             cube_masked=mask_cube_cell(cube,mask_cell_i,cell,track_i)
             coords_remove=[]
-            # logging.debug(str(cube_masked))
             for coordinate in cube_masked.coords(dim_coords=False):
-                # logging.debug(str(coordinate.name()))
 
                 if coordinate.name() not in dimensions:
                     for dim in dimensions:
-                        # logging.debug(str(set(cube_masked.coord_dims(coordinate))))
-                        # logging.debug(str(set(cube_masked.coord_dims(dim))))
-                        # logging.debug(str(set(cube_masked.coord_dims(coordinate)).intersection(set(cube_masked.coord_dims(dim)))))
                         if set(cube_masked.coord_dims(coordinate)).intersection(set(cube_masked.coord_dims(dim))):
                             coords_remove.append(coordinate.name())
-            # logging.debug(str(coords_remove))
             for coordinate in set(coords_remove):
                 cube_masked.remove_coord(coordinate)            
             
@@ -98,8 +88,6 @@ def cell_statistics(input_cubes,track,mask,aggregators,cell,output_path='./',out
                     if not cube_collapsed.coord_dims(coordinate):
                         if coordinate.name() is not 'time':
                             cube_collapsed.remove_coord(coordinate)
-                #for coordinate in dimensions:
-                    #cube_collapsed.remove_coord(coordinate)
                 logging.debug(str(cube_collapsed))
                 cubes_profile[aggregator.name()].append(cube_collapsed)
 
@@ -112,29 +100,11 @@ def cell_statistics(input_cubes,track,mask,aggregators,cell,output_path='./',out
     longitude_coord=AuxCoord(longitude,long_name='longitude',units='degrees')
     
     for aggregator in aggregators:
-        #for cube in cubes_profile[aggregator.name()]:
-            #logging.debug(str(cube))
-            #coordinates_remove=[coord.name() for coord in cube.coords(dim_coords=False)]
-            #logging.debug(str(coordinates_remove))
-            #coordinates_remove.remove('time')
-            #coordinates_remove.remove('geopotential_height')
-           #coordinates_remove.remove('time')
-
-            #for coord in coordinates_remove:
-            #    cube.remove_coord(coord)
-                
-        #for cube in cubes_profile[aggregator.name()]:
-            #logging.debug(str(cube))
         cubes_profile[aggregator.name()]=cubes_profile[aggregator.name()].merge()
         for cube in cubes_profile[aggregator.name()]:
-            # for coord in  cube.coords():
-            #     if (coord.ndim>1 and (cube.coord_dims(dimensions[0])[0] in cube.coord_dims(coord) or cube.coord_dims(dimensions[1])[0] in cube.coord_dims(coord))):
-            #         cube.remove_coord(coord.name())
-                
             cube.add_aux_coord(minutes_coord,data_dims=cube.coord_dims('time'))
             cube.add_aux_coord(latitude_coord,data_dims=cube.coord_dims('time'))
             cube.add_aux_coord(longitude_coord,data_dims=cube.coord_dims('time'))
-            logging.debug(str(cube))
         os.makedirs(os.path.join(output_path,output_name,aggregator.name()),exist_ok=True)
         savefile=os.path.join(output_path,output_name,aggregator.name(),output_name+'_'+ aggregator.name()+'_'+str(int(cell))+'.nc')
         save(cubes_profile[aggregator.name()],savefile)
