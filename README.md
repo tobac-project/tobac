@@ -29,7 +29,7 @@ pip install --upgrade git+https://github.com/climate-processes/tobac.git
 
 You can also clone the package with any of the two following commands
 ```
-git clone git@github.com/climate-processes/tobac.git
+git clone git@github.com:climate-processes/tobac.git
 git clone https://github.com/climate-processes/tobac.git
 ```
 and install the package from the locally cloned version:
