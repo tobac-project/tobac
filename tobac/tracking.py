@@ -53,7 +53,7 @@ def linking_trackpy(features,field_in,dt,dxy,
         stubs=np.floor(time_cell_min/dt)+1
     
     
-    logging.debug(f'stubs: {stubs}')
+    logging.debug('stubs: '+ str(stubs))
 
     logging.debug('start linking features into trajectories')
     

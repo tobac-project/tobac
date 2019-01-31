@@ -22,7 +22,6 @@ def cell_statistics(input_cubes,track,mask,aggregators,cell,output_path='./',out
     # If input is single cube, turn into cubelist
     if type(input_cubes) is Cube:
         input_cubes=CubeList([input_cubes])
-
     
     logging.debug('Start calculating profiles for cell '+str(cell))
     track_i=track[track['cell']==cell]
@@ -72,8 +71,25 @@ def cell_statistics(input_cubes,track,mask,aggregators,cell,output_path='./',out
         input_cubes_i=input_cubes.extract(constraint)
         for cube in input_cubes_i:
             cube_masked=mask_cube_cell(cube,mask_cell_i,cell,track_i)
+            coords_remove=[]
+            for coordinate in cube_masked.coords(dim_coords=False):
+
+                if coordinate.name() not in dimensions:
+                    for dim in dimensions:
+                        if set(cube_masked.coord_dims(coordinate)).intersection(set(cube_masked.coord_dims(dim))):
+                            coords_remove.append(coordinate.name())
+            for coordinate in set(coords_remove):
+                cube_masked.remove_coord(coordinate)            
+            
             for aggregator in aggregators:
-                cubes_profile[aggregator.name()].append(cube_masked.collapsed(dimensions,aggregator,**kwargs))
+                cube_collapsed=cube_masked.collapsed(dimensions,aggregator,**kwargs)
+                #remove all collapsed coordinates (x and y dim, scalar now) and keep only time as all these coordinates are useless
+                for coordinate in cube_collapsed.coords():
+                    if not cube_collapsed.coord_dims(coordinate):
+                        if coordinate.name() is not 'time':
+                            cube_collapsed.remove_coord(coordinate)
+                logging.debug(str(cube_collapsed))
+                cubes_profile[aggregator.name()].append(cube_collapsed)
 
 
     minutes=(track_i['time_cell']/pd.Timedelta(minutes=1)).values
@@ -84,17 +100,11 @@ def cell_statistics(input_cubes,track,mask,aggregators,cell,output_path='./',out
     longitude_coord=AuxCoord(longitude,long_name='longitude',units='degrees')
     
     for aggregator in aggregators:
-        
         cubes_profile[aggregator.name()]=cubes_profile[aggregator.name()].merge()
         for cube in cubes_profile[aggregator.name()]:
-            for coord in  cube.coords():
-                if (coord.ndim>1 and (cube.coord_dims(dimensions[0])[0] in cube.coord_dims(coord) or cube.coord_dims(dimensions[1])[0] in cube.coord_dims(coord))):
-                    cube.remove_coord(coord.name())
-                
             cube.add_aux_coord(minutes_coord,data_dims=cube.coord_dims('time'))
             cube.add_aux_coord(latitude_coord,data_dims=cube.coord_dims('time'))
             cube.add_aux_coord(longitude_coord,data_dims=cube.coord_dims('time'))
-        
         os.makedirs(os.path.join(output_path,output_name,aggregator.name()),exist_ok=True)
         savefile=os.path.join(output_path,output_name,aggregator.name(),output_name+'_'+ aggregator.name()+'_'+str(int(cell))+'.nc')
         save(cubes_profile[aggregator.name()],savefile)
