@@ -13,6 +13,8 @@ The volume/are associated with the identified object can be determined based on 
 
 Installation
 ------------
+Tobac is written in Python 3, it will not work in a Python 2 installation.
+
 Required packages: trackpy scipy numpy iris scikit-learn cartopy pandas pytables 
 
 If you are using anaconda, the following command should make sure all dependencies are met and up to date:
