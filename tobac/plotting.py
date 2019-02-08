@@ -249,7 +249,7 @@ def plot_mask_cell_track_follow(cell,track, cog, features, mask_total,
 
 def plot_mask_cell_individual_follow(cell_i,track, cog,features, mask_total,
                                field_contour, field_filled, 
-                               axes=plt.gca(),width=10000,                               
+                               axes=None,width=10000,                               
                                label_field_contour=None, cmap_field_contour='Blues',norm_field_contour=None,
                                linewidths_contour=0.8,contour_labels=False,
                                vmin_field_contour=0,vmax_field_contour=50,levels_field_contour=None,nlevels_field_contour=10,
@@ -491,7 +491,7 @@ def plot_mask_cell_track_static(cell,track, cog, features, mask_total,
 
 def plot_mask_cell_individual_static(cell_i,track, cog, features, mask_total,
                                field_contour, field_filled,
-                               axes=plt.gca(),xlim=None,ylim=None,
+                               axes=None,xlim=None,ylim=None,
                                label_field_contour=None, cmap_field_contour='Blues',norm_field_contour=None,
                                linewidths_contour=0.8,contour_labels=False,
                                vmin_field_contour=0,vmax_field_contour=50,levels_field_contour=None,nlevels_field_contour=10,
@@ -878,7 +878,7 @@ def plot_mask_cell_track_3Dstatic(cell,track, cog, features, mask_total,
 
 def plot_mask_cell_individual_3Dstatic(cell_i,track, cog, features, mask_total,
                                field_contour, field_filled,
-                               axes=plt.gca(),xlim=None,ylim=None,
+                               axes=None,xlim=None,ylim=None,
                                label_field_contour=None, cmap_field_contour='Blues',norm_field_contour=None,
                                linewidths_contour=0.8,contour_labels=False,
                                vmin_field_contour=0,vmax_field_contour=50,levels_field_contour=None,nlevels_field_contour=10,
@@ -1201,22 +1201,22 @@ def plot_mask_cell_track_static_timeseries(cell,track, cog, features, mask_total
 
 
 
-def plot_lifetime_histogram(track,axes=plt.gca(),bin_edges=np.arange(0,200,20),density=False,**kwargs):
+def plot_lifetime_histogram(track,axes=None,bin_edges=np.arange(0,200,20),density=False,**kwargs):
     hist, bin_edges = lifetime_histogram(track,bin_edges=bin_edges,density=density)
     plot_hist=axes.plot(bin_edges[:-1]+0.5*np.diff(bin_edges), hist,**kwargs)
     return plot_hist
 
-def plot_lifetime_histogram_bar(track,axes=plt.gca(),bin_edges=np.arange(0,200,20),density=False,width_bar=1,shift=0.5,**kwargs):
+def plot_lifetime_histogram_bar(track,axes=None,bin_edges=np.arange(0,200,20),density=False,width_bar=1,shift=0.5,**kwargs):
     hist, bin_edges = lifetime_histogram(track,bin_edges=bin_edges,density=density)
     plot_hist=axes.bar(bin_edges[:-1]+0.5*np.diff(bin_edges)+shift,**kwargs)
     return plot_hist
 
-def plot_histogram_cellwise(track,bin_edges,variable,quantity,axes=plt.gca(),density=False,**kwargs):
+def plot_histogram_cellwise(track,bin_edges,variable,quantity,axes=None,density=False,**kwargs):
     hist, bin_edges = histogram_cellwise(track,bin_edges=bin_edges,variable=variable,quantity=quantity,density=density)
     plot_hist=axes.plot(bin_edges[:-1]+0.5*np.diff(bin_edges), hist,**kwargs)
     return plot_hist
 
-def plot_histogram_featurewise(Track,bin_edges,variable,axes=plt.gca(),density=False,**kwargs):
+def plot_histogram_featurewise(Track,bin_edges,variable,axes=None,density=False,**kwargs):
     hist, bin_edges = histogram_featurewise(Track,bin_edges=bin_edges,variable=variable,density=density)
     plot_hist=axes.plot(bin_edges[:-1]+0.5*np.diff(bin_edges), hist,**kwargs)
     return plot_hist
