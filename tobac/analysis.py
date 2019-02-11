@@ -178,9 +178,12 @@ def haversine(x, y):
                                    np.cos(lat1) * np.cos(lat2) * (np.sin((lon2 - lon1) / 2)) ** 2))
     return arclen * RADIUS_EARTH
 
-
 def calculate_distance(feature_1,feature_2,method_distance=None):
-    
+    """Computes distance between two features based on either lat/lon coordinates or x/y coordinates
+    :param feature_1: first feature or points as array, each as array of latitude, longitude in degrees
+    :param feature_2: second feature or points as array, each as array of latitude, longitude in degrees
+    :return: distance between the two features in metres
+    """
     if method_distance is None:
         if ('projection_x_coordinate' in feature_1) and ('projection_y_coordinate' in feature_1) and ('projection_x_coordinate' in feature_2) and ('projection_y_coordinate' in feature_2) :
             method_distance='xy'
@@ -191,38 +194,44 @@ def calculate_distance(feature_1,feature_2,method_distance=None):
 
 
     if method_distance=='xy':
-            distance=np.sqrt((feature_1['projection_x_coordinate'].values-feature_2['projection_x_coordinate'].values)**2
-                     +(feature_1['projection_y_coordinate'].values-feature_2['projection_y_coordinate'].values)**2)
+            distance=np.sqrt((feature_1['projection_x_coordinate']-feature_2['projection_x_coordinate'])**2
+                     +(feature_1['projection_y_coordinate']-feature_2['projection_y_coordinate'])**2)
     elif method_distance=='latlon':
-            distance=1000*haversine(np.array([feature_1['latitude'].values,feature_1['longitude'].values]),np.array([feature_2['latitude'].values,feature_2['longitude'].values]))
+            distance=1000*haversine(np.array([feature_1['latitude'],feature_1['longitude']]),np.array([feature_2['latitude'],feature_2['longitude']]))
     else:
         raise ValueError('method undefined')
     return distance
 
-def calculate_velocity(feature_old,feature_new,method_distance=None):
+def calculate_velocity_individual(feature_old,feature_new,method_distance=None):
     distance=calculate_distance(feature_old,feature_new,method_distance=method_distance)
     diff_time=((feature_new['time']-feature_old['time']).total_seconds())
     velocity=distance/diff_time
     return velocity
 
-def velocity_histogram(Track,bin_edges=np.arange(0,30,1),density=False,method_distance=None,return_values=False):
-    for cell_i,Track_i in Track.groupby('cell'):
-        index=Track_i.index.values
+def calculate_velocity(track,method_distance=None):
+    for cell_i,track_i in track.groupby('cell'):
+        index=track_i.index.values
         for i,index_i in enumerate(index[:-1]):
-            velocity=calculate_velocity(Track_i.loc[index[i]],Track_i.loc[index[i+1]],method_distance=method_distance)
-            Track.at[index_i,'v']=velocity
-    velocities=Track['v'].values
+            velocity=calculate_velocity_individual(track_i.loc[index[i]],track_i.loc[index[i+1]],method_distance=method_distance)
+            track.at[index_i,'v']=velocity
+    return track
+
+def velocity_histogram(track,bin_edges=np.arange(0,30,1),density=False,method_distance=None,return_values=False):
+    if 'v' not in track.columns:
+        logging.info('calculate velocities')
+        track=calculate_velocity(track)
+    velocities=track['v'].values
     hist, bin_edges = np.histogram(velocities[~np.isnan(velocities)], bin_edges,density=density)
     if return_values:
         return hist,bin_edges,velocities
     else:
         return hist,bin_edges
 
-
-def nearestneighbordistance_histogram(features,bin_edges=np.arange(0,30000,500),density=False,method_distance=None,return_values=False):
+def calculate_nearestneighbordistance(features,method_distance=None):
     from itertools import combinations
     features['min_distance']=np.nan
     for time_i,features_i in features.groupby('time'):
+            logging.debug(str(time_i))
             indeces=combinations(features_i.index.values,2)
             #Loop over combinations to remove features that are closer together than min_distance and keep larger one (either higher threshold or larger area)
             distances=[]
@@ -235,6 +244,12 @@ def nearestneighbordistance_histogram(features,bin_edges=np.arange(0,30000,500),
                 for i in features_i.index:
                     min_distance=distances.loc[(distances['index_1']==i) | (distances['index_2']==i),'distance'].min()
                     features.at[i,'min_distance']=min_distance
+    return features
+
+def nearestneighbordistance_histogram(features,bin_edges=np.arange(0,30000,500),density=False,method_distance=None,return_values=False):
+    if 'min_distance' not in features.columns:
+        logging.debug('calculate nearest neighbor distances')
+        features=calculate_nearestneighbordistance(features,method_distance=method_distance)
     distances=features['min_distance'].values
     hist, bin_edges = np.histogram(distances[~np.isnan(distances)], bin_edges,density=density)
     if return_values:
@@ -243,16 +258,16 @@ def nearestneighbordistance_histogram(features,bin_edges=np.arange(0,30000,500),
         return hist,bin_edges
 
 def calculate_area(features,mask):
-    from .utils import mask_features_surface,mask_features
+    from tobac.utils import mask_features_surface,mask_features
     from iris import Constraint
     from iris.analysis.cartography import area_weights
     
     features['area']=np.nan
     
     mask_coords=[coord.name() for coord in mask.coords()]
-    if ('projection_x_coordinate' in features) and ('projection_y_coordinate' in features) and ('projection_x_coordinate' in mask_coords) and ('projection_y_coordinate' in mask_coords):
+    if ('projection_x_coordinate' in features.columns) and ('projection_y_coordinate' in features.columns) and ('projection_x_coordinate' in mask_coords) and ('projection_y_coordinate' in mask_coords):
         method_area='xy'
-    elif ('latitude' in features) and ('longitude' in features) and ('latitude' in mask_coords) and ('longitude' in mask_coords):
+    elif ('latitude' in features.columns) and ('longitude' in features.columns) and ('latitude' in mask_coords) and ('longitude' in mask_coords):
         if mask.coord('latitude').ndim==1:
             method_area='latlon'
         else:
@@ -261,11 +276,10 @@ def calculate_area(features,mask):
         raise ValueError('either latitude/longitude or projection_x_coordinate/projection_y_coordinate have to be present to calculate distances')
 
     for time_i,features_i in features.groupby('time'):
+        loggin.debug(str(time_i))
         constraint_time = Constraint(time=time_i)
         mask_i=mask.extract(constraint_time)
-        
-    
-    
+
         if method_area=='xy':
             if not (mask.coord('projection_x_coordinate').has_bounds() and mask.coord('projection_y_coordinate').has_bounds()):
                 mask.coord('projection_x_coordinate').guess_bounds()
@@ -286,20 +300,21 @@ def calculate_area(features,mask):
             area_feature=np.sum(area*(mask_i_surface.data>0))
             features.at[i,'area']=area_feature
     return features
-#
-#
+
 def area_histogram(features,mask,bin_edges=np.arange(0,30000,500),
                    density=False,method_distance=None,
                    return_values=False,representative_area=False):
-    if not 'area' in features:
-        features=calculate_area(features,mask)
-        
+    if 'area' not in features.columns:
+        logging.info('calculate area')
+        features=calculate_area(features)
     areas=features['area'].values
+    # restrict to non NaN values:
+    areas=areas[~np.isnan(areas)]
     if representative_area:
         weights=areas
     else:
         weights=None
-    hist, bin_edges = np.histogram(areas[~np.isnan(areas)], bin_edges,density=density,weights=weights)   
+    hist, bin_edges = np.histogram(areas, bin_edges,density=density,weights=weights)   
     bin_centers=bin_edges[:-1]+0.5*np.diff(bin_edges)
 
     if return_values:
