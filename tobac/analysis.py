@@ -154,21 +154,15 @@ def lifetime_histogram(Track,bin_edges=np.arange(0,200,20),density=False):
     hist, bin_edges = np.histogram(minutes, bin_edges,density=density)
     return hist,bin_edges
 
-def haversine(x, y):
-    """Computes the Haversine distance in kilometres between two points
-    :param x: first point or points as array, each as array of latitude, longitude in degrees
-    :param y: second point or points as array, each as array of latitude, longitude in degrees
+def haversine(lat1,lon1,lat2,lon2):
+    """Computes the Haversine distance in kilometres between two points (based on implementation CIS https://github.com/cedadev/cis)
+    :param lat1: first point or points as array, each as array of latitude in degrees
+    :param lon1: first point or points as array, each as array of longitude in degrees
+    :param lat2: second point or points as array, each as array of latitude in degrees
+    :param lon2: second point or points as array, each as array of longitude in degrees
     :return: distance between the two points in kilometres
     """
     RADIUS_EARTH = 6378.0
-    if x.ndim == 1:
-        lat1, lon1 = x[1], x[0]
-    else:
-        lat1, lon1 = x[:, 1], x[:, 0]
-    if y.ndim == 1:
-        lat2, lon2 = y[1], y[0]
-    else:
-        lat2, lon2 = y[:, 1], y[:, 0]
     lat1 = np.radians(lat1)
     lat2 = np.radians(lat2)
     lon1 = np.radians(lon1)
@@ -191,12 +185,11 @@ def calculate_distance(feature_1,feature_2,method_distance=None):
         else:
             raise ValueError('either latitude/longitude or projection_x_coordinate/projection_y_coordinate have to be present to calculate distances')
 
-
     if method_distance=='xy':
             distance=np.sqrt((feature_1['projection_x_coordinate']-feature_2['projection_x_coordinate'])**2
                      +(feature_1['projection_y_coordinate']-feature_2['projection_y_coordinate'])**2)
     elif method_distance=='latlon':
-            distance=1000*haversine(np.array([feature_1['latitude'],feature_1['longitude']]),np.array([feature_2['latitude'],feature_2['longitude']]))
+            distance=1000*haversine(feature_1['latitude'],feature_1['longitude'],feature_2['latitude'],feature_2['longitude'])
     else:
         raise ValueError('method undefined')
     return distance
