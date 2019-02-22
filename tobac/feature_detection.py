@@ -59,7 +59,7 @@ def feature_detection_multithreshold(field_in,
     
     for i_time,data_i in enumerate(data_time):
         time_i=data_i.coord('time').units.num2date(data_i.coord('time').points[0])
-        track_data = data_i.data
+        track_data = data_i.core_data()
         
         track_data=gaussian_filter(track_data, sigma=sigma_threshold) #smooth data slightly to create rounded, continuous field
         # create empty lists to store regions and features for individual timestep
