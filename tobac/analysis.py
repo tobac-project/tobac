@@ -248,6 +248,16 @@ def nearestneighbordistance_histogram(features,bin_edges=np.arange(0,30000,500),
         return hist,bin_edges,distances
     else:
         return hist,bin_edges
+    
+# Treatment of 2D lat/lon coordinates to be added:
+# def calculate_areas_2Dlatlon(latitude_coord,longitude_coord):
+#     lat=latitude_coord.core_data()
+#     lon=longitude_coord.core_data()
+#     area=np.zeros(lat.shape)
+#     dx=np.zeros(lat.shape)
+#     dy=np.zeros(lat.shape)
+    
+#     return area
 
 def calculate_area(features,mask,method_area=None):
     from tobac.utils import mask_features_surface,mask_features
@@ -258,13 +268,10 @@ def calculate_area(features,mask,method_area=None):
     
     mask_coords=[coord.name() for coord in mask.coords()]
     if method_area is None:
-        if ('projection_x_coordinate' in features.columns) and ('projection_y_coordinate' in features.columns) and ('projection_x_coordinate' in mask_coords) and ('projection_y_coordinate' in mask_coords):
+        if ('projection_x_coordinate' in mask_coords) and ('projection_y_coordinate' in mask_coords):
             method_area='xy'
-        elif ('latitude' in features.columns) and ('longitude' in features.columns) and ('latitude' in mask_coords) and ('longitude' in mask_coords):
-            if mask.coord('latitude').ndim==1:
+        elif ('latitude' in mask_coords) and ('longitude' in mask_coords):
                 method_area='latlon'
-            else:
-                raise ValueError('2D latitude/longitude coordinates not supported')
         else:
             raise ValueError('either latitude/longitude or projection_x_coordinate/projection_y_coordinate have to be present to calculate distances')
 
@@ -279,10 +286,17 @@ def calculate_area(features,mask,method_area=None):
                 mask.coord('projection_y_coordinate').guess_bounds()
             area=np.outer(np.diff(mask.coord('projection_x_coordinate').bounds,axis=1),np.diff(mask.coord('projection_y_coordinate').bounds,axis=1))
         elif method_area=='latlon':
-            if not (mask.coord('latitude').has_bounds() and mask.coord('longitude').has_bounds()):
-                 mask.coord('latitude').guess_bounds()
-                 mask.coord('longitude').guess_bounds()
-            area=area_weights(mask,normalize=False)
+            if (mask.coord('latitude').ndim==1) and (mask.coord('latitude').ndim==1):
+                if not (mask.coord('latitude').has_bounds() and mask.coord('longitude').has_bounds()):
+                    mask.coord('latitude').guess_bounds()
+                    mask.coord('longitude').guess_bounds()
+                area=area_weights(mask,normalize=False)
+            elif mask.coord('latitude').ndim==2 and mask.coord('longitude').ndim==2:
+                raise ValueError('2D latitude/longitude coordinates not supported yet')
+                # area=calculate_areas_2Dlatlon(mask.coord('latitude'),mask.coord('longitude'))
+            else:
+                raise ValueError('latitude/longitude coordinate shape not supported')
+
         else:
             raise ValueError('method undefined')
         for i in features_i.index:
