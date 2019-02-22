@@ -160,22 +160,21 @@ def haversine(x, y):
     :param y: second point or points as array, each as array of latitude, longitude in degrees
     :return: distance between the two points in kilometres
     """
-    import math
     RADIUS_EARTH = 6378.0
     if x.ndim == 1:
-        lat1, lon1 = x[0], x[1]
+        lat1, lon1 = x[1], x[0]
     else:
-        lat1, lon1 = x[:, 0], x[:, 1]
+        lat1, lon1 = x[:, 1], x[:, 0]
     if y.ndim == 1:
-        lat2, lon2 = y[0], y[1]
+        lat2, lon2 = y[1], y[0]
     else:
-        lat2, lon2 = y[:, 0], y[:, 1]
-    lat1 = lat1 * math.pi / 180
-    lat2 = lat2 * math.pi / 180
-    lon1 = lon1 * math.pi / 180
-    lon2 = lon2 * math.pi / 180
-    arclen = 2 * np.arcsin(np.sqrt((np.sin((lat2 - lat1) / 2)) ** 2 +
-                                   np.cos(lat1) * np.cos(lat2) * (np.sin((lon2 - lon1) / 2)) ** 2))
+        lat2, lon2 = y[:, 1], y[:, 0]
+    lat1 = np.radians(lat1)
+    lat2 = np.radians(lat2)
+    lon1 = np.radians(lon1)
+    lon2 = np.radians(lon2)
+    #print(lat1,lat2,lon1,lon2)
+    arclen = 2 * np.arcsin(np.sqrt((np.sin((lat2 - lat1) / 2)) ** 2 + np.cos(lat1) * np.cos(lat2) * (np.sin((lon2 - lon1) / 2)) ** 2))
     return arclen * RADIUS_EARTH
 
 def calculate_distance(feature_1,feature_2,method_distance=None):
