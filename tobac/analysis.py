@@ -257,7 +257,7 @@ def nearestneighbordistance_histogram(features,bin_edges=np.arange(0,30000,500),
     else:
         return hist,bin_edges
 
-def calculate_area(features,mask):
+def calculate_area(features,mask,method_area=None):
     from tobac.utils import mask_features_surface,mask_features
     from iris import Constraint
     from iris.analysis.cartography import area_weights
@@ -265,18 +265,19 @@ def calculate_area(features,mask):
     features['area']=np.nan
     
     mask_coords=[coord.name() for coord in mask.coords()]
-    if ('projection_x_coordinate' in features.columns) and ('projection_y_coordinate' in features.columns) and ('projection_x_coordinate' in mask_coords) and ('projection_y_coordinate' in mask_coords):
-        method_area='xy'
-    elif ('latitude' in features.columns) and ('longitude' in features.columns) and ('latitude' in mask_coords) and ('longitude' in mask_coords):
-        if mask.coord('latitude').ndim==1:
-            method_area='latlon'
+    if method_area is None:
+        if ('projection_x_coordinate' in features.columns) and ('projection_y_coordinate' in features.columns) and ('projection_x_coordinate' in mask_coords) and ('projection_y_coordinate' in mask_coords):
+            method_area='xy'
+        elif ('latitude' in features.columns) and ('longitude' in features.columns) and ('latitude' in mask_coords) and ('longitude' in mask_coords):
+            if mask.coord('latitude').ndim==1:
+                method_area='latlon'
+            else:
+                raise ValueError('2D latitude/longitude coordinates not supported')
         else:
-            raise ValueError('2D latitude/longitude coordinates not supported')
-    else:
-        raise ValueError('either latitude/longitude or projection_x_coordinate/projection_y_coordinate have to be present to calculate distances')
+            raise ValueError('either latitude/longitude or projection_x_coordinate/projection_y_coordinate have to be present to calculate distances')
 
     for time_i,features_i in features.groupby('time'):
-        loggin.debug(str(time_i))
+        logging.debug(str(time_i))
         constraint_time = Constraint(time=time_i)
         mask_i=mask.extract(constraint_time)
 
@@ -302,11 +303,11 @@ def calculate_area(features,mask):
     return features
 
 def area_histogram(features,mask,bin_edges=np.arange(0,30000,500),
-                   density=False,method_distance=None,
+                   density=False,method_area=None,
                    return_values=False,representative_area=False):
     if 'area' not in features.columns:
         logging.info('calculate area')
-        features=calculate_area(features)
+        features=calculate_area(features,method_area)
     areas=features['area'].values
     # restrict to non NaN values:
     areas=areas[~np.isnan(areas)]
