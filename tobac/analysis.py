@@ -274,31 +274,30 @@ def calculate_area(features,mask,method_area=None):
                 method_area='latlon'
         else:
             raise ValueError('either latitude/longitude or projection_x_coordinate/projection_y_coordinate have to be present to calculate distances')
-
+    logging.debug('calculating area using method '+ method_area)
+    if method_area=='xy':
+        if not (mask.coord('projection_x_coordinate').has_bounds() and mask.coord('projection_y_coordinate').has_bounds()):
+            mask.coord('projection_x_coordinate').guess_bounds()
+            mask.coord('projection_y_coordinate').guess_bounds()
+        area=np.outer(np.diff(mask.coord('projection_x_coordinate').bounds,axis=1),np.diff(mask.coord('projection_y_coordinate').bounds,axis=1))
+    elif method_area=='latlon':
+        if (mask.coord('latitude').ndim==1) and (mask.coord('latitude').ndim==1):
+            if not (mask.coord('latitude').has_bounds() and mask.coord('longitude').has_bounds()):
+                mask.coord('latitude').guess_bounds()
+                mask.coord('longitude').guess_bounds()
+            area=area_weights(mask,normalize=False)
+        elif mask.coord('latitude').ndim==2 and mask.coord('longitude').ndim==2:
+            raise ValueError('2D latitude/longitude coordinates not supported yet')
+            # area=calculate_areas_2Dlatlon(mask.coord('latitude'),mask.coord('longitude'))
+        else:
+            raise ValueError('latitude/longitude coordinate shape not supported')
+    else:
+        raise ValueError('method undefined')
+                  
     for time_i,features_i in features.groupby('time'):
-        logging.debug(str(time_i))
+        logging.debug('timestep:'+ str(time_i))
         constraint_time = Constraint(time=time_i)
         mask_i=mask.extract(constraint_time)
-
-        if method_area=='xy':
-            if not (mask.coord('projection_x_coordinate').has_bounds() and mask.coord('projection_y_coordinate').has_bounds()):
-                mask.coord('projection_x_coordinate').guess_bounds()
-                mask.coord('projection_y_coordinate').guess_bounds()
-            area=np.outer(np.diff(mask.coord('projection_x_coordinate').bounds,axis=1),np.diff(mask.coord('projection_y_coordinate').bounds,axis=1))
-        elif method_area=='latlon':
-            if (mask.coord('latitude').ndim==1) and (mask.coord('latitude').ndim==1):
-                if not (mask.coord('latitude').has_bounds() and mask.coord('longitude').has_bounds()):
-                    mask.coord('latitude').guess_bounds()
-                    mask.coord('longitude').guess_bounds()
-                area=area_weights(mask,normalize=False)
-            elif mask.coord('latitude').ndim==2 and mask.coord('longitude').ndim==2:
-                raise ValueError('2D latitude/longitude coordinates not supported yet')
-                # area=calculate_areas_2Dlatlon(mask.coord('latitude'),mask.coord('longitude'))
-            else:
-                raise ValueError('latitude/longitude coordinate shape not supported')
-
-        else:
-            raise ValueError('method undefined')
         for i in features_i.index:
             if len(mask_i.shape)==3:
                 mask_i_surface = mask_features_surface(mask_i, features_i.loc[i,'feature'], z_coord='model_level_number')
