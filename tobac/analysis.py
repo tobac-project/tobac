@@ -148,12 +148,16 @@ def cog_cell(cell,Tracks=None,M_total=None,M_liquid=None,
     logging.debug('individual COG calculated and saved to '+ savedir_cell)
 
 
-def lifetime_histogram(Track,bin_edges=np.arange(0,200,20),density=False):
+def lifetime_histogram(Track,bin_edges=np.arange(0,200,20),density=False,return_values=False):
     Track_cell=Track.groupby('cell')
     minutes=(Track_cell['time_cell'].max()/pd.Timedelta(minutes=1)).values
     hist, bin_edges = np.histogram(minutes, bin_edges,density=density)
-    return hist,bin_edges
-
+    bin_centers=bin_edges[:-1]+0.5*np.diff(bin_edges)
+    if return_values:
+        return hist,bin_edges,bin_centers,minutes
+    else:
+        return hist,bin_edges,bin_centers
+    
 def haversine(lat1,lon1,lat2,lon2):
     """Computes the Haversine distance in kilometres between two points (based on implementation CIS https://github.com/cedadev/cis)
     :param lat1: first point or points as array, each as array of latitude in degrees
