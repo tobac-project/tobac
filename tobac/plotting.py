@@ -1,3 +1,4 @@
+import cartopy
 import matplotlib.pyplot as plt
 import logging
 from .analysis import lifetime_histogram
