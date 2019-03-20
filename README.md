@@ -1,4 +1,4 @@
-tobac
+tobac - Tracking and Object-based Analysis of Clouds
 ======
 [![Documentation Status](https://readthedocs.org/projects/tobac/badge/?version=latest)](https://tobac.readthedocs.io/en/latest/?badge=latest)
 
