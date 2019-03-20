@@ -9,3 +9,4 @@ iris
 xarray 
 cf_units
 cartopy
+trackpy
