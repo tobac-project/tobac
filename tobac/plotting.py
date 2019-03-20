@@ -40,7 +40,7 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
                            plot_marker=True,marker_track='x',markersize_track=4,
                            plot_number=True,
                            plot_features=False,marker_feature=None,markersize_feature=None,
-                           title=None,
+                           title=None,title_str=None,
                            vmin=None,vmax=None,n_levels=50,
                            cmap='viridis',extend='neither',
                            orientation_colorbar='horizontal',pad_colorbar=0.05,
@@ -59,21 +59,20 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
         raise ValueError('axes had to be cartopy.mpl.geoaxes.GeoAxesSubplot')
 
     
-    datestring=field.coord('time').units.num2date(field.coord('time').points[0]).strftime('%Y-%m-%d %H:%M:%S')
-    if title is None:
-        titlestring=datestring
-    elif type(title is str):
-        titlestring=title+ '   ' + datestring
-    else:
-        raise ValueError('title must be str')
-    axes.set_title(titlestring,fontsize=10,horizontalalignment='left',loc='left')
+    datestr=field.coord('time').units.num2date(field.coord('time').points[0]).strftime('%Y-%m-%d %H:%M:%S')
+    if title is 'datestr':
+        if title_str is None:
+            titlestring=datestr
+        elif type(title_str is str):
+            titlestring=title+ '   ' + datestr
+        axes.set_title(titlestring,horizontalalignment='left',loc='left')
     
     gl = axes.gridlines(draw_labels=True)
     majorLocator = MaxNLocator(nbins=5,steps=[1,2,5,10])
     gl.xlocator=majorLocator
     gl.ylocator=majorLocator
     gl.xformatter = LONGITUDE_FORMATTER
-    axes.tick_params(axis='both', which='major', labelsize=6)
+    axes.tick_params(axis='both', which='major')
     gl.yformatter = LATITUDE_FORMATTER
     gl.xlabels_top = False
     gl.ylabels_right = False
