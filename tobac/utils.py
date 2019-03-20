@@ -83,11 +83,9 @@ def mask_cube(cube_in,mask):
     cube_out.data=ma.array(cube_in.data,mask=mask_array)
     return cube_out
 
-def mask_cell(Mask,cell,track,masked=False):
+def mask_cell(mask,cell,track,masked=False):
     ''' create mask for specific cell
     Input:
-    variable_cube:     iris.cube.Cube 
-                       unmasked data cube
     mask:              iris.cube.Cube 
                        cube containing mask (int id for tacked volumes 0 everywhere else)
     Output:
@@ -95,14 +93,12 @@ def mask_cell(Mask,cell,track,masked=False):
                        Masked cube for untracked volume
     '''
     feature_ids=track.loc[track['cell']==cell,'feature'].values
-    Mask_i=mask_features(Mask,feature_ids,masked=masked)
-    return Mask_i   
+    mask_i=mask_features(mask,feature_ids,masked=masked)
+    return mask_i   
 
-def mask_cell_surface(Mask,cell,track,masked=False,z_coord='model_level_number'):
-    ''' Mask cube for untracked volume 
+def mask_cell_surface(mask,cell,track,masked=False,z_coord='model_level_number'):
+    '''Create surface projection of mask for individual cell
     Input:
-    variable_cube:     iris.cube.Cube 
-                       unmasked data cube
     mask:              iris.cube.Cube 
                        cube containing mask (int id for tacked volumes 0 everywhere else)
     Output:
@@ -110,14 +106,12 @@ def mask_cell_surface(Mask,cell,track,masked=False,z_coord='model_level_number')
                        Masked cube for untracked volume
     '''
     feature_ids=track.loc[track['cell']==cell,'feature'].values
-    Mask_i_surface=mask_features_surface(Mask,feature_ids,masked=masked,z_coord=z_coord)
-    return Mask_i_surface
+    mask_i_surface=mask_features_surface(mask,feature_ids,masked=masked,z_coord=z_coord)
+    return mask_i_surface
 
-def mask_cell_columns(Mask,cell,track,masked=False,z_coord='model_level_number'):
-    ''' Mask cube for untracked volume 
+def mask_cell_columns(mask,cell,track,masked=False,z_coord='model_level_number'):
+    '''Create mask with entire columns for individual cell
     Input:
-    variable_cube:     iris.cube.Cube 
-                       unmasked data cube
     mask:              iris.cube.Cube 
                        cube containing mask (int id for tacked volumes 0 everywhere else)
     Output:
@@ -125,8 +119,8 @@ def mask_cell_columns(Mask,cell,track,masked=False,z_coord='model_level_number')
                        Masked cube for untracked volume
     '''
     feature_ids=track.loc[track['cell']==cell].loc['feature']
-    Mask_i=mask_features_columns(Mask,feature_ids,masked=masked,z_coord=z_coord)
-    return Mask_i
+    mask_i=mask_features_columns(mask,feature_ids,masked=masked,z_coord=z_coord)
+    return mask_i
 
 def mask_cube_features(variable_cube,mask,feature_ids):
     ''' Mask cube for tracked volume of an individual cell   
@@ -150,11 +144,9 @@ def mask_cube_features(variable_cube,mask,feature_ids):
 
 
 
-def mask_features(Mask,feature_ids,masked=False):
-    ''' create mask for specific cell
+def mask_features(mask,feature_ids,masked=False):
+    ''' create mask for specific features
     Input:
-    variable_cube:     iris.cube.Cube 
-                       unmasked data cube
     mask:              iris.cube.Cube 
                        cube containing mask (int id for tacked volumes 0 everywhere else)
     Output:
@@ -163,13 +155,35 @@ def mask_features(Mask,feature_ids,masked=False):
     '''
     import numpy as np 
     from copy import deepcopy
-    Mask_i=deepcopy(Mask)
-    Mask_i.data[~np.isin(Mask_i.data,feature_ids)]=0
+    mask_i=deepcopy(mask)
+    mask_i.data[~np.isin(mask_i.data,feature_ids)]=0
     if masked:
-        Mask_i.data=np.ma.array(Mask_i.data,mask=Mask_i.data)
-    return Mask_i   
+        mask_i.data=np.ma.array(mask_i.data,mask=mask_i.data)
+    return mask_i   
 
-def mask_features_surface(Mask,feature_ids,masked=False,z_coord='model_level_number'):
+def mask_features_surface(mask,feature_ids,masked=False,z_coord='model_level_number'):
+    ''' create surface mask for individual features 
+    Input:
+    mask:              iris.cube.Cube 
+                       cube containing mask (int id for tacked volumes 0 everywhere else)
+    Output:
+    variable_cube_out: iris.cube.Cube 
+                       Masked cube for untracked volume
+    '''
+    from iris.analysis import MAX
+    import numpy as np 
+    from copy import deepcopy
+    mask_i=deepcopy(mask)
+    mask_i.data[~np.isin(mask_i.data,feature_ids)]=0
+    for coord in  mask_i.coords():
+        if coord.ndim>1 and mask_i.coord_dims(z_coord)[0] in mask_i.coord_dims(coord):
+            mask_i.remove_coord(coord.name())
+    mask_i_surface=mask_i.collapsed(z_coord,MAX)
+    if masked:
+        mask_i_surface.data=np.ma.array(mask_i_surface.data,mask=mask_i_surface.data)
+    return mask_i_surface    
+
+def mask_features_columns(mask,feature_ids,masked=False,z_coord='model_level_number'):
     ''' Mask cube for untracked volume 
     Input:
     variable_cube:     iris.cube.Cube 
@@ -183,41 +197,19 @@ def mask_features_surface(Mask,feature_ids,masked=False,z_coord='model_level_num
     from iris.analysis import MAX
     import numpy as np 
     from copy import deepcopy
-    Mask_i=deepcopy(Mask)
-    Mask_i.data[~np.isin(Mask_i.data,feature_ids)]=0
-    for coord in  Mask_i.coords():
-        if coord.ndim>1 and Mask_i.coord_dims(z_coord)[0] in Mask_i.coord_dims(coord):
-            Mask_i.remove_coord(coord.name())
-    Mask_i_surface=Mask_i.collapsed(z_coord,MAX)
+    mask_i=deepcopy(mask)
+    mask_i.data[~np.isin(mask_i.data,feature_ids)]=0
+    for coord in  mask_i.coords():
+        if coord.ndim>1 and mask_i.coord_dims(z_coord)[0] in mask_i.coord_dims(coord):
+            mask_i.remove_coord(coord.name())
+    mask_i_surface=mask_i.collapsed(z_coord,MAX)
+    for cube_slice in mask_i.slices(['time','x','y']):
+            cube_slice.data=mask_i_surface.core_data()
     if masked:
-        Mask_i_surface.data=np.ma.array(Mask_i_surface.data,mask=Mask_i_surface.data)
-    return Mask_i_surface    
+        mask_i.data=np.ma.array(mask_i.data,mask=mask_i.data)
+    return mask_i
 
-def mask_features_columns(Mask,feature_ids,masked=False,z_coord='model_level_number'):
-    ''' Mask cube for untracked volume 
-    Input:
-    variable_cube:     iris.cube.Cube 
-                       unmasked data cube
-    mask:              iris.cube.Cube 
-                       cube containing mask (int id for tacked volumes 0 everywhere else)
-    Output:
-    variable_cube_out: iris.cube.Cube 
-                       Masked cube for untracked volume
-    '''
-    from iris.analysis import MAX
-    import numpy as np 
-    from copy import deepcopy
-    Mask_i=deepcopy(Mask)
-    Mask_i.data[~np.isin(Mask_i.data,feature_ids)]=0
-    for coord in  Mask_i.coords():
-        if coord.ndim>1 and Mask_i.coord_dims(z_coord)[0] in Mask_i.coord_dims(coord):
-            Mask_i.remove_coord(coord.name())
-    Mask_i_surface=Mask_i.collapsed(z_coord,MAX)
-    for cube_slice in Mask_i.slices(['time','x','y']):
-            cube_slice.data=Mask_i_surface.core_data()
-    if masked:
-        Mask_i.data=np.ma.array(Mask_i.data,mask=Mask_i.data)
-    return Mask_i
+
 
 
 #def constraint_cell(track,mask_cell,width=None,x=None,):
