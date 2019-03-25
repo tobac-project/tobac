@@ -1,6 +1,6 @@
 tobac - Tracking and Object-based Analysis of Clouds
 ======
-[![Documentation Status](https://readthedocs.org/projects/tobac/badge/?version=latest)](https://tobac.readthedocs.io/en/latest/?badge=latest)
+[![Documentation Status](https://readthedocs.org/projects/tobac/badge/?version=latest)](https://tobac.readthedocs.io/en/latest/?badge=latest)[![Build Status](https://travis-ci.org/climate-processes/tobac.svg?branch=master)](https://travis-ci.org/climate-processes/tobac)
 
 What is it?
 -----------
