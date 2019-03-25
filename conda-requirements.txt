@@ -1,0 +1,12 @@
+# Python dependencies
+numpy
+scipy
+scikit-image
+pandas
+pytables
+matplotlib 
+iris 
+xarray 
+cf_units
+cartopy
+trackpy
