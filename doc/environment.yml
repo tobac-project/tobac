@@ -1,0 +1,16 @@
+name: tobac
+channels:
+  - conda-forge
+dependencies:
+  - python
+  - matplotlib
+  - numpy
+  - iris
+  - trackpy
+  - pandas
+  - pytables
+  - scipy
+  - scikit-image
+  - xarray 
+  - cf_units
+  - cartopy
