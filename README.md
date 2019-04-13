@@ -10,7 +10,7 @@ What is it?
 Documentation
 -------------
 Individual features are indentified as either maxima or minima in a two dimensional time varying field.
-The volume/are associated with the identified object can be determined based on a time-varying 2D or 3D field and a threshold value. The in thre tracking step, the identified objects are linked into consistent trajectories representing the cloud over its lifecycle
+The volume/area associated with the identified objects can be determined based on a time-varying 2D or 3D field and a threshold value. The in thre tracking step, the identified objects are linked into consistent trajectories representing the cloud over its lifecycle
 
 Installation
 ------------
