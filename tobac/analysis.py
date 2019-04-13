@@ -148,34 +148,31 @@ def cog_cell(cell,Tracks=None,M_total=None,M_liquid=None,
     logging.debug('individual COG calculated and saved to '+ savedir_cell)
 
 
-def lifetime_histogram(Track,bin_edges=np.arange(0,200,20),density=False):
+def lifetime_histogram(Track,bin_edges=np.arange(0,200,20),density=False,return_values=False):
     Track_cell=Track.groupby('cell')
     minutes=(Track_cell['time_cell'].max()/pd.Timedelta(minutes=1)).values
     hist, bin_edges = np.histogram(minutes, bin_edges,density=density)
-    return hist,bin_edges
-
-def haversine(x, y):
-    """Computes the Haversine distance in kilometres between two points
-    :param x: first point or points as array, each as array of latitude, longitude in degrees
-    :param y: second point or points as array, each as array of latitude, longitude in degrees
+    bin_centers=bin_edges[:-1]+0.5*np.diff(bin_edges)
+    if return_values:
+        return hist,bin_edges,bin_centers,minutes
+    else:
+        return hist,bin_edges,bin_centers
+    
+def haversine(lat1,lon1,lat2,lon2):
+    """Computes the Haversine distance in kilometres between two points (based on implementation CIS https://github.com/cedadev/cis)
+    :param lat1: first point or points as array, each as array of latitude in degrees
+    :param lon1: first point or points as array, each as array of longitude in degrees
+    :param lat2: second point or points as array, each as array of latitude in degrees
+    :param lon2: second point or points as array, each as array of longitude in degrees
     :return: distance between the two points in kilometres
     """
-    import math
     RADIUS_EARTH = 6378.0
-    if x.ndim == 1:
-        lat1, lon1 = x[0], x[1]
-    else:
-        lat1, lon1 = x[:, 0], x[:, 1]
-    if y.ndim == 1:
-        lat2, lon2 = y[0], y[1]
-    else:
-        lat2, lon2 = y[:, 0], y[:, 1]
-    lat1 = lat1 * math.pi / 180
-    lat2 = lat2 * math.pi / 180
-    lon1 = lon1 * math.pi / 180
-    lon2 = lon2 * math.pi / 180
-    arclen = 2 * np.arcsin(np.sqrt((np.sin((lat2 - lat1) / 2)) ** 2 +
-                                   np.cos(lat1) * np.cos(lat2) * (np.sin((lon2 - lon1) / 2)) ** 2))
+    lat1 = np.radians(lat1)
+    lat2 = np.radians(lat2)
+    lon1 = np.radians(lon1)
+    lon2 = np.radians(lon2)
+    #print(lat1,lat2,lon1,lon2)
+    arclen = 2 * np.arcsin(np.sqrt((np.sin((lat2 - lat1) / 2)) ** 2 + np.cos(lat1) * np.cos(lat2) * (np.sin((lon2 - lon1) / 2)) ** 2))
     return arclen * RADIUS_EARTH
 
 def calculate_distance(feature_1,feature_2,method_distance=None):
@@ -192,12 +189,11 @@ def calculate_distance(feature_1,feature_2,method_distance=None):
         else:
             raise ValueError('either latitude/longitude or projection_x_coordinate/projection_y_coordinate have to be present to calculate distances')
 
-
     if method_distance=='xy':
             distance=np.sqrt((feature_1['projection_x_coordinate']-feature_2['projection_x_coordinate'])**2
                      +(feature_1['projection_y_coordinate']-feature_2['projection_y_coordinate'])**2)
     elif method_distance=='latlon':
-            distance=1000*haversine(np.array([feature_1['latitude'],feature_1['longitude']]),np.array([feature_2['latitude'],feature_2['longitude']]))
+            distance=1000*haversine(feature_1['latitude'],feature_1['longitude'],feature_2['latitude'],feature_2['longitude'])
     else:
         raise ValueError('method undefined')
     return distance
@@ -256,8 +252,18 @@ def nearestneighbordistance_histogram(features,bin_edges=np.arange(0,30000,500),
         return hist,bin_edges,distances
     else:
         return hist,bin_edges
+    
+# Treatment of 2D lat/lon coordinates to be added:
+# def calculate_areas_2Dlatlon(latitude_coord,longitude_coord):
+#     lat=latitude_coord.core_data()
+#     lon=longitude_coord.core_data()
+#     area=np.zeros(lat.shape)
+#     dx=np.zeros(lat.shape)
+#     dy=np.zeros(lat.shape)
+    
+#     return area
 
-def calculate_area(features,mask):
+def calculate_area(features,mask,method_area=None):
     from tobac.utils import mask_features_surface,mask_features
     from iris import Constraint
     from iris.analysis.cartography import area_weights
@@ -265,33 +271,37 @@ def calculate_area(features,mask):
     features['area']=np.nan
     
     mask_coords=[coord.name() for coord in mask.coords()]
-    if ('projection_x_coordinate' in features.columns) and ('projection_y_coordinate' in features.columns) and ('projection_x_coordinate' in mask_coords) and ('projection_y_coordinate' in mask_coords):
-        method_area='xy'
-    elif ('latitude' in features.columns) and ('longitude' in features.columns) and ('latitude' in mask_coords) and ('longitude' in mask_coords):
-        if mask.coord('latitude').ndim==1:
-            method_area='latlon'
+    if method_area is None:
+        if ('projection_x_coordinate' in mask_coords) and ('projection_y_coordinate' in mask_coords):
+            method_area='xy'
+        elif ('latitude' in mask_coords) and ('longitude' in mask_coords):
+                method_area='latlon'
         else:
-            raise ValueError('2D latitude/longitude coordinates not supported')
+            raise ValueError('either latitude/longitude or projection_x_coordinate/projection_y_coordinate have to be present to calculate distances')
+    logging.debug('calculating area using method '+ method_area)
+    if method_area=='xy':
+        if not (mask.coord('projection_x_coordinate').has_bounds() and mask.coord('projection_y_coordinate').has_bounds()):
+            mask.coord('projection_x_coordinate').guess_bounds()
+            mask.coord('projection_y_coordinate').guess_bounds()
+        area=np.outer(np.diff(mask.coord('projection_x_coordinate').bounds,axis=1),np.diff(mask.coord('projection_y_coordinate').bounds,axis=1))
+    elif method_area=='latlon':
+        if (mask.coord('latitude').ndim==1) and (mask.coord('latitude').ndim==1):
+            if not (mask.coord('latitude').has_bounds() and mask.coord('longitude').has_bounds()):
+                mask.coord('latitude').guess_bounds()
+                mask.coord('longitude').guess_bounds()
+            area=area_weights(mask,normalize=False)
+        elif mask.coord('latitude').ndim==2 and mask.coord('longitude').ndim==2:
+            raise ValueError('2D latitude/longitude coordinates not supported yet')
+            # area=calculate_areas_2Dlatlon(mask.coord('latitude'),mask.coord('longitude'))
+        else:
+            raise ValueError('latitude/longitude coordinate shape not supported')
     else:
-        raise ValueError('either latitude/longitude or projection_x_coordinate/projection_y_coordinate have to be present to calculate distances')
-
+        raise ValueError('method undefined')
+                  
     for time_i,features_i in features.groupby('time'):
-        loggin.debug(str(time_i))
+        logging.debug('timestep:'+ str(time_i))
         constraint_time = Constraint(time=time_i)
         mask_i=mask.extract(constraint_time)
-
-        if method_area=='xy':
-            if not (mask.coord('projection_x_coordinate').has_bounds() and mask.coord('projection_y_coordinate').has_bounds()):
-                mask.coord('projection_x_coordinate').guess_bounds()
-                mask.coord('projection_y_coordinate').guess_bounds()
-            area=np.outer(np.diff(mask.coord('projection_x_coordinate').bounds,axis=1),np.diff(mask.coord('projection_y_coordinate').bounds,axis=1))
-        elif method_area=='latlon':
-            if not (mask.coord('latitude').has_bounds() and mask.coord('longitude').has_bounds()):
-                 mask.coord('latitude').guess_bounds()
-                 mask.coord('longitude').guess_bounds()
-            area=area_weights(mask,normalize=False)
-        else:
-            raise ValueError('method undefined')
         for i in features_i.index:
             if len(mask_i.shape)==3:
                 mask_i_surface = mask_features_surface(mask_i, features_i.loc[i,'feature'], z_coord='model_level_number')
@@ -302,11 +312,11 @@ def calculate_area(features,mask):
     return features
 
 def area_histogram(features,mask,bin_edges=np.arange(0,30000,500),
-                   density=False,method_distance=None,
+                   density=False,method_area=None,
                    return_values=False,representative_area=False):
     if 'area' not in features.columns:
         logging.info('calculate area')
-        features=calculate_area(features)
+        features=calculate_area(features,method_area)
     areas=features['area'].values
     # restrict to non NaN values:
     areas=areas[~np.isnan(areas)]
