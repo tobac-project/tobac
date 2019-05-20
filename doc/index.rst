@@ -11,7 +11,9 @@ The project is currently extended by several contributors to include additional 
 .. toctree::
    :maxdepth: 2
    :numbered:
+
    installation
+   data_input
    feature_detection
    segmentation
    linking  
