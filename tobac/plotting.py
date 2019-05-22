@@ -162,8 +162,35 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
                       color=color,marker=marker_track,markersize=markersize_track)
 
     axes.set_extent(axis_extent)
-
     return axes
+
+def animation_mask_field(track,features,field,mask,interval=500,figsize=(10,10),**kwargs):
+    import cartopy.crs as ccrs
+    import matplotlib.pyplot as plt
+    import matplotlib.animation
+    from iris import Constraint
+    fig=plt.figure(figsize=figsize)
+
+    def update(time_in):
+        fig.clf()
+        ax=fig.add_subplot(111,projection=ccrs.PlateCarree())
+        constraint_time = Constraint(time=time_in)
+        field_i=field.extract(constraint_time)
+        mask_i=mask.extract(constraint_time)
+        track_i=track[track['time']==time_in]
+        features_i=features[features['time']==time_in]
+        #fig1,ax1=plt.subplots(ncols=1, nrows=1,figsize=figsize, subplot_kw={'projection': ccrs.PlateCarree()})
+        plot_tobac=plot_tracks_mask_field(track_i,field=field_i,mask=mask_i,features=features_i,
+                                                axes=ax,
+                                                **kwargs)
+
+        ax.set_title(f'{time_in}')
+
+    time=field.coord('time')
+    datetimes=time.units.num2date(time.points)
+    animation = matplotlib.animation.FuncAnimation(fig, update,init_func=None, frames=datetimes,interval=interval, blit=False)
+    return animation
+
 def plot_mask_cell_track_follow(cell,track, cog, features, mask_total,
                                 field_contour, field_filled, 
                                 width=10000,
