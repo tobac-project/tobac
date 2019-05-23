@@ -343,11 +343,15 @@ def histogram_cellwise(Track,variable=None,bin_edges=None,quantity='max',density
     else:
         raise ValueError('quantity unknown, must be max, min or mean')
     hist, bin_edges = np.histogram(variable_cell, bin_edges,density=density)
-    return hist,bin_edges
+    bin_centers=bin_edges[:-1]+0.5*np.diff(bin_edges)
+
+    return hist,bin_edges, bin_centers
 
 def histogram_featurewise(Track,variable=None,bin_edges=None,density=False):
     hist, bin_edges = np.histogram(Track[variable].values, bin_edges,density=density)
-    return hist,bin_edges
+    bin_centers=bin_edges[:-1]+0.5*np.diff(bin_edges)
+
+    return hist,bin_edges, bin_centers
 
 def calculate_overlap(track_1,track_2,min_sum_inv_distance=None,min_mean_inv_distance=None):
     cells_1=track_1['cell'].unique()

@@ -1254,21 +1254,21 @@ def make_map(axes):
     return axes
 
 def plot_lifetime_histogram(track,axes=None,bin_edges=np.arange(0,200,20),density=False,**kwargs):
-    hist, bin_edges = lifetime_histogram(track,bin_edges=bin_edges,density=density)
-    plot_hist=axes.plot(bin_edges[:-1]+0.5*np.diff(bin_edges), hist,**kwargs)
+    hist, bin_edges,bin_centers = lifetime_histogram(track,bin_edges=bin_edges,density=density)
+    plot_hist=axes.plot(bin_centers, hist,**kwargs)
     return plot_hist
 
 def plot_lifetime_histogram_bar(track,axes=None,bin_edges=np.arange(0,200,20),density=False,width_bar=1,shift=0.5,**kwargs):
-    hist, bin_edges = lifetime_histogram(track,bin_edges=bin_edges,density=density)
-    plot_hist=axes.bar(bin_edges[:-1]+0.5*np.diff(bin_edges)+shift,**kwargs)
+    hist, bin_edges, bin_centers = lifetime_histogram(track,bin_edges=bin_edges,density=density)
+    plot_hist=axes.bar(bin_centers+shift,width=width_bar,**kwargs)
     return plot_hist
 
 def plot_histogram_cellwise(track,bin_edges,variable,quantity,axes=None,density=False,**kwargs):
-    hist, bin_edges = histogram_cellwise(track,bin_edges=bin_edges,variable=variable,quantity=quantity,density=density)
-    plot_hist=axes.plot(bin_edges[:-1]+0.5*np.diff(bin_edges), hist,**kwargs)
+    hist, bin_edges,bin_centers = histogram_cellwise(track,bin_edges=bin_edges,variable=variable,quantity=quantity,density=density)
+    plot_hist=axes.plot(bin_centers, hist,**kwargs)
     return plot_hist
 
 def plot_histogram_featurewise(Track,bin_edges,variable,axes=None,density=False,**kwargs):
-    hist, bin_edges = histogram_featurewise(Track,bin_edges=bin_edges,variable=variable,density=density)
-    plot_hist=axes.plot(bin_edges[:-1]+0.5*np.diff(bin_edges), hist,**kwargs)
+    hist, bin_edges, bin_centers = histogram_featurewise(Track,bin_edges=bin_edges,variable=variable,density=density)
+    plot_hist=axes.plot(bin_centers, hist,**kwargs)
     return plot_hist
