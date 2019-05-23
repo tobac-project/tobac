@@ -6,6 +6,7 @@ from .plotting import plot_lifetime_histogram,plot_lifetime_histogram_bar,plot_h
 from .plotting import plot_mask_cell_track_3Dstatic,plot_mask_cell_track_2D3Dstatic
 from .plotting import plot_mask_cell_individual_static,plot_mask_cell_individual_3Dstatic
 from .plotting import animation_mask_field
+from .plotting import make_map, map_tracks
 from .analysis import cell_statistics,cog_cell,lifetime_histogram,histogram_featurewise,histogram_cellwise
 from .analysis import calculate_velocity,calculate_distance,calculate_area
 from .analysis import calculate_nearestneighbordistance
