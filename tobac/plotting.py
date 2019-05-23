@@ -169,8 +169,10 @@ def animation_mask_field(track,features,field,mask,interval=500,figsize=(10,10),
     import matplotlib.pyplot as plt
     import matplotlib.animation
     from iris import Constraint
+    
     fig=plt.figure(figsize=figsize)
-
+    plt.close()
+    
     def update(time_in):
         fig.clf()
         ax=fig.add_subplot(111,projection=ccrs.PlateCarree())
@@ -183,7 +185,6 @@ def animation_mask_field(track,features,field,mask,interval=500,figsize=(10,10),
         plot_tobac=plot_tracks_mask_field(track_i,field=field_i,mask=mask_i,features=features_i,
                                                 axes=ax,
                                                 **kwargs)
-
         ax.set_title(f'{time_in}')
 
     time=field.coord('time')
@@ -1223,9 +1224,34 @@ def plot_mask_cell_track_static_timeseries(cell,track, cog, features, mask_total
         plt.close()
         plt.clf()
 
+def map_tracks(track,axes_extent=None,figsize=(10,10)):
+    import cartopy.crs as ccrs
+    fig1,ax1=plt.subplots(figsize=figsize,subplot_kw={'projection': ccrs.PlateCarree()})
+    for cell in track['cell'].dropna().unique():
+        track_i=track[track['cell']==cell]
+        ax1.plot(track_i['longitude'],track_i['latitude'],'-')
+        ax1.set_extent([-95,-93,29,31])
+        ax1=make_map(ax1)
+    return ax1
 
+def make_map(axes):
+    import matplotlib.ticker as mticker
+    import cartopy.crs as ccrs
+    from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 
+    gl = axes.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
+                      linewidth=2, color='gray', alpha=0.5, linestyle='-')    
+    axes.coastlines('10m')
 
+    gl.xlabels_top = False
+    gl.ylabels_right = False
+    gl.xlocator = mticker.MaxNLocator(nbins=5,min_n_ticks=3,steps=None)
+    gl.ylocator = mticker.MaxNLocator(nbins=5,min_n_ticks=3,steps=None)
+    gl.xformatter = LONGITUDE_FORMATTER
+    gl.yformatter = LATITUDE_FORMATTER
+    #gl.xlabel_style = {'size': 15, 'color': 'gray'}
+    #gl.xlabel_style = {'color': 'red', 'weight': 'bold'}
+    return axes
 
 def plot_lifetime_histogram(track,axes=None,bin_edges=np.arange(0,200,20),density=False,**kwargs):
     hist, bin_edges = lifetime_histogram(track,bin_edges=bin_edges,density=density)
