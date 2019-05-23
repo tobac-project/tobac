@@ -162,8 +162,36 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
                       color=color,marker=marker_track,markersize=markersize_track)
 
     axes.set_extent(axis_extent)
-
     return axes
+
+def animation_mask_field(track,features,field,mask,interval=500,figsize=(10,10),**kwargs):
+    import cartopy.crs as ccrs
+    import matplotlib.pyplot as plt
+    import matplotlib.animation
+    from iris import Constraint
+    
+    fig=plt.figure(figsize=figsize)
+    plt.close()
+    
+    def update(time_in):
+        fig.clf()
+        ax=fig.add_subplot(111,projection=ccrs.PlateCarree())
+        constraint_time = Constraint(time=time_in)
+        field_i=field.extract(constraint_time)
+        mask_i=mask.extract(constraint_time)
+        track_i=track[track['time']==time_in]
+        features_i=features[features['time']==time_in]
+        #fig1,ax1=plt.subplots(ncols=1, nrows=1,figsize=figsize, subplot_kw={'projection': ccrs.PlateCarree()})
+        plot_tobac=plot_tracks_mask_field(track_i,field=field_i,mask=mask_i,features=features_i,
+                                                axes=ax,
+                                                **kwargs)
+        ax.set_title(f'{time_in}')
+
+    time=field.coord('time')
+    datetimes=time.units.num2date(time.points)
+    animation = matplotlib.animation.FuncAnimation(fig, update,init_func=None, frames=datetimes,interval=interval, blit=False)
+    return animation
+
 def plot_mask_cell_track_follow(cell,track, cog, features, mask_total,
                                 field_contour, field_filled, 
                                 width=10000,
@@ -1196,26 +1224,50 @@ def plot_mask_cell_track_static_timeseries(cell,track, cog, features, mask_total
         plt.close()
         plt.clf()
 
+def map_tracks(track,axis_extent=None,figsize=(10,10),axes=None):
+    for cell in track['cell'].dropna().unique():
+        track_i=track[track['cell']==cell]
+        axes.plot(track_i['longitude'],track_i['latitude'],'-')
+        if axis_extent:
+            axes.set_extent(axis_extent)
+        axes=make_map(axes)
+    return axes
 
+def make_map(axes):
+    import matplotlib.ticker as mticker
+    import cartopy.crs as ccrs
+    from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 
+    gl = axes.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
+                      linewidth=2, color='gray', alpha=0.5, linestyle='-')    
+    axes.coastlines('10m')
 
+    gl.xlabels_top = False
+    gl.ylabels_right = False
+    gl.xlocator = mticker.MaxNLocator(nbins=5,min_n_ticks=3,steps=None)
+    gl.ylocator = mticker.MaxNLocator(nbins=5,min_n_ticks=3,steps=None)
+    gl.xformatter = LONGITUDE_FORMATTER
+    gl.yformatter = LATITUDE_FORMATTER
+    #gl.xlabel_style = {'size': 15, 'color': 'gray'}
+    #gl.xlabel_style = {'color': 'red', 'weight': 'bold'}
+    return axes
 
 def plot_lifetime_histogram(track,axes=None,bin_edges=np.arange(0,200,20),density=False,**kwargs):
-    hist, bin_edges = lifetime_histogram(track,bin_edges=bin_edges,density=density)
-    plot_hist=axes.plot(bin_edges[:-1]+0.5*np.diff(bin_edges), hist,**kwargs)
+    hist, bin_edges,bin_centers = lifetime_histogram(track,bin_edges=bin_edges,density=density)
+    plot_hist=axes.plot(bin_centers, hist,**kwargs)
     return plot_hist
 
 def plot_lifetime_histogram_bar(track,axes=None,bin_edges=np.arange(0,200,20),density=False,width_bar=1,shift=0.5,**kwargs):
-    hist, bin_edges = lifetime_histogram(track,bin_edges=bin_edges,density=density)
-    plot_hist=axes.bar(bin_edges[:-1]+0.5*np.diff(bin_edges)+shift,**kwargs)
+    hist, bin_edges, bin_centers = lifetime_histogram(track,bin_edges=bin_edges,density=density)
+    plot_hist=axes.bar(bin_centers+shift,hist,width=width_bar,**kwargs)
     return plot_hist
 
 def plot_histogram_cellwise(track,bin_edges,variable,quantity,axes=None,density=False,**kwargs):
-    hist, bin_edges = histogram_cellwise(track,bin_edges=bin_edges,variable=variable,quantity=quantity,density=density)
-    plot_hist=axes.plot(bin_edges[:-1]+0.5*np.diff(bin_edges), hist,**kwargs)
+    hist, bin_edges,bin_centers = histogram_cellwise(track,bin_edges=bin_edges,variable=variable,quantity=quantity,density=density)
+    plot_hist=axes.plot(bin_centers, hist,**kwargs)
     return plot_hist
 
 def plot_histogram_featurewise(Track,bin_edges,variable,axes=None,density=False,**kwargs):
-    hist, bin_edges = histogram_featurewise(Track,bin_edges=bin_edges,variable=variable,density=density)
-    plot_hist=axes.plot(bin_edges[:-1]+0.5*np.diff(bin_edges), hist,**kwargs)
+    hist, bin_edges, bin_centers = histogram_featurewise(Track,bin_edges=bin_edges,variable=variable,density=density)
+    plot_hist=axes.plot(bin_centers, hist,**kwargs)
     return plot_hist
