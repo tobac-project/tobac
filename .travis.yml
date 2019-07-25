@@ -15,7 +15,6 @@ install:
   - if [[ $TRAVIS_PYTHON_VERSION == 2* ]]; then  export CONDA_BASE="http://repo.continuum.io/miniconda/Miniconda2"; fi
   - if [[ $TRAVIS_PYTHON_VERSION == 3* ]]; then  export CONDA_BASE="http://repo.continuum.io/miniconda/Miniconda3"; fi
   - echo $CONDA_BASE
-  - echo "${CONDA_BASE}-latest-Linux-x86_64.sh"
   - wget "${CONDA_BASE}-latest-Linux-x86_64.sh" -O miniconda.sh
 
   - bash miniconda.sh -b -p $HOME/miniconda
