@@ -3,10 +3,8 @@ language: python
 # choose python versions
 python:
   - "3.6"
-
-env:
-  - TEST_TARGET=unit PYTHON_TARGET=3.6
-  # - TEST_TARGET=integration
+  - "3.7"
+  - "2.7"
 
 install:
 
@@ -14,7 +12,7 @@ install:
   # -----------------
   - if [[ $PYTHON_TARGET == 2* ]]; then
       export CONDA_BASE=http://repo.continuum.io/miniconda/Miniconda2;
-    else
+    elif [[ $PYTHON_TARGET == 3* ]]; then
       export CONDA_BASE=http://repo.continuum.io/miniconda/Miniconda3;
     fi
   - wget ${CONDA_BASE}-latest-Linux-x86_64.sh -O miniconda.sh;
@@ -47,4 +45,5 @@ install:
 # command to run tests
 #script
 script:
+#  - if [[ $PYTHON_TARGET == 2* ]]; then        
   - pytest
