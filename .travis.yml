@@ -2,9 +2,10 @@ language: python
 #sudo: false
 # choose python versions
 python:
+  - "2.6"
+  - "2.7"
   - "3.6"
   - "3.7"
-  - "2.7"
 
 install:
 
