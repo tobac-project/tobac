@@ -1,6 +1,6 @@
 Installation
 ------------
-tobac is written in Python 3, it will not work in a Python 2 installation.
+tobac is now capable of working with both Python 2 and Python 3 (tested for 2.7,3.6 and 3.7) installations.
 
 The follwoing python packages are required (including dependencies of these packages):
    
