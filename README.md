@@ -14,7 +14,7 @@ The volume/area associated with the identified objects can be determined based o
 
 Installation
 ------------
-tobac is now works for both Python 3 and Python 2 installations.
+tobac now works for both Python 3 and Python 2 installations.
 
 Required packages: trackpy scipy numpy iris scikit-learn cartopy pandas pytables 
 
