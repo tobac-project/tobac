@@ -302,10 +302,8 @@ def add_coordinates(t,variable_cube):
     time_in=variable_cube.coord('time')
     time_in_datetime=time_in.units.num2date(time_in.points)
     
-    for i, row in t.iterrows():
-        t.loc[i,'time']=time_in_datetime[int(row['frame'])]
-        t.loc[i,'timestr']=time_in_datetime[int(row['frame'])].strftime('%Y-%m-%d %H:%M:%S')
-
+    t["time"]=time_in_datetime[t['frame']]
+    t["timestr"]=[x.strftime('%Y-%m-%d %H:%M:%S') for x in time_in_datetime[t['frame']]]
 
     # Get list of all coordinates in input cube except for time (already treated):
     coord_names=[coord.name() for coord in  variable_cube.coords()]
@@ -336,68 +334,55 @@ def add_coordinates(t,variable_cube):
         if variable_cube.coord(coord).ndim==1:
 
             if variable_cube.coord_dims(coord)==(hdim_1,):
-                t[coord]=np.nan            
                 f=interp1d(dimvec_1,variable_cube.coord(coord).points,fill_value="extrapolate")
-                for i, row in t.iterrows():
-                    t.loc[i,coord]=float(f(row['hdim_1']))
+                t[coord]=f(t['hdim_1'])
 
             if variable_cube.coord_dims(coord)==(hdim_2,):
-                t[coord]=np.nan            
                 f=interp1d(dimvec_2,variable_cube.coord(coord).points,fill_value="extrapolate")
-                for i, row in t.iterrows():
-                    t.loc[i,coord]=float(f(row['hdim_2']))
+                t[coord]=f(t['hdim_2'])
 
         # interpolate 2D coordinates:
         elif variable_cube.coord(coord).ndim==2:
 
-            t[coord]=np.nan            
             if variable_cube.coord_dims(coord)==(hdim_1,hdim_2):
                 f=interp2d(dimvec_2,dimvec_1,variable_cube.coord(coord).points)
-                for i, row in t.iterrows():
-                    t.loc[i,coord]=float(f(row['hdim_2'],row['hdim_1']))
+                t[coord]=f(t['hdim_2'],t['hdim_1'])
             if variable_cube.coord_dims(coord)==(hdim_2,hdim_1):
                 f=interp2d(dimvec_1,dimvec_2,variable_cube.coord(coord).points)
-                for i, row in t.iterrows():
-                    t.loc[i,coord]=float(f(row['hdim_1'],row['hdim_2']))
+                t[coord]=f(t['hdim_1'],t['hdim_2'])
         
         # interpolate 3D coordinates:            
         # mainly workaround for wrf latitude and longitude (to be fixed in future)
         
         elif variable_cube.coord(coord).ndim==3:
 
-            t[coord]=np.nan
             if variable_cube.coord_dims(coord)==(ndim_time,hdim_1,hdim_2):
                 f=interp2d(dimvec_2,dimvec_1,variable_cube[0,:,:].coord(coord).points)
-                for i, row in t.iterrows():
-                    t.loc[i,coord]=float(f(row['hdim_2'],row['hdim_1']))
+                t[coord]=f(t['hdim_2'],t['hdim_1'])
             
             if variable_cube.coord_dims(coord)==(ndim_time,hdim_2,hdim_1):
                 f=interp2d(dimvec_1,dimvec_2,variable_cube[0,:,:].coord(coord).points)
-                for i, row in t.iterrows():
-                    t.loc[i,coord]=float(f(row['hdim_1'],row['hdim_2']))
+                t[coord]=f(t['hdim_1'],t['hdim_2'])
+
         
             if variable_cube.coord_dims(coord)==(hdim_1,ndim_time,hdim_2):
                 f=interp2d(dimvec_2,dimvec_1,variable_cube[:,0,:].coord(coord).points)
-                for i, row in t.iterrows():
-                    t.loc[i,coord]=float(f(row['hdim_2'],row['hdim_1']))
-                    
+                t[coord]=f(t['hdim_2'],t['hdim_1'])
+
             if variable_cube.coord_dims(coord)==(hdim_1,hdim_2,ndim_time):
                 f=interp2d(dimvec_2,dimvec_1,variable_cube[:,:,0].coord(coord).points)
-                for i, row in t.iterrows():
-                    t.loc[i,coord]=float(f(row['hdim_2'],row['hdim_1']))
-                    
+                t[coord]=f(t['hdim_2'],t['hdim_1'])
+
                     
             if variable_cube.coord_dims(coord)==(hdim_2,ndim_time,hdim_1):
                 f=interp2d(dimvec_1,dimvec_2,variable_cube[:,0,:].coord(coord).points)
-                for i, row in t.iterrows():
-                    t.loc[i,coord]=float(f(row['hdim_1'],row['hdim_2']))
-                    
+                t[coord]=f(t['hdim_1'],t['hdim_2'])
+
             if variable_cube.coord_dims(coord)==(hdim_2,hdim_1,ndim_time):
                 f=interp2d(dimvec_1,dimvec_2,variable_cube[:,:,0].coord(coord).points)
-                for i, row in t.iterrows():
-                    t.loc[i,coord]=float(f(row['hdim_1'],row['hdim_2']))
-        logging.debug('added coord: '+ coord)
+                t[coord]=f(t['hdim_1'],t['hdim_2'])
 
+        logging.debug('added coord: '+ coord)
     return t
 
 def get_bounding_box(x,buffer=1):
