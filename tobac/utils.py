@@ -335,22 +335,23 @@ def add_coordinates(t,variable_cube):
 
             if variable_cube.coord_dims(coord)==(hdim_1,):
                 f=interp1d(dimvec_1,variable_cube.coord(coord).points,fill_value="extrapolate")
-                t[coord]=f(t['hdim_1'])
+                coordinate_points=f(t['hdim_1'])
 
             if variable_cube.coord_dims(coord)==(hdim_2,):
                 f=interp1d(dimvec_2,variable_cube.coord(coord).points,fill_value="extrapolate")
-                t[coord]=f(t['hdim_2'])
+                coordinate_points=f(t['hdim_2'])
 
         # interpolate 2D coordinates:
         elif variable_cube.coord(coord).ndim==2:
 
             if variable_cube.coord_dims(coord)==(hdim_1,hdim_2):
                 f=interp2d(dimvec_2,dimvec_1,variable_cube.coord(coord).points)
-                t[coord]=f(t['hdim_2'],t['hdim_1'])
+                coordinate_points=[f(a,b) for a,b in zip(t['hdim_2'],t['hdim_1'])]
+
             if variable_cube.coord_dims(coord)==(hdim_2,hdim_1):
                 f=interp2d(dimvec_1,dimvec_2,variable_cube.coord(coord).points)
-                t[coord]=f(t['hdim_1'],t['hdim_2'])
-        
+                coordinate_points=[f(a,b) for a,b in zip(t['hdim_1'],t['hdim_2'])]
+
         # interpolate 3D coordinates:            
         # mainly workaround for wrf latitude and longitude (to be fixed in future)
         
@@ -358,29 +359,32 @@ def add_coordinates(t,variable_cube):
 
             if variable_cube.coord_dims(coord)==(ndim_time,hdim_1,hdim_2):
                 f=interp2d(dimvec_2,dimvec_1,variable_cube[0,:,:].coord(coord).points)
-                t[coord]=f(t['hdim_2'],t['hdim_1'])
+                coordinate_points=[f(a,b) for a,b in zip(t['hdim_2'],t['hdim_1'])]
             
             if variable_cube.coord_dims(coord)==(ndim_time,hdim_2,hdim_1):
                 f=interp2d(dimvec_1,dimvec_2,variable_cube[0,:,:].coord(coord).points)
-                t[coord]=f(t['hdim_1'],t['hdim_2'])
+                coordinate_points=[f(a,b) for a,b in zip(t['hdim_1'],t['hdim_2'])]
 
         
             if variable_cube.coord_dims(coord)==(hdim_1,ndim_time,hdim_2):
                 f=interp2d(dimvec_2,dimvec_1,variable_cube[:,0,:].coord(coord).points)
-                t[coord]=f(t['hdim_2'],t['hdim_1'])
+                coordinate_points=[f(a,b) for a,b in zip(t['hdim_2'],t['hdim_1'])]
 
             if variable_cube.coord_dims(coord)==(hdim_1,hdim_2,ndim_time):
                 f=interp2d(dimvec_2,dimvec_1,variable_cube[:,:,0].coord(coord).points)
-                t[coord]=f(t['hdim_2'],t['hdim_1'])
+                coordinate_points=[f(a,b) for a,b in zip(t['hdim_2'],t['hdim1'])]
 
                     
             if variable_cube.coord_dims(coord)==(hdim_2,ndim_time,hdim_1):
                 f=interp2d(dimvec_1,dimvec_2,variable_cube[:,0,:].coord(coord).points)
-                t[coord]=f(t['hdim_1'],t['hdim_2'])
+                coordinate_points=[f(a,b) for a,b in zip(t['hdim_1'],t['hdim_2'])]
 
             if variable_cube.coord_dims(coord)==(hdim_2,hdim_1,ndim_time):
                 f=interp2d(dimvec_1,dimvec_2,variable_cube[:,:,0].coord(coord).points)
-                t[coord]=f(t['hdim_1'],t['hdim_2'])
+                coordinate_points=[f(a,b) for a,b in zip(t['hdim_1'],t['hdim_2'])]
+
+        # write resulting array or list into DataFrame:
+        t[coord]=coordinate_points
 
         logging.debug('added coord: '+ coord)
     return t
