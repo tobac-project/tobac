@@ -206,7 +206,7 @@ def feature_detection_multithreshold_timestep(data_i,i_time,
     list_features_thresholds=pd.DataFrame()
     for i_threshold,threshold_i in enumerate(threshold):
 #         print('theshold:',threshold_i)
-        if i_threshold>0:
+        if (i_threshold>0 and not list_features_thresholds.empty):
             idx_start=list_features_thresholds['idx'].max()+1
         else:
             idx_start=0
