@@ -226,8 +226,8 @@ def feature_detection_multithreshold_timestep(data_i,i_time,
         #else: 
         #    list_features_thresholds.append(None)
 
-        # For multiple threshold, record "parent" feature to be removed from Dataframe later
-        if i_threshold>0:
+        # For multiple threshold, and features found both in the current and previous step, remove "parent" features from Dataframe
+        if (i_threshold>0 and not list_features_thresholds.empty and regions_old):
             # for each threshold value: check if newly found features are surrounded by feature based on less restrictive threshold
             list_features_thresholds=remove_parents(list_features_thresholds,regions_i,regions_old)
         regions_old=regions_i
