@@ -165,3 +165,11 @@ def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,m
 
     logging.debug('Finished segmentation')
     return segmentation_out,features_out
+
+def watershedding_3D(track,field_in,**kwargs):
+    kwargs.pop('method',None)
+    return segmentation_3D(track,field_in,method='watershed',**kwargs)
+
+def watershedding_2D(track,field_in,**kwargs):
+    kwargs.pop('method',None)
+    return segmentation_2D(track,field_in,method='watershed',**kwargs)

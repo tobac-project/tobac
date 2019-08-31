@@ -57,6 +57,17 @@ def test_tracking_coord_order():
     Features=feature_detection_multithreshold(sample_data,dxy,**parameters_features)
     Features_inv=feature_detection_multithreshold(sample_data_inv,dxy_inv,**parameters_features)
 
+    # perform watershedding segmentation
+    parameters_segmentation={}
+    parameters_segmentation['target']='maximum'
+    parameters_segmentation['method']='watershed'
+
+    
+    segmentation_mask,features_segmentation=segmentation(Features,sample_data,dxy=dxy,**parameters_segmentation)
+    segmentation_mask_inv,features_segmentation=segmentation(Features_inv,sample_data_inv,dxy=dxy_inv,**parameters_segmentation)
+    
+    # perform trajectory linking
+
     parameters_linking={}
     parameters_linking['method_linking']='predict'
     parameters_linking['adaptive_stop']=0.2
@@ -69,6 +80,6 @@ def test_tracking_coord_order():
     parameters_linking['method_linking']='predict'
     parameters_linking['v_max']=100
     parameters_linking['d_min']=2000
-    
+
     Track=linking_trackpy(Features,sample_data,dt=dt,dxy=dxy,**parameters_linking)
     Track_inv=linking_trackpy(Features_inv,sample_data_inv,dt=dt_inv,dxy=dxy_inv,**parameters_linking)
