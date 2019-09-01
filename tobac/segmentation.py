@@ -6,6 +6,7 @@ def segmentation_2D(features,field,dxy,threshold=3e-3,target='maximum',level=Non
 
 
 def segmentation_timestep(field_i,features_i,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None):    # Create cube of the same dimensions and coordinates as input data to store mask:        
+    import numpy as np
     from skimage.morphology import watershed
     # from skimage.segmentation import random_walker
     from scipy.ndimage import distance_transform_edt
@@ -124,6 +125,7 @@ def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,m
     
     """
     import numpy as np
+    import pandas as pd
     import logging
     from iris.cube import CubeList
     
