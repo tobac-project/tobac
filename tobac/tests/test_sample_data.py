@@ -2,7 +2,7 @@
 Tests for tobac based on simple sample datasets with moving blobs. These tests should be adapted to be more modular in the future.
 """
 from tobac.testing import make_sample_data_2D_3blobs, make_sample_data_2D_3blobs_inv
-from tobac import feature_detection_multithreshold,linking_trackpy,get_spacings,segmentation
+from tobac import feature_detection_multithreshold,linking_trackpy,get_spacings,segmentation_2D, segmentation_3D
 from iris.analysis import MEAN,MAX,MIN
 from pandas.testing import assert_frame_equal
 from numpy.testing import assert_allclose
@@ -63,8 +63,8 @@ def test_tracking_coord_order():
     parameters_segmentation['method']='watershed'
 
     
-    segmentation_mask,features_segmentation=segmentation(Features,sample_data,dxy=dxy,**parameters_segmentation)
-    segmentation_mask_inv,features_segmentation=segmentation(Features_inv,sample_data_inv,dxy=dxy_inv,**parameters_segmentation)
+    segmentation_mask,features_segmentation=segmentation_2D(Features,sample_data,dxy=dxy,**parameters_segmentation)
+    segmentation_mask_inv,features_segmentation=segmentation_2D(Features_inv,sample_data_inv,dxy=dxy_inv,**parameters_segmentation)
     
     # perform trajectory linking
 
