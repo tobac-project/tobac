@@ -10,14 +10,15 @@ def segmentation_timestep(field_i,features_i,dxy,threshold=3e-3,target='maximum'
     from skimage.morphology import watershed
     # from skimage.segmentation import random_walker
     from scipy.ndimage import distance_transform_edt
-
+    from copy import deepcopy
+    from dask.array import from_array
     
-    features_out_i=features_i
+    features_out_i=deepcopy(features_i)
     segmentation_out_i=1*field_i
     segmentation_out_i.rename('segmentation_mask')
     segmentation_out_i.units=1
 
-    data_i=field_i.data
+    data_i=field_i.core_data()
 
     # mask data outside region above/below threshold and invert data if tracking maxima:
     if target == 'maximum':
@@ -29,7 +30,7 @@ def segmentation_timestep(field_i,features_i,dxy,threshold=3e-3,target='maximum'
     else:
         raise ValueError('unknown type of target')
 
-    markers = np.zeros_like(unmasked).astype(np.int32)
+    markers = np.zeros(unmasked.shape).astype(np.int32)
 
     if field_i.ndim==2: #2D watershedding        
 
@@ -67,10 +68,12 @@ def segmentation_timestep(field_i,features_i,dxy,threshold=3e-3,target='maximum'
         raise ValueError('Segmentations routine only possible with 2 or 3 spatial dimensions')
     
     markers[~unmasked]=0
-
-
+    
+    # Turn into np arrays (not necessary for markers) as dask arrays don't yet seem to work for watershedding algorithm
+    data_i_segmentation=np.array(data_i_segmentation)
+    unmasked=np.array(unmasked)
     if method=='watershed':
-        segmentation_mask_i = watershed(data_i_segmentation,markers.astype(np.int32), mask=unmasked)
+        segmentation_mask_i = watershed(np.array(data_i_segmentation),markers.astype(np.int32), mask=unmasked)
 #        elif method=='random_walker':
 #           segmentation_mask_i=random_walker(data_i_segmentation, markers.astype(np.int32),
 #                                beta=130, mode='bf', tol=0.001, copy=True, multichannel=False, return_full_prob=False, spacing=None)
@@ -90,9 +93,12 @@ def segmentation_timestep(field_i,features_i,dxy,threshold=3e-3,target='maximum'
     # count number of grid cells asoociated to each tracked cell and write that into DataFrame:
     values, count = np.unique(segmentation_mask_i, return_counts=True)
     counts=dict(zip(values, count))
-    for index, row in features_out_i.iterrows():
+    ncells=np.zeros(len(features_out_i))
+    for i,(index,row) in enumerate(features_out_i.iterrows()):
+        feature_i=row['feature']
         if row['feature'] in counts.keys():
-            features_out_i.loc[index,'ncells']=counts[row['feature']]
+            ncells=counts[row['feature']]
+    features_out_i['ncells']=ncells
 
     return segmentation_out_i,features_out_i
 
@@ -149,11 +155,10 @@ def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,m
     segmentation_out_list=CubeList()
     features_out_list=[]
                          
-    features['ncells']=0
     field_time=field.slices_over('time')
     for i,field_i in enumerate(field_time):        
         time_i=field_i.coord('time').units.num2date(field_i.coord('time').points[0])
-        features_i=features[features['time']==time_i]
+        features_i=features.loc[features['time']==time_i]
         segmentation_out_i,features_out_i=segmentation_timestep(field_i,features_i,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance)                 
         segmentation_out_list.append(segmentation_out_i)           
         features_out_list.append(features_out_i)           
