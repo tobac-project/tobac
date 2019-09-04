@@ -5,7 +5,7 @@ def segmentation_2D(features,field,dxy,threshold=3e-3,target='maximum',level=Non
     return segmentation(features,field,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance)
 
 
-def segmentation_timestep(field_i,features_i,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None):    # Create cube of the same dimensions and coordinates as input data to store mask:        
+def segmentation_timestep(field_i,features_i,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,vertical_coord='auto'):    # Create cube of the same dimensions and coordinates as input data to store mask:        
     import numpy as np
     from skimage.morphology import watershed
     # from skimage.segmentation import random_walker
@@ -19,6 +19,14 @@ def segmentation_timestep(field_i,features_i,dxy,threshold=3e-3,target='maximum'
     segmentation_out_i.units=1
 
     data_i=field_i.core_data()
+    
+    #Set level at which to create "Seed" for each cloud and threshold in total water content:
+    # If none, use all levels (later reduced to the ones fulfilling the theshold conditions)
+    if level==None:
+        level=slice(None)
+        
+    if max_distance is not None:
+        max_distance_pixel=np.ceil(max_distance/dxy)
 
     # mask data outside region above/below threshold and invert data if tracking maxima:
     if target == 'maximum':
@@ -102,7 +110,7 @@ def segmentation_timestep(field_i,features_i,dxy,threshold=3e-3,target='maximum'
 
     return segmentation_out_i,features_out_i
 
-def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None):
+def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,vertical_coord='auto'):
     """
     Function using watershedding or random walker to determine cloud volumes associated with tracked updrafts
     
@@ -136,20 +144,13 @@ def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,m
     from iris.cube import CubeList
     
     logging.info('Start watershedding 3D')
-    
-    if not field.ndim==3 or field.ndim==4:
+
+    if not (field.ndim==3 or field.ndim==4):
         raise ValueError('input to segmentation step must be 3D or 4D including a time dimension')
     if 'time' not in [coord.name() for coord in field.coords()]:
         raise ValueError("input to segmentation step must include a dimension named 'time'")
 
     
-    #Set level at which to create "Seed" for each cloud and threshold in total water content:
-    # If none, use all levels (later reduced to the ones fulfilling the theshold conditions)
-    if level==None:
-        level=slice(None)
-        
-    if max_distance is not None:
-        max_distance_pixel=np.ceil(max_distance/dxy)
     
     # CubeList to store individual segmentation masks
     segmentation_out_list=CubeList()
@@ -159,7 +160,7 @@ def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,m
     for i,field_i in enumerate(field_time):        
         time_i=field_i.coord('time').units.num2date(field_i.coord('time').points[0])
         features_i=features.loc[features['time']==time_i]
-        segmentation_out_i,features_out_i=segmentation_timestep(field_i,features_i,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance)                 
+        segmentation_out_i,features_out_i=segmentation_timestep(field_i,features_i,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance,vertical_coord=vertical_coord)                 
         segmentation_out_list.append(segmentation_out_i)           
         features_out_list.append(features_out_i)           
 
