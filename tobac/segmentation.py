@@ -66,11 +66,11 @@ def segmentation_timestep(field_i,features_i,dxy,threshold=3e-3,target='maximum'
             raise ValueError('please specify 1 dimensional vertical coordinate')
             
         for index, row in features_i.iterrows():
-            if ndim_vertical==0:
+            if ndim_vertical[0]==0:
                 markers[:,int(row['hdim_1']), int(row['hdim_2'])]=row['feature']
-            elif ndim_vertical==1:
+            elif ndim_vertical[0]==1:
                 markers[int(row['hdim_1']),:, int(row['hdim_2'])]=row['feature']
-            elif ndim_vertical==2:
+            elif ndim_vertical[0]==2:
                 markers[int(row['hdim_1']), int(row['hdim_2']),:]=row['feature']
     else:
         raise ValueError('Segmentations routine only possible with 2 or 3 spatial dimensions')
