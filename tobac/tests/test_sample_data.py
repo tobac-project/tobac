@@ -1,7 +1,7 @@
 """
 Tests for tobac based on simple sample datasets with moving blobs. These tests should be adapted to be more modular in the future.
 """
-from tobac.testing import make_sample_data_2D_3blobs, make_sample_data_2D_3blobs_inv
+from tobac.testing import make_sample_data_2D_3blobs, make_sample_data_2D_3blobs_inv, make_sample_data_3D_3blobs
 from tobac import feature_detection_multithreshold,linking_trackpy,get_spacings,segmentation_2D, segmentation_3D
 from iris.analysis import MEAN,MAX,MIN
 from pandas.testing import assert_frame_equal
