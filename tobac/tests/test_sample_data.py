@@ -113,7 +113,7 @@ def test_tracking_3D():
     assert_allclose(dt,dt_inv)
     
     #Test that dt and dxy are as expected
-    assert_allclose(dt,60)
+    assert_allclose(dt,120)
     assert_allclose(dxy,1000)
      
     #Find features
