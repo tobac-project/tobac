@@ -90,9 +90,9 @@ def segmentation_timestep(field_i,features_i,dxy,threshold=3e-3,target='maximum'
 
     # remove everything from the individual masks that is more than max_distance_pixel away from the markers
     if max_distance is not None:
-        for feature in features_i['feature']:
-            D=distance_transform_edt((markers!=feature).astype(int))
-            segmentation_mask_i[np.bitwise_and(segmentation_mask_i==feature, D>max_distance_pixel)]=0
+        D=distance_transform_edt((markers==0).astype(int))
+        segmentation_mask_i[np.bitwise_and(segmentation_mask_i>0, D>max_distance_pixel)]=0
+
 
     #Write resulting mass into Cube and append to CubeList collecting masks for individual timesteps
     segmentation_out_i.data=segmentation_mask_i
