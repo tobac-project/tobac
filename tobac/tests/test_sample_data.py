@@ -88,7 +88,6 @@ def test_tracking_3D():
     """
     Test a tracking applications to make sure that coordinate order does not lead to different results
     """
-    from iris import MAX
     sample_data=make_sample_data_3D_3blobs()
     sample_data_inv=make_sample_data_3D_3blobs(invert_xy=True)
     # Keyword arguments for feature detection step:
