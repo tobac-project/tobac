@@ -117,8 +117,8 @@ def test_tracking_3D():
     assert_allclose(dxy,1000)
      
     #Find features
-    Features=feature_detection_multithreshold(sample_data,dxy,**parameters_features)
-    Features_inv=feature_detection_multithreshold(sample_data_inv,dxy_inv,**parameters_features)
+    Features=feature_detection_multithreshold(sample_data_max,dxy,**parameters_features)
+    Features_inv=feature_detection_multithreshold(sample_data_max_inv,dxy_inv,**parameters_features)
 
     # perform watershedding segmentation
     parameters_segmentation={}
