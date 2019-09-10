@@ -326,7 +326,7 @@ def feature_detection_multithreshold(field_in,
     
     for i_time,data_i in enumerate(data_time):
         time_i=data_i.coord('time').units.num2date(data_i.coord('time').points[0])
-        list_features_thresholds=feature_detection_multithreshold_timestep(data_i,i_time,
+        features_thresholds=feature_detection_multithreshold_timestep(data_i,i_time,
                                                             threshold=threshold,
                                                             sigma_threshold=sigma_threshold,
                                                             min_num=min_num,
@@ -339,12 +339,11 @@ def feature_detection_multithreshold(field_in,
                                                            )
         #check if list of features is not empty, then merge features from different threshold values 
         #into one DataFrame and append to list for individual timesteps:
-        if any([x is not None for x in list_features_thresholds]):
-            features_i_merged=list_features_thresholds
+        if not features_thresholds.empty:
             #Loop over DataFrame to remove features that are closer than distance_min to each other:
             if (min_distance > 0):
-                features_i_merged=filter_min_distance(features_i_merged,dxy,min_distance)
-            list_features_timesteps.append(features_i_merged)
+                features_thresholds=filter_min_distance(features_thresholds,dxy,min_distance)
+            list_features_timesteps.append(features_thresholds)
         else:
             list_features_timesteps.append(None)
 
@@ -353,7 +352,7 @@ def feature_detection_multithreshold(field_in,
     logging.debug('feature detection: merging DataFrames')
     # Check if features are detected and then concatenate features from different timesteps into one pandas DataFrame
     # If no features are detected raise error
-    if any([x is not None for x in list_features_timesteps]):
+    if any([not x.empty for x in list_features_timesteps]):
         features=pd.concat(list_features_timesteps, ignore_index=True)   
         features['feature']=features.index+feature_number_start
     #    features_filtered = features.drop(features[features['num'] < min_num].index)
