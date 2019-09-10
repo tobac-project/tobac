@@ -56,6 +56,10 @@ def test_tracking_coord_order():
     #Find features
     Features=feature_detection_multithreshold(sample_data,dxy,**parameters_features)
     Features_inv=feature_detection_multithreshold(sample_data_inv,dxy_inv,**parameters_features)
+    
+    # Assert that output of feature detection not empty:
+    assert not Features.empty
+    assert not Features_inv.empty
 
     parameters_linking={}
     parameters_linking['method_linking']='predict'
@@ -72,3 +76,8 @@ def test_tracking_coord_order():
     
     Track=linking_trackpy(Features,sample_data,dt=dt,dxy=dxy,**parameters_linking)
     Track_inv=linking_trackpy(Features_inv,sample_data_inv,dt=dt_inv,dxy=dxy_inv,**parameters_linking)
+
+    # Assert that output of feature detection not empty:
+    assert not Track.empty
+    assert not Track_inv.empty
+
