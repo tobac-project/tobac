@@ -191,8 +191,8 @@ def feature_detection_threshold(data_i,i_time,
                                             'threshold_value':threshold})
         features_threshold=pd.DataFrame(list_features_threshold)
     else:
-        features_threshold=None
-        regions=None
+        features_threshold=pd.DataFrame()
+        regions=dict{}
             
     return features_threshold, regions
     
