@@ -352,7 +352,7 @@ def feature_detection_multithreshold(field_in,
     logging.debug('feature detection: merging DataFrames')
     # Check if features are detected and then concatenate features from different timesteps into one pandas DataFrame
     # If no features are detected raise error
-    if any([x!=None for x in list_features_timesteps]):
+    if any([not x.empty for x in list_features_timesteps]):
         features=pd.concat(list_features_timesteps, ignore_index=True)   
         features['feature']=features.index+feature_number_start
     #    features_filtered = features.drop(features[features['num'] < min_num].index)
