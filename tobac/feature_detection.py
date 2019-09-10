@@ -245,12 +245,11 @@ def feature_detection_multithreshold_timestep(data_i,i_time,
     # create empty lists to store regions and features for individual timestep
     features_thresholds=pd.DataFrame()
     for i_threshold,threshold_i in enumerate(threshold):
-#         print('theshold:',threshold_i)
         if (i_threshold>0 and not features_thresholds.empty):
             idx_start=features_thresholds['idx'].max()+1
         else:
             idx_start=0
-            features_threshold_i,regions_i=feature_detection_threshold(track_data,i_time,
+        features_threshold_i,regions_i=feature_detection_threshold(track_data,i_time,
                                                         threshold=threshold_i,
                                                         sigma_threshold=sigma_threshold,
                                                         min_num=min_num,
