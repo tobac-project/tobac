@@ -58,6 +58,8 @@ def test_tracking_coord_order():
     Features_inv=feature_detection_multithreshold(sample_data_inv,dxy_inv,**parameters_features)
     
     # Assert that output of feature detection not empty:
+    assert type(Features)=pd.DataFrame()
+    assert type(Features_inv)=pd.DataFrame()
     assert not Features.empty
     assert not Features_inv.empty
 
