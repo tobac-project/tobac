@@ -6,6 +6,7 @@ from tobac import feature_detection_multithreshold,linking_trackpy,get_spacings
 from iris.analysis import MEAN,MAX,MIN
 from pandas.testing import assert_frame_equal
 from numpy.testing import assert_allclose
+import pandas as pd
 
 def test_sample_data():
     """
@@ -58,8 +59,8 @@ def test_tracking_coord_order():
     Features_inv=feature_detection_multithreshold(sample_data_inv,dxy_inv,**parameters_features)
     
     # Assert that output of feature detection not empty:
-    assert type(Features)=pd.DataFrame()
-    assert type(Features_inv)=pd.DataFrame()
+    assert type(Features)==pd.DataFrame()
+    assert type(Features_inv)==pd.DataFrame()
     assert not Features.empty
     assert not Features_inv.empty
 
