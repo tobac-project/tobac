@@ -2,6 +2,18 @@ Installation
 ------------
 tobac is now capable of working with both Python 2 and Python 3 (tested for 2.7,3.6 and 3.7) installations.
 
+The easiest way is to install the most recent version of tobac via conda and the conda-forge channel:
+```
+conda install -c conda-forge tobac 
+```
+This will take care of all necessary dependencies and should do the job for most users and also allows for an easy update of the installation by
+```
+conda update -c conda-forge tobac 
+```
+
+
+You can also install conda via pip, which is mainly interesting for development purposed or to use specific development branches for the Github repository.
+
 The follwoing python packages are required (including dependencies of these packages):
    
 *trackpy*, *scipy*, *numpy*, *iris*, *scikit-learn*, *scikit-image*, *cartopy*, *pandas*, *pytables* 
