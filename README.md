@@ -18,7 +18,7 @@ tobac now works for both Python 3 and Python 2 installations.
 
 The easiest way is to install the most recent version of tobac via conda and the conda-forge channel:
 ```
-conda -c conda-forge tobac 
+conda install -c conda-forge tobac 
 ```
 This will take care of all necessary dependencies and should do the job for most users and also allows for an easy update of the installation by
 ```
