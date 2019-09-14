@@ -6,6 +6,7 @@ from tobac import feature_detection_multithreshold,linking_trackpy,get_spacings,
 from iris.analysis import MEAN,MAX,MIN
 from pandas.testing import assert_frame_equal
 from numpy.testing import assert_allclose
+import pandas as pd
 
 def test_sample_data():
     """
@@ -56,6 +57,12 @@ def test_tracking_coord_order():
     #Find features
     Features=feature_detection_multithreshold(sample_data,dxy,**parameters_features)
     Features_inv=feature_detection_multithreshold(sample_data_inv,dxy_inv,**parameters_features)
+    
+    # Assert that output of feature detection not empty:
+    assert type(Features) == pd.core.frame.DataFrame
+    assert type(Features_inv) == pd.core.frame.DataFrame
+    assert not Features.empty
+    assert not Features_inv.empty
 
     # perform watershedding segmentation
     parameters_segmentation={}
@@ -145,3 +152,7 @@ def test_tracking_3D():
 
     Track=linking_trackpy(Features,sample_data,dt=dt,dxy=dxy,**parameters_linking)
     Track_inv=linking_trackpy(Features_inv,sample_data_inv,dt=dt_inv,dxy=dxy_inv,**parameters_linking)
+
+    # Assert that output of feature detection not empty:
+    assert not Track.empty
+    assert not Track_inv.empty
