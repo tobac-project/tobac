@@ -2,20 +2,20 @@ language: python
 #sudo: false
 # choose python versions
 python:
-  - "2.7"
   - "3.6"
   - "3.7"
+  - "2.7"
 
 install:
 
   # Install miniconda
   # -----------------
-  #
-  - echo $TRAVIS_PYTHON_VERSION
-  - if [[ $TRAVIS_PYTHON_VERSION == 2* ]]; then  export CONDA_BASE="http://repo.continuum.io/miniconda/Miniconda2"; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == 3* ]]; then  export CONDA_BASE="http://repo.continuum.io/miniconda/Miniconda3"; fi
-  - echo $CONDA_BASE
-  - wget "${CONDA_BASE}-latest-Linux-x86_64.sh" -O miniconda.sh
+  - if [[ $PYTHON_TARGET == 2* ]]; then
+      export CONDA_BASE=http://repo.continuum.io/miniconda/Miniconda2;
+    else
+      export CONDA_BASE=http://repo.continuum.io/miniconda/Miniconda3;
+    fi
+  - wget ${CONDA_BASE}-latest-Linux-x86_64.sh -O miniconda.sh;
 
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
@@ -40,10 +40,12 @@ install:
   - conda info -a
 
   # Install
-  #- python setup.py --quiet install
   - pip install .
+
+  # Output debug info
+  - conda list
+
 # command to run tests
 #script
 script:
-#  - if [[ $PYTHON_TARGET == 2* ]]; then        
   - pytest
