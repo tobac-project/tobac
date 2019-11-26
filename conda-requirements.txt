@@ -5,7 +5,8 @@ scikit-image
 pandas
 pytables
 matplotlib 
-iris 
+iris
+cf-units 
 xarray 
 cartopy
 trackpy
