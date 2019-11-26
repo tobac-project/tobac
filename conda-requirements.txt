@@ -7,6 +7,5 @@ pytables
 matplotlib 
 iris 
 xarray 
-cf_units
 cartopy
 trackpy
