@@ -1,3 +1,7 @@
+'''Wraps up methods in feature_dection, segmentation and tracking.
+
+'''
+
 import numpy as np
 import logging
 
@@ -11,6 +15,42 @@ def tracking_wrapper(
              parameters_tracking=None,
              parameters_segmentation=None,
              ):
+    '''
+    Parameters
+    ----------
+    field_in_features : iris.cube.Cube
+
+    field_in_segmentation : iris.cube.Cube
+
+    grid_spacing : float, optional
+        Grid spacing in input data. Default is None.
+
+    time_spacing : float, optional
+        Time resolution of input data. Default is None.
+
+    parameters_features : optional
+        Default is None.
+
+    parameters_tracking : optional
+        Default is None.
+
+    parameters_segmentation : optional
+        Default is None.
+
+    Raises
+    ------
+    ValueError
+        If method_detection is neither 'threshold' nor
+        'threshold_multi'.
+
+        If method_linking is not 'trackpy'.
+
+    Notes
+    -----
+    needs short summary
+    unsure about field_in_features, field_in_segmentation and
+    parameters_*
+    '''
     
     from .feature_detection import feature_detection_multithreshold
     from .tracking import linking_trackpy
@@ -55,8 +95,6 @@ def tracking_wrapper(
     return features,segmentation_mask,trajectories
 
 
-
-
 def maketrack(field_in,
               grid_spacing=None,time_spacing=None,
               target='maximum',              
@@ -76,62 +114,123 @@ def maketrack(field_in,
               adaptive_step=None, 
               return_intermediate=False,
               ):
-    from .feature_detection import feature_detection_multithreshold
-    from .tracking import linking_trackpy
 
-    """
-    Function identifiying features  andlinking them into trajectories
-    
-    Parameters:
-    field_in:     iris.cube.Cube 
-                  2D input field tracking is performed on
-    grid_spacing: float
-                  grid spacing in input data (m)
-    time_spacing: float
-                  time resolution of input data (s)
-    target        string
-                  Switch to determine if algorithm looks for maxima or minima in input field (maximum: look for maxima (default), minimum: look for minima)
-    v_max:        float
-                  Assumed maximum speed of tracked objects (m/s)
-    memory:       int
-                  Number of timesteps for which objects can be missed by the algorithm to still give a constistent track
-    stubs:        float
-                  Minumum number of timesteps for which objects have to be detected to not be filtered out as spurious
-    min_num:      int
-                  Minumum number of cells above threshold in the feature to be tracked
-    order:        int
-                  order if interpolation spline to fill gaps in tracking(from allowing memory to be larger than 0)
-    extrapolate   int
-                  number of points to extrapolate individual tracks by
-    method_detection: str('threshold' or 'threshold_multi')
-                      flag choosing method used for feature detection
-    position_threshold: str('extreme', 'weighted_diff', 'weighted_abs' or 'center')
-                      flag choosing method used for the position of the tracked feature
-    sigma_threshold: float
-                     standard deviation for intial filtering step
-                     
-    n_erosion_threshold: int
-                         number of pixel by which to erode the identified features
+    '''Identify features and link them into trajectories.
 
-    method_linking:   str('predict' or 'random')
-                      flag choosing method used for trajectory linking
-    
-    return_intermediate: boolean
-                         flag to tetermine if only final tracjectories are output (False, default) or if detected features, filtered features and unfilled tracks are returned additionally (True)
+    Parameters
+    ----------
+    field_in : iris.cube.Cube
+        2D input field tracking is performed on.
 
-    Output:
+    grid_spacing : float, optional
+        Grid spacing in input data. Default is None.
+
+    time_spacing : float, optional
+        Time resolution of input data. Default is None.
+
+    target : {'maximum', 'minimum'}
+        Flag to determine if tracking is targetting minima or maxima in
+        the data. Default is 'maximum'.
+
+    v_max : float, optional
+        Speed at which features are allowed to move. Default is None.
+
+    d_max : optional
+        Default is None.
+
+    memory : int, optional
+        Number of timesteps for which objects can be missed by the
+        algorithm to still give a constistent track. Default is 0.
+
+        ..warning :: This parameter should be used with caution, as it
+                     can lead to erroneous trajectory linking,
+                     espacially for data with low time resolution.
+
+    stubs : float, optional
+        Default is 5.
+
+    order : int, optional
+        Order if interpolation spline to fill gaps in tracking
+        (from allowing memory to be larger than 0).
+
+    method_detection: {'threshold', 'threshold_multi'}
+        Flag choosing method used for feature detection. Default is
+        'threshold'.
+
+    position_threshold : {'center', 'extreme', 'weighted_diff',
+                          'weighted_abs'}, optional
+        Flag choosing method used for the position of the tracked
+        feature. Default is 'center'.
+
+    sigma_threshold: float, optional
+        Standard deviation for intial filtering step. Default is 0.5.
+
+    n_erosion_threshold: int, optional
+        Number of pixel by which to erode the identified features.
+        Default is 0.
+
+    min_num : int, optional
+        Minimum number of cells above threshold in the feature to be
+        tracked. Default is 0.
+
+    min_distance : float, optional
+        Minimum distance between detected features. Default is 0.
+
+    method_linking : {'random', 'predict'}, optional
+        Flag choosing method used for trajectory linking. Default is
+        'random'.
+
+   cell_number_start : int, optional
+        Default is 1.
+
+    adaptive_step : optional
+        Default is None.
+
+    adaptive_stop : optional
+        Default is None.
+
+    subnetwork_size : int, optional
+        Maximim size of subnetwork for linking. Default is None.
+
+    return_intermediate: bool, optional
+        Flag to determine if only final tracjectories are output
+        (False, default) or if detected features, filtered features and
+        unfilled tracks are returned additionally (True).
+
+    Returns
+    -------
     trajectories_final: pandas.DataFrame
-                 Tracked updrafts, one row per timestep and updraft, includes dimensions 'time','latitude','longitude','projection_x_variable', 'projection_y_variable' based on w cube. 
-                 'hdim_1' and 'hdim_2' are used for segementation step.
+        Tracked updrafts, one row per timestep and updraft, includes
+        dimensions 'time', 'latitude', 'longitude',
+        'projection_x_variable', 'projection_y_variable' based on w
+        cube. 'hdim_1' and 'hdim_2' are used for segementation step.
+
+    features : pandas.DataFrame
+
+    Raises
+    ------
+    ValueError
+        If input_cube does not contail projection_x_coord and
+        projection_y_coord or keyword argument grid_spacing.
     
+        If method_detection is neither 'threshold' nor
+        'threshold_multi'.
+
+    Notes
+    -----
+    features needs more information
+
     Optional output:             
     features_filtered: pandas.DataFrame
     
     features_unfiltered: pandas.DataFrame
     
     trajectories_filtered_unfilled: pandas.DataFrame
-    
-    """
+    '''
+
+    from .feature_detection import feature_detection_multithreshold
+    from .tracking import linking_trackpy
+
     from copy import deepcopy
     
     logger = logging.getLogger('trackpy')
@@ -202,5 +301,3 @@ def maketrack(field_in,
     logging.debug('Finished tracking')
 
     return trajectories,features
-
-
