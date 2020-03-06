@@ -1,3 +1,72 @@
+'''Provide tools to analyse and visualize the tracked objects.
+
+This module provides a set of routines that enables performing analyses
+and deriving statistics for individual clouds, such as the time series
+of integrated properties and vertical profiles. It also provides
+routines to calculate summary statistics of the entire populatin of
+tracked clouds in the cloud field like histograms of cloud areas/volumes
+or cloud mass and a detailed cell lifetime analysis. These analysis
+routines are all built in a modular manner. Thus, users can reuse the
+most basic methods for interacting with the data structure of the
+package in their own analysis procedures in Python. This includes
+functions perfomring simple tasks like looping over all identified
+objects or cloud trajectories and masking arrays for the analysis of
+individual cloud objects. Plotting routines include both visualizations
+for individual convective cells and their properties.
+
+Routine Listings
+----------------
+cell_staticsics_all(input_cubes, track, mask, aggregators, output_path,
+                    cell_selection, output_name, width, z_coordinate,
+                    dimensions, **kwargs)
+
+cell_statistics(input_cubes, track, mask, aggregators, cell,
+                output_path, output_name, width, z_coordinate,
+                dimensions, **kwargs)
+
+cog_cell(cell, Tracks, M_total, M_liquid, M_frozen, Mask, savedir)
+
+lifetime_histogram(Track, bin_edges, density, return_values)
+
+haversine(lat1, lon1, lat2, lon2)
+
+calculate_distance(feature_1, feature_2, method_distance)
+
+calculate_velocity_individual(feature_old, feature_new, method_distance)
+
+calculate_velocity(track, method_distance)
+
+velocity_histogram(track, method_distance)
+
+calculate_nearesneighbordistance(features, method_distance)
+
+nearestneighbordistance_histogram(features, bin_edges, density,
+                                  method_distance, return_values)
+
+calculate_area(features, mask, method_area)
+
+area_histogram(features, mask, bin_edges)
+
+histogram_cellwise(Track, variable, bin_edges, quantity, density)
+
+histogram_featurewise(Track, variable, bin_edges, density)
+
+calculate_overlap(track_1, track_2, min_sum_inv_distance,
+                  min_mean_inv_distance)
+
+References
+----------
+.. Heikenfeld, M., Marinescu, P. J., Christensen, M., Watson-Parris, D.,
+   Senf, F., van den Heever, S. C., and Stier, P.: tobac v1.0:
+   towards a flexible framework for tracking and analysis of clouds in
+   diverse datasets, Geosci. Model Dev. Discuss.,
+   https://doi.org/10.5194/gmd-2019-105 , in review, 2019, 10.
+
+Notes
+-----
+unsure about page numer in the reference
+'''
+
 import pandas as pd
 import numpy as np
 import logging
@@ -6,6 +75,50 @@ import os
 from .utils import mask_cell,mask_cell_surface,mask_cube_cell,get_bounding_box
 
 def cell_statistics_all(input_cubes,track,mask,aggregators,output_path='./',cell_selection=None,output_name='Profiles',width=10000,z_coord='model_level_number',dimensions=['x','y'],**kwargs):
+    '''
+    Parameters
+    ----------
+    input_cubes : iris.cube.Cube
+
+    track : dask.dataframe.DataFrame
+
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tracked volumes 0 everywhere
+        else).
+
+    aggregators
+
+    output_path : str, optional
+        Default is './'.
+    
+    cell_selection : optional
+        Default is None.
+
+    output_name : str, optional
+        Default is 'Profiles'.
+
+    width : int, optional
+        Default is 10000.
+
+    z_coord : str, optional
+        Name of the vertical coordinate in the cube. Default is
+        'model_level_number'.
+
+    dimensions : list of str, optional
+        Default is ['x', 'y'].
+
+    **kwargs
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    unsure about anything
+    needs a short summary
+    '''
+
     if cell_selection is None:
         cell_selection=np.unique(track['cell'])
     for cell in cell_selection :
@@ -15,6 +128,49 @@ def cell_statistics_all(input_cubes,track,mask,aggregators,output_path='./',cell
                         width=width,z_coord=z_coord,**kwargs)
 
 def cell_statistics(input_cubes,track,mask,aggregators,cell,output_path='./',output_name='Profiles',width=10000,z_coord='model_level_number',dimensions=['x','y'],**kwargs):
+    '''
+    Parameters
+    ----------
+    input_cubes : iris.cube.Cube
+
+    track : dask.dataframe.DataFrame
+
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tracked volumes 0 everywhere
+        else).
+
+    aggregators
+
+    cell : int
+        Integer id of cell to create masked cube for output.
+
+    output_path : str, optional
+        Default is './'.
+
+    output_name : str, optional
+        Default is 'Profiles'.
+
+    width : int, optional
+        Default is 10000.
+
+    z_coord : str, optional
+        Name of the vertical coordinate in the cube. Default is
+        'model_level_number'.
+
+    dimensions : list of str, optional
+        Default is ['x', 'y'].
+
+    **kwargs
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    unsure about anything
+    needs a short summary
+    '''
     from iris.cube import Cube,CubeList
     from iris.coords import AuxCoord
     from iris import Constraint,save    
@@ -114,7 +270,36 @@ def cog_cell(cell,Tracks=None,M_total=None,M_liquid=None,
              M_frozen=None,
              Mask=None,
              savedir=None):
-    
+    '''
+    Parameters
+    ----------
+    cell : int
+        Integer id of cell to create masked cube for output.
+
+    Tracks : optional
+        Default is None.
+
+    M_total : subset of cube, optional
+        Default is None.
+
+    M_liquid : subset of cube, optional
+        Default is None.
+
+    M_frozen : subset of cube, optional
+        Default is None.
+
+    savedir : str
+        Default is None.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    unsure about anything
+    needs a short summary
+    '''
     
     from iris import Constraint
     logging.debug('Start calculating COG for '+str(cell))
@@ -149,6 +334,36 @@ def cog_cell(cell,Tracks=None,M_total=None,M_liquid=None,
 
 
 def lifetime_histogram(Track,bin_edges=np.arange(0,200,20),density=False,return_values=False):
+    '''
+    Parameters
+    ----------
+    Track
+
+    bin_edged : ndarray, optional
+        Default is np.arange(0, 200, 20).
+
+    density : bool, optional
+        Default is False.
+
+    return_values : bool, optional
+        Default is False.
+
+    Returns
+    -------
+    hist
+
+    bin_edges : ndarray
+
+    bin_centers
+
+    minutes : float
+
+    Notes
+    -----
+    unsure about anything
+    needs short summary
+    '''
+
     Track_cell=Track.groupby('cell')
     minutes=(Track_cell['time_cell'].max()/pd.Timedelta(minutes=1)).values
     hist, bin_edges = np.histogram(minutes, bin_edges,density=density)
@@ -159,13 +374,31 @@ def lifetime_histogram(Track,bin_edges=np.arange(0,200,20),density=False,return_
         return hist,bin_edges,bin_centers
     
 def haversine(lat1,lon1,lat2,lon2):
-    """Computes the Haversine distance in kilometres between two points (based on implementation CIS https://github.com/cedadev/cis)
-    :param lat1: first point or points as array, each as array of latitude in degrees
-    :param lon1: first point or points as array, each as array of longitude in degrees
-    :param lat2: second point or points as array, each as array of latitude in degrees
-    :param lon2: second point or points as array, each as array of longitude in degrees
-    :return: distance between the two points in kilometres
-    """
+    '''Computes the Haversine distance in kilometers.
+
+    Calculates the Haversine distance between two points
+    (based on implementation CIS https://github.com/cedadev/cis).
+
+    Parameters
+    ----------
+    lat1, lon1 : array of latitude, longitude
+        First point or points as array in degrees.
+
+    lat2, lon2 : array of latitude, longitude
+        Second point or points as array in degrees.
+
+    Returns
+    -------
+    arclen * RADIUS_EARTH : float
+        Distance between the two points in kilometers.
+
+    Notes
+    -----
+    check types
+
+    RADIUS_EARTH = 6378.0
+    '''
+
     RADIUS_EARTH = 6378.0
     lat1 = np.radians(lat1)
     lat2 = np.radians(lat2)
@@ -176,11 +409,28 @@ def haversine(lat1,lon1,lat2,lon2):
     return arclen * RADIUS_EARTH
 
 def calculate_distance(feature_1,feature_2,method_distance=None):
-    """Computes distance between two features based on either lat/lon coordinates or x/y coordinates
-    :param feature_1: first feature or points as array, each as array of latitude, longitude in degrees
-    :param feature_2: second feature or points as array, each as array of latitude, longitude in degrees
-    :return: distance between the two features in metres
-    """
+    '''Computes distance between two features.
+
+    It is based on either lat/lon coordinates or x/y coordinates.
+
+    Parameters
+    ----------
+    feature_1, feature_2 : array of latitude, longitute
+        First and second feature or points as array in degrees.
+
+    method_distance : {None, 'xy', 'latlon'}, optional
+        Default is None.
+
+    Returns
+    -------
+    distance : float
+        Between the two features in meters.
+
+    Notes
+    -----
+    check sense of types and descriptions
+    '''
+
     if method_distance is None:
         if ('projection_x_coordinate' in feature_1) and ('projection_y_coordinate' in feature_1) and ('projection_x_coordinate' in feature_2) and ('projection_y_coordinate' in feature_2) :
             method_distance='xy'
@@ -199,12 +449,45 @@ def calculate_distance(feature_1,feature_2,method_distance=None):
     return distance
 
 def calculate_velocity_individual(feature_old,feature_new,method_distance=None):
+    '''
+    Parameters
+    ----------
+    feature_old
+
+    feature_new
+
+    method_distance : {None, 'xy', 'latlon'}, optional
+        Default is None.
+
+    Notes
+    -----
+    feature_old and feature_new need types and descriptions
+    needs a short summary
+    '''
+
     distance=calculate_distance(feature_old,feature_new,method_distance=method_distance)
     diff_time=((feature_new['time']-feature_old['time']).total_seconds())
     velocity=distance/diff_time
     return velocity
 
 def calculate_velocity(track,method_distance=None):
+    '''
+    Parameters
+    ----------
+    track
+
+    method_distance : {None, 'xy', 'latlon'}, optional
+        Default is None.
+
+    Returns
+    -------
+    track
+
+    Notes
+    -----
+    needs short summary, description and type of track
+    '''
+
     for cell_i,track_i in track.groupby('cell'):
         index=track_i.index.values
         for i,index_i in enumerate(index[:-1]):
@@ -213,6 +496,36 @@ def calculate_velocity(track,method_distance=None):
     return track
 
 def velocity_histogram(track,bin_edges=np.arange(0,30,1),density=False,method_distance=None,return_values=False):
+    '''
+    Parameters
+    ----------
+    track
+
+    bin_edges : ndarray, optional
+        Default is np.arange(0, 30, 1).
+
+    density : bool, optional
+        Default is False.
+
+    methods_distance : {None, 'xy', 'latlon'}, optional
+        Default is None.
+
+    return_values : bool, optional
+        Default is False.
+
+    Returns
+    -------
+    hist
+
+    bin_edges : ndarray
+
+    velocities
+
+    Notes
+    -----
+    short summary, types and descriptions
+    '''
+
     if 'v' not in track.columns:
         logging.info('calculate velocities')
         track=calculate_velocity(track)
@@ -224,6 +537,24 @@ def velocity_histogram(track,bin_edges=np.arange(0,30,1),density=False,method_di
         return hist,bin_edges
 
 def calculate_nearestneighbordistance(features,method_distance=None):
+    '''
+
+    Parameters
+    ----------
+    features
+
+    method_distance : {None, 'xy', 'latlon'}, optional
+        Default is None.
+
+    Returns
+    -------
+    features
+
+    Notes
+    -----
+    short summary, types and descriptions
+    '''
+
     from itertools import combinations
     features['min_distance']=np.nan
     for time_i,features_i in features.groupby('time'):
@@ -243,6 +574,33 @@ def calculate_nearestneighbordistance(features,method_distance=None):
     return features
 
 def nearestneighbordistance_histogram(features,bin_edges=np.arange(0,30000,500),density=False,method_distance=None,return_values=False):
+    '''
+    Parameters
+    ----------
+    features
+
+    bin_edges : ndarray, optional
+        Default is np.arange(0, 30000, 500).
+
+    density : bool, optional
+        Default is False.
+
+    method_distance : {None, 'xy', 'latlon'}, optional
+        Default is None.
+
+    Returns
+    -------
+    hist
+
+    bin_edges : ndarray
+
+    distances
+
+    Notes
+    -----
+    short summary, types and descriptions
+    '''
+
     if 'min_distance' not in features.columns:
         logging.debug('calculate nearest neighbor distances')
         features=calculate_nearestneighbordistance(features,method_distance=method_distance)
@@ -264,6 +622,46 @@ def nearestneighbordistance_histogram(features,bin_edges=np.arange(0,30000,500),
 #     return area
 
 def calculate_area(features,mask,method_area=None):
+    '''
+    Parameters
+    ----------
+    features
+
+    mask : iris.cube.Cube
+        Cube containing mask (int for tracked volumes 0 everywhere
+        else).
+
+    method_area : {None, 'xy', 'latlon'}, optional
+        Default is None.
+
+    Returns
+    -------
+    hist
+
+    bin_edges : ndarray
+
+    bin_centers
+
+    areas
+
+    Raises
+    ------
+    ValueError
+        If neither latitude/longitude nor
+        projection_x_coordinate/projection_y_coordinate are present in
+        mask_coords.
+
+        If latitude/longitude coordinates are 2D.
+
+        If latitude/longitude shapes are not supported.
+
+        If method is undefined, e.i. method is neither None, 'xy' nor
+        'latlon'.
+
+    Notes
+    -----
+    needs short summary, types and descriptions
+    '''
     from tobac.utils import mask_features_surface,mask_features
     from iris import Constraint
     from iris.analysis.cartography import area_weights
@@ -314,6 +712,39 @@ def calculate_area(features,mask,method_area=None):
 def area_histogram(features,mask,bin_edges=np.arange(0,30000,500),
                    density=False,method_area=None,
                    return_values=False,representative_area=False):
+    '''
+    Parameters
+    ----------
+    features
+
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tracked volumes 0 everywhere
+        else).
+
+    bin_edges : ndarray, optional
+        Default is np.arange(0, 30000, 500).
+
+    density : bool, optional
+        Default is False.
+
+    representive_area: bool, optional
+        Default is False.
+
+    Returns
+    -------
+    hist
+
+    bin_edges : ndarray
+
+    bin_centers
+
+    areas
+
+    Notes
+    -----
+    short summary, types and descriptions
+    '''
+
     if 'area' not in features.columns:
         logging.info('calculate area')
         features=calculate_area(features,method_area)
@@ -333,6 +764,41 @@ def area_histogram(features,mask,bin_edges=np.arange(0,30000,500),
         return hist,bin_edges,bin_centers
     
 def histogram_cellwise(Track,variable=None,bin_edges=None,quantity='max',density=False):
+    '''
+    Parameters
+    ----------
+    Track
+
+    variable : optional
+        Default is None.
+
+    bin_edges : ndarray, optional
+        Default is None.
+
+    quantity : {'max', 'min', 'mean'}, optional
+        Default is 'max'.
+
+    density : bool, optional
+        Default is False.
+
+    Returns
+    -------
+    hist
+
+    bin_edges : ndarray
+
+    bin_centers
+
+    Raises
+    ------
+    ValueError
+        If quantity is not 'max', 'min' or 'mean'.
+
+    Notes
+    -----
+    short summaray, types and descriptions
+    '''
+
     Track_cell=Track.groupby('cell')
     if quantity=='max':
         variable_cell=Track_cell[variable].max().values
@@ -348,12 +814,59 @@ def histogram_cellwise(Track,variable=None,bin_edges=None,quantity='max',density
     return hist,bin_edges, bin_centers
 
 def histogram_featurewise(Track,variable=None,bin_edges=None,density=False):
+    '''
+    Parameters
+    ----------
+    Track
+
+    variable : optional
+        Default is None.
+
+    bin_edges : ndarray, optional
+        Default is None.
+
+    density : bool, optional
+        Default is False.
+
+    Returns
+    -------
+    hist
+
+    bin_edges : ndarray
+
+    bin_centers
+
+    Notes
+    -----
+    short summaray, types and descriptions
+    '''
+
     hist, bin_edges = np.histogram(Track[variable].values, bin_edges,density=density)
     bin_centers=bin_edges[:-1]+0.5*np.diff(bin_edges)
 
     return hist,bin_edges, bin_centers
 
 def calculate_overlap(track_1,track_2,min_sum_inv_distance=None,min_mean_inv_distance=None):
+    '''
+    Parameters
+    ----------
+    track_1, track_2 :
+
+    min_sum_inv_distance : optional
+        Default is None.
+
+    min_mean_inv_distance : optional
+        Default is None.
+
+    Returns
+    -------
+    overlap : pandas.DataFrame
+
+    Notes
+    -----
+    short summary, types and descriptions
+    '''
+
     cells_1=track_1['cell'].unique()
 #    n_cells_1_tot=len(cells_1)
     cells_2=track_2['cell'].unique()
