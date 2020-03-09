@@ -1,19 +1,33 @@
+'''Containing methods to make simple sample data for testing.
+
+'''
+
 import datetime
 import numpy as np
 from xarray import DataArray
 
 def make_simple_sample_data_2D(data_type='iris'):
-    """
-    function creating a simple dataset to use in tests for tobac. 
-    The grid has a grid spacing of 1km in both horizontal directions and 100 grid cells in x direction and 500 in y direction.
-    Time resolution is 1 minute and the total length of the dataset is 100 minutes around a abritraty date (2000-01-01 12:00). 
-    The longitude and latitude coordinates are added as 2D aux coordinates and arbitrary, but in realisitic range.
-    The data contains a single blob travelling on a linear trajectory through the dataset for part of the time.
-    
-    :param data_type: 'iris' or 'xarray' to chose the type of dataset to produce
-    :return: sample dataset as an Iris.Cube.cube or xarray.DataArray
+    '''Create a simple dataset to use in tests.
 
-    """
+    The grid has a grid spacing of 1km in both horizontal directions
+    and 100 grid cells in x direction and 500 in y direction.
+    Time resolution is 1 minute and the total length of the dataset is
+    100 minutes around a abritraty date (2000-01-01 12:00).
+    The longitude and latitude coordinates are added as 2D aux
+    coordinates and arbitrary, but in realisitic range.
+    The data contains a single blob travelling on a linear trajectory
+    through the dataset for part of the time.
+    
+    Parameters
+    ----------
+    data_type : {'iris', 'xarray'}, optional
+        Choose type of the dataset that will be produced.
+
+    Returns
+    -------
+    sample_data : iris.cube.Cube or xarray.DataArray
+    '''
+
     from iris.cube import Cube
     from iris.coords import DimCoord,AuxCoord
 
@@ -59,17 +73,26 @@ def make_simple_sample_data_2D(data_type='iris'):
 def make_sample_data_2D_3blobs(data_type='iris'):
     from iris.cube import Cube
     from iris.coords import DimCoord,AuxCoord
-    """
-    function creating a simple dataset to use in tests for tobac. 
-    The grid has a grid spacing of 1km in both horizontal directions and 100 grid cells in x direction and 200 in y direction.
-    Time resolution is 1 minute and the total length of the dataset is 100 minutes around a abritraty date (2000-01-01 12:00). 
-    The longitude and latitude coordinates are added as 2D aux coordinates and arbitrary, but in realisitic range.
-    The data contains a three individual blobs travelling on a linear trajectory through the dataset for part of the time.
-    
-    :param data_type: 'iris' or 'xarray' to chose the type of dataset to produce
-    :return: sample dataset as an Iris.Cube.cube or xarray.DataArray
+    '''Create a simple dataset to use in tests.
 
-    """
+    The grid has a grid spacing of 1km in both horizontal directions
+    and 100 grid cells in x direction and 200 in y direction.
+    Time resolution is 1 minute and the total length of the dataset is
+    100 minutes around a abritraty date (2000-01-01 12:00).
+    The longitude and latitude coordinates are added as 2D aux
+    coordinates and arbitrary, but in realisitic range.
+    The data contains three individual blobs travelling on a linear
+    trajectory through the dataset for part of the time.
+    
+    Parameters
+    ----------
+    data_type : {'iris', 'xarray'}, optional
+	Choose type of the dataset that will be produced.
+
+    Returns
+    -------
+    sample_data : iris.cube.Cube or xarray.DataArray
+    '''
 
     t_0=datetime.datetime(2000,1,1,12,0,0)
     
@@ -140,14 +163,23 @@ def make_sample_data_2D_3blobs(data_type='iris'):
 
 
 def make_sample_data_2D_3blobs_inv(data_type='iris'):
-    """
-    function creating a version of the dataset created in the function make_sample_cube_2D, but with switched coordinate order for the horizontal coordinates 
-    for tests to ensure that this does not affect the results
-        
-    :param data_type: 'iris' or 'xarray' to chose the type of dataset to produce
-    :return: sample dataset as an Iris.Cube.cube or xarray.DataArray
+    '''Create a version of the dataset with switched coordinates.
 
-    """
+    Create a version of the dataset created in the function
+    make_sample_cube_2D, but with switched coordinate order for the
+    horizontal coordinates for tests to ensure that this does not
+    affect the results.
+
+    Parameters
+    ----------
+    data_type : {'iris', 'xarray'}, optional
+        Choose type of the dataset that will be produced.
+
+    Returns
+    -------
+    sample_data : iris.cube.Cube or xarray.DataArray
+    '''
+
     from iris.cube import Cube
     from iris.coords import DimCoord,AuxCoord
 
@@ -221,19 +253,29 @@ def make_sample_data_2D_3blobs_inv(data_type='iris'):
     return sample_data
 
 def make_sample_data_3D_3blobs(data_type='iris',invert_xy=False):
+    '''Create a simple dataset to use in tests.
+
+    The grid has a grid spacing of 1km in both horizontal directions
+    and 100 grid cells in x direction and 200 in y direction.
+    Time resolution is 1 minute and the total length of the dataset is
+    100 minutes around a abritraty date (2000-01-01 12:00).
+    The longitude and latitude coordinates are added as 2D aux
+    coordinates and arbitrary, but in realisitic range.
+    The data contains three individual blobs travelling on a linear
+    trajectory through the dataset for part of the time.
+
+    Parameters
+    ----------
+    data_type : {'iris', 'xarray'}, optional
+        Choose type of the dataset that will be produced.
+
+    Returns
+    -------
+    sample_data : iris.cube.Cube or xarray.DataArray
+    '''
+
     from iris.cube import Cube
     from iris.coords import DimCoord,AuxCoord
-    """
-    function creating a simple dataset to use in tests for tobac. 
-    The grid has a grid spacing of 1km in both horizontal directions and 100 grid cells in x direction and 200 in y direction.
-    Time resolution is 1 minute and the total length of the dataset is 100 minutes around a abritraty date (2000-01-01 12:00). 
-    The longitude and latitude coordinates are added as 2D aux coordinates and arbitrary, but in realisitic range.
-    The data contains a three individual blobs travelling on a linear trajectory through the dataset for part of the time.
-    
-    :param data_type: 'iris' or 'xarray' to chose the type of dataset to produce
-    :return: sample dataset as an Iris.Cube.cube or xarray.DataArray
-
-    """
 
     t_0=datetime.datetime(2000,1,1,12,0,0)
     
