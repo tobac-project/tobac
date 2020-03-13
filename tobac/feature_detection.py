@@ -5,12 +5,12 @@ derived from the input data. To identify the features, contiguous
 regions above or below a threshold are determined and labelled
 individually. To describe the specific location of the feature at a
 specific point in time, different spatial properties are used to
-describe the identified region.
+describe the identified region. [2]_
 
 References
 ----------
-.. Heikenfeld, M., Marinescu, P. J., Christensen, M., Watson-Parris, D.,
-   Senf, F., van den Heever, S. C., and Stier, P.: tobac v1.0:
+.. [2] Heikenfeld, M., Marinescu, P. J., Christensen, M., Watson-Parris,
+   D., Senf, F., van den Heever, S. C., and Stier, P.: tobac v1.0:
    towards a flexible framework for tracking and analysis of clouds in
    diverse datasets, Geosci. Model Dev. Discuss.,
    https://doi.org/10.5194/gmd-2019-105 , in review, 2019, 6f.
@@ -277,7 +277,7 @@ def feature_detection_multithreshold_timestep(data_i,i_time,
 
     Based on iteratively finding regions above/below a set of
     thresholds. Smoothing the input data with the Gaussian filter makes
-    output more reliable.
+    output more reliable. [2]_
 
     Parameters
     ----------

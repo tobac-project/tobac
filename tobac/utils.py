@@ -435,7 +435,6 @@ def mask_all_surface(mask,masked=False,z_coord='model_level_number'):
 #     return constraint
     
 def add_coordinates(t,variable_cube):
-    import numpy as np
     '''Add coordinates from the tracking cube to the trajectories.
 
     Coordinates: time, longitude&latitude, x&y dimensions.
@@ -461,6 +460,7 @@ def add_coordinates(t,variable_cube):
     description above
     '''
 
+    import numpy as np
     from scipy.interpolate import interp2d, interp1d
 
     logging.debug('start adding coordinates from cube')
@@ -563,7 +563,6 @@ def add_coordinates(t,variable_cube):
     return t
 
 def get_bounding_box(x,buffer=1):
-    from numpy import delete,arange,diff,nonzero,array
     '''Calculates the bounding box of a ndarray.
 
     https://stackoverflow.com/questions/31400769/bounding-box-of-numpy-array
@@ -583,6 +582,8 @@ def get_bounding_box(x,buffer=1):
     -----
     unsure about anything
     '''
+
+    from numpy import delete,arange,diff,nonzero,array
 
     mask = x == 0
 

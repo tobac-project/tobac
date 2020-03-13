@@ -1,14 +1,5 @@
 '''Identify center of gravity and mass for analysis.
 
-Routine Listings
-----------------
-calculate_cog(tracks, mass, mask)
-
-calculate_cog_untracked(mass, mask)
-
-calculate_cog_domain(mass)
-
-center_of_gravity(cube_in)
 '''
 
 import logging

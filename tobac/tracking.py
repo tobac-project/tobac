@@ -3,17 +3,17 @@
 The individual features and associated area/volumes identified in
 each timestep have to be linked into cloud trajectories to analyse
 the time evolution of cloud properties for a better understanding of
-the underlying pyhsical processes.
+the underlying pyhsical processes. [5]_
 
 The implementations are structured in a way that allows for the future
 addition of more complex tracking methods recording a more complex
 network of relationships between cloud objects at different points in
-time.
+time. [5]_
 
 References
 ----------
-.. Heikenfeld, M., Marinescu, P. J., Christensen, M., Watson-Parris, D.,
-   Senf, F., van den Heever, S. C., and Stier, P.: tobac v1.0:
+.. [5] Heikenfeld, M., Marinescu, P. J., Christensen, M., Watson-Parris,
+   D., Senf, F., van den Heever, S. C., and Stier, P.: tobac v1.0:
    towards a flexible framework for tracking and analysis of clouds in
    diverse datasets, Geosci. Model Dev. Discuss.,
    https://doi.org/10.5194/gmd-2019-105 , in review, 2019, 9f.
@@ -49,7 +49,7 @@ def linking_trackpy(features,field_in,dt,dxy,
     independent of the temporal and spatial resolution of the input
     data. The algorithm creates a continuous track for the cloud that
     most directly follows the direction of travel of the preceding or
-    following cell path.
+    following cell path. [5]_
 
     Parameters
     ----------
@@ -75,7 +75,7 @@ def linking_trackpy(features,field_in,dt,dxy,
         of the position of the feature by one or two grid cells even for
         a very high temporal resolution of the input data, potentially
         jeopardising the tracking procedure. To prevent this, tobac uses
-        an additional minimum radius of the search range.
+        an additional minimum radius of the search range. [5]_
 
         Default is None.
 
@@ -89,9 +89,9 @@ def linking_trackpy(features,field_in,dt,dxy,
         Number of output timesteps features allowed to vanish for to
 	be still considered tracked. Default is 0.
 
-	..warning :: This parameter should be used with caution, as it
+	.. warning :: This parameter should be used with caution, as it
                      can lead to erroneous trajectory linking,
-                     espacially for data with low time resolution.
+                     espacially for data with low time resolution. [5]_
 
     stubs : int, optional
 	Default is 1.
@@ -124,7 +124,7 @@ def linking_trackpy(features,field_in,dt,dxy,
     trajectories_final : pandas.DataFrame
         This enables filtering the resulting trajectories, e.g. to
         reject trajectories that are only partially captured at the
-        boundaries of the input field both in space and time.
+        boundaries of the input field both in space and time. [5]_
 
     Raises
     ------

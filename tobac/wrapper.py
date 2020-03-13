@@ -114,7 +114,6 @@ def maketrack(field_in,
               adaptive_step=None, 
               return_intermediate=False,
               ):
-
     '''Identify features and link them into trajectories.
 
     Parameters
@@ -142,9 +141,9 @@ def maketrack(field_in,
         Number of timesteps for which objects can be missed by the
         algorithm to still give a constistent track. Default is 0.
 
-        ..warning :: This parameter should be used with caution, as it
+        .. warning :: This parameter should be used with caution, as it
                      can lead to erroneous trajectory linking,
-                     espacially for data with low time resolution.
+                     espacially for data with low time resolution. [5]_
 
     stubs : float, optional
         Default is 5.
@@ -180,7 +179,7 @@ def maketrack(field_in,
         Flag choosing method used for trajectory linking. Default is
         'random'.
 
-   cell_number_start : int, optional
+    cell_number_start : int, optional
         Default is 1.
 
     adaptive_step : optional
