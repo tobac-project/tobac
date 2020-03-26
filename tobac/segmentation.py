@@ -1,38 +1,199 @@
+'''Provide segmentation techniques.
+
+Segmentation techniques are used to associate areas or volumes to each
+identified feature. The segmentation is implemented using watershedding
+techniques from the field of image processing with a fixed threshold
+value. This value has to be set specifically for every type of input
+data and application. The segmentation can be performed for both
+two-dimensional and three-dimensional data. At each timestep, a marker
+is set at the position (weighted mean center) of each feature identified
+in the detection step in an array otherwise filled with zeros. In case
+of the three-dimentional watershedding, all cells in the column above
+the weighted mean center position of the identified features fulfilling
+the threshold condition are set to the respective marker. The algorithm
+then fills the area (2D) or volume (3D) based on the input field
+starting from these markers until reaching the threshold. If two or more
+cloud objects are directly connected, the border runs along the
+watershed line between the two regions. This procedure creates a mask of
+the same shape as the input data, with zeros at all grid points where
+there is no cloud or updraft and the integer number of the associated
+feature at all grid points belonging to that specific cloud/updraft.
+this mask can be conveniently and efficiently used to select the volume
+of each cloud object at a specific time step for further analysis or
+visialization.
+
+References
+----------
+.. Heikenfeld, M., Marinescu, P. J., Christensen, M., Watson-Parris, D.,
+   Senf, F., van den Heever, S. C., and Stier, P.: tobac v1.0:
+   towards a flexible framework for tracking and analysis of clouds in
+   diverse datasets, Geosci. Model Dev. Discuss.,
+   https://doi.org/10.5194/gmd-2019-105 , in review, 2019, 7ff.
+'''
+
 import logging
 
 def segmentation_3D(features,field,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None):
+    '''Prepare the output for the 3D watershedding segmentation.
+
+    Parameters
+    ----------
+    features : pandas.DataFrame
+        Output from trackpy/maketrack.
+
+    field : iris.cube.Cube
+        Containing the field to perform the watershedding on.
+
+    dxy : float
+	Grid spacing of the input data.
+
+    threshold : float, optional
+        Threshold for the watershedding field to be used for the mask.
+        Default is 3e-3.
+
+    target : {'maximum', 'minimum'}, optional
+        Flag to determine if tracking is targetting minima or maxima in
+        the data. Default is 'maximum'.
+
+    level : slice of iris.cube.Cube, optional
+        Levels at which to seed the cells for the watershedding
+        algorithm. Default is None.
+
+    method : {'watershed'}, optional
+        Flag determining the algorithm to use (currently watershedding
+        implemented). 'random_walk' could be uncommented.
+
+    max_distance : float, optional
+        Maximum distance from a marker allowed to be classified as
+	belonging to that cell. Default is None.
+
+    Returns
+    -------
+    segmentation_out : iris.cube.Cube
+        Cloud mask, 0 outside and integer numbers according to track
+        inside the clouds.
+
+    features_out : pandas.DataFrame
+        Feature dataframe including the number of cells (2D or 3D) in
+        the segmented area/volume of the feature at the timestep.
+    '''
     return segmentation(features,field,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance)
 
 def segmentation_2D(features,field,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None):
+    '''Prepare the output for the 2D watershedding segmentation.
+
+    Parameters
+    ----------
+    features : pandas.DataFrame
+        Output from trackpy/maketrack.
+
+    field : iris.cube.Cube
+        Containing the field to perform the watershedding on.
+
+    dxy : float
+	Grid spacing of the input data.
+
+    threshold : float, optional
+        Threshold for the watershedding field to be used for the mask.
+        Default is 3e-3.
+
+    target : {'maximum', 'minimum'}, optional
+        Flag to determine if tracking is targetting minima or maxima in
+        the data. Default is 'maximum'.
+
+    level : slice of iris.cube.Cube, optional
+        Levels at which to seed the cells for the watershedding
+        algorithm. Default is None.
+
+    method : {'watershed'}, optional
+        Flag determining the algorithm to use (currently watershedding
+        implemented). 'random_walk' could be uncommented.
+
+    max_distance : float, optional
+        Maximum distance from a marker allowed to be classified as
+        belonging to that cell. Default is None.
+
+    Returns
+    -------
+    segmentation_out : iris.cube.Cube
+        Cloud mask, 0 outside and integer numbers according to track
+        inside the clouds.
+
+    features_out : pandas.DataFrame
+        Feature dataframe including the number of cells (2D or 3D) in
+        the segmented area/volume of the feature at the timestep.
+    '''
+
     return segmentation(features,field,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance)
 
 
 def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,vertical_coord='auto'):    
-    """
-    Function performing watershedding for an individual timestep of the data
+    """Perform watershedding for an individual time step of the data.
     
-    Parameters:
-    features:   pandas.DataFrame 
-                features for one specific point in time
-    field:      iris.cube.Cube 
-                input field to perform the watershedding on (2D or 3D for one specific point in time)
-    threshold:  float 
-                threshold for the watershedding field to be used for the mas
-    target:     string
-                switch to determine if algorithm looks strating from maxima or minima in input field (maximum: starting from maxima (default), minimum: starting from minima)
-    level       slice
-                levels at which to seed the cells for the watershedding algorithm
-    method:     string
-                flag determining the algorithm to use (currently watershedding implemented)
-    max_distance: float
-                  maximum distance from a marker allowed to be classified as belonging to that cell
+    Parameters
+    ----------
+    field_in : iris.cube.Cube
+        Input field to perform the watershedding on (2D or 3D for one
+        specific point in time).
+
+    features_in : pandas.DataFrame
+        Features for one specific point in time.
+
+    dxy : float
+	Grid spacing of the input data.
+
+    threshold : float, optional
+        Threshold for the watershedding field to be used for the mask.
+        Default is 3e-3.
+
+    target : {'maximum', 'minimum'}, optional
+        Flag to determine if tracking is targetting minima or maxima in
+        the data. Default is 'maximum'.
+
+    level : slice of iris.cube.Cube, optional
+        Levels at which to seed the cells for the watershedding
+        algorithm. Default is None.
+
+    method : {'watershed'}, optional
+        Flag determining the algorithm to use (currently watershedding
+        implemented). 'random_walk' could be uncommented.
+
+    max_distance : float, optional
+        Maximum distance from a marker allowed to be classified as
+        belonging to that cell. Default is None.
+
+    vertical_coord : {'auto', 'z', 'model_level_number', 'altitude',
+                      'geopotential_height'}, optional
     
-    Output:
-    segmentation_out: iris.cube.Cube
-                      cloud mask, 0 outside and integer numbers according to track inside the clouds
-    features_out: pandas.DataFrame
-                  feature dataframe including the number of cells (2D or 3D) in the segmented area/volume of the feature at the timestep
+    Returns
+    -------
+    segmentation_out : iris.cube.Cube
+        Cloud mask, 0 outside and integer numbers according to track
+        inside the clouds.
+
+    features_out : pandas.DataFrame
+        Feature dataframe including the number of cells (2D or 3D) in
+        the segmented area/volume of the feature at the timestep.
+
+    Raises
+    ------
+    ValueError
+        If target is neither 'maximum' nor 'minimum'.
+
+        If vertical_coord is not in {'auto', 'z', 'model_level_number',
+                                     'altitude', geopotential_height'}.
+
+        If there is more than one coordinate name.
+
+        If the spatial dimension is neither 2 nor 3.
+
+        If method is not 'watershed'.
+
+    Notes
+    -----
+    unsure about target, dxy and vertical_coord
     """
+
     from skimage.morphology import watershed
     # from skimage.segmentation import random_walker
     from scipy.ndimage import distance_transform_edt
@@ -136,32 +297,65 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
     return segmentation_out,features_out
 
 def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,vertical_coord='auto'):
-    """
-    Function using watershedding or random walker to determine cloud volumes associated with tracked updrafts
-    
-    Parameters:
-    features:         pandas.DataFrame 
-                   output from trackpy/maketrack
-    field:      iris.cube.Cube 
-                   containing the field to perform the watershedding on 
-    threshold:  float 
-                   threshold for the watershedding field to be used for the mask
-                   
-    target:        string
-                   Switch to determine if algorithm looks strating from maxima or minima in input field (maximum: starting from maxima (default), minimum: starting from minima)
+    '''Use watershedding or random walker.
 
-    level          slice
-                   levels at which to seed the cells for the watershedding algorithm
-    method:        str ('method')
-                   flag determining the algorithm to use (currently watershedding implemented)
-                   
-    max_distance: float
-                  Maximum distance from a marker allowed to be classified as belonging to that cell
+    Determine cloud volumes associated with tracked updrafts.
     
-    Output:
-    segmentation_out: iris.cube.Cube
-                   Cloud mask, 0 outside and integer numbers according to track inside the cloud
-    """
+    Parameters
+    ----------
+    features : pandas.DataFrame
+        Output from trackpy/maketrack.
+
+    field : iris.cube.Cube
+        Containing the field to perform the watershedding on.
+
+    dxy : float
+	Grid spacing of the input data.
+
+    threshold : float, optional
+        Threshold for the watershedding field to be used for the mask.
+        Default is 3e-3.
+
+    target : {'maximum', 'minimum'}, optional
+        Flag to determine if tracking is targetting minima or maxima in
+        the data. Default is 'maximum'.
+
+    level : slice of iris.cube.Cube, optional
+        Levels at which to seed the cells for the watershedding
+        algorithm. Default is None.
+
+    method : {'watershed'}, optional
+        Flag determining the algorithm to use (currently watershedding
+        implemented). 'random_walk' could be uncommented.
+
+    max_distance : float, optional
+        Maximum distance from a marker allowed to be classified as
+        belonging to that cell. Default is None.
+
+    vertical_coord : {'auto', 'z', 'model_level_number', 'altitude',
+                      'geopotential_height'}, optional
+    
+    Returns
+    -------
+    segmentation_out : iris.cube.Cube
+        Cloud mask, 0 outside and integer numbers according to track
+        inside the clouds.
+
+    features_out : pandas.DataFrame
+        Feature dataframe including the number of cells (2D or 3D) in
+        the segmented area/volume of the feature at the timestep.
+
+    Raises
+    ------
+    ValueError
+        If field_in.ndim is neither 3 nor 4 and 'time' is not included
+        in coords.
+
+    Notes
+    -----
+    vertical_coord needs a description
+    '''
+
     import pandas as pd
     from iris.cube import CubeList
     
@@ -195,9 +389,61 @@ def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,m
     return segmentation_out,features_out
 
 def watershedding_3D(track,field_in,**kwargs):
+    '''
+    Parameters
+    ----------
+    track
+
+    field_in : iris.cube.Cube
+        Input field to perform the watershedding on (2D or 3D for one
+        specific point in time).
+
+    **kwargs
+
+    Returns
+    -------
+    segmentation_out : iris.cube.Cube
+        Cloud mask, 0 outside and integer numbers according to track
+        inside the clouds.
+
+    features_out : pandas.DataFrame
+        Feature dataframe including the number of cells (2D or 3D) in
+        the segmented area/volume of the feature at the timestep.
+
+    Notes
+    -----
+    needs short summary and track needs type and description
+    '''
+
     kwargs.pop('method',None)
     return segmentation_3D(track,field_in,method='watershed',**kwargs)
 
 def watershedding_2D(track,field_in,**kwargs):
+    '''
+    Parameters
+    ----------
+    track
+
+    field_in : iris.cube.Cube
+        Input field to perform the watershedding on (2D or 3D for one
+        specific point in time).
+
+    **kwargs
+
+    Returns
+    -------
+    segmentation_out : iris.cube.Cube
+        Cloud mask, 0 outside and integer numbers according to track
+        inside the clouds.
+
+    features_out : pandas.DataFrame
+        Feature dataframe including the number of cells (2D or 3D) in
+        the segmented area/volume of the feature at the timestep.
+
+    Notes
+    -----
+    needs short summary and track needs type and description
+    '''
+
     kwargs.pop('method',None)
     return segmentation_2D(track,field_in,method='watershed',**kwargs)
