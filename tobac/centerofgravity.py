@@ -2,6 +2,8 @@
 
 Routine Listings
 ----------------
+cog_cell(cell, Tracks, M_total, M_liquid, M_frozen, Mask, savedir)
+
 calculate_cog(tracks, mass, mask)
 
 calculate_cog_untracked(mass, mask)
@@ -12,6 +14,75 @@ center_of_gravity(cube_in)
 '''
 
 import logging
+import os
+
+def cog_cell(cell,Tracks=None,M_total=None,M_liquid=None,
+             M_frozen=None,
+             Mask=None,
+             savedir=None):
+    '''
+    Parameters
+    ----------
+    cell : int
+        Integer id of cell to create masked cube for output.
+
+    Tracks : optional
+        Default is None.
+
+    M_total : subset of cube, optional
+        Default is None.
+
+    M_liquid : subset of cube, optional
+        Default is None.
+
+    M_frozen : subset of cube, optional
+        Default is None.
+
+    savedir : str
+        Default is None.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    unsure about anything
+    needs a short summary
+    '''
+    
+    from iris import Constraint
+    logging.debug('Start calculating COG for '+str(cell))
+    Track=Tracks[Tracks['cell']==cell]
+    constraint_time=Constraint(time=lambda cell: Track.head(1)['time'].values[0] <= cell <= Track.tail(1)['time'].values[0])
+    M_total_i=M_total.extract(constraint_time)
+    M_liquid_i=M_liquid.extract(constraint_time)
+    M_frozen_i=M_frozen.extract(constraint_time)
+    Mask_i=Mask.extract(constraint_time)
+
+    savedir_cell=os.path.join(savedir,'cells',str(int(cell)))
+    os.makedirs(savedir_cell,exist_ok=True)
+    savefile_COG_total_i=os.path.join(savedir_cell,'COG_total'+'_'+str(int(cell))+'.h5')
+    savefile_COG_liquid_i=os.path.join(savedir_cell,'COG_liquid'+'_'+str(int(cell))+'.h5')
+    savefile_COG_frozen_i=os.path.join(savedir_cell,'COG_frozen'+'_'+str(int(cell))+'.h5')
+    
+    Tracks_COG_total_i=calculate_cog(Track,M_total_i,Mask_i)
+#   Tracks_COG_total_list.append(Tracks_COG_total_i)
+    logging.debug('COG total loaded for ' +str(cell))
+    
+    Tracks_COG_liquid_i=calculate_cog(Track,M_liquid_i,Mask_i)
+#   Tracks_COG_liquid_list.append(Tracks_COG_liquid_i)
+    logging.debug('COG liquid loaded for ' +str(cell))
+    Tracks_COG_frozen_i=calculate_cog(Track,M_frozen_i,Mask_i)
+#   Tracks_COG_frozen_list.append(Tracks_COG_frozen_i)
+    logging.debug('COG frozen loaded for ' +str(cell))
+    
+    Tracks_COG_total_i.to_hdf(savefile_COG_total_i,'table')
+    Tracks_COG_liquid_i.to_hdf(savefile_COG_liquid_i,'table')
+    Tracks_COG_frozen_i.to_hdf(savefile_COG_frozen_i,'table')
+    logging.debug('individual COG calculated and saved to '+ savedir_cell)
+
+
 
 
 def calculate_cog(tracks,mass,mask):

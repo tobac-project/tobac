@@ -1,13 +1,13 @@
 #from .tracking import maketrack
 from .segmentation import segmentation_3D, segmentation_2D,watershedding_3D,watershedding_2D
-from .centerofgravity import calculate_cog,calculate_cog_untracked,calculate_cog_domain
+from .centerofgravity import cog_cell,calculate_cog,calculate_cog_untracked,calculate_cog_domain
 from .plotting import plot_tracks_mask_field,plot_tracks_mask_field_loop,plot_mask_cell_track_follow,plot_mask_cell_track_static,plot_mask_cell_track_static_timeseries
 from .plotting import plot_lifetime_histogram,plot_lifetime_histogram_bar,plot_histogram_cellwise,plot_histogram_featurewise
 from .plotting import plot_mask_cell_track_3Dstatic,plot_mask_cell_track_2D3Dstatic
 from .plotting import plot_mask_cell_individual_static,plot_mask_cell_individual_3Dstatic
 from .plotting import animation_mask_field
 from .plotting import make_map, map_tracks
-from .analysis import cell_statistics,cog_cell,lifetime_histogram,histogram_featurewise,histogram_cellwise
+from .analysis import cell_statistics,lifetime_histogram,histogram_featurewise,histogram_cellwise
 from .analysis import calculate_velocity,calculate_distance,calculate_area
 from .analysis import calculate_nearestneighbordistance
 from .analysis import velocity_histogram,nearestneighbordistance_histogram,area_histogram

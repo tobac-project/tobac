@@ -232,7 +232,7 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
 
 
     datestr=field.coord('time').units.num2date(field.coord('time').points[0]).strftime('%Y-%m-%d %H:%M:%S')
-    if title is 'datestr':
+    if title == 'datestr':
         if title_str is None:
             titlestring=datestr
         elif type(title_str is str):
@@ -269,9 +269,9 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
         cbar=plt.colorbar(plot_field,orientation=orientation_colorbar, pad=pad_colorbar,fraction=fraction_colorbar,ax=axes)
         if label_colorbar is None:
             label_colorbar=field.name()+ '('+field.units.symbol +')'
-        if orientation_colorbar is 'horizontal':
+        if orientation_colorbar == 'horizontal':
             cbar.ax.set_xlabel(label_colorbar)
-        elif orientation_colorbar is 'vertical':
+        elif orientation_colorbar == 'vertical':
             cbar.ax.set_ylabel(label_colorbar)
         tick_locator = ticker.MaxNLocator(nbins=5)
         cbar.locator = tick_locator
@@ -375,19 +375,19 @@ def animation_mask_field(track,features,field,mask,interval=500,figsize=(10,10),
     plt.close()
 
     def update(time_in):
-    '''
-    Parameters
-    ----------
-    time_in
-
-    Returns
-    -------
-    animation
-
-    Notes
-    -----
-    needs more descriptions and a short summary line
-    '''
+        '''
+        Parameters
+        ----------
+        time_in
+    
+        Returns
+        -------
+        animation
+    
+        Notes
+        -----
+        needs more descriptions and a short summary line
+        '''
         fig.clf()
         ax=fig.add_subplot(111,projection=ccrs.PlateCarree())
         constraint_time = Constraint(time=time_in)
@@ -1591,7 +1591,7 @@ def plot_mask_cell_individual_3Dstatic(cell_i,track, cog, features, mask_total,
     '''
 
     import numpy as np
-    from .utils  import mask_features,mask_features_surface
+#    from .utils  import mask_features,mask_features_surface
 #    from mpl_toolkits.axes_grid1 import make_axes_locatable
 #    from matplotlib.colors import Normalize
     from mpl_toolkits.mplot3d import Axes3D
@@ -2126,7 +2126,7 @@ def plot_histogram_cellwise(track,bin_edges,variable,quantity,axes=None,density=
     needs short summary and descriptions
     '''
 
-hist, bin_edges,bin_centers = histogram_cellwise(track,bin_edges=bin_edges,variable=variable,quantity=quantity,density=density)
+    hist, bin_edges,bin_centers = histogram_cellwise(track,bin_edges=bin_edges,variable=variable,quantity=quantity,density=density)
     plot_hist=axes.plot(bin_centers, hist,**kwargs)
     return plot_hist
 
