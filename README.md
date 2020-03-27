@@ -1,10 +1,9 @@
 tobac - Tracking and Object-based Analysis of Clouds
-======
+====================================================
 [![Documentation Status](https://readthedocs.org/projects/tobac/badge/?version=latest)](https://tobac.readthedocs.io/en/latest/?badge=latest)[![Build Status](https://travis-ci.org/climate-processes/tobac.svg?branch=master)](https://travis-ci.org/climate-processes/tobac)
 
 What is it?
 -----------
-
 **tobac** is a Python package for identifiying, tracking and analysing of clouds in different types of gridded datasets, i.e. 3D model output from cloud resolving model simulations or 2D data of satellite observations.
 
 Documentation
@@ -51,3 +50,11 @@ and install the package from the locally cloned version:
 ```
 pip install tobac/
 ```
+
+Contributing
+------------
+Please take a look at our CONTRIBUTING file.
+
+License
+-------
+[![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
