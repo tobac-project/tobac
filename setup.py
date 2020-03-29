@@ -7,6 +7,6 @@ setup(name='tobac',
       author='Max Heikenfeld',
       author_email='max.heikenfeld@physics.ox.ac.uk',
       license='GNU',
-      packages=['tobac'],
+      packages=['tobac','tobac.analysis','tobac.plot','tobac.themes','tobac.themes.tobac_v1'],
       install_requires=[],
       zip_safe=False)

@@ -310,7 +310,7 @@ def feature_detection_multithreshold(field_in,
     features:      pandas DataFrame 
                    detected features
     '''
-    from .utils import add_coordinates
+    from tobac.utils import add_coordinates
 
     logging.debug('start feature detection based on thresholds')
     

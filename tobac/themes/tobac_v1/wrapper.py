@@ -55,7 +55,7 @@ def tracking_wrapper(
     from .feature_detection import feature_detection_multithreshold
     from .tracking import linking_trackpy
     from .segmentation import segmentation_3D, segmentation_2D
-    from .utils import get_spacings
+    from tobac.utils import get_spacings
 
     logger = logging.getLogger('trackpy')
     logger.propagate = False

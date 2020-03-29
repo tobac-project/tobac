@@ -21,8 +21,8 @@ import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 import logging
-from .analysis import lifetime_histogram
-from .analysis import histogram_cellwise,histogram_featurewise
+from tobac.analysis import lifetime_histogram
+from tobac.analysis import histogram_cellwise,histogram_featurewise
 
 import numpy as np
 
@@ -224,7 +224,7 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
     import iris.plot as iplt
     from matplotlib.ticker import MaxNLocator
     import cartopy.feature as cfeature
-    from .utils import mask_features,mask_features_surface
+    from tobac.utils import mask_features,mask_features_surface
     from matplotlib import ticker
 
     if type(axes) is not cartopy.mpl.geoaxes.GeoAxesSubplot:
@@ -626,7 +626,7 @@ def plot_mask_cell_individual_follow(cell_i,track, cog,features, mask_total,
     '''
 
     import numpy as np
-    from .utils  import mask_cell_surface
+    from tobac.utils  import mask_cell_surface
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     from matplotlib.colors import Normalize
 
@@ -1008,7 +1008,7 @@ def plot_mask_cell_individual_static(cell_i,track, cog, features, mask_total,
     '''
 
     import numpy as np
-    from .utils  import mask_features,mask_features_surface
+    from tobac.utils  import mask_features,mask_features_surface
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     from matplotlib.colors import Normalize
 
@@ -1591,7 +1591,7 @@ def plot_mask_cell_individual_3Dstatic(cell_i,track, cog, features, mask_total,
     '''
 
     import numpy as np
-#    from .utils  import mask_features,mask_features_surface
+#    from tobac.utils  import mask_features,mask_features_surface
 #    from mpl_toolkits.axes_grid1 import make_axes_locatable
 #    from matplotlib.colors import Normalize
     from mpl_toolkits.mplot3d import Axes3D

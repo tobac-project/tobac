@@ -70,7 +70,7 @@ import numpy as np
 import logging
 import os
 
-from .utils import mask_cell,mask_cell_surface,mask_cube_cell,get_bounding_box
+from tobac.utils import mask_cell,mask_cell_surface,mask_cube_cell,get_bounding_box
 
 def cell_statistics_all(input_cubes,track,mask,aggregators,output_path='./',cell_selection=None,output_name='Profiles',width=10000,z_coord='model_level_number',dimensions=['x','y'],**kwargs):
     '''

@@ -109,7 +109,7 @@ def calculate_cog(tracks,mass,mask):
         and total cloud mass each tracked cells at each timestep.
     '''
 
-    from .utils import mask_cube_cell
+    from tobac.utils import mask_cube_cell
     from iris import Constraint
     
     logging.info('start calculating centre of gravity for tracked cells')
@@ -155,7 +155,7 @@ def calculate_cog_untracked(mass,mask):
     '''
 
     from pandas import DataFrame
-    from .utils import mask_cube_untracked
+    from tobac.utils import mask_cube_untracked
     from iris import Constraint
     
     logging.info('start calculating centre of gravity for untracked parts of the domain')
