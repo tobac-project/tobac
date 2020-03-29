@@ -2,8 +2,9 @@ language: python
 #sudo: false
 # choose python versions
 python:
-  - "3.6"
+  - "3.8"
   - "3.7"
+  - "3.6"
   - "2.7"
 
 install:
@@ -33,6 +34,8 @@ install:
   # ---------------------------------
   - conda install -c conda-forge --quiet --file conda-requirements.txt
   - conda install -c conda-forge --quiet pytest
+  - conda install -c conda-forge --quiet coverage
+  - conda install -c conda-forge --quiet pytest-cov
   - PREFIX=$HOME/miniconda/envs/$ENV_NAME
 
   # Output debug info
@@ -46,6 +49,8 @@ install:
   - conda list
 
 # command to run tests
-#script
 script:
-  - pytest
+  - python -m pytest --cov=./tobac
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash) 
