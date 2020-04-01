@@ -1,15 +1,12 @@
 API reference
 =============
 
-.. toctree::
-   :maxdepth: 4
-
-.. automodule:: 
+.. autosummary:: 
    :toctree: generated 
    
     tobac.analysis
-    tobac.centerofgravitiy
-    tobac.feature_dection
+    tobac.centerofgravity
+    tobac.feature_detection
     tobac.plotting
     tobac.segmentation
     tobac.tracking

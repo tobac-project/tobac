@@ -143,7 +143,7 @@ def maketrack(field_in,
 
         .. warning :: This parameter should be used with caution, as it
                      can lead to erroneous trajectory linking,
-                     espacially for data with low time resolution. [5]_
+                     espacially for data with low time resolution. [6]_
 
     stubs : float, optional
         Default is 5.
@@ -225,6 +225,15 @@ def maketrack(field_in,
     features_unfiltered: pandas.DataFrame
     
     trajectories_filtered_unfilled: pandas.DataFrame
+
+    References
+    ----------
+    .. [6] Heikenfeld, M., Marinescu, P. J., Christensen, M., 
+       Watson-Parris, D., Senf, F., van den Heever, S. C., and
+       Stier, P.: tobac v1.0: towards a flexible framework for tracking
+       and analysis of clouds in diverse datasets,
+       Geosci. Model Dev. Discuss.,
+       https://doi.org/10.5194/gmd-2019-105 , in review, 2019, 9f.
     '''
 
     from .feature_detection import feature_detection_multithreshold
