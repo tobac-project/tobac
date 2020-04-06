@@ -172,6 +172,7 @@ def test_tracking_3D():
     assert not Track_inv.empty
 
 
+
     # add tests for analyses of the output:
         
     # lifetime histogram:
@@ -179,29 +180,28 @@ def test_tracking_3D():
     hist,bin_edges,bin_centers=lifetime_histogram(Track,bin_edges=np.arange(0,200,20),density=False,return_values=False)
     hist,bin_edges,bin_centers,minutes=lifetime_histogram(Track,bin_edges=np.arange(0,200,20),density=True,return_values=True)
 
-    hist,bin_edges,velocities=velocity_histogram(track,
+    hist,bin_edges,velocities=velocity_histogram(Track,
                                                  bin_edges=np.arange(0,30,1),density=False,
                                                  method_distance=None,return_values=True)
-    hist,bin_edges,velocities=velocity_histogram(track,
+    hist,bin_edges,velocities=velocity_histogram(Track,
                                                  bin_edges=np.arange(0,30,1),density=True,
                                                  method_distance=None,return_values=True)
-    hist,bin_edges=velocity_histogram(track,
+    hist,bin_edges=velocity_histogram(Track,
                                       bin_edges=np.arange(0,30,1),density=False,
                                       method_distance=None,return_values=False)
 
         
-    hist,bin_edges,distances=nearestneighbordistance_histogram(features,
+    hist,bin_edges,distances=nearestneighbordistance_histogram(Features,
                                                                bin_edges=np.arange(0,30000,500),density=False, 
                                                                method_distance=None,return_values=True)
         
-    hist,bin_edges,distances=nearestneighbordistance_histogram(features,
+    hist,bin_edges,distances=nearestneighbordistance_histogram(Features,
                                                                bin_edges=np.arange(0,30000,500),density=True, 
                                                                method_distance=None,return_values=True)
         
-    hist,bin_edges=nearestneighbordistance_histogram(features,
-                                                               bin_edges=np.arange(0,30000,500),density=False, 
-                                                               method_distance=None,return_values=False)
+    hist,bin_edges=nearestneighbordistance_histogram(Features,
+                                                     bin_edges=np.arange(0,30000,500),density=False, 
+                                                     method_distance=None,return_values=False)
 
     # add tests for plots of the output:
-
 
