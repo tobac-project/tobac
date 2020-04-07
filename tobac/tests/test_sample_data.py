@@ -216,6 +216,6 @@ def test_tracking_3D():
                                                      density=False,method_area=None,
                                                      return_values=False,representative_area=False)
 
-    overlap=calculate_overlap(Track,Track,min_sum_inv_distance=None,min_mean_inv_distance=None)
+    #overlap=calculate_overlap(Track,Track,min_sum_inv_distance=None,min_mean_inv_distance=None)
     
     # add tests for plots of the output:        
