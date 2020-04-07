@@ -4,7 +4,7 @@ Tests for tobac based on simple sample datasets with moving blobs. These tests s
 from tobac.testing import make_sample_data_2D_3blobs, make_sample_data_2D_3blobs_inv, make_sample_data_3D_3blobs
 from tobac.themes.tobac_v1 import feature_detection_multithreshold,linking_trackpy,segmentation_2D, segmentation_3D
 from tobac.utils import get_spacings
-from tobac.analysis import lifetime_histogram,velocity_histogram,nearestneighbordistance_histogram
+from tobac.analysis import lifetime_histogram,velocity_histogram,nearestneighbordistance_histogram,area_histogram,calculate_overlap
 from iris.analysis import MEAN,MAX,MIN
 from numpy.testing import assert_allclose
 import numpy as np
@@ -217,5 +217,7 @@ def test_tracking_3D():
                                                      return_values=False,representative_area=False)
 
     overlap=calculate_overlap(Track,Track,min_sum_inv_distance=None,min_mean_inv_distance=None)
+    
     # add tests for plots of the output:
+        
 
