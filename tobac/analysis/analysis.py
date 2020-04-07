@@ -611,7 +611,12 @@ def calculate_area(features,mask,method_area=None):
         if not (mask.coord('projection_x_coordinate').has_bounds() and mask.coord('projection_y_coordinate').has_bounds()):
             mask.coord('projection_x_coordinate').guess_bounds()
             mask.coord('projection_y_coordinate').guess_bounds()
-        area=np.outer(np.diff(mask.coord('projection_x_coordinate').bounds,axis=1),np.diff(mask.coord('projection_y_coordinate').bounds,axis=1))
+            dx=np.diff(mask.coord('projection_x_coordinate').bounds,axis=1)
+            dy=np.diff(mask.coord('projection_y_coordinate').bounds,axis=1)
+        if mask.coord_dims('projection_x_coordinate')[0] < mask.coord_dims('projection_y_coordinate')[0]:
+            area=np.outer(dx,dy)
+        if mask.coord_dims('projection_x_coordinate')[0] > mask.coord_dims('projection_y_coordinate')[0]:
+            area=np.outer(dy,dx)
     elif method_area=='latlon':
         if (mask.coord('latitude').ndim==1) and (mask.coord('latitude').ndim==1):
             if not (mask.coord('latitude').has_bounds() and mask.coord('longitude').has_bounds()):
@@ -677,7 +682,7 @@ def area_histogram(features,mask,bin_edges=np.arange(0,30000,500),
 
     if 'area' not in features.columns:
         logging.info('calculate area')
-        features=calculate_area(features,method_area)
+        features=calculate_area(features,mask,method_area)
     areas=features['area'].values
     # restrict to non NaN values:
     areas=areas[~np.isnan(areas)]

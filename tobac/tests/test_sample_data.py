@@ -4,9 +4,12 @@ Tests for tobac based on simple sample datasets with moving blobs. These tests s
 from tobac.testing import make_sample_data_2D_3blobs, make_sample_data_2D_3blobs_inv, make_sample_data_3D_3blobs
 from tobac.themes.tobac_v1 import feature_detection_multithreshold,linking_trackpy,segmentation_2D, segmentation_3D
 from tobac.utils import get_spacings
+from tobac.analysis import lifetime_histogram,velocity_histogram,nearestneighbordistance_histogram,area_histogram,calculate_overlap
 from iris.analysis import MEAN,MAX,MIN
 from numpy.testing import assert_allclose
+import numpy as np
 import pandas as pd
+import iris
 
 def test_sample_data():
     """
@@ -71,8 +74,15 @@ def test_tracking_coord_order():
 
     
     segmentation_mask,features_segmentation=segmentation_2D(Features,sample_data,dxy=dxy,**parameters_segmentation)
-    segmentation_mask_inv,features_segmentation=segmentation_2D(Features_inv,sample_data_inv,dxy=dxy_inv,**parameters_segmentation)
+    segmentation_mask_inv,features_segmentation_inv=segmentation_2D(Features_inv,sample_data_inv,dxy=dxy_inv,**parameters_segmentation)
     
+    assert type(features_segmentation) == pd.core.frame.DataFrame
+    assert type(features_segmentation) == pd.core.frame.DataFrame
+        
+    assert type(segmentation_mask) == iris.cube.Cube
+    assert type(segmentation_mask_inv) == iris.cube.Cube
+
+
     # perform trajectory linking
 
     parameters_linking={}
@@ -91,6 +101,10 @@ def test_tracking_coord_order():
     Track=linking_trackpy(Features,sample_data,dt=dt,dxy=dxy,**parameters_linking)
     Track_inv=linking_trackpy(Features_inv,sample_data_inv,dt=dt_inv,dxy=dxy_inv,**parameters_linking)
     
+    # Assert that output of feature detection not empty:
+    assert not Track.empty
+    assert not Track_inv.empty
+
 def test_tracking_3D():
     """
     Test a tracking applications to make sure that coordinate order does not lead to different results
@@ -156,3 +170,52 @@ def test_tracking_3D():
     # Assert that output of feature detection not empty:
     assert not Track.empty
     assert not Track_inv.empty
+
+
+
+    # add tests for analyses of the output:
+        
+    # lifetime histogram:
+    hist,bin_edges,bin_centers,minutes=lifetime_histogram(Track,bin_edges=np.arange(0,200,20),density=False,return_values=True)
+    hist,bin_edges,bin_centers=lifetime_histogram(Track,bin_edges=np.arange(0,200,20),density=False,return_values=False)
+    hist,bin_edges,bin_centers,minutes=lifetime_histogram(Track,bin_edges=np.arange(0,200,20),density=True,return_values=True)
+
+    hist,bin_edges,velocities=velocity_histogram(Track,
+                                                 bin_edges=np.arange(0,30,1),density=False,
+                                                 method_distance=None,return_values=True)
+    hist,bin_edges,velocities=velocity_histogram(Track,
+                                                 bin_edges=np.arange(0,30,1),density=True,
+                                                 method_distance=None,return_values=True)
+    hist,bin_edges=velocity_histogram(Track,
+                                      bin_edges=np.arange(0,30,1),density=False,
+                                      method_distance=None,return_values=False)
+
+        
+    hist,bin_edges,distances=nearestneighbordistance_histogram(Features,
+                                                               bin_edges=np.arange(0,30000,500),density=False, 
+                                                               method_distance=None,return_values=True)
+        
+    hist,bin_edges,distances=nearestneighbordistance_histogram(Features,
+                                                               bin_edges=np.arange(0,30000,500),density=True, 
+                                                               method_distance=None,return_values=True)
+        
+    hist,bin_edges=nearestneighbordistance_histogram(Features,
+                                                     bin_edges=np.arange(0,30000,500),density=False, 
+                                                     method_distance=None,return_values=False)
+
+
+    hist,bin_edges,bin_centers,areas=area_histogram(Features,segmentation_mask,bin_edges=np.arange(0,30000,500),
+                                                     density=False,method_area=None,
+                                                     return_values=True,representative_area=False)
+                                                     
+    hist,bin_edges,bin_centers,areas=area_histogram(Features,segmentation_mask,bin_edges=np.arange(0,30000,500),
+                                                     density=True, method_area=None,
+                                                     return_values=True, representative_area=True)
+                                                     
+    hist,bin_edges,bin_centers=area_histogram(Features,segmentation_mask,bin_edges=np.arange(0,30000,500),
+                                                     density=False,method_area=None,
+                                                     return_values=False,representative_area=False)
+
+    #overlap=calculate_overlap(Track,Track,min_sum_inv_distance=None,min_mean_inv_distance=None)
+    
+    # add tests for plots of the output:        
