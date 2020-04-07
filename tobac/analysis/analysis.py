@@ -613,9 +613,9 @@ def calculate_area(features,mask,method_area=None):
             mask.coord('projection_y_coordinate').guess_bounds()
             dx=np.diff(mask.coord('projection_x_coordinate').bounds,axis=1)
             dy=np.diff(mask.coord('projection_y_coordinate').bounds,axis=1)
-        if mask.coord_dims('projection_x_coordinate')[0] < mask.coord_dims('projection_x_coordinate')[0]:
+        if mask.coord_dims('projection_x_coordinate')[0] < mask.coord_dims('projection_y_coordinate')[0]:
             area=np.outer(dx,dy)
-        if mask.coord_dims('projection_x_coordinate')[0] > mask.coord_dims('projection_x_coordinate')[0]:
+        if mask.coord_dims('projection_x_coordinate')[0] > mask.coord_dims('projection_y_coordinate')[0]:
             area=np.outer(dy,dx)
     elif method_area=='latlon':
         if (mask.coord('latitude').ndim==1) and (mask.coord('latitude').ndim==1):
