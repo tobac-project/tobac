@@ -5,16 +5,21 @@ python:
   - "3.8"
   - "3.7"
   - "3.6"
-  - "2.7"
+    #  - "2.7"
 
 install:
 
   # Install miniconda
   # -----------------
+  - PYTHON_TARGET=$TRAVIS_PYTHON_VERSION
+
   - if [[ $PYTHON_TARGET == 2* ]]; then
       export CONDA_BASE=http://repo.continuum.io/miniconda/Miniconda2;
-    else
+    elif [[ $PYTHON_TARGET == 3* ]]; then
       export CONDA_BASE=http://repo.continuum.io/miniconda/Miniconda3;
+    else
+      echo "must be Python 2 or Python 3";
+      exit 1;
     fi
   - wget ${CONDA_BASE}-latest-Linux-x86_64.sh -O miniconda.sh;
 
@@ -33,20 +38,18 @@ install:
   # Customise the testing environment
   # ---------------------------------
   - conda install -c conda-forge --quiet --file conda-requirements.txt
-  - conda install -c conda-forge --quiet pytest
-  - conda install -c conda-forge --quiet coverage
   - conda install -c conda-forge --quiet pytest-cov
   - PREFIX=$HOME/miniconda/envs/$ENV_NAME
 
   # Output debug info
-  - conda list
-  - conda info -a
+  #- conda list
+  #- conda info -a
 
   # Install
   - pip install .
 
   # Output debug info
-  - conda list
+  #- conda list
 
 # command to run tests
 script:

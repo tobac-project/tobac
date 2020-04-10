@@ -9,16 +9,17 @@ We are currently reorganizing our project. So, please check our modifications la
 ### Installation & Environment details
 You will find them in the [README.md](https://github.com/climate-processes/tobac/blob/master/README.md).
 
+
 ### Tutorials
-Tutorials have been prepared to provide you further inside to `tobac`s functionality. Please visit [Tobac Tutorials]().
+Tutorials have been prepared to provide you further inside to `tobac`s functionality. Please visit the separate [tobac-tutorials](https://github.com/climate-processes/tobac-tutorials) repository here on Github.
+
 
 ### Documentation
 You will find our documentation at [https://tobac.readthedocs.io](https://tobac.readthedocs.io).
 
+
 ### Testing
 The tests are located in the [tests folder](https://github.com/climate-processes/tobac/tree/master/tobac/tests).
-
-
 
 ## Reporting Bugs
 Please create a new issue on [GitHub](https://github.com/climate-processes/tobac/issues) if it is not listed there, yet.
@@ -33,12 +34,12 @@ Please create a new issue on [GitHub](https://github.com/climate-processes/tobac
 ## How to Submit Changes
 * Please read the [README.md](https://github.com/climate-processes/tobac/blob/master/README.md) first, to learn about our project goals and check the [changelog.md]().
 * Before you start a pull request, please make sure that you added [numpydoc docstrings](#docstringExample) to your functions. This way the api documentation will be parsed properly.
-* If it is a larger change, please place an example of use in the 
-[example folder](https://github.com/climate-processes/tobac/tree/master/examples). [or in the extra tobac-tutorial repository?]
+* If it is a larger change or an newly added feature or workflow, please place an example of use in the [tobac-tutorials](https://github.com/climate-processes/tobac-tutorials) repository or adapt the existing examples there.
 * If necessary add a folder or modify a file.
 
 
 We hope that we can respond within two weeks.
+
 
 ### Numpydoc Example <a name='docstringExample'>
 ```python
@@ -69,4 +70,7 @@ We hope that we can respond within two weeks.
     '''
 
 ```
+
+## Slack
+In addition to the workflow here on Github, there's a tobac workspace on Slack [tobac-dev.slack.com](tobac-dev.slack.com) that we use for some additional communication around the project. Please join us there to stay updated about all things tobac that go beyond the detailed work on the code.
 
