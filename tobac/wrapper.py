@@ -114,7 +114,6 @@ def maketrack(field_in,
               adaptive_step=None, 
               return_intermediate=False,
               ):
-
     '''Identify features and link them into trajectories.
 
     Parameters
@@ -142,9 +141,9 @@ def maketrack(field_in,
         Number of timesteps for which objects can be missed by the
         algorithm to still give a constistent track. Default is 0.
 
-        ..warning :: This parameter should be used with caution, as it
+        .. warning :: This parameter should be used with caution, as it
                      can lead to erroneous trajectory linking,
-                     espacially for data with low time resolution.
+                     espacially for data with low time resolution. [6]_
 
     stubs : float, optional
         Default is 5.
@@ -180,7 +179,7 @@ def maketrack(field_in,
         Flag choosing method used for trajectory linking. Default is
         'random'.
 
-   cell_number_start : int, optional
+    cell_number_start : int, optional
         Default is 1.
 
     adaptive_step : optional
@@ -226,6 +225,15 @@ def maketrack(field_in,
     features_unfiltered: pandas.DataFrame
     
     trajectories_filtered_unfilled: pandas.DataFrame
+
+    References
+    ----------
+    .. [6] Heikenfeld, M., Marinescu, P. J., Christensen, M., 
+       Watson-Parris, D., Senf, F., van den Heever, S. C., and
+       Stier, P.: tobac v1.0: towards a flexible framework for tracking
+       and analysis of clouds in diverse datasets,
+       Geosci. Model Dev. Discuss.,
+       https://doi.org/10.5194/gmd-2019-105 , in review, 2019, 9f.
     '''
 
     from .feature_detection import feature_detection_multithreshold
