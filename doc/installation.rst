@@ -1,6 +1,6 @@
 Installation
 ------------
-tobac is now capable of working with both Python 2 and Python 3 (tested for 2.7,3.6 and 3.7) installations.
+tobac is now capable of working with both Python 2 and Python 3 (tested for Python 2.7, 3.6, 3.7 and 3.8) installations.
 
 The easiest way is to install the most recent version of tobac via conda and the conda-forge channel:
 

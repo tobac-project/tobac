@@ -1,9 +1,28 @@
+'''Provide methods for plotting analyzed data.
+
+Plotting routines include both visualizations of the entire clod field
+and detailed visualizations for individual convective cells and their
+properties.
+
+Notes
+-----
+many short summaries are the same
+
+References
+----------
+.. Heikenfeld, M., Marinescu, P. J., Christensen, M., Watson-Parris, D.,
+   Senf, F., van den Heever, S. C., and Stier, P.: tobac v1.0:
+   towards a flexible framework for tracking and analysis of clouds in
+   diverse datasets, Geosci. Model Dev. Discuss.,
+   https://doi.org/10.5194/gmd-2019-105 , in review, 2019, 10
+'''
+
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 import logging
-from .analysis import lifetime_histogram
-from .analysis import histogram_cellwise,histogram_featurewise
+from tobac.analysis import lifetime_histogram
+from tobac.analysis import histogram_cellwise,histogram_featurewise
 
 import numpy as np
 
@@ -11,6 +30,57 @@ def plot_tracks_mask_field_loop(track,field,mask,features,axes=None,name=None,pl
                                 figsize=(10./2.54,10./2.54),dpi=300,
                                 margin_left=0.05,margin_right=0.05,margin_bottom=0.05,margin_top=0.05,
                                 **kwargs):
+    '''
+    Parameters
+    ----------
+    track
+
+    field : iris.cube.Cube
+
+    mask : iris.cube.Cube
+	Cube containing mask (int id for tacked volumes 0 everywhere
+	else).
+
+    features : pandas.DataFrame
+	Output from trackpy/maketrack.
+
+    axes : cartopy.mpl.geoaxes.GeoAxesSubplot, optional
+	Default is None.
+
+    name : str
+
+    plot_dir : str, optional
+        Path where the plot will be saved. Default is './'.
+
+    figsize : tupel of float, optional
+	Default is (10/2.54, 10/2.54).
+
+    dpi : int, optional
+	Plot resolution. Default is 300.
+
+    margin_left : float, optional
+	Default is 0.05.
+
+    margin_right : float, optional
+	Default is 0.05.
+
+    margin_bottom : float, optional
+	Default is 0.05.
+
+    margin_top : float, optional
+	Default is 0.05.
+
+    **kwargs
+
+    Returns
+    -------
+    none
+
+    Notes
+    -----
+    needs more descriptions and a short summary line
+    '''
+
     import cartopy.crs as ccrs
     import os
     from iris import Constraint
@@ -49,12 +119,112 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
                            label_colorbar=None,fraction_colorbar=0.046,
                            rasterized=True,linewidth_contour=1
                            ):
+    '''
+
+    Parameters
+    ----------
+    track
+
+    field : iris.cube.Cube
+
+    mask : iris.cube.Cube
+	Cube containing mask (int id for tacked volumes 0 everywhere
+	else).
+
+    features : pandas.DataFrame
+	Output from trackpy/maketrack.
+
+    axes : cartopy.mpl.geoaxes.GeoAxesSubplot, optional
+	Default is None.
+
+    axis_extent : matplotlib.axes, optional
+	Default is None.
+
+    plot_outline : bool, optional
+        Default is True.
+
+    plot_marker : bool, optional
+        Default is True.
+
+    marker_track : str, optional
+        Default is 'x'.
+
+    markersize_track : int, optional
+	Default is 4.
+
+    plot_number : bool, optional
+        Default is True.
+
+    plot_features : bool, optional
+	Default is False.
+
+    marker_feature : optional
+	Default is None.
+
+    markersize_feature : optional
+	Default is None.
+
+    title : optional
+	Default is None.
+
+    title_str : str, optional
+	Default is None.
+
+    vmin : optional
+	Default is None.
+
+    vmax : optional
+	Default is None.
+
+    n_levels : int, optional
+	Default is 50.
+
+    cmap : {'viridis',...}, optional
+	matplotlib.colors. Default is 'viridis'.
+
+    extend : str, optional
+	Default is 'neither'.
+
+    orientation_colorbar : str, optional
+	Default is 'horizontal'.
+
+    pad_colorbar : float, optional
+	Default is 0.05.
+
+    label_colorbar : optional
+        Default is None.
+
+    fraction_colorbar : float, optional
+	Default is 0.046.
+
+    rasterized : bool, optional
+	Default is True.
+
+    linewidth_contour : int, optional
+	Default is 1.
+
+    Returns
+    -------
+    axes : cartopy.mpl.geoaxes.GeoAxesSubplot
+
+    Raises
+    ------
+    ValueError
+        If axes are not cartopy.mpl.geoaxes.GeoAxesSubplot.
+
+        If mask.ndim is neither 2 nor 3.
+
+    Notes
+    -----
+    needs a short summary line and descriptions
+    '''
+
     import cartopy
     from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
     import iris.plot as iplt
     from matplotlib.ticker import MaxNLocator
     import cartopy.feature as cfeature
-    from .utils import mask_features,mask_features_surface
+    from tobac.utils import mask_features,mask_features_surface
     from matplotlib import ticker
 
     if type(axes) is not cartopy.mpl.geoaxes.GeoAxesSubplot:
@@ -62,7 +232,7 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
 
 
     datestr=field.coord('time').units.num2date(field.coord('time').points[0]).strftime('%Y-%m-%d %H:%M:%S')
-    if title is 'datestr':
+    if title == 'datestr':
         if title_str is None:
             titlestring=datestr
         elif type(title_str is str):
@@ -99,9 +269,9 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
         cbar=plt.colorbar(plot_field,orientation=orientation_colorbar, pad=pad_colorbar,fraction=fraction_colorbar,ax=axes)
         if label_colorbar is None:
             label_colorbar=field.name()+ '('+field.units.symbol +')'
-        if orientation_colorbar is 'horizontal':
+        if orientation_colorbar == 'horizontal':
             cbar.ax.set_xlabel(label_colorbar)
-        elif orientation_colorbar is 'vertical':
+        elif orientation_colorbar == 'vertical':
             cbar.ax.set_ylabel(label_colorbar)
         tick_locator = ticker.MaxNLocator(nbins=5)
         cbar.locator = tick_locator
@@ -167,6 +337,35 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
     return axes
 
 def animation_mask_field(track,features,field,mask,interval=500,figsize=(10,10),**kwargs):
+    '''
+
+    Parameters
+    ----------
+    track
+
+    field : iris.cube.Cube
+
+    mask : iris.cube.Cube
+	Cube containing mask (int id for tacked volumes 0 everywhere
+	else).
+
+    interval : int, optional
+	Default is 500.
+
+    figsize : tupel, optional
+	Default is (10, 10).
+
+    **kwargs
+
+    Returns
+    -------
+    none
+
+    Notes
+    -----
+    needs more descriptions and a short summary line
+    '''
+
     import cartopy.crs as ccrs
     import matplotlib.pyplot as plt
     import matplotlib.animation
@@ -176,6 +375,19 @@ def animation_mask_field(track,features,field,mask,interval=500,figsize=(10,10),
     plt.close()
 
     def update(time_in):
+        '''
+        Parameters
+        ----------
+        time_in
+    
+        Returns
+        -------
+        animation
+    
+        Notes
+        -----
+        needs more descriptions and a short summary line
+        '''
         fig.clf()
         ax=fig.add_subplot(111,projection=ccrs.PlateCarree())
         constraint_time = Constraint(time=time_in)
@@ -200,10 +412,56 @@ def plot_mask_cell_track_follow(cell,track, cog, features, mask_total,
                                 name= 'test', plotdir='./',
                                 file_format=['png'],figsize=(10/2.54, 10/2.54),dpi=300,
                                 **kwargs):
-    '''Make plots for all cells centred around cell and with one background field as filling and one background field as contrours
-    Input:
-    Output:
+    '''Make plots for all cells centered around cell.
+
+    With one background field as filling and one background field as
+    contrours.
+
+    Parameters
+    ----------
+    cell : int
+	Integer id of cell to create masked cube for.
+
+    track
+
+    cog
+
+    features : pandas.DataFrame
+        Output from trackpy/maketrack.
+
+    mask_total : iris.cube.Cube
+
+    field_contour
+
+    field_filled
+
+    width : int, optional
+        Default is 10000.
+
+    name : str, optional
+	Default is 'test'.
+
+    plotdir : str, optional
+	Path where the plot will be saved. Default is './'.
+
+    file_format : {['png'], ['pdf']}, optional
+        Default is ['png'].
+
+    dpi : int, optional
+        Plot resolution. Default is 300.
+
+    **kwargs
+
+    Returns
+    -------
+    none
+
+    Notes
+    -----
+    unsure about features, mask_total
+    needs more descriptions
     '''
+
     from iris import Constraint
     from numpy import unique
     import os
@@ -286,12 +544,89 @@ def plot_mask_cell_individual_follow(cell_i,track, cog,features, mask_total,
                                vmin_field_filled=0,vmax_field_filled=100,levels_field_filled=None,nlevels_field_filled=10,
                                title=None
                                ):
-    '''Make individual plot for cell centred around cell and with one background field as filling and one background field as contrours
-    Input:
-    Output:
+    '''Make individual plot for cell centered around cell.
+
+    With one background field as filling and one background field as
+    contrours.
+
+    Parameters
+    ---------
+    cell_i
+
+    track
+
+    cog
+
+    features : pandas.DataFrame
+	Output from trackpy/maketrack.
+
+    mask_total : iris.cube.Cube
+
+    field_contour
+
+    field_filled
+
+    axes : cartopy.mpl.geoaxes.GeoAxesSubplot, optional
+        Default is None.
+
+    width : int, optional
+	Default is 10000.
+
+    label_field_contour : optional
+        Default is None.
+
+    cmap_field_contour : {'Blues', ...}, optional
+	matplotlib.colors. Default is 'Blues'.
+
+    norm_field_contour : optional
+	Default is None.
+
+    linewidths_contour : float, optional
+        Default is 0.8.
+
+    contour_labels : bool, optional
+	Default is False.
+
+    vmin_field_contour : int, optional
+        Default is 0.
+
+    vmax_field_contour : int, optional
+	Default is 50.
+
+    levels_field_contour : optional
+	Default is None.
+
+    label_field_filled : optional
+	Default is None.
+
+    cmap_field_filled : {'summer', ...}, optional
+	matplotlib.pyplot colormap, Default is 'summer'.
+
+    norm_field_filled : optional
+	Default is None.
+
+    vmin_field_filled : int, optional
+	Default is 0.
+
+    vmax_field_filled : int, optional
+	Default is 100.
+
+    levels_field_filled : optional
+	Default is None.
+
+    nlevels_field_filled : int, optional
+	Default is 10.
+
+    title : optional
+	Default is None.
+
+    Returns
+    -------
+    axes : cartopy.mpl.geoaxes.GeoAxesSubplot
     '''
+
     import numpy as np
-    from .utils  import mask_cell_surface
+    from tobac.utils  import mask_cell_surface
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     from matplotlib.colors import Normalize
 
@@ -418,10 +753,60 @@ def plot_mask_cell_track_static(cell,track, cog, features, mask_total,
                                     name= 'test', plotdir='./',
                                     file_format=['png'],figsize=(10/2.54, 10/2.54),dpi=300,
                                     **kwargs):
-    '''Make plots for all cells with fixed frame including entire development of the cell and with one background field as filling and one background field as contrours
-    Input:
-    Output:
+    '''Make plots for all cells with fixed frame.
+
+    Inculding entire development of the cell and with one background
+    field as filling and one background field as contrours.
+
+    Parameters
+    ---------
+    cell
+
+    track
+
+    cog
+
+    features : pandas.DataFrame
+        Output from trackpy/maketrack.
+
+    mask_total : iris.cube.Cube
+
+    field_contour
+
+    field_filled
+
+    width : int, optional
+        Default is 10000.
+
+    n_extend : int, optional
+	Default is 1.
+
+    name : str, optional
+	Default is 'test'.
+
+    plotdir : str, optional
+	Path where the plot will be saved. Default is './'.
+
+    file_format : {['png'], ['pdf']}, optional
+	Default is ['png'].
+
+    figsize : tupel of float, optional
+	Default is (10/2.54, 10/2.54).
+
+    dpi : int, optional
+	Plot resolution. Default is 300.
+
+    **kwargs
+
+    Returns
+    -------
+    none
+
+    Notes
+    -----
+    needs more descriptions
     '''
+
     from iris import Constraint
     from numpy import unique
     import os
@@ -528,13 +913,102 @@ def plot_mask_cell_individual_static(cell_i,track, cog, features, mask_total,
                                vmin_field_filled=0,vmax_field_filled=100,levels_field_filled=None,nlevels_field_filled=10,
                                title=None,feature_number=False
                                ):
-    '''Make plots for cell in fixed frame and with one background field as filling and one background field as contrours
-    Input:
-    Output:
+    '''Make plots for cell in fixed frame
+
+    With one background field as filling and one background field as
+    contrours.
+
+    Parameters
+    ---------
+    cell_i
+
+    track
+
+    cog
+
+    features : pandas.DataFrame
+	Output from trackpy/maketrack.
+
+    mask_total : iris.cube.Cube
+
+    field_contour
+
+    field_filled
+
+    axes : cartopy.mpl.geoaxes.GeoAxesSubplot, optional
+	Default is None.
+
+    xlim : list of float, optional
+	[x_min/1000, x_max/1000]. Default is None.
+
+    ylim : list of float, optional
+	[y_min/1000, y_max/1000]. Default is None.
+
+    label_field_contour : optional
+        Default is None.
+
+    cmap_field_contour : {'Blues', ...}, optional
+	matplotlib.colors. Default is 'Blues'.
+
+    norm_field_contour : optional
+	Default is None.
+
+    linewidths_contour : float, optional
+	Default is 0.8.
+
+    contour_labels : bool, optional
+        Default is False.
+
+    vmin_field_contour : int, optional
+	Default is 0.
+
+    vmax_field_contour : int, optional
+	Default is 50.
+
+    levels_field_contour : optional
+	Default is None.
+
+    nlevels_field_contour : int, optional
+        Default is 10.
+
+    label_field_filled : optional
+	Default is None.
+
+    cmap_field_filled : {'summer', ...}, optional
+        matplotlib.pyplot colormap. Default is 'summer'.
+
+    norm_field_filled : optional
+	Default is None.
+
+    vmin_field_filled : int, optional
+	Default is 0.
+
+    vmax_field_filled : int, optional
+	Default is 100.
+
+    levels_field_filled : optional
+	Default is None.
+
+    nlevels_field_filled : int, optional
+        Default is 10.
+
+    title : optional
+	Default is None.
+
+    feature_number : bool, optional
+        Defaults is False.
+
+    Returns
+    -------
+    axes : cartopy.mpl.geoaxes.GeoAxesSubplot
+
+    Notes
+    -----
+    needs more descriptions
     '''
 
     import numpy as np
-    from .utils  import mask_features,mask_features_surface
+    from tobac.utils  import mask_features,mask_features_surface
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     from matplotlib.colors import Normalize
 
@@ -673,10 +1147,60 @@ def plot_mask_cell_track_2D3Dstatic(cell,track, cog, features, mask_total,
                                     file_format=['png'],figsize=(10/2.54, 10/2.54),dpi=300,
                                     ele=10,azim=30,
                                     **kwargs):
-    '''Make plots for all cells with fixed frame including entire development of the cell and with one background field as filling and one background field as contrours
-    Input:
-    Output:
+    '''Make plots for all cells with fixed frame.
+
+    Including entire development of the cell and with one background
+    field as filling and one background field as contrours.
+
+    Parameters
+    ---------
+    cell
+
+    track
+
+    cog
+
+    features : pandas.DataFrame
+	Output from trackpy/maketrack.
+
+    mask_total : iris.cube.Cube
+
+    field_contour
+
+    field_filled
+
+    width : int, optional
+	Default is 10000.
+
+    n_extend : int, optional
+	Default is 1.
+
+    name : str, optional
+	Default is 'test'.
+
+    plotdir : str, optional
+	Path where the plot will be saved. Default is './'.
+
+    file_format : {['png'], ['pdf']}, optional
+	Default is ['png'].
+
+    figsize : tupel of float, optional
+	Default is (10/2.54, 10/2.54).
+
+    dpi : int, optional
+	Plot resolution. Default is 300.
+
+    **kwargs
+
+    Returns
+    -------
+    none
+
+    Notes
+    -----
+    needs more descriptions
     '''
+
     from iris import Constraint
     from numpy import unique
     import os
@@ -801,10 +1325,60 @@ def plot_mask_cell_track_3Dstatic(cell,track, cog, features, mask_total,
                                     name= 'test', plotdir='./',
                                     file_format=['png'],figsize=(10/2.54, 10/2.54),dpi=300,
                                     **kwargs):
-    '''Make plots for all cells with fixed frame including entire development of the cell and with one background field as filling and one background field as contrours
-    Input:
-    Output:
+    '''Make plots for all cells with fixed frame.
+
+    Including entire development of the cell and with one background
+    field as filling and one background field as contrours.
+
+    Parameters
+    ---------
+    cell
+
+    track
+
+    cog
+
+    features : pandas.DataFrame
+        Output from trackpy/maketrack.
+
+    mask_total : iris.cube.Cube
+
+    field_contour
+
+    field_filled
+
+    width : int, optional
+	Default is 10000.
+
+    n_extend : int, optional
+	Default is 1.
+
+    name : str, optional
+	Default is 'test'.
+
+    plotdir : str, optional
+	Path where the plot will be saved. Default is './'.
+
+    file_format : {['png'], ['pdf']}, optional
+	Default is ['png'].
+
+    figsize : tupel of float, optional
+	Default is (10/2.54, 10/2.54).
+
+    dpi : int, optional
+	Plot resolution. Default is 300.
+
+    **kwargs
+
+    Returns
+    -------
+    none
+
+    Notes
+    -----
+    needs more descriptions
     '''
+
     from iris import Constraint
     from numpy import unique
     import os
@@ -916,13 +1490,108 @@ def plot_mask_cell_individual_3Dstatic(cell_i,track, cog, features, mask_total,
                                title=None,feature_number=False,
                                ele=10.,azim=210.
                                ):
-    '''Make plots for cell in fixed frame and with one background field as filling and one background field as contrours
-    Input:
-    Output:
+    '''Make plots for all cells with fixed frame.
+
+    With one background field as filling and one background field as
+    contrours.
+
+    Parameters
+    ---------
+    cell_i
+
+    track
+
+    cog
+
+    features : pandas.DataFrame
+	Output from trackpy/maketrack.
+
+    mask_total : iris.cube.Cube
+
+    field_contour
+
+    field_filled
+
+    axes : cartopy.mpl.geoaxes.GeoAxesSubplot, optional
+	Default is None.
+
+    xlim : list of float, optional
+	[x_min/1000, x_max/1000]. Default is None.
+
+    ylim : list of float, optional
+	[y_min/1000, y_max/1000]. Default is None.
+
+    label_field_contour : optional
+	Default is None.
+
+    cmap_field_contour : {'Blues', ...}, optional
+	matplotlib.colors. Default is 'Blues'.
+
+    norm_field_contour : optional
+        Default is None.
+
+    linewidths_contour : float, optional
+	Default is 0.8.
+
+    contour_labels : bool, optional
+        Default is False.
+
+    vmin_field_contour : int, optional
+	Default is 0.
+
+    vmax_field_contour : int, optional
+	Default is 50.
+
+    levels_field_contour : optional
+	Default is None.
+
+    nlevels_field_contour : int, optional
+	Default is 10.
+
+    label_field_filled : optional
+	Default is None.
+
+    cmap_field_filled : {'summer', ...}, optional
+	matplotlib.pyplot colormap. Default is 'summer'.
+
+    norm_field_filled : optional
+	Default is None.
+
+    vmin_field_filled : int, optional
+	Default is 0.
+
+    vmax_field_filled : int, optional
+	Default is 100.
+
+    levels_field_filled : optional
+	Default is None.
+
+    nlevels_field_filled : int, optional
+	Default is 10.
+
+    title : optional
+	Default is None.
+
+    feature_number : bool, optional
+	Defaults is False.
+
+    ele : float, optional
+        Default is 10.0.
+
+    azim : float, optional
+        Default is 210.0.
+
+    Returns
+    -------
+    axes : cartopy.mpl.geoaxes.GeoAxesSubplot
+
+    Notes
+    -----
+    needs more descriptions
     '''
 
     import numpy as np
-    from .utils  import mask_features,mask_features_surface
+#    from tobac.utils  import mask_features,mask_features_surface
 #    from mpl_toolkits.axes_grid1 import make_axes_locatable
 #    from matplotlib.colors import Normalize
     from mpl_toolkits.mplot3d import Axes3D
@@ -1084,14 +1753,78 @@ def plot_mask_cell_track_static_timeseries(cell,track, cog, features, mask_total
                                            name= 'test', plotdir='./',
                                            file_format=['png'],figsize=(20/2.54, 10/2.54),dpi=300,
                                            **kwargs):
-    '''Make plots for all cells with fixed frame including entire development of the cell and with one background field as filling and one background field as contrours
-    Input:
-    Output:
+    '''Make plots for all cells with fixed frame.
+
+    Including entire development of the cell and with one background
+    field as filling and one background field as contrours.
+
+    Parameters
+    ---------
+    cell
+
+    track
+
+    cog
+
+    features : pandas.DataFrame
+	Output from trackpy/maketrack.
+
+    mask_total : iris.cube.Cube
+
+    field_contour
+
+    field_filled
+
+    track_variable : optional
+	Default is None.
+
+    variable : optional
+	Default is None.
+
+    variable_ylabel : optional
+	Default is None.
+
+    variable_label : list, optional
+        Default is [None].
+
+    variable_legend : bool, optional
+	Default is False.
+
+    variable_color : optional
+	Default is None.
+
+    width : int, optional
+	Default is 10000.
+
+    n_extend : int, optional
+	Default is 1.
+
+    name : str, optional
+	Default is 'test'.
+
+    plotdir : str, optional
+	Path where the plot will be saved. Default is './'.
+
+    file_format : {['png'], ['pdf']}, optional
+	Default is ['png'].
+
+    figsize : tupel of float, optional
+	Default is (10/2.54, 10/2.54).
+
+    dpi : int, optional
+	Plot resolution. Default is 300.
+
+    **kwargs
+
+    Returns
+    -------
+    axes : cartopy.mpl.geoaxes.GeoAxesSubplot
+
+    Notes
+    -----
+    needs more descriptions
     '''
-    '''Make plots for all cells with fixed frame including entire development of the cell and with one background field as filling and one background field as contrours
-    Input:
-    Output:
-    '''
+
     from iris import Constraint
     from numpy import unique
     import os
@@ -1227,6 +1960,31 @@ def plot_mask_cell_track_static_timeseries(cell,track, cog, features, mask_total
         plt.clf()
 
 def map_tracks(track,axis_extent=None,figsize=(10,10),axes=None):
+    '''
+    Parameters
+    ----------
+    track
+
+    axis_extent : matplotlib.axes, optional
+	Default is None.
+
+    figsize : tupel, optional
+	Default is (10, 10).
+
+    axes : cartopy.mpl.geoaxes.GeoAxesSubplot, optional
+	Default is None.
+
+    Returns
+    -------
+    axes : cartopy.mpl.geoaxes.GeoAxesSubplot
+
+    Notes
+    -----
+    needs short summary
+    needs more descriptions
+    unsure about anything
+	'''
+
     for cell in track['cell'].dropna().unique():
         track_i=track[track['cell']==cell]
         axes.plot(track_i['longitude'],track_i['latitude'],'-')
@@ -1236,6 +1994,21 @@ def map_tracks(track,axis_extent=None,figsize=(10,10),axes=None):
     return axes
 
 def make_map(axes):
+    '''
+
+    Parameters
+    ----------
+    axes : cartopy.mpl.geoaxes.GeoAxesSubplot
+
+    Returns
+    -------
+    axes : cartopy.mpl.geoaxes.GeoAxesSubplot
+
+    Notes
+    -----
+    needs more descriptions and short summary
+    '''
+
     import matplotlib.ticker as mticker
     import cartopy.crs as ccrs
     from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
@@ -1255,21 +2028,137 @@ def make_map(axes):
     return axes
 
 def plot_lifetime_histogram(track,axes=None,bin_edges=np.arange(0,200,20),density=False,**kwargs):
+    '''
+
+    Parameters
+    ----------
+    track
+
+    axes : cartopy.mpl.geoaxes.GeoAxesSubplot, optional
+	Default is None.
+
+    bin_edges : numpy.arange, optional
+	Default is np.arange(0, 200, 20).
+
+    density : bool, optional
+	Defualt is False.
+
+    **kwargs
+
+    Returns
+    -------
+    plot_hist
+
+    Notes
+    -----
+    needs short summary and descriptions
+    '''
+
     hist, bin_edges,bin_centers = lifetime_histogram(track,bin_edges=bin_edges,density=density)
     plot_hist=axes.plot(bin_centers, hist,**kwargs)
     return plot_hist
 
 def plot_lifetime_histogram_bar(track,axes=None,bin_edges=np.arange(0,200,20),density=False,width_bar=1,shift=0.5,**kwargs):
+    '''
+
+    Parameters
+    ----------
+    track
+
+    axes : cartopy.mpl.geoaxes.GeoAxesSubplot, optional
+	Default is None.
+
+    bin_edges : numpy.arange, optional
+	Default is np.arange(0, 200, 20).
+
+    density : bool, optional
+	Defualt is False.
+
+    width_bar : int, optional
+	Default is 1.
+
+    shift : float, optional
+	Default is 0.5.
+
+    **kwargs
+
+    Returns
+    -------
+    plot_hist
+
+    Notes
+    -----
+    needs short summary and descriptions
+    '''
+
     hist, bin_edges, bin_centers = lifetime_histogram(track,bin_edges=bin_edges,density=density)
     plot_hist=axes.bar(bin_centers+shift,hist,width=width_bar,**kwargs)
     return plot_hist
 
 def plot_histogram_cellwise(track,bin_edges,variable,quantity,axes=None,density=False,**kwargs):
+    '''
+
+    Parameters
+    ----------
+    track
+
+    bin_edges : numpy.arange, optional
+	Default is np.arange(0, 200, 20).
+
+    variable
+
+    quantity
+
+    axes : cartopy.mpl.geoaxes.GeoAxesSubplot, optional
+	Default is None.
+
+    density : bool, optional
+	Defualt is False.
+
+    **kwargs
+
+    Returns
+    -------
+    plot_hist
+
+    Notes
+    -----
+    needs short summary and descriptions
+    '''
+
     hist, bin_edges,bin_centers = histogram_cellwise(track,bin_edges=bin_edges,variable=variable,quantity=quantity,density=density)
     plot_hist=axes.plot(bin_centers, hist,**kwargs)
     return plot_hist
 
 def plot_histogram_featurewise(Track,bin_edges,variable,axes=None,density=False,**kwargs):
+    '''
+
+    Parameters
+    ----------
+    Track
+
+    bin_edges : numpy.arange, optional
+	Default is np.arange(0, 200, 20).
+
+    variable
+
+    axes : cartopy.mpl.geoaxes.GeoAxesSubplot, optional
+	Default is None.
+
+    density : bool, optional
+	Defualt is False.
+
+    **kwargs
+
+    Returns
+    -------
+    plot_hist
+
+    Notes
+    -----
+    needs short summary and descriptions
+    '''
+
     hist, bin_edges, bin_centers = histogram_featurewise(Track,bin_edges=bin_edges,variable=variable,density=density)
     plot_hist=axes.plot(bin_centers, hist,**kwargs)
     return plot_hist
