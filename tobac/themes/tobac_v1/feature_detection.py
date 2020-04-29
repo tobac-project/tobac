@@ -244,6 +244,7 @@ def feature_detection_multithreshold_timestep(data_i,i_time,
     track_data=gaussian_filter(track_data, sigma=sigma_threshold) #smooth data slightly to create rounded, continuous field
     # create empty lists to store regions and features for individual timestep
     features_thresholds=pd.DataFrame()
+    regions_old={}
     for i_threshold,threshold_i in enumerate(threshold):
         if (i_threshold>0 and not features_thresholds.empty):
             idx_start=features_thresholds['idx'].max()+1
@@ -309,7 +310,7 @@ def feature_detection_multithreshold(field_in,
     features:      pandas DataFrame 
                    detected features
     '''
-    from .utils import add_coordinates
+    from tobac.utils import add_coordinates
 
     logging.debug('start feature detection based on thresholds')
     
