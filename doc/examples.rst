@@ -1,5 +1,5 @@
 Example notebooks
-===============
+=================
 tobac is provided with a set of Jupyter notebooks that show examples of the application of tobac for different types of datasets.
 
 The notebooks can be found in a separate repository:
