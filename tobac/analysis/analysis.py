@@ -14,55 +14,6 @@ objects or cloud trajectories and masking arrays for the analysis of
 individual cloud objects. Plotting routines include both visualizations
 for individual convective cells and their properties.
 
-Routine Listings
-----------------
-cell_staticsics_all(input_cubes, track, mask, aggregators, output_path,
-                    cell_selection, output_name, width, z_coordinate,
-                    dimensions, **kwargs)
-
-cell_statistics(input_cubes, track, mask, aggregators, cell,
-                output_path, output_name, width, z_coordinate,
-                dimensions, **kwargs)
-
-lifetime_histogram(Track, bin_edges, density, return_values)
-
-haversine(lat1, lon1, lat2, lon2)
-
-calculate_distance(feature_1, feature_2, method_distance)
-
-calculate_velocity_individual(feature_old, feature_new, method_distance)
-
-calculate_velocity(track, method_distance)
-
-velocity_histogram(track, method_distance)
-
-calculate_nearesneighbordistance(features, method_distance)
-
-nearestneighbordistance_histogram(features, bin_edges, density,
-                                  method_distance, return_values)
-
-calculate_area(features, mask, method_area)
-
-area_histogram(features, mask, bin_edges)
-
-histogram_cellwise(Track, variable, bin_edges, quantity, density)
-
-histogram_featurewise(Track, variable, bin_edges, density)
-
-calculate_overlap(track_1, track_2, min_sum_inv_distance,
-                  min_mean_inv_distance)
-
-References
-----------
-.. Heikenfeld, M., Marinescu, P. J., Christensen, M., Watson-Parris, D.,
-   Senf, F., van den Heever, S. C., and Stier, P.: tobac v1.0:
-   towards a flexible framework for tracking and analysis of clouds in
-   diverse datasets, Geosci. Model Dev. Discuss.,
-   https://doi.org/10.5194/gmd-2019-105 , in review, 2019, 10.
-
-Notes
------
-unsure about page numer in the reference
 '''
 
 import pandas as pd
