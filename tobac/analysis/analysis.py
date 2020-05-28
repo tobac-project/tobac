@@ -32,7 +32,7 @@ import numpy as np
 import logging
 import os
 
-from .utils import mask_cell,mask_cell_surface,mask_cube_cell,get_bounding_box
+from tobac.utils import mask_cell,mask_cell_surface,mask_cube_cell,get_bounding_box
 
 def cell_statistics_all(input_cubes,track,mask,aggregators,output_path='./',cell_selection=None,output_name='Profiles',width=10000,z_coord='model_level_number',dimensions=['x','y'],**kwargs):
     '''
@@ -202,7 +202,7 @@ def cell_statistics(input_cubes,track,mask,aggregators,cell,output_path='./',out
                 #remove all collapsed coordinates (x and y dim, scalar now) and keep only time as all these coordinates are useless
                 for coordinate in cube_collapsed.coords():
                     if not cube_collapsed.coord_dims(coordinate):
-                        if coordinate.name() is not 'time':
+                        if coordinate.name() != 'time':
                             cube_collapsed.remove_coord(coordinate)
                 logging.debug(str(cube_collapsed))
                 cubes_profile[aggregator.name()].append(cube_collapsed)
@@ -224,74 +224,6 @@ def cell_statistics(input_cubes,track,mask,aggregators,cell,output_path='./',out
         os.makedirs(os.path.join(output_path,output_name,aggregator.name()),exist_ok=True)
         savefile=os.path.join(output_path,output_name,aggregator.name(),output_name+'_'+ aggregator.name()+'_'+str(int(cell))+'.nc')
         save(cubes_profile[aggregator.name()],savefile)
-
-
-def cog_cell(cell,Tracks=None,M_total=None,M_liquid=None,
-             M_frozen=None,
-             Mask=None,
-             savedir=None):
-    '''
-    Parameters
-    ----------
-    cell : int
-        Integer id of cell to create masked cube for output.
-
-    Tracks : optional
-        Default is None.
-
-    M_total : subset of cube, optional
-        Default is None.
-
-    M_liquid : subset of cube, optional
-        Default is None.
-
-    M_frozen : subset of cube, optional
-        Default is None.
-
-    savedir : str
-        Default is None.
-
-    Returns
-    -------
-    None
-
-    Notes
-    -----
-    unsure about anything
-    needs a short summary
-    '''
-    
-    from iris import Constraint
-    logging.debug('Start calculating COG for '+str(cell))
-    Track=Tracks[Tracks['cell']==cell]
-    constraint_time=Constraint(time=lambda cell: Track.head(1)['time'].values[0] <= cell <= Track.tail(1)['time'].values[0])
-    M_total_i=M_total.extract(constraint_time)
-    M_liquid_i=M_liquid.extract(constraint_time)
-    M_frozen_i=M_frozen.extract(constraint_time)
-    Mask_i=Mask.extract(constraint_time)
-
-    savedir_cell=os.path.join(savedir,'cells',str(int(cell)))
-    os.makedirs(savedir_cell,exist_ok=True)
-    savefile_COG_total_i=os.path.join(savedir_cell,'COG_total'+'_'+str(int(cell))+'.h5')
-    savefile_COG_liquid_i=os.path.join(savedir_cell,'COG_liquid'+'_'+str(int(cell))+'.h5')
-    savefile_COG_frozen_i=os.path.join(savedir_cell,'COG_frozen'+'_'+str(int(cell))+'.h5')
-    
-    Tracks_COG_total_i=calculate_cog(Track,M_total_i,Mask_i)
-#   Tracks_COG_total_list.append(Tracks_COG_total_i)
-    logging.debug('COG total loaded for ' +str(cell))
-    
-    Tracks_COG_liquid_i=calculate_cog(Track,M_liquid_i,Mask_i)
-#   Tracks_COG_liquid_list.append(Tracks_COG_liquid_i)
-    logging.debug('COG liquid loaded for ' +str(cell))
-    Tracks_COG_frozen_i=calculate_cog(Track,M_frozen_i,Mask_i)
-#   Tracks_COG_frozen_list.append(Tracks_COG_frozen_i)
-    logging.debug('COG frozen loaded for ' +str(cell))
-    
-    Tracks_COG_total_i.to_hdf(savefile_COG_total_i,'table')
-    Tracks_COG_liquid_i.to_hdf(savefile_COG_liquid_i,'table')
-    Tracks_COG_frozen_i.to_hdf(savefile_COG_frozen_i,'table')
-    logging.debug('individual COG calculated and saved to '+ savedir_cell)
-
 
 def lifetime_histogram(Track,bin_edges=np.arange(0,200,20),density=False,return_values=False):
     '''
@@ -641,7 +573,12 @@ def calculate_area(features,mask,method_area=None):
         if not (mask.coord('projection_x_coordinate').has_bounds() and mask.coord('projection_y_coordinate').has_bounds()):
             mask.coord('projection_x_coordinate').guess_bounds()
             mask.coord('projection_y_coordinate').guess_bounds()
-        area=np.outer(np.diff(mask.coord('projection_x_coordinate').bounds,axis=1),np.diff(mask.coord('projection_y_coordinate').bounds,axis=1))
+            dx=np.diff(mask.coord('projection_x_coordinate').bounds,axis=1)
+            dy=np.diff(mask.coord('projection_y_coordinate').bounds,axis=1)
+        if mask.coord_dims('projection_x_coordinate')[0] < mask.coord_dims('projection_y_coordinate')[0]:
+            area=np.outer(dx,dy)
+        if mask.coord_dims('projection_x_coordinate')[0] > mask.coord_dims('projection_y_coordinate')[0]:
+            area=np.outer(dy,dx)
     elif method_area=='latlon':
         if (mask.coord('latitude').ndim==1) and (mask.coord('latitude').ndim==1):
             if not (mask.coord('latitude').has_bounds() and mask.coord('longitude').has_bounds()):
@@ -707,7 +644,7 @@ def area_histogram(features,mask,bin_edges=np.arange(0,30000,500),
 
     if 'area' not in features.columns:
         logging.info('calculate area')
-        features=calculate_area(features,method_area)
+        features=calculate_area(features,mask,method_area)
     areas=features['area'].values
     # restrict to non NaN values:
     areas=areas[~np.isnan(areas)]

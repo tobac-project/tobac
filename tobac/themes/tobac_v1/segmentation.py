@@ -20,12 +20,12 @@ there is no cloud or updraft and the integer number of the associated
 feature at all grid points belonging to that specific cloud/updraft.
 this mask can be conveniently and efficiently used to select the volume
 of each cloud object at a specific time step for further analysis or
-visialization. [4]_
+visialization.
 
 References
 ----------
-.. [4] Heikenfeld, M., Marinescu, P. J., Christensen, M., Watson-Parris,
-   D., Senf, F., van den Heever, S. C., and Stier, P.: tobac v1.0:
+.. Heikenfeld, M., Marinescu, P. J., Christensen, M., Watson-Parris, D.,
+   Senf, F., van den Heever, S. C., and Stier, P.: tobac v1.0:
    towards a flexible framework for tracking and analysis of clouds in
    diverse datasets, Geosci. Model Dev. Discuss.,
    https://doi.org/10.5194/gmd-2019-105 , in review, 2019, 7ff.
