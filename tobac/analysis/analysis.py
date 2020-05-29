@@ -1,5 +1,4 @@
 '''Provide tools to analyse and visualize the tracked objects.
-
 This module provides a set of routines that enables performing analyses
 and deriving statistics for individual clouds, such as the time series
 of integrated properties and vertical profiles. It also provides

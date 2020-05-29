@@ -920,7 +920,7 @@ def plot_mask_cell_individual_static(cell_i,track, cog, features, mask_total,
     contrours.
 
     Parameters
-    ----------
+    ---------
     cell_i
 
     track
@@ -1009,7 +1009,7 @@ def plot_mask_cell_individual_static(cell_i,track, cog, features, mask_total,
     '''
 
     import numpy as np
-    from tobac.utils  import mask_features,mask_features_surface
+    from tobac.utils  import mask_cell_surface
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     from matplotlib.colors import Normalize
 
