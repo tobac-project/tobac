@@ -2,7 +2,7 @@
 
 Plotting routines include both visualizations of the entire clod field
 and detailed visualizations for individual convective cells and their
-properties.
+properties. [3]_
 
 Notes
 -----
@@ -10,8 +10,8 @@ many short summaries are the same
 
 References
 ----------
-.. Heikenfeld, M., Marinescu, P. J., Christensen, M., Watson-Parris, D.,
-   Senf, F., van den Heever, S. C., and Stier, P.: tobac v1.0:
+.. [3] Heikenfeld, M., Marinescu, P. J., Christensen, M., Watson-Parris,
+   D., Senf, F., van den Heever, S. C., and Stier, P.: tobac v1.0:
    towards a flexible framework for tracking and analysis of clouds in
    diverse datasets, Geosci. Model Dev. Discuss.,
    https://doi.org/10.5194/gmd-2019-105 , in review, 2019, 10
@@ -379,15 +379,16 @@ def animation_mask_field(track,features,field,mask,interval=500,figsize=(10,10),
         Parameters
         ----------
         time_in
-    
+
         Returns
         -------
         animation
-    
+
         Notes
         -----
         needs more descriptions and a short summary line
         '''
+
         fig.clf()
         ax=fig.add_subplot(111,projection=ccrs.PlateCarree())
         constraint_time = Constraint(time=time_in)
@@ -550,7 +551,7 @@ def plot_mask_cell_individual_follow(cell_i,track, cog,features, mask_total,
     contrours.
 
     Parameters
-    ---------
+    ----------
     cell_i
 
     track
@@ -759,7 +760,7 @@ def plot_mask_cell_track_static(cell,track, cog, features, mask_total,
     field as filling and one background field as contrours.
 
     Parameters
-    ---------
+    ----------
     cell
 
     track
@@ -1008,7 +1009,7 @@ def plot_mask_cell_individual_static(cell_i,track, cog, features, mask_total,
     '''
 
     import numpy as np
-    from tobac.utils  import mask_features,mask_features_surface
+    from tobac.utils  import mask_cell_surface
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     from matplotlib.colors import Normalize
 
@@ -1153,7 +1154,7 @@ def plot_mask_cell_track_2D3Dstatic(cell,track, cog, features, mask_total,
     field as filling and one background field as contrours.
 
     Parameters
-    ---------
+    ----------
     cell
 
     track
@@ -1331,7 +1332,7 @@ def plot_mask_cell_track_3Dstatic(cell,track, cog, features, mask_total,
     field as filling and one background field as contrours.
 
     Parameters
-    ---------
+    ----------
     cell
 
     track
@@ -1496,7 +1497,7 @@ def plot_mask_cell_individual_3Dstatic(cell_i,track, cog, features, mask_total,
     contrours.
 
     Parameters
-    ---------
+    ----------
     cell_i
 
     track
@@ -1759,7 +1760,7 @@ def plot_mask_cell_track_static_timeseries(cell,track, cog, features, mask_total
     field as filling and one background field as contrours.
 
     Parameters
-    ---------
+    ----------
     cell
 
     track
@@ -1983,7 +1984,7 @@ def map_tracks(track,axis_extent=None,figsize=(10,10),axes=None):
     needs short summary
     needs more descriptions
     unsure about anything
-	'''
+    '''
 
     for cell in track['cell'].dropna().unique():
         track_i=track[track['cell']==cell]
