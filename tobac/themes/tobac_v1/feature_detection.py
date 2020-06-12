@@ -19,6 +19,339 @@ References
 import logging
 import numpy as np
 import pandas as pd
+from tobac.utils import xarray_to_iris
+
+def feature_detection_multithreshold(field_in,
+                                     dxy,
+                                     threshold=None,
+                                     min_num=0,
+                                     target='maximum',
+                                     position_threshold='center',
+                                     sigma_threshold=0.5,
+                                     n_erosion_threshold=0,
+                                     n_min_threshold=0,
+                                     min_distance=0,
+                                     feature_number_start=1
+                                     ):
+    '''Perform feature detection based on contiguous regions.
+
+    The regions are above/below a threshold.
+
+    Parameters
+    ----------
+    field_in : iris.cube.Cube
+        2D field to perform the tracking on (needs to have coordinate
+        'time' along one of its dimensions),
+    
+    dxy : float
+        Grid spacing of the input data.
+
+    thresholds : list of floats, optional
+        Threshold values used to select target regions to track. Default
+	is None.
+
+    target : {'maximum', 'minimum'}, optional
+        Flag to determine if tracking is targetting minima or maxima in
+	the data. Default is 'maximum'.
+
+    position_threshold : {'center', 'extreme', 'weighted_diff',
+                          'weighted_abs'}, optional
+        Flag choosing method used for the position of the tracked
+	feature. Default is 'center'.
+
+    sigma_threshold: float, optional
+        Standard deviation for intial filtering step. Default is 0.5.
+
+    n_erosion_threshold: int, optional
+        Number of pixel by which to erode the identified features.
+	Default is 0.
+
+    n_min_threshold : int, optional
+        Minimum number of identified features. Default is 0.
+
+    min_distance : float, optional
+        Minimum distance between detected features. Default is 0.
+
+    feature_number_start : int, optional
+        Feature id to start with. Default is 1.
+
+    Returns
+    -------
+    features : pandas.DataFrame
+        Detected features.
+    '''
+    from tobac.utils import add_coordinates
+    
+    #convert from xarray to Iris:
+    field_iris=field_in.to_iris()
+
+    logging.debug('start feature detection based on thresholds')
+    
+    # create empty list to store features for all timesteps
+    list_features_timesteps=[]
+
+    # loop over timesteps for feature identification:
+    data_time=field_iris.slices_over('time')
+    
+    # if single threshold is put in as a single value, turn it into a list
+    if type(threshold) in [int,float]:
+        threshold=[threshold]    
+    
+    for i_time,data_i in enumerate(data_time):
+        time_i=data_i.coord('time').units.num2date(data_i.coord('time').points[0])
+        features_thresholds=feature_detection_multithreshold_timestep(data_i,i_time,
+                                                            threshold=threshold,
+                                                            sigma_threshold=sigma_threshold,
+                                                            min_num=min_num,
+                                                            target=target,
+                                                            position_threshold=position_threshold,
+                                                            n_erosion_threshold=n_erosion_threshold,
+                                                            n_min_threshold=n_min_threshold,
+                                                            min_distance=min_distance,
+                                                            feature_number_start=feature_number_start
+                                                           )
+        #check if list of features is not empty, then merge features from different threshold values 
+        #into one DataFrame and append to list for individual timesteps:
+        if not features_thresholds.empty:
+            #Loop over DataFrame to remove features that are closer than distance_min to each other:
+            if (min_distance > 0):
+                features_thresholds=filter_min_distance(features_thresholds,dxy,min_distance)
+        list_features_timesteps.append(features_thresholds)
+        
+        logging.debug('Finished feature detection for ' + time_i.strftime('%Y-%m-%d_%H:%M:%S'))
+
+    logging.debug('feature detection: merging DataFrames')
+    # Check if features are detected and then concatenate features from different timesteps into one pandas DataFrame
+    # If no features are detected raise error
+    if any([not x.empty for x in list_features_timesteps]):
+        features=pd.concat(list_features_timesteps, ignore_index=True)   
+        features['feature']=features.index+feature_number_start
+    #    features_filtered = features.drop(features[features['num'] < min_num].index)
+    #    features_filtered.drop(columns=['idx','num','threshold_value'],inplace=True)
+        features=add_coordinates(features,field_iris)  
+        # convert pandas DataFrame to xarray
+        list_coords=[key for key in field_in.coords.keys()]
+        print(features)
+        print(list_coords)
+        features=features.set_index(list_coords)
+        features=features.to_xarray()
+    else:
+        features=None
+        logging.info('No features detected')
+    logging.debug('feature detection completed')
+    return features
+
+def feature_detection_multithreshold_timestep(data_i,i_time,
+                                              threshold=None,
+                                              min_num=0,
+                                              target='maximum',
+                                              position_threshold='center',
+                                              sigma_threshold=0.5,
+                                              n_erosion_threshold=0,
+                                              n_min_threshold=0,
+                                              min_distance=0,
+                                              feature_number_start=1
+                                              ):
+    '''Find features in each timestep.
+
+    Based on iteratively finding regions above/below a set of
+    thresholds. Smoothing the input data with the Gaussian filter makes
+    output more reliable. [2]_
+
+    Parameters
+    ----------
+    data_i : iris.cube.Cube
+        2D field to perform the feature detection (single timestep) on.
+
+    threshold : float, optional
+        Threshold value used to select target regions to track. Default
+        is None.
+
+    min_num : int, optional
+        Default is 0.
+
+    target : {'maximum', 'minimum'}, optinal
+        Flag to determine if tracking is targetting minima or maxima
+        in the data. Default is 'maximum'.
+
+    position_threshold : {'center', 'extreme', 'weighted_diff',
+			  'weighted_abs'}, optional
+        Flag choosing method used for the position of the tracked
+	feature. Default is 'center'.
+
+    sigma_threshold: float, optional
+        Standard deviation for intial filtering step. Default is 0.5.
+
+    n_erosion_threshold: int, optional
+        Number of pixel by which to erode the identified features.
+        Default is 0.
+
+    n_min_threshold : int, optional
+        Minimum number of identified features. Default is 0.
+
+    min_distance : float, optional
+        Minimum distance between detected features. Default is 0.
+
+    feature_number_start : int, optional
+        Feature id to start with. Default is 1.
+
+    Returns
+    -------
+    features_threshold : pandas.DataFrame
+        Detected features for individual timestep.
+
+    Notes
+    -----
+    unsure about feature_number_start
+    '''
+
+    from scipy.ndimage.filters import gaussian_filter
+
+    track_data = data_i.core_data()
+
+    track_data=gaussian_filter(track_data, sigma=sigma_threshold) #smooth data slightly to create rounded, continuous field
+    # create empty lists to store regions and features for individual timestep
+    features_thresholds=pd.DataFrame()
+    regions_old={}
+    for i_threshold,threshold_i in enumerate(threshold):
+        if (i_threshold>0 and not features_thresholds.empty):
+            idx_start=features_thresholds['idx'].max()+1
+        else:
+            idx_start=0
+        features_threshold_i,regions_i=feature_detection_threshold(track_data,i_time,
+                                                        threshold=threshold_i,
+                                                        sigma_threshold=sigma_threshold,
+                                                        min_num=min_num,
+                                                        target=target,
+                                                        position_threshold=position_threshold,
+                                                        n_erosion_threshold=n_erosion_threshold,
+                                                        n_min_threshold=n_min_threshold,
+                                                        min_distance=min_distance,
+                                                        idx_start=idx_start
+                                                        )
+        if any([x is not None for x in features_threshold_i]):
+            features_thresholds=features_thresholds.append(features_threshold_i)
+
+        # For multiple threshold, and features found both in the current and previous step, remove "parent" features from Dataframe
+        if (i_threshold>0 and not features_thresholds.empty and regions_old):
+            # for each threshold value: check if newly found features are surrounded by feature based on less restrictive threshold
+            features_thresholds=remove_parents(features_thresholds,regions_i,regions_old)
+        regions_old=regions_i
+
+        logging.debug('Finished feature detection for threshold '+str(i_threshold) + ' : ' + str(threshold_i) )
+    return features_thresholds
+
+def feature_detection_threshold(data_i,i_time,
+                                threshold=None,
+                                min_num=0,
+                                target='maximum',
+                                position_threshold='center',
+                                sigma_threshold=0.5,
+                                n_erosion_threshold=0,
+                                n_min_threshold=0,
+                                min_distance=0,
+                                idx_start=0):
+    '''Find features based on individual threshold value.
+
+    Parameters
+    ----------
+    data_i : iris.cube.Cube
+        2D field to perform the feature detection (single timestep) on.
+
+    i_time : int
+        Number of the current timestep.
+
+    threshold : float, optional
+        Threshold value used to select target regions to track. Default
+		is None.
+
+    target : {'maximum', 'minimum'}, optional
+        Flag to determine if tracking is targetting minima or maxima
+	in the data. Default is 'maximum'.
+
+    position_threshold : {'center', 'extreme', 'weighted_diff',
+			  'weighted_abs'}, optional
+        Flag choosing method used for the position of the tracked
+	feature. Default is 'center'.
+
+    sigma_threshold: float, optional
+        Standard deviation for intial filtering step. Default is 0.5.
+
+    n_erosion_threshold: int, optional
+        Number of pixel by which to erode the identified features.
+	Default is 0.
+
+    n_min_threshold : int, optional
+        Minimum number of identified features. Default is 0.
+
+    min_distance : float, optional
+        Minimum distance between detected features. Default is 0.
+
+    idx_start : int, optional
+        Feature id to start with. Default is 0.
+
+    Returns
+    -------
+    features_threshold : pandas DataFrame
+        Detected features for individual threshold.
+
+    regions : dict
+        Dictionary containing the regions above/below threshold used
+	for each feature (feature ids as keys).
+    '''
+
+    from skimage.measure import label
+    from skimage.morphology import binary_erosion
+
+    # if looking for minima, set values above threshold to 0 and scale by data minimum:
+    if target == 'maximum':
+        mask=1*(data_i >= threshold)
+        # if looking for minima, set values above threshold to 0 and scale by data minimum:
+    elif target == 'minimum': 
+        mask=1*(data_i <= threshold)  
+    # only include values greater than threshold
+    # erode selected regions by n pixels 
+    if n_erosion_threshold>0:
+        selem=np.ones((n_erosion_threshold,n_erosion_threshold))
+        mask=binary_erosion(mask,selem).astype(np.int64)
+        # detect individual regions, label  and count the number of pixels included:
+    labels = label(mask, background=0)
+    values, count = np.unique(labels[:,:].ravel(), return_counts=True)
+    values_counts=dict(zip(values, count))
+    # Filter out regions that have less pixels than n_min_threshold
+    values_counts={k:v for k, v in values_counts.items() if v>n_min_threshold}
+    #check if not entire domain filled as one feature
+    if 0 in values_counts:       
+    #Remove background counts:
+        values_counts.pop(0)       
+        #create empty list to store individual features for this threshold
+        list_features_threshold=[]
+        #create empty dict to store regions for individual features for this threshold
+        regions=dict()
+        #create emptry list of features to remove from parent threshold value
+        #loop over individual regions:       
+        for cur_idx,count in values_counts.items():
+            region=labels[:,:] == cur_idx
+            [hdim1_indices,hdim2_indeces]= np.nonzero(region)
+            #write region for individual threshold and feature to dict
+            region_i=list(zip(hdim1_indices,hdim2_indeces))
+            regions[cur_idx+idx_start]=region_i
+            # Determine feature position for region by one of the following methods:
+            hdim1_index,hdim2_index=feature_position(hdim1_indices,hdim2_indeces,region,data_i,threshold,position_threshold,target)
+            #create individual DataFrame row in tracky format for identified feature
+            list_features_threshold.append({'frame': int(i_time),
+                                            'idx':cur_idx+idx_start,
+                                            'hdim_1': hdim1_index,
+                                            'hdim_2':hdim2_index,
+                                            'num':count,
+                                            'threshold_value':threshold})
+        features_threshold=pd.DataFrame(list_features_threshold)
+    else:
+        features_threshold=pd.DataFrame()
+        regions=dict()
+            
+    return features_threshold, regions
+
 
 def feature_position(hdim1_indices,hdim2_indeces,region,track_data,threshold_i,position_threshold, target):
     '''Determine feature position.
@@ -151,327 +484,7 @@ def remove_parents(features_thresholds,regions_i,regions_old):
 
     return features_thresholds
 
-def feature_detection_threshold(data_i,i_time,
-                                threshold=None,
-                                min_num=0,
-                                target='maximum',
-                                position_threshold='center',
-                                sigma_threshold=0.5,
-                                n_erosion_threshold=0,
-                                n_min_threshold=0,
-                                min_distance=0,
-                                idx_start=0):
-    '''Find features based on individual threshold value.
 
-    Parameters
-    ----------
-    data_i : iris.cube.Cube
-        2D field to perform the feature detection (single timestep) on.
-
-    i_time : int
-        Number of the current timestep.
-
-    threshold : float, optional
-        Threshold value used to select target regions to track. Default
-		is None.
-
-    target : {'maximum', 'minimum'}, optional
-        Flag to determine if tracking is targetting minima or maxima
-	in the data. Default is 'maximum'.
-
-    position_threshold : {'center', 'extreme', 'weighted_diff',
-			  'weighted_abs'}, optional
-        Flag choosing method used for the position of the tracked
-	feature. Default is 'center'.
-
-    sigma_threshold: float, optional
-        Standard deviation for intial filtering step. Default is 0.5.
-
-    n_erosion_threshold: int, optional
-        Number of pixel by which to erode the identified features.
-	Default is 0.
-
-    n_min_threshold : int, optional
-        Minimum number of identified features. Default is 0.
-
-    min_distance : float, optional
-        Minimum distance between detected features. Default is 0.
-
-    idx_start : int, optional
-        Feature id to start with. Default is 0.
-
-    Returns
-    -------
-    features_threshold : pandas DataFrame
-        Detected features for individual threshold.
-
-    regions : dict
-        Dictionary containing the regions above/below threshold used
-	for each feature (feature ids as keys).
-    '''
-
-    from skimage.measure import label
-    from skimage.morphology import binary_erosion
-
-    # if looking for minima, set values above threshold to 0 and scale by data minimum:
-    if target == 'maximum':
-        mask=1*(data_i >= threshold)
-        # if looking for minima, set values above threshold to 0 and scale by data minimum:
-    elif target == 'minimum': 
-        mask=1*(data_i <= threshold)  
-    # only include values greater than threshold
-    # erode selected regions by n pixels 
-    if n_erosion_threshold>0:
-        selem=np.ones((n_erosion_threshold,n_erosion_threshold))
-        mask=binary_erosion(mask,selem).astype(np.int64)
-        # detect individual regions, label  and count the number of pixels included:
-    labels = label(mask, background=0)
-    values, count = np.unique(labels[:,:].ravel(), return_counts=True)
-    values_counts=dict(zip(values, count))
-    # Filter out regions that have less pixels than n_min_threshold
-    values_counts={k:v for k, v in values_counts.items() if v>n_min_threshold}
-    #check if not entire domain filled as one feature
-    if 0 in values_counts:       
-    #Remove background counts:
-        values_counts.pop(0)       
-        #create empty list to store individual features for this threshold
-        list_features_threshold=[]
-        #create empty dict to store regions for individual features for this threshold
-        regions=dict()
-        #create emptry list of features to remove from parent threshold value
-        #loop over individual regions:       
-        for cur_idx,count in values_counts.items():
-            region=labels[:,:] == cur_idx
-            [hdim1_indices,hdim2_indeces]= np.nonzero(region)
-            #write region for individual threshold and feature to dict
-            region_i=list(zip(hdim1_indices,hdim2_indeces))
-            regions[cur_idx+idx_start]=region_i
-            # Determine feature position for region by one of the following methods:
-            hdim1_index,hdim2_index=feature_position(hdim1_indices,hdim2_indeces,region,data_i,threshold,position_threshold,target)
-            #create individual DataFrame row in tracky format for identified feature
-            list_features_threshold.append({'frame': int(i_time),
-                                            'idx':cur_idx+idx_start,
-                                            'hdim_1': hdim1_index,
-                                            'hdim_2':hdim2_index,
-                                            'num':count,
-                                            'threshold_value':threshold})
-        features_threshold=pd.DataFrame(list_features_threshold)
-    else:
-        features_threshold=pd.DataFrame()
-        regions=dict()
-            
-    return features_threshold, regions
-    
-def feature_detection_multithreshold_timestep(data_i,i_time,
-                                              threshold=None,
-                                              min_num=0,
-                                              target='maximum',
-                                              position_threshold='center',
-                                              sigma_threshold=0.5,
-                                              n_erosion_threshold=0,
-                                              n_min_threshold=0,
-                                              min_distance=0,
-                                              feature_number_start=1
-                                              ):
-    '''Find features in each timestep.
-
-    Based on iteratively finding regions above/below a set of
-    thresholds. Smoothing the input data with the Gaussian filter makes
-    output more reliable. [2]_
-
-    Parameters
-    ----------
-    data_i : iris.cube.Cube
-        2D field to perform the feature detection (single timestep) on.
-
-    threshold : float, optional
-        Threshold value used to select target regions to track. Default
-        is None.
-
-    min_num : int, optional
-        Default is 0.
-
-    target : {'maximum', 'minimum'}, optinal
-        Flag to determine if tracking is targetting minima or maxima
-        in the data. Default is 'maximum'.
-
-    position_threshold : {'center', 'extreme', 'weighted_diff',
-			  'weighted_abs'}, optional
-        Flag choosing method used for the position of the tracked
-	feature. Default is 'center'.
-
-    sigma_threshold: float, optional
-        Standard deviation for intial filtering step. Default is 0.5.
-
-    n_erosion_threshold: int, optional
-        Number of pixel by which to erode the identified features.
-        Default is 0.
-
-    n_min_threshold : int, optional
-        Minimum number of identified features. Default is 0.
-
-    min_distance : float, optional
-        Minimum distance between detected features. Default is 0.
-
-    feature_number_start : int, optional
-        Feature id to start with. Default is 1.
-
-    Returns
-    -------
-    features_threshold : pandas.DataFrame
-        Detected features for individual timestep.
-
-    Notes
-    -----
-    unsure about feature_number_start
-    '''
-
-    from scipy.ndimage.filters import gaussian_filter
-
-    track_data = data_i.core_data()
-
-    track_data=gaussian_filter(track_data, sigma=sigma_threshold) #smooth data slightly to create rounded, continuous field
-    # create empty lists to store regions and features for individual timestep
-    features_thresholds=pd.DataFrame()
-    regions_old={}
-    for i_threshold,threshold_i in enumerate(threshold):
-        if (i_threshold>0 and not features_thresholds.empty):
-            idx_start=features_thresholds['idx'].max()+1
-        else:
-            idx_start=0
-        features_threshold_i,regions_i=feature_detection_threshold(track_data,i_time,
-                                                        threshold=threshold_i,
-                                                        sigma_threshold=sigma_threshold,
-                                                        min_num=min_num,
-                                                        target=target,
-                                                        position_threshold=position_threshold,
-                                                        n_erosion_threshold=n_erosion_threshold,
-                                                        n_min_threshold=n_min_threshold,
-                                                        min_distance=min_distance,
-                                                        idx_start=idx_start
-                                                        )
-        if any([x is not None for x in features_threshold_i]):
-            features_thresholds=features_thresholds.append(features_threshold_i)
-
-        # For multiple threshold, and features found both in the current and previous step, remove "parent" features from Dataframe
-        if (i_threshold>0 and not features_thresholds.empty and regions_old):
-            # for each threshold value: check if newly found features are surrounded by feature based on less restrictive threshold
-            features_thresholds=remove_parents(features_thresholds,regions_i,regions_old)
-        regions_old=regions_i
-
-        logging.debug('Finished feature detection for threshold '+str(i_threshold) + ' : ' + str(threshold_i) )
-    return features_thresholds
-
-def feature_detection_multithreshold(field_in,
-                                     dxy,
-                                     threshold=None,
-                                     min_num=0,
-                                     target='maximum',
-                                     position_threshold='center',
-                                     sigma_threshold=0.5,
-                                     n_erosion_threshold=0,
-                                     n_min_threshold=0,
-                                     min_distance=0,
-                                     feature_number_start=1
-                                     ):
-    '''Perform feature detection based on contiguous regions.
-
-    The regions are above/below a threshold.
-
-    Parameters
-    ----------
-    field_in : iris.cube.Cube
-        2D field to perform the tracking on (needs to have coordinate
-        'time' along one of its dimensions),
-    
-    dxy : float
-        Grid spacing of the input data.
-
-    thresholds : list of floats, optional
-        Threshold values used to select target regions to track. Default
-	is None.
-
-    target : {'maximum', 'minimum'}, optional
-        Flag to determine if tracking is targetting minima or maxima in
-	the data. Default is 'maximum'.
-
-    position_threshold : {'center', 'extreme', 'weighted_diff',
-                          'weighted_abs'}, optional
-        Flag choosing method used for the position of the tracked
-	feature. Default is 'center'.
-
-    sigma_threshold: float, optional
-        Standard deviation for intial filtering step. Default is 0.5.
-
-    n_erosion_threshold: int, optional
-        Number of pixel by which to erode the identified features.
-	Default is 0.
-
-    n_min_threshold : int, optional
-        Minimum number of identified features. Default is 0.
-
-    min_distance : float, optional
-        Minimum distance between detected features. Default is 0.
-
-    feature_number_start : int, optional
-        Feature id to start with. Default is 1.
-
-    Returns
-    -------
-    features : pandas.DataFrame
-        Detected features.
-    '''
-    from tobac.utils import add_coordinates
-
-    logging.debug('start feature detection based on thresholds')
-    
-    # create empty list to store features for all timesteps
-    list_features_timesteps=[]
-
-    # loop over timesteps for feature identification:
-    data_time=field_in.slices_over('time')
-    
-    # if single threshold is put in as a single value, turn it into a list
-    if type(threshold) in [int,float]:
-        threshold=[threshold]    
-    
-    for i_time,data_i in enumerate(data_time):
-        time_i=data_i.coord('time').units.num2date(data_i.coord('time').points[0])
-        features_thresholds=feature_detection_multithreshold_timestep(data_i,i_time,
-                                                            threshold=threshold,
-                                                            sigma_threshold=sigma_threshold,
-                                                            min_num=min_num,
-                                                            target=target,
-                                                            position_threshold=position_threshold,
-                                                            n_erosion_threshold=n_erosion_threshold,
-                                                            n_min_threshold=n_min_threshold,
-                                                            min_distance=min_distance,
-                                                            feature_number_start=feature_number_start
-                                                           )
-        #check if list of features is not empty, then merge features from different threshold values 
-        #into one DataFrame and append to list for individual timesteps:
-        if not features_thresholds.empty:
-            #Loop over DataFrame to remove features that are closer than distance_min to each other:
-            if (min_distance > 0):
-                features_thresholds=filter_min_distance(features_thresholds,dxy,min_distance)
-        list_features_timesteps.append(features_thresholds)
-        
-        logging.debug('Finished feature detection for ' + time_i.strftime('%Y-%m-%d_%H:%M:%S'))
-
-    logging.debug('feature detection: merging DataFrames')
-    # Check if features are detected and then concatenate features from different timesteps into one pandas DataFrame
-    # If no features are detected raise error
-    if any([not x.empty for x in list_features_timesteps]):
-        features=pd.concat(list_features_timesteps, ignore_index=True)   
-        features['feature']=features.index+feature_number_start
-    #    features_filtered = features.drop(features[features['num'] < min_num].index)
-    #    features_filtered.drop(columns=['idx','num','threshold_value'],inplace=True)
-        features=add_coordinates(features,field_in)
-    else:
-        features=None
-        logging.info('No features detected')
-    logging.debug('feature detection completed')
-    return features
 
 def filter_min_distance(features,dxy,min_distance):
     '''Perform feature detection based on contiguous regions.

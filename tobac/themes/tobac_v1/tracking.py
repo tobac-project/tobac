@@ -22,7 +22,9 @@ References
 import logging
 import numpy as np
 import pandas as pd
+from tobac.utils import xarray_to_iris
 
+#@xarray_to_iris
 def linking_trackpy(features,field_in,dt,dxy,
                        v_max=None,d_max=None,d_min=None,subnetwork_size=None,
                        memory=0,stubs=1,time_cell_min=None,              
@@ -144,6 +146,10 @@ def linking_trackpy(features,field_in,dt,dxy,
 #    from trackpy import filter_stubs
 #    from tobac.utils import add_coordinates
 
+    # convert to iris/pandas
+    field_in=field_in.to_iris()
+    features=features.to_dataframe()
+
     # calculate search range based on timestep and grid spacing
     if v_max is not None:
         search_range=int(dt*v_max/dxy)
@@ -170,7 +176,6 @@ def linking_trackpy(features,field_in,dt,dxy,
         tp.linking.Linker.MAX_SUB_NET_SIZE=subnetwork_size
     # deep copy to preserve features field:
     features_linking=deepcopy(features)
-    
     
     if method_linking == 'random':
 #     link features into trajectories:
@@ -241,7 +246,8 @@ def linking_trackpy(features,field_in,dt,dxy,
     # add coordinate to raw features identified:
     logging.debug('start adding coordinates to detected features')
     logging.debug('feature linking completed')
-
+    
+    trajectories_final=trajectories_final.to_xarray()
     return trajectories_final
 
 def fill_gaps(t,order=1,extrapolate=0,frame_max=None,hdim_1_max=None,hdim_2_max=None):
