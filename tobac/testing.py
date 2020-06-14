@@ -252,7 +252,7 @@ def make_sample_data_2D_3blobs_inv(data_type='iris'):
     
     return sample_data
 
-def make_sample_data_3D_3blobs(data_type='iris',invert_xy=False):
+def make_sample_data_3D_3blobs(data_type='xarray',invert_xy=False):
     '''Create a simple dataset to use in tests.
 
     The grid has a grid spacing of 1km in both horizontal directions
