@@ -123,8 +123,8 @@ def test_tracking_3D():
     parameters_features['n_erosion_threshold']=0
     parameters_features['n_min_threshold']=3
     
-    sample_data_max=sample_data.collapsed('geopotential_height',MAX)
-    sample_data_max_inv=sample_data.collapsed('geopotential_height',MAX)
+    sample_data_max=sample_data.max(dim='geopotential_height')
+    sample_data_max_inv=sample_data.max(dim='geopotential_height')
 
     #calculate  dxy,dt
     dxy,dt=get_spacings(sample_data_max)
