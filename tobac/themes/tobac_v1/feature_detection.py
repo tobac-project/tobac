@@ -133,7 +133,7 @@ def feature_detection_multithreshold(field_in,
         list_coords=[key for key in field_in.coords.keys()]
         print(features)
         print(list_coords)
-        features=features.set_index(list_coords)
+        #features=features.set_index(list_coords)
         features=features.to_xarray()
     else:
         features=None

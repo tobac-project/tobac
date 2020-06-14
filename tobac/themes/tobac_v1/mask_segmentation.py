@@ -33,7 +33,7 @@ References
 
 import logging
 from tobac.utils import xarray_to_iris
-
+import xarray
 def segmentation_3D(features,field,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None):
     '''Prepare the output for the 3D watershedding segmentation.
 
@@ -221,6 +221,7 @@ def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,m
     features_out=pd.concat(features_out_list)
     
     features_out=features_out.to_xarray()
+    segmentation_out=xarray.DataArray.from_iris(segmentation_out)
 
     logging.debug('Finished segmentation')
     return segmentation_out,features_out
