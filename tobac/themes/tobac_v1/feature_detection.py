@@ -39,7 +39,7 @@ def feature_detection_multithreshold(field_in,
 
     Parameters
     ----------
-    field_in : iris.cube.Cube
+    field_in : xarray.DataArrray
         2D field to perform the tracking on (needs to have coordinate
         'time' along one of its dimensions),
     
@@ -77,7 +77,7 @@ def feature_detection_multithreshold(field_in,
 
     Returns
     -------
-    features : pandas.DataFrame
+    features : xarray.Dataset
         Detected features.
     '''
     from tobac.utils import add_coordinates

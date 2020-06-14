@@ -34,98 +34,6 @@ References
 import logging
 from tobac.utils import xarray_to_iris
 import xarray
-def segmentation_3D(features,field,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None):
-    '''Prepare the output for the 3D watershedding segmentation.
-
-    Parameters
-    ----------
-    features : pandas.DataFrame
-        Output from trackpy/maketrack.
-
-    field : iris.cube.Cube
-        Containing the field to perform the watershedding on.
-
-    dxy : float
-	Grid spacing of the input data.
-
-    threshold : float, optional
-        Threshold for the watershedding field to be used for the mask.
-        Default is 3e-3.
-
-    target : {'maximum', 'minimum'}, optional
-        Flag to determine if tracking is targetting minima or maxima in
-        the data. Default is 'maximum'.
-
-    level : slice of iris.cube.Cube, optional
-        Levels at which to seed the cells for the watershedding
-        algorithm. Default is None.
-
-    method : {'watershed'}, optional
-        Flag determining the algorithm to use (currently watershedding
-        implemented). 'random_walk' could be uncommented.
-
-    max_distance : float, optional
-        Maximum distance from a marker allowed to be classified as
-	belonging to that cell. Default is None.
-
-    Returns
-    -------
-    segmentation_out : iris.cube.Cube
-        Cloud mask, 0 outside and integer numbers according to track
-        inside the clouds.
-
-    features_out : pandas.DataFrame
-        Feature dataframe including the number of cells (2D or 3D) in
-        the segmented area/volume of the feature at the timestep.
-    '''
-    return segmentation(features,field,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance)
-
-def segmentation_2D(features,field,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None):
-    '''Prepare the output for the 2D watershedding segmentation.
-
-    Parameters
-    ----------
-    features : pandas.DataFrame
-        Output from trackpy/maketrack.
-
-    field : iris.cube.Cube
-        Containing the field to perform the watershedding on.
-
-    dxy : float
-	Grid spacing of the input data.
-
-    threshold : float, optional
-        Threshold for the watershedding field to be used for the mask.
-        Default is 3e-3.
-
-    target : {'maximum', 'minimum'}, optional
-        Flag to determine if tracking is targetting minima or maxima in
-        the data. Default is 'maximum'.
-
-    level : slice of iris.cube.Cube, optional
-        Levels at which to seed the cells for the watershedding
-        algorithm. Default is None.
-
-    method : {'watershed'}, optional
-        Flag determining the algorithm to use (currently watershedding
-        implemented). 'random_walk' could be uncommented.
-
-    max_distance : float, optional
-        Maximum distance from a marker allowed to be classified as
-        belonging to that cell. Default is None.
-
-    Returns
-    -------
-    segmentation_out : iris.cube.Cube
-        Cloud mask, 0 outside and integer numbers according to track
-        inside the clouds.
-
-    features_out : pandas.DataFrame
-        Feature dataframe including the number of cells (2D or 3D) in
-        the segmented area/volume of the feature at the timestep.
-    '''
-
-    return segmentation(features,field,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance)
 
 def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,vertical_coord='auto'):
     '''Use watershedding or random walker.
@@ -134,10 +42,10 @@ def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,m
     
     Parameters
     ----------
-    features : pandas.DataFrame
+    features : xarray.Dataset
         Output from trackpy/maketrack.
 
-    field : iris.cube.Cube
+    field : xarray.DataArray
         Containing the field to perform the watershedding on.
 
     dxy : float
@@ -168,11 +76,11 @@ def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,m
     
     Returns
     -------
-    segmentation_out : iris.cube.Cube
+    segmentation_out : xarray.DataArray
         Cloud mask, 0 outside and integer numbers according to track
         inside the clouds.
 
-    features_out : pandas.DataFrame
+    features_out : xarray.Dataset
         Feature dataframe including the number of cells (2D or 3D) in
         the segmented area/volume of the feature at the timestep.
 

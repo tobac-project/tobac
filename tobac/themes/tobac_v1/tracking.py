@@ -55,10 +55,10 @@ def linking_trackpy(features,field_in,dt,dxy,
 
     Parameters
     ----------
-    features : pandas.DataFrame
+    features : xarray.Dataset
         Detected features to be linked.
 
-    field_in : iris.cube.Cube
+    field_in : xarray.DataArray
         Input field to perform the watershedding on (2D or 3D for one
         specific point in time).
 
@@ -123,7 +123,7 @@ def linking_trackpy(features,field_in,dt,dxy,
 
     Returns
     -------
-    trajectories_final : pandas.DataFrame
+    trajectories_final : xarray.Dataset
         This enables filtering the resulting trajectories, e.g. to
         reject trajectories that are only partially captured at the
         boundaries of the input field both in space and time. [5]_
