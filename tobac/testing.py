@@ -162,7 +162,7 @@ def make_sample_data_2D_3blobs(data_type='xarray'):
     return sample_data
 
 
-def make_sample_data_2D_3blobs_inv(data_type='iris'):
+def make_sample_data_2D_3blobs_inv(data_type='xarray'):
     '''Create a version of the dataset with switched coordinates.
 
     Create a version of the dataset created in the function
