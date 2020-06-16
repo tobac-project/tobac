@@ -25,10 +25,10 @@ from tobac.analysis import lifetime_histogram
 from tobac.analysis import histogram_cellwise,histogram_featurewise
 
 import numpy as np
-from tobac.utils.convert import xarray_to_iris,iris_to_xarray
+from tobac.utils.convert import xarray_to_iris,iris_to_xarray,xarray_to_irispandas
 
 
-@xarray_to_iris
+@xarray_to_irispandas
 def plot_tracks_mask_field_loop(track,field,mask,features,axes=None,name=None,plot_dir='./',
                                 figsize=(10./2.54,10./2.54),dpi=300,
                                 margin_left=0.05,margin_right=0.05,margin_bottom=0.05,margin_top=0.05,
@@ -110,7 +110,7 @@ def plot_tracks_mask_field_loop(track,field,mask,features,axes=None,name=None,pl
 
         plt.close()
 
-@xarray_to_iris
+@xarray_to_irispandas
 def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
                            plot_outline=True,
                            plot_marker=True,marker_track='x',markersize_track=4,
@@ -340,7 +340,7 @@ def plot_tracks_mask_field(track,field,mask,features,axes=None,axis_extent=None,
     axes.set_extent(axis_extent)
     return axes
 
-@xarray_to_iris
+@xarray_to_irispandas
 def animation_mask_field(track,features,field,mask,interval=500,figsize=(10,10),**kwargs):
     '''
 
@@ -412,7 +412,7 @@ def animation_mask_field(track,features,field,mask,interval=500,figsize=(10,10),
     animation = matplotlib.animation.FuncAnimation(fig, update,init_func=None, frames=datetimes,interval=interval, blit=False)
     return animation
 
-@xarray_to_iris
+@xarray_to_irispandas
 def plot_mask_cell_track_follow(cell,track, cog, features, mask_total,
                                 field_contour, field_filled,
                                 width=10000,
@@ -541,7 +541,7 @@ def plot_mask_cell_track_follow(cell,track, cog, features, mask_total,
         plt.clf()
 
 
-@xarray_to_iris
+@xarray_to_irispandas
 def plot_mask_cell_individual_follow(cell_i,track, cog,features, mask_total,
                                field_contour, field_filled,
                                axes=None,width=10000,
@@ -755,7 +755,7 @@ def plot_mask_cell_individual_follow(cell_i,track, cog,features, mask_total,
 
     return axes
 
-@xarray_to_iris
+@xarray_to_irispandas
 def plot_mask_cell_track_static(cell,track, cog, features, mask_total,
                                     field_contour, field_filled,
                                     width=10000,n_extend=1,
@@ -911,7 +911,7 @@ def plot_mask_cell_track_static(cell,track, cog, features, mask_total,
         plt.close()
         plt.clf()
 
-@xarray_to_iris
+@xarray_to_irispandas
 def plot_mask_cell_individual_static(cell_i,track, cog, features, mask_total,
                                field_contour, field_filled,
                                axes=None,xlim=None,ylim=None,
@@ -1149,7 +1149,7 @@ def plot_mask_cell_individual_static(cell_i,track, cog, features, mask_total,
 
     return axes
 
-@xarray_to_iris
+@xarray_to_irispandas
 def plot_mask_cell_track_2D3Dstatic(cell,track, cog, features, mask_total,
                                     field_contour, field_filled,
                                     width=10000,n_extend=1,
@@ -1328,7 +1328,7 @@ def plot_mask_cell_track_2D3Dstatic(cell,track, cog, features, mask_total,
         plt.clf()
 
 
-@xarray_to_iris
+@xarray_to_irispandas
 def plot_mask_cell_track_3Dstatic(cell,track, cog, features, mask_total,
                                     field_contour, field_filled,
                                     width=10000,n_extend=1,
@@ -1488,7 +1488,7 @@ def plot_mask_cell_track_3Dstatic(cell,track, cog, features, mask_total,
         plt.close()
         plt.clf()
 
-@xarray_to_iris
+@xarray_to_irispandas
 def plot_mask_cell_individual_3Dstatic(cell_i,track, cog, features, mask_total,
                                field_contour, field_filled,
                                axes=None,xlim=None,ylim=None,
@@ -1754,7 +1754,7 @@ def plot_mask_cell_individual_3Dstatic(cell_i,track, cog, features, mask_total,
 
     return axes
 
-@xarray_to_iris
+@xarray_to_irispandas
 def plot_mask_cell_track_static_timeseries(cell,track, cog, features, mask_total,
                                            field_contour, field_filled,
                                            track_variable=None,variable=None,variable_ylabel=None,variable_label=[None],variable_legend=False,variable_color=None,
@@ -1968,7 +1968,7 @@ def plot_mask_cell_track_static_timeseries(cell,track, cog, features, mask_total
         plt.close()
         plt.clf()
 
-@xarray_to_iris
+@xarray_to_irispandas
 def map_tracks(track,axis_extent=None,figsize=(10,10),axes=None):
     '''
     Parameters
@@ -2003,7 +2003,7 @@ def map_tracks(track,axis_extent=None,figsize=(10,10),axes=None):
         axes=make_map(axes)
     return axes
 
-@xarray_to_iris
+@xarray_to_irispandas
 def make_map(axes):
     '''
 
@@ -2038,7 +2038,7 @@ def make_map(axes):
     #gl.xlabel_style = {'color': 'red', 'weight': 'bold'}
     return axes
 
-@xarray_to_iris
+@xarray_to_irispandas
 def plot_lifetime_histogram(track,axes=None,bin_edges=np.arange(0,200,20),density=False,**kwargs):
     '''
 
@@ -2070,8 +2070,7 @@ def plot_lifetime_histogram(track,axes=None,bin_edges=np.arange(0,200,20),densit
     plot_hist=axes.plot(bin_centers, hist,**kwargs)
     return plot_hist
 
-@xarray_to_iris
-
+@xarray_to_irispandas
 def plot_lifetime_histogram_bar(track,axes=None,bin_edges=np.arange(0,200,20),density=False,width_bar=1,shift=0.5,**kwargs):
     '''
 
@@ -2109,7 +2108,7 @@ def plot_lifetime_histogram_bar(track,axes=None,bin_edges=np.arange(0,200,20),de
     plot_hist=axes.bar(bin_centers+shift,hist,width=width_bar,**kwargs)
     return plot_hist
 
-@xarray_to_iris
+@xarray_to_irispandas
 def plot_histogram_cellwise(track,bin_edges,variable,quantity,axes=None,density=False,**kwargs):
     '''
 
@@ -2145,7 +2144,7 @@ def plot_histogram_cellwise(track,bin_edges,variable,quantity,axes=None,density=
     plot_hist=axes.plot(bin_centers, hist,**kwargs)
     return plot_hist
 
-@xarray_to_iris
+@xarray_to_irispandas
 def plot_histogram_featurewise(Track,bin_edges,variable,axes=None,density=False,**kwargs):
     '''
 
