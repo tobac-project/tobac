@@ -32,13 +32,16 @@ References
 '''
 
 import logging
-from tobac.utils import xarray_to_iris
 import xarray
 
 def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,vertical_coord='auto'):
-    '''Use watershedding or random walker.
-
-    Determine cloud volumes associated with tracked updrafts.
+    '''Use watershedding or random walker technique to determine region above 
+    a threshold value around initial seeding position for all time steps of 
+    the input data. Works both in 2D (based on single seeding point) and 3D and 
+    returns a mask with zeros everywhere around the identified regions and the 
+    feature id inside the regions. 
+    
+    Calls segmentation_timestep at each individal timestep of the input data.
     
     Parameters
     ----------
@@ -73,6 +76,7 @@ def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,m
 
     vertical_coord : {'auto', 'z', 'model_level_number', 'altitude',
                       'geopotential_height'}, optional
+        Name of the vertical coordinate for use in 3D segmentation case
     
     Returns
     -------
@@ -89,10 +93,6 @@ def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,m
     ValueError
         If field_in.ndim is neither 3 nor 4 and 'time' is not included
         in coords.
-
-    Notes
-    -----
-    vertical_coord needs a description
     '''
     print(field)
     import pandas as pd
@@ -137,7 +137,8 @@ def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,m
 
 
 def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,vertical_coord='auto'):    
-    """Perform watershedding for an individual time step of the data.
+    """Perform watershedding for an individual time step of the data. Works for 
+    both 2D and 3D data
     
     Parameters
     ----------
@@ -149,7 +150,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         Features for one specific point in time.
 
     dxy : float
-	Grid spacing of the input data.
+    	Grid spacing of the input data in metres
 
     threshold : float, optional
         Threshold for the watershedding field to be used for the mask.
@@ -157,7 +158,8 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
 
     target : {'maximum', 'minimum'}, optional
         Flag to determine if tracking is targetting minima or maxima in
-        the data. Default is 'maximum'.
+        the data to determine from which direction to approach the threshold 
+        value. Default is 'maximum'.
 
     level : slice of iris.cube.Cube, optional
         Levels at which to seed the cells for the watershedding
@@ -171,8 +173,10 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         Maximum distance from a marker allowed to be classified as
         belonging to that cell. Default is None.
 
-    vertical_coord : {'auto', 'z', 'model_level_number', 'altitude',
-                      'geopotential_height'}, optional
+    vertical_coord : str, optional
+        Vertical coordinate in 3D input data. If 'auto', input is checked for 
+        one of {'z', 'model_level_number', 'altitude','geopotential_height'} as
+        a likely coordinate name
     
     Returns
     -------
@@ -198,9 +202,6 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
 
         If method is not 'watershed'.
 
-    Notes
-    -----
-    unsure about target, dxy and vertical_coord
     """
 
     from skimage.morphology import watershed

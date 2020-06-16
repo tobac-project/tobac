@@ -14,22 +14,16 @@ def add_coordinates(t,variable_cube):
     Parameters
     ----------
     t : pandas.DataFrame
-        Trajectories/features from trackpy.
+        Trajectories/features from feature detection or linking step
 
     variable_cube : iris.cube.Cube
-        Cube containing the dimensions 'time', 'longitude', 'latitude',
-        'x_projection_coordinate', 'y_projection_coordinate', usually
-        cube that the tracking is performed on.
-
+        Input data used for the tracking to transfer coodinate information to resulting DataFrame
+        
     Returns
     -------
     t : pandas.DataFrame
         Trajectories with added coordinated.
 
-    Notes
-    -----
-    where appropriate replace description of variable_cube with
-    description above
     '''
 
     import numpy as np
@@ -185,7 +179,8 @@ def get_bounding_box(x,buffer=1):
 
 @xarray_to_iris
 def get_spacings(field_in,grid_spacing=None,time_spacing=None):
-    '''
+    '''Determine spatial and temporal grid spacing of input data
+    
     Parameters
     ----------
     field_in : iris.cube.Cube
@@ -195,15 +190,15 @@ def get_spacings(field_in,grid_spacing=None,time_spacing=None):
         Grid spacing in input data. Default is None.
 
     time_spacing : float, optional
-	Time resolution of input data. Default is None.
+    	Time resolution of input data. Default is None.
 
     Returns
     -------
     dxy : float
-	Grid spacing.
+    	Grid spacing in metres
 
     dt : float
-	Time resolution.
+    	Time resolution in seconds
 
     Raises
     ------
@@ -211,9 +206,6 @@ def get_spacings(field_in,grid_spacing=None,time_spacing=None):
         If input_cube does not contail projection_x_coord and
         projection_y_coord or keyword argument grid_spacing.
 
-    Notes
-    -----
-    need short summary
     '''
 
     import numpy as np

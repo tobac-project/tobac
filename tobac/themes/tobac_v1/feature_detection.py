@@ -47,8 +47,8 @@ def feature_detection_multithreshold(field_in,
         Grid spacing of the input data.
 
     thresholds : list of floats, optional
-        Threshold values used to select target regions to track. Default
-	is None.
+        Threshold values used to select target regions to track. 
+        Default is None.
 
     target : {'maximum', 'minimum'}, optional
         Flag to determine if tracking is targetting minima or maxima in
@@ -199,10 +199,6 @@ def feature_detection_multithreshold_timestep(data_i,i_time,
     -------
     features_threshold : pandas.DataFrame
         Detected features for individual timestep.
-
-    Notes
-    -----
-    unsure about feature_number_start
     '''
 
     from scipy.ndimage.filters import gaussian_filter
@@ -354,21 +350,25 @@ def feature_detection_threshold(data_i,i_time,
 
 
 def feature_position(hdim1_indices,hdim2_indeces,region,track_data,threshold_i,position_threshold, target):
-    '''Determine feature position.
-
+    '''Determine feature position with regard to the horizontal dimensions in pixels from the identified region above threshold values
     Parameters
     ----------
-    hdim1_indices, hdim2_indices : list
-        
+    hdim1_indices: list
+        Indeces of pixels in region along first horizontal dimension
+    
+    hdim2_indices : list
+            Indeces of pixels in region along second horizontal dimension
+
     region : list
-        2-element tuples.
+        2-element tuples containing indeces of the individual region identified
 
     track_data : numpy.ndarray
         2D numpy array containing the data.
         
     threshold_i : float
         
-    position_threshold : str
+    position_threshold : {center,extreme,weighted_diff,weighted_abs}
+        Method to determine the position from the region
         
     target : {'maximum', 'minimum'}
         Flag to determine if tracking is targetting minima or maxima in
@@ -378,11 +378,7 @@ def feature_position(hdim1_indices,hdim2_indeces,region,track_data,threshold_i,p
     Returns
     -------
     hdim1_index, hdim2_index : float
-        Feature position along 1st and 2nd horizontal dimension.
-
-    Notes
-    -----
-    need more descriptions
+        Feature position along 1st and 2nd horizontal dimension in pixels
     '''
 
     if position_threshold=='center':
@@ -422,25 +418,25 @@ def feature_position(hdim1_indices,hdim2_indeces,region,track_data,threshold_i,p
     return hdim1_index,hdim2_index
 
 def test_overlap(region_inner,region_outer):
-    '''Test for overlap between two regions
+    '''Test for overlap between two regions (determine if there are common pixels)
 
     (probably scope for further speedup here)
 
     Parameters
     ----------
-    region_inner region_outer : list
+    region_inner: list
         List of 2-element tuples defining the indeces of all cells
-        in the region.
+        in the inner region.
+
+    
+    region_outer : list
+        List of 2-element tuples defining the indeces of all cells
+        in the outer region.
 
     Returns
     -------
     overlap : bool
         True if there are any shared points between the two regions.
-
-    Notes
-    -----
-    rework extended summary
-    unsure about description of region_inner, region_outer
     '''
 
     overlap=frozenset(region_outer).isdisjoint(region_inner)
