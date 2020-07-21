@@ -36,6 +36,7 @@ def check_isolation(raw, filtered, grid_size, params):
         obj_ind = np.where(iso_filtered == iso_id)
         objects = np.unique(filtered[obj_ind])
         objects = objects[objects != 0]
+        
         if len(objects) == 1 and single_max(obj_ind, raw, params):
             iso[objects - 1] = True
         else:
@@ -112,7 +113,10 @@ def update_current_objects(frame1, frame2, pairs, old_objects, counter):
 
 def single_max(obj_ind, raw, params):
     """ Returns True if object has at most one peak. """
-    max_proj = np.max(raw, axis=0)
+    if len(raw.shape) == 3:
+        max_proj = np.max(raw, axis=0)
+    else:
+        max_proj = raw
     smooth = ndimage.filters.gaussian_filter(max_proj, params['ISO_SMOOTH'])
     padded = np.pad(smooth, 1, mode='constant')
     obj_ind = [axis + 1 for axis in obj_ind]  # adjust for padding
@@ -162,9 +166,9 @@ def get_object_prop(image1, grid1, field, record, params):
     nobj = np.max(image1)
 
     unit_dim = record.grid_size
-    unit_alt = unit_dim[0]/1000
-    unit_area = (unit_dim[1]*unit_dim[2])/(1000**2)
-    unit_vol = (unit_dim[0]*unit_dim[1]*unit_dim[2])/(1000**3)
+    unit_alt = unit_dim[0] / 1000
+    unit_area = (unit_dim[1]*unit_dim[2]) / (1000**2)
+    unit_vol = (unit_dim[0]*unit_dim[1]*unit_dim[2]) / (1000**3)
 
     raw3D = grid1[field].values
 
@@ -182,20 +186,30 @@ def get_object_prop(image1, grid1, field, record, params):
         rounded = np.round(this_centroid).astype('i')
         cent_met = np.array([grid1.y.values[rounded[0]],
                              grid1.x.values[rounded[1]]])
-        lat = grid1.point_latitude.values[0, rounded[0], 0]
-        lon = grid1.point_longitude.values[0, 0, rounded[1]]
+        if len(grid1.point_latitude.values.shape) == 3:
+            lat = grid1.point_latitude.values[0, rounded[0], 0]
+            lon = grid1.point_longitude.values[0, 0, rounded[1]]
+        else:
+            lat = grid1.point_latitude.values[rounded[0], 0]
+            lon = grid1.point_longitude.values[0, rounded[1]]
+
         longitude.append(np.round(lon, 4))
         latitude.append(np.round(lat, 4))
 
         # raw 3D grid stats
-        obj_slices = [raw3D[:, ind[0], ind[1]] for ind in obj_index]
-        field_max.append(np.max(obj_slices))
-        filtered_slices = [obj_slice > params['FIELD_THRESH']
+        if len(raw3D.shape) == 3:
+            obj_slices = [raw3D[:, ind[0], ind[1]] for ind in obj_index]
+            filtered_slices = [obj_slice > params['FIELD_THRESH']
                            for obj_slice in obj_slices]
-        heights = [np.arange(raw3D.shape[0])[ind] for ind in filtered_slices]
-        max_height.append(np.max(np.concatenate(heights)) * unit_alt)
-        volume.append(np.sum(filtered_slices) * unit_vol)
-
+            heights = [np.arange(raw3D.shape[0])[ind] for ind in filtered_slices]
+            max_height.append(np.max(np.concatenate(heights)) * unit_alt)
+            volume.append(np.sum(filtered_slices) * unit_vol)
+            field_max.append(np.max(obj_slices))
+        else:
+            obj_slices = [raw3D[ind[0], ind[1]] for ind in obj_index]
+            max_height.append(np.nan)
+            volume.append(np.nan)
+            field_max.append(np.max(obj_slices))
     # cell isolation
     isolation = check_isolation(raw3D, image1, record.grid_size, params)
 
