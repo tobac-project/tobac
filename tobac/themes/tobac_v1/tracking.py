@@ -53,23 +53,25 @@ def linking_trackpy(features,field_in,dt,dxy,
 
     Parameters
     ----------
-    features : pandas.DataFrame
+    features : xarray.Dataset
         Detected features to be linked.
 
-    field_in : iris.cube.Cube
+    field_in : xarray.DataArray
         Input field to perform the watershedding on (2D or 3D for one
         specific point in time).
 
     dt : float
-	Time resolution of tracked features.
+    	Time resolution of tracked features.
 
     dxy : float
         Grid spacing of the input data.
 
-    d_max : optional
-	Default is None.
+    d_max : float, optional
+    	Maximum search range
+        
+        Default is None.
 
-    d_min : optional
+    d_min : float, optional
         Variations in the shape of the regions used to determine the
         positions of the features can lead to quasi-instantaneous shifts
         of the position of the feature by one or two grid cells even for
@@ -80,48 +82,56 @@ def linking_trackpy(features,field_in,dt,dxy,
         Default is None.
 
     subnetwork_size : int, optional
-        Maximim size of subnetwork for linking. Default is None.
+        Maximum size of subnetwork for linking. Default is None.
 
     v_max : float, optional
         Speed at which features are allowed to move. Default is None.
 
     memory : int, optional
         Number of output timesteps features allowed to vanish for to
-	be still considered tracked. Default is 0.
-
-	.. warning :: This parameter should be used with caution, as it
+        be still considered tracked. Default is 0.
+        .. warning :: This parameter should be used with caution, as it
                      can lead to erroneous trajectory linking,
                      espacially for data with low time resolution. [5]_
 
     stubs : int, optional
-	Default is 1.
+        Minimum number of timesteps of a tracked cell to be reported
+        Default is 1
 
-    time_cell_min : optional
-	Default is None.
+    time_cell_min : float, optional
+    	Minimum length in time of tracked cell to be reported in minutes
+        
+        Default is None.
 
     order : int, optional
-	Order of polynomial used to extrapolate trajectory into gaps and
-	beyond start and end point. Default is 1.
+    	Order of polynomial used to extrapolate trajectory into gaps and
+        ond start and end point. 
+        Default is 1.
 
     extrapolate : int, optional
-	Number or timesteps to extrapolate trajectories. Default is 0.
+    	Number or timesteps to extrapolate trajectories. 
+        Default is 0.
 
     method_linking : {'random', 'predict'}, optional
-        Flag choosing method used for trajectory linking. Default is
-        'random'.
+        Flag choosing method used for trajectory linking.
+        Default is 'random'.
 
-    adaptive_step : optional
-	Default is None.
-
-    adaptive_stop : optional
-	Default is None.
-
+    adaptive_step : float, optional
+        Reduce search range by multiplying it by this factor.
+        
+    adaptive_stop : float, optional
+        If not None, when encountering an oversize subnet, retry by progressively
+        reducing search_range until the subnet is solvable. If search_range
+        becomes <= adaptive_stop, give up and raise a SubnetOversizeException.
+        Default is None
+        
     cell_number_start : int, optional
-        Default is 1.
+        Cell number for first tracked cell. 
+        Default is 1
 
     Returns
     -------
-    trajectories_final : pandas.DataFrame
+    trajectories_final : xarray.Dataset
         This enables filtering the resulting trajectories, e.g. to
         reject trajectories that are only partially captured at the
         boundaries of the input field both in space and time. [5]_
@@ -130,12 +140,6 @@ def linking_trackpy(features,field_in,dt,dxy,
     ------
     ValueError
         If method_linking is neither 'random' nor 'predict'.
-
-    Notes
-    -----
-    missing type and description: stubs, time_cell_min,
-    extrapolate, adaptive_step, adaptive_stop, cell_number_start,
-    d_max, d_min
     '''
 
     #    from trackpy import link_df
@@ -143,6 +147,10 @@ def linking_trackpy(features,field_in,dt,dxy,
     from copy import deepcopy
 #    from trackpy import filter_stubs
 #    from tobac.utils import add_coordinates
+
+    # convert to iris/pandas
+    field_in=field_in.to_iris()
+    features=features.to_dataframe()
 
     # calculate search range based on timestep and grid spacing
     if v_max is not None:
@@ -170,7 +178,6 @@ def linking_trackpy(features,field_in,dt,dxy,
         tp.linking.Linker.MAX_SUB_NET_SIZE=subnetwork_size
     # deep copy to preserve features field:
     features_linking=deepcopy(features)
-    
     
     if method_linking == 'random':
 #     link features into trajectories:
@@ -241,7 +248,8 @@ def linking_trackpy(features,field_in,dt,dxy,
     # add coordinate to raw features identified:
     logging.debug('start adding coordinates to detected features')
     logging.debug('feature linking completed')
-
+    
+    trajectories_final=trajectories_final.to_xarray()
     return trajectories_final
 
 def fill_gaps(t,order=1,extrapolate=0,frame_max=None,hdim_1_max=None,hdim_2_max=None):
