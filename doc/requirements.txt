@@ -1,0 +1,7 @@
+setuptools>=41.2
+sphinx>=1.4
+sphinx_rtd_theme
+numpy
+matplotlib
+xarray
+.

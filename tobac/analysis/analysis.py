@@ -1,5 +1,4 @@
 '''Provide tools to analyse and visualize the tracked objects.
-
 This module provides a set of routines that enables performing analyses
 and deriving statistics for individual clouds, such as the time series
 of integrated properties and vertical profiles. It also provides
@@ -12,50 +11,12 @@ package in their own analysis procedures in Python. This includes
 functions perfomring simple tasks like looping over all identified
 objects or cloud trajectories and masking arrays for the analysis of
 individual cloud objects. Plotting routines include both visualizations
-for individual convective cells and their properties.
-
-Routine Listings
-----------------
-cell_staticsics_all(input_cubes, track, mask, aggregators, output_path,
-                    cell_selection, output_name, width, z_coordinate,
-                    dimensions, **kwargs)
-
-cell_statistics(input_cubes, track, mask, aggregators, cell,
-                output_path, output_name, width, z_coordinate,
-                dimensions, **kwargs)
-
-lifetime_histogram(Track, bin_edges, density, return_values)
-
-haversine(lat1, lon1, lat2, lon2)
-
-calculate_distance(feature_1, feature_2, method_distance)
-
-calculate_velocity_individual(feature_old, feature_new, method_distance)
-
-calculate_velocity(track, method_distance)
-
-velocity_histogram(track, method_distance)
-
-calculate_nearesneighbordistance(features, method_distance)
-
-nearestneighbordistance_histogram(features, bin_edges, density,
-                                  method_distance, return_values)
-
-calculate_area(features, mask, method_area)
-
-area_histogram(features, mask, bin_edges)
-
-histogram_cellwise(Track, variable, bin_edges, quantity, density)
-
-histogram_featurewise(Track, variable, bin_edges, density)
-
-calculate_overlap(track_1, track_2, min_sum_inv_distance,
-                  min_mean_inv_distance)
+for individual convective cells and their properties. [1]_
 
 References
 ----------
-.. Heikenfeld, M., Marinescu, P. J., Christensen, M., Watson-Parris, D.,
-   Senf, F., van den Heever, S. C., and Stier, P.: tobac v1.0:
+.. [1] Heikenfeld, M., Marinescu, P. J., Christensen, M., Watson-Parris,
+   D., Senf, F., van den Heever, S. C., and Stier, P.: tobac v1.0:
    towards a flexible framework for tracking and analysis of clouds in
    diverse datasets, Geosci. Model Dev. Discuss.,
    https://doi.org/10.5194/gmd-2019-105 , in review, 2019, 10.
@@ -71,7 +32,9 @@ import logging
 import os
 
 from tobac.utils import mask_cell,mask_cell_surface,mask_cube_cell,get_bounding_box
+from tobac.utils.convert import xarray_to_iris,iris_to_xarray,xarray_to_irispandas,irispandas_to_xarray
 
+@xarray_to_irispandas
 def cell_statistics_all(input_cubes,track,mask,aggregators,output_path='./',cell_selection=None,output_name='Profiles',width=10000,z_coord='model_level_number',dimensions=['x','y'],**kwargs):
     '''
     Parameters
@@ -124,7 +87,8 @@ def cell_statistics_all(input_cubes,track,mask,aggregators,output_path='./',cell
                         dimensions=dimensions,aggregators=aggregators,cell=cell,
                         output_path=output_path,output_name=output_name,
                         width=width,z_coord=z_coord,**kwargs)
-
+        
+@xarray_to_irispandas
 def cell_statistics(input_cubes,track,mask,aggregators,cell,output_path='./',output_name='Profiles',width=10000,z_coord='model_level_number',dimensions=['x','y'],**kwargs):
     '''
     Parameters
@@ -263,6 +227,7 @@ def cell_statistics(input_cubes,track,mask,aggregators,cell,output_path='./',out
         savefile=os.path.join(output_path,output_name,aggregator.name(),output_name+'_'+ aggregator.name()+'_'+str(int(cell))+'.nc')
         save(cubes_profile[aggregator.name()],savefile)
 
+@xarray_to_irispandas
 def lifetime_histogram(Track,bin_edges=np.arange(0,200,20),density=False,return_values=False):
     '''
     Parameters
@@ -303,6 +268,7 @@ def lifetime_histogram(Track,bin_edges=np.arange(0,200,20),density=False,return_
     else:
         return hist,bin_edges,bin_centers
     
+@xarray_to_irispandas
 def haversine(lat1,lon1,lat2,lon2):
     '''Computes the Haversine distance in kilometers.
 
@@ -338,6 +304,7 @@ def haversine(lat1,lon1,lat2,lon2):
     arclen = 2 * np.arcsin(np.sqrt((np.sin((lat2 - lat1) / 2)) ** 2 + np.cos(lat1) * np.cos(lat2) * (np.sin((lon2 - lon1) / 2)) ** 2))
     return arclen * RADIUS_EARTH
 
+@xarray_to_irispandas
 def calculate_distance(feature_1,feature_2,method_distance=None):
     '''Computes distance between two features.
 
@@ -378,6 +345,7 @@ def calculate_distance(feature_1,feature_2,method_distance=None):
         raise ValueError('method undefined')
     return distance
 
+@xarray_to_irispandas
 def calculate_velocity_individual(feature_old,feature_new,method_distance=None):
     '''
     Parameters
@@ -400,6 +368,7 @@ def calculate_velocity_individual(feature_old,feature_new,method_distance=None):
     velocity=distance/diff_time
     return velocity
 
+@xarray_to_irispandas
 def calculate_velocity(track,method_distance=None):
     '''
     Parameters
@@ -425,6 +394,7 @@ def calculate_velocity(track,method_distance=None):
             track.at[index_i,'v']=velocity
     return track
 
+@xarray_to_irispandas
 def velocity_histogram(track,bin_edges=np.arange(0,30,1),density=False,method_distance=None,return_values=False):
     '''
     Parameters
@@ -466,6 +436,7 @@ def velocity_histogram(track,bin_edges=np.arange(0,30,1),density=False,method_di
     else:
         return hist,bin_edges
 
+@xarray_to_irispandas
 def calculate_nearestneighbordistance(features,method_distance=None):
     '''
 
@@ -503,6 +474,7 @@ def calculate_nearestneighbordistance(features,method_distance=None):
                     features.at[i,'min_distance']=min_distance
     return features
 
+@xarray_to_irispandas
 def nearestneighbordistance_histogram(features,bin_edges=np.arange(0,30000,500),density=False,method_distance=None,return_values=False):
     '''
     Parameters
@@ -551,6 +523,7 @@ def nearestneighbordistance_histogram(features,bin_edges=np.arange(0,30000,500),
     
 #     return area
 
+@xarray_to_irispandas
 def calculate_area(features,mask,method_area=None):
     '''
     Parameters
@@ -644,6 +617,7 @@ def calculate_area(features,mask,method_area=None):
             features.at[i,'area']=area_feature
     return features
 
+@xarray_to_irispandas
 def area_histogram(features,mask,bin_edges=np.arange(0,30000,500),
                    density=False,method_area=None,
                    return_values=False,representative_area=False):
@@ -698,6 +672,7 @@ def area_histogram(features,mask,bin_edges=np.arange(0,30000,500),
     else:
         return hist,bin_edges,bin_centers
     
+@xarray_to_irispandas
 def histogram_cellwise(Track,variable=None,bin_edges=None,quantity='max',density=False):
     '''
     Parameters
@@ -748,6 +723,7 @@ def histogram_cellwise(Track,variable=None,bin_edges=None,quantity='max',density
 
     return hist,bin_edges, bin_centers
 
+@xarray_to_irispandas
 def histogram_featurewise(Track,variable=None,bin_edges=None,density=False):
     '''
     Parameters
@@ -781,6 +757,7 @@ def histogram_featurewise(Track,variable=None,bin_edges=None,density=False):
 
     return hist,bin_edges, bin_centers
 
+@xarray_to_irispandas
 def calculate_overlap(track_1,track_2,min_sum_inv_distance=None,min_mean_inv_distance=None):
     '''
     Parameters

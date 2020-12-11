@@ -1,21 +1,13 @@
 '''Identify center of gravity and mass for analysis.
-
-Routine Listings
-----------------
-cog_cell(cell, Tracks, M_total, M_liquid, M_frozen, Mask, savedir)
-
-calculate_cog(tracks, mass, mask)
-
-calculate_cog_untracked(mass, mask)
-
-calculate_cog_domain(mass)
-
-center_of_gravity(cube_in)
 '''
 
 import logging
 import os
 
+from tobac.utils.convert import xarray_to_iris,iris_to_xarray
+
+
+@xarray_to_iris
 def cog_cell(cell,Tracks=None,M_total=None,M_liquid=None,
              M_frozen=None,
              Mask=None,
@@ -84,7 +76,7 @@ def cog_cell(cell,Tracks=None,M_total=None,M_liquid=None,
 
 
 
-
+@xarray_to_iris
 def calculate_cog(tracks,mass,mask):
     '''Caluclate center of gravity and mass forech tracked cell.
 
@@ -132,7 +124,7 @@ def calculate_cog(tracks,mass,mask):
 
     return tracks_out
     
-
+@xarray_to_iris
 def calculate_cog_untracked(mass,mask):
     '''Caluclate center of gravity and mass for untracked domain parts.
 
@@ -179,7 +171,7 @@ def calculate_cog_untracked(mass,mask):
     
     return tracks_out
 
-
+@xarray_to_iris
 def calculate_cog_domain(mass):
     '''Caluclate center of gravity and mass for entire domain.
 
@@ -221,7 +213,7 @@ def calculate_cog_domain(mass):
 
     return tracks_out
 
-
+@xarray_to_iris
 def center_of_gravity(cube_in):
     '''Caluclate center of gravity and sum of quantity.
 

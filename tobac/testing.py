@@ -6,7 +6,7 @@ import datetime
 import numpy as np
 from xarray import DataArray
 
-def make_simple_sample_data_2D(data_type='iris'):
+def make_simple_sample_data_2D(data_type='xarray'):
     '''Create a simple dataset to use in tests.
 
     The grid has a grid spacing of 1km in both horizontal directions
@@ -70,7 +70,7 @@ def make_simple_sample_data_2D(data_type='iris'):
     return sample_data
 
 
-def make_sample_data_2D_3blobs(data_type='iris'):
+def make_sample_data_2D_3blobs(data_type='xarray'):
     from iris.cube import Cube
     from iris.coords import DimCoord,AuxCoord
     '''Create a simple dataset to use in tests.
@@ -162,7 +162,7 @@ def make_sample_data_2D_3blobs(data_type='iris'):
     return sample_data
 
 
-def make_sample_data_2D_3blobs_inv(data_type='iris'):
+def make_sample_data_2D_3blobs_inv(data_type='xarray'):
     '''Create a version of the dataset with switched coordinates.
 
     Create a version of the dataset created in the function
@@ -252,7 +252,7 @@ def make_sample_data_2D_3blobs_inv(data_type='iris'):
     
     return sample_data
 
-def make_sample_data_3D_3blobs(data_type='iris',invert_xy=False):
+def make_sample_data_3D_3blobs(data_type='xarray',invert_xy=False):
     '''Create a simple dataset to use in tests.
 
     The grid has a grid spacing of 1km in both horizontal directions

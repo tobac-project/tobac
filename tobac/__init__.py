@@ -1,3 +1,6 @@
 # Import subpackages:
+from . import utils
+from . import analysis
+from . import plot
 from . import themes
-from . import testing, analysis, plot, utils
+from . import testing

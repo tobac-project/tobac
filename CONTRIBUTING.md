@@ -9,7 +9,6 @@ We are currently reorganizing our project. So, please check our modifications la
 ### Installation & Environment details
 You will find them in the [README.md](https://github.com/climate-processes/tobac/blob/master/README.md).
 
-
 ### Tutorials
 Tutorials have been prepared to provide you further inside to `tobac`s functionality. Please visit the separate [tobac-tutorials](https://github.com/climate-processes/tobac-tutorials) repository here on Github.
 
@@ -17,9 +16,10 @@ Tutorials have been prepared to provide you further inside to `tobac`s functiona
 ### Documentation
 You will find our documentation at [https://tobac.readthedocs.io](https://tobac.readthedocs.io).
 
-
 ### Testing
 The tests are located in the [tests folder](https://github.com/climate-processes/tobac/tree/master/tobac/tests).
+
+
 
 ## Reporting Bugs
 Please create a new issue on [GitHub](https://github.com/climate-processes/tobac/issues) if it is not listed there, yet.
@@ -39,7 +39,6 @@ Please create a new issue on [GitHub](https://github.com/climate-processes/tobac
 
 
 We hope that we can respond within two weeks.
-
 
 ### Numpydoc Example <a name='docstringExample'>
 ```python
