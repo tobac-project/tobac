@@ -8,6 +8,6 @@ setup(name='tobac',
       author='Max Heikenfeld',
       author_email='max.heikenfeld@web.de',
       license='BSD-3',
-      packages=['tobac','tobac.analysis','tobac.plot','tobac.utils','tobac.themes','tobac.themes.tobac_v1'],
+      packages=['tobac','tobac.analysis','tobac.plot','tobac.utils','tobac.themes','tobac.themes.tobac_v1','tobac.themes.tint'],
       install_requires=[],
       zip_safe=False)
