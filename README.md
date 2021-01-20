@@ -51,3 +51,13 @@ and install the package from the locally cloned version:
 ```
 pip install tobac/
 ```
+
+Contributing
+------------
+The current development branch is v2.0_dev.
+
+For more details on contributing, please see https://github.com/climate-processes/tobac/blob/v2.0-dev/CONTRIBUTING.md
+
+Roadmap
+------------
+A roadmap for the future development of tobac is available here: https://github.com/fsenf/tobac-roadmap/blob/master/tobac-roadmap-main.md
