@@ -115,7 +115,7 @@ def feature_detection_multithreshold(field_in,
         if not features_thresholds.empty:
             #Loop over DataFrame to remove features that are closer than distance_min to each other:
             if (min_distance > 0):
-                features_thresholds=filter_min_distance(features_thresholds,dxy,min_distance)
+                features_thresholds=filter_min_distance(features_thresholds.reset_index(),dxy,min_distance)
         list_features_timesteps.append(features_thresholds)
 
         logging.debug('Finished feature detection for ' + time_i.strftime('%Y-%m-%d_%H:%M:%S'))

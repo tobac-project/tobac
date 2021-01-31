@@ -35,14 +35,14 @@ import logging
 import xarray
 
 def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,vertical_coord='auto'):
-    '''Use watershedding or random walker technique to determine region above 
-    a threshold value around initial seeding position for all time steps of 
-    the input data. Works both in 2D (based on single seeding point) and 3D and 
-    returns a mask with zeros everywhere around the identified regions and the 
-    feature id inside the regions. 
-    
+    '''Use watershedding or random walker technique to determine region above
+    a threshold value around initial seeding position for all time steps of
+    the input data. Works both in 2D (based on single seeding point) and 3D and
+    returns a mask with zeros everywhere around the identified regions and the
+    feature id inside the regions.
+
     Calls segmentation_timestep at each individal timestep of the input data.
-    
+
     Parameters
     ----------
     features : xarray.Dataset
@@ -77,7 +77,7 @@ def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,m
     vertical_coord : {'auto', 'z', 'model_level_number', 'altitude',
                       'geopotential_height'}, optional
         Name of the vertical coordinate for use in 3D segmentation case
-    
+
     Returns
     -------
     segmentation_out : xarray.DataArray
@@ -97,14 +97,14 @@ def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,m
     print(field)
     import pandas as pd
     from iris.cube import CubeList
-    
+
     logging.info('Start watershedding 3D')
 
     # convert to iris/pandas
     field=field.to_iris()
     features=features.to_dataframe()
 
-    # check input for right dimensions: 
+    # check input for right dimensions:
     if not (field.ndim==3 or field.ndim==4):
         raise ValueError('input to segmentation step must be 3D or 4D including a time dimension')
     if 'time' not in [coord.name() for coord in field.coords()]:
@@ -113,13 +113,13 @@ def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,m
     # CubeList and list to store individual segmentation masks and feature DataFrames with information about segmentation
     segmentation_out_list=CubeList()
     features_out_list=[]
-                         
+
     #loop over individual input timesteps for segmentation:
     field_time=field.slices_over('time')
     for i,field_i in enumerate(field_time):
         time_i=field_i.coord('time').units.num2date(field_i.coord('time').points[0])
         features_i=features.loc[features['time']==time_i]
-        segmentation_out_i,features_out_i=segmentation_timestep(field_i,features_i,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance,vertical_coord=vertical_coord)                 
+        segmentation_out_i,features_out_i=segmentation_timestep(field_i,features_i,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance,vertical_coord=vertical_coord)
         segmentation_out_list.append(segmentation_out_i)
         features_out_list.append(features_out_i)
         logging.debug('Finished segmentation for '+time_i.strftime('%Y-%m-%d_%H:%M:%S'))
@@ -127,7 +127,7 @@ def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,m
     #Merge output from individual timesteps:
     segmentation_out=segmentation_out_list.merge_cube()
     features_out=pd.concat(features_out_list)
-    
+
     features_out=features_out.to_xarray()
     segmentation_out=xarray.DataArray.from_iris(segmentation_out)
 
@@ -136,10 +136,10 @@ def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,m
 
 
 
-def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,vertical_coord='auto'):    
-    """Perform watershedding for an individual time step of the data. Works for 
+def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,vertical_coord='auto'):
+    """Perform watershedding for an individual time step of the data. Works for
     both 2D and 3D data
-    
+
     Parameters
     ----------
     field_in : iris.cube.Cube
@@ -158,7 +158,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
 
     target : {'maximum', 'minimum'}, optional
         Flag to determine if tracking is targetting minima or maxima in
-        the data to determine from which direction to approach the threshold 
+        the data to determine from which direction to approach the threshold
         value. Default is 'maximum'.
 
     level : slice of iris.cube.Cube, optional
@@ -174,10 +174,10 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         belonging to that cell. Default is None.
 
     vertical_coord : str, optional
-        Vertical coordinate in 3D input data. If 'auto', input is checked for 
+        Vertical coordinate in 3D input data. If 'auto', input is checked for
         one of {'z', 'model_level_number', 'altitude','geopotential_height'} as
         a likely coordinate name
-    
+
     Returns
     -------
     segmentation_out : iris.cube.Cube
@@ -204,22 +204,22 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
 
     """
 
-    from skimage.morphology import watershed
+    from skimage.segmentation import watershed
     # from skimage.segmentation import random_walker
     from scipy.ndimage import distance_transform_edt
     from copy import deepcopy
     import numpy as np
 
-    # copy feature dataframe for output 
+    # copy feature dataframe for output
     features_out=deepcopy(features_in)
-    # Create cube of the same dimensions and coordinates as input data to store mask:        
+    # Create cube of the same dimensions and coordinates as input data to store mask:
     segmentation_out=1*field_in
     segmentation_out.rename('segmentation_mask')
     segmentation_out.units=1
 
     #Create dask array from input data:
     data=field_in.core_data()
-    
+
     #Set level at which to create "Seed" for each feature in the case of 3D watershedding:
     # If none, use all levels (later reduced to the ones fulfilling the theshold conditions)
     if level==None:
@@ -241,7 +241,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
 
     # set markers at the positions of the features:
     markers = np.zeros(unmasked.shape).astype(np.int32)
-    if field_in.ndim==2: #2D watershedding        
+    if field_in.ndim==2: #2D watershedding
         for index, row in features_in.iterrows():
             markers[int(row['hdim_1']), int(row['hdim_2'])]=row['feature']
 
@@ -273,7 +273,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
 
     # set markers in cells not fulfilling threshold condition to zero:
     markers[~unmasked]=0
-  
+
     # Turn into np arrays (not necessary for markers) as dask arrays don't yet seem to work for watershedding algorithm
     data_segmentation=np.array(data_segmentation)
     unmasked=np.array(unmasked)
@@ -284,7 +284,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
 #    elif method=='random_walker':
 #        segmentation_mask=random_walker(data_segmentation, markers.astype(np.int32),
 #                                          beta=130, mode='bf', tol=0.001, copy=True, multichannel=False, return_full_prob=False, spacing=None)
-    else:                
+    else:
         raise ValueError('unknown method, must be watershed')
 
     # remove everything from the individual masks that is more than max_distance_pixel away from the markers
