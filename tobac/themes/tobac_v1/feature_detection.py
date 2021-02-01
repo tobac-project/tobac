@@ -425,30 +425,6 @@ def feature_position(hdim1_indices,hdim2_indices,track_data,threshold_i,position
         raise ValueError('position_threshold must be center,extreme,weighted_diff or weighted_abs')
     return hdim1_index,hdim2_index
 
-def test_overlap(region_inner,region_outer):
-    '''Test for overlap between two regions (determine if there are common pixels)
-
-    (probably scope for further speedup here)
-
-    Parameters
-    ----------
-    region_inner: list
-        List of 2-element tuples defining the indices of all cells
-        in the inner region.
-
-
-    region_outer : list
-        List of 2-element tuples defining the indices of all cells
-        in the outer region.
-
-    Returns
-    -------
-    overlap : bool
-        True if there are any shared points between the two regions.
-    '''
-
-    overlap=frozenset(region_outer).isdisjoint(region_inner)
-    return not overlap
 
 def remove_parents(features_thresholds,regions_i,regions_old):
     '''Remove parents of newly detected feature regions.
@@ -476,18 +452,16 @@ def remove_parents(features_thresholds,regions_i,regions_old):
         superseded by newly detected ones.
     '''
 
-    list_remove=[]
-    for idx_i,region_i in regions_i.items():
-        for idx_old,region_old in regions_old.items():
-            if test_overlap(regions_old[idx_old],regions_i[idx_i]):
-                list_remove.append(idx_old)
-    list_remove=list(set(list_remove))
+    # create a set out of all the tuples in newly detected feature
+    sets_i = set().union(*regions_i.values())
+    # save the overlapped indexes to one list
+    list_remove = [idx_old for idx_old,sets_old in regions_old.items() if not sets_i.isdisjoint(sets_old)]
+
     # remove parent regions:
     if features_thresholds is not None:
         features_thresholds=features_thresholds[~features_thresholds['idx'].isin(list_remove)]
 
     return features_thresholds
-
 
 
 def filter_min_distance(features,dxy,min_distance):
