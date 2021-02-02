@@ -13,19 +13,19 @@ The output of the different analysis steps in tobac are output as either pandas 
 (quick note on terms; “feature” is a detected object at a single time step. “cell” is a series of features linked together over multiple timesteps)
 
 Overview of the output dataframe from feature_dection
-- Frame: the index along the time dimension in which the feature was detected
-- hdim_1, hdim_2…: the central index location of the feature in the spatial dimensions of the input data
-- num: the number of connected pixels that meet the threshold for detection for this feature
-- threshold_value: the threshold value that was used to detect this feature. When using feature_detection_multithreshold  this is the max/min (depending on       whether the threshold values are increasing (e.g. precip) or decreasing (e.g. temperature) with intensity) threshold value used.
-- feature: a unique integer >0 value corresponding to each feature
-- time: the date and time of the feature, in datetime format
-- timestr: the date and time of the feature in string format
-- latitude, longitude: the central lat/lon of the feature
-- x,y, etc: these are the central location of the feature in the original dataset coordinates
+  - Frame: the index along the time dimension in which the feature was detected
+  - hdim_1, hdim_2…: the central index location of the feature in the spatial dimensions of the input data
+  - num: the number of connected pixels that meet the threshold for detection for this feature
+  - threshold_value: the threshold value that was used to detect this feature. When using feature_detection_multithreshold  this is the max/min (depending on       whether the threshold values are increasing (e.g. precip) or decreasing (e.g. temperature) with intensity) threshold value used.
+  - feature: a unique integer >0 value corresponding to each feature
+  - time: the date and time of the feature, in datetime format
+  - timestr: the date and time of the feature in string format
+  - latitude, longitude: the central lat/lon of the feature
+  - x,y, etc: these are the central location of the feature in the original dataset coordinates
 
 Also in the tracked output:
-- Cell: The cell which each feature belongs to. Is nan if the feature could not be linked into a valid trajectory
-- time_cell: The time of the feature along the tracked cell, in numpy.timedelta64[ns] format
+  - Cell: The cell which each feature belongs to. Is nan if the feature could not be linked into a valid trajectory
+  - time_cell: The time of the feature along the tracked cell, in numpy.timedelta64[ns] format
 
 The output from segmentation is an n-dimensional array produced by segmentation  in the same coordinates of the input data. It has a single field, which provides a mask for the pixels in the data which are linked to each detected feature by the segmentation routine. Each non-zero value in the array provides the integer value of the feature which that region is attributed to.
 
