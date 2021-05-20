@@ -94,7 +94,6 @@ def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,m
         If field_in.ndim is neither 3 nor 4 and 'time' is not included
         in coords.
     '''
-    print(field)
     import pandas as pd
     from iris.cube import CubeList
 
@@ -118,7 +117,9 @@ def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,m
     field_time=field.slices_over('time')
     for i,field_i in enumerate(field_time):
         time_i=field_i.coord('time').units.num2date(field_i.coord('time').points[0])
-        features_i=features.loc[features['time']==time_i]
+        # because the highest time resolution of iris cube is second
+        # we need to floor the DataArray's time which supports ms
+        features_i=features.loc[features['time'].dt.floor('S')==time_i]
         segmentation_out_i,features_out_i=segmentation_timestep(field_i,features_i,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance,vertical_coord=vertical_coord)
         segmentation_out_list.append(segmentation_out_i)
         features_out_list.append(features_out_i)

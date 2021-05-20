@@ -27,6 +27,7 @@ def feature_detection_multithreshold(field_in,
                                      min_num=0,
                                      target='maximum',
                                      position_threshold='center',
+                                     coord_interp_kind='linear',
                                      sigma_threshold=0.5,
                                      n_erosion_threshold=0,
                                      n_min_threshold=0,
@@ -52,19 +53,27 @@ def feature_detection_multithreshold(field_in,
 
     target : {'maximum', 'minimum'}, optional
         Flag to determine if tracking is targetting minima or maxima in
-	the data. Default is 'maximum'.
+    the data.
+        Default is 'maximum'.
 
     position_threshold : {'center', 'extreme', 'weighted_diff',
                           'weighted_abs'}, optional
         Flag choosing method used for the position of the tracked
-	feature. Default is 'center'.
+    feature.
+        Default is 'center'.
+
+    coord_interp_kind : {'linear', 'nearest', 'nearest-up', 'zero',
+                         'slinear', 'quadratic', 'cubic',
+                         'previous', 'next'}, optional
+        Flag choosing method used for interpolating 1d coord.
+        Default is 'linear'.
 
     sigma_threshold: float, optional
         Standard deviation for intial filtering step. Default is 0.5.
 
     n_erosion_threshold: int, optional
         Number of pixel by which to erode the identified features.
-	Default is 0.
+        Default is 0.
 
     n_min_threshold : int, optional
         Minimum number of identified features. Default is 0.
@@ -128,11 +137,9 @@ def feature_detection_multithreshold(field_in,
         features['feature']=features.index+feature_number_start
     #    features_filtered = features.drop(features[features['num'] < min_num].index)
     #    features_filtered.drop(columns=['idx','num','threshold_value'],inplace=True)
-        features=add_coordinates(features,field_iris)
+        features=add_coordinates(features,field_in,coord_interp_kind)
         # convert pandas DataFrame to xarray
         list_coords=[key for key in field_in.coords.keys()]
-        print(features)
-        print(list_coords)
         #features=features.set_index(list_coords)
         features=features.to_xarray()
     else:
@@ -175,9 +182,9 @@ def feature_detection_multithreshold_timestep(data_i,i_time,
         in the data. Default is 'maximum'.
 
     position_threshold : {'center', 'extreme', 'weighted_diff',
-			  'weighted_abs'}, optional
-        Flag choosing method used for the position of the tracked
-	feature. Default is 'center'.
+                          'weighted_abs'}, optional
+        Flag choosing method used for the position of the tracked feature.
+        Default is 'center'.
 
     sigma_threshold: float, optional
         Standard deviation for intial filtering step. Default is 0.5.
@@ -259,23 +266,23 @@ def feature_detection_threshold(data_i,i_time,
 
     threshold : float, optional
         Threshold value used to select target regions to track. Default
-		is None.
+    is None.
 
     target : {'maximum', 'minimum'}, optional
         Flag to determine if tracking is targetting minima or maxima
-	in the data. Default is 'maximum'.
+    in the data. Default is 'maximum'.
 
     position_threshold : {'center', 'extreme', 'weighted_diff',
-			  'weighted_abs'}, optional
+              'weighted_abs'}, optional
         Flag choosing method used for the position of the tracked
-	feature. Default is 'center'.
+    feature. Default is 'center'.
 
     sigma_threshold: float, optional
         Standard deviation for intial filtering step. Default is 0.5.
 
     n_erosion_threshold: int, optional
         Number of pixel by which to erode the identified features.
-	Default is 0.
+    Default is 0.
 
     n_min_threshold : int, optional
         Minimum number of identified features. Default is 0.
@@ -293,7 +300,7 @@ def feature_detection_threshold(data_i,i_time,
 
     regions : dict
         Dictionary containing the regions above/below threshold used
-	for each feature (feature ids as keys).
+    for each feature (feature ids as keys).
     '''
 
     from skimage.measure import label
@@ -439,11 +446,11 @@ def remove_parents(features_thresholds,regions_i,regions_old):
 
     regions_i : dict
         Dictionary containing the regions above/below threshold for the
-	newly detected feature (feature ids as keys).
+    newly detected feature (feature ids as keys).
 
     regions_old : dict
         Dictionary containing the regions above/below threshold from
-	previous threshold (feature ids as keys).
+    previous threshold (feature ids as keys).
 
     Returns
     -------
