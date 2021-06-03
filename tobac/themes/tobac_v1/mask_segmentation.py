@@ -119,7 +119,10 @@ def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,m
         time_i=field_i.coord('time').units.num2date(field_i.coord('time').points[0])
         # because the highest time resolution of iris cube is second
         # we need to floor the DataArray's time which supports ms
-        features_i=features.loc[features['time'].dt.floor('S')==time_i]
+        # https://github.com/pandas-dev/pandas/issues/41796
+        round_time=features['time'].dt.floor("S") +\
+                   pd.to_timedelta((features['time'].dt.microsecond>=5e5).astype('int'), 'S')
+        features_i=features.loc[round_time==time_i]
         segmentation_out_i,features_out_i=segmentation_timestep(field_i,features_i,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance,vertical_coord=vertical_coord)
         segmentation_out_list.append(segmentation_out_i)
         features_out_list.append(features_out_i)
