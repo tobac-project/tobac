@@ -72,7 +72,9 @@ def make_tracks(grid_ds, field, params=None):
         record.add_uids(current_objects)
         tracks = write_tracks(
             tracks, record, current_objects, obj_props)
-        cell_mask[i] = frame1
+        uids = current_objects['uid']
+        for j in range(len(uids)):
+            cell_mask[i, :, :] = np.where(frame1 == j, int(uids[j]), cell_mask[i, :, :])
          
     record.update_scan_and_time(grid_obj1)
     tracks = tracks.set_index(['cell'])
@@ -162,7 +164,9 @@ def make_tracks_2d_field(grid_ds, field, params=None):
         record.add_uids(current_objects)
         tracks = write_tracks(
             tracks, record, current_objects, obj_props)
-        cell_mask[i] = frame1
+        uids = current_objects['uid']
+        for j in range(len(uids)):
+            cell_mask[i, :, :] = np.where(frame1 == j, int(uids[j]), cell_mask[i, :, :])
 
     record.update_scan_and_time(grid_obj1)
     tracks = tracks.set_index(['cell'])
