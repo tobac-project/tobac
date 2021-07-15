@@ -40,7 +40,7 @@ def make_tracks(grid_ds, field, params=None):
     counter = Counter()
     tracks = pd.DataFrame()
     cell_mask = xr.DataArray(
-        np.zeros((len(times), frame2.shape[0], frame2.shape[1])),
+        np.ones((len(times), frame2.shape[0], frame2.shape[1])),
         dims=('time', 'x', 'y'))
     for i in range(1, len(times)):
         raw1 = raw2
@@ -72,10 +72,12 @@ def make_tracks(grid_ds, field, params=None):
         record.add_uids(current_objects)
         tracks = write_tracks(
             tracks, record, current_objects, obj_props)
-        uids = current_objects['uid']
-        for j in range(len(uids)):
-            cell_mask[i, :, :] = np.where(frame1 == j, int(uids[j]), cell_mask[i, :, :])
-         
+        uids = np.array([int(x) for x in current_objects['uid']])
+        id2 = np.array([int(x) for x in current_objects['id2']])
+        for j in range(uids.max()):
+            ind = np.argwhere(uids == j)
+            cell_mask[i, :, :] = np.where(frame2 == id2[ind], j, cell_mask[i, :, :])
+        cell_mask[i, :, :] = np.ma.masked_where(frame2 == 0, cell_mask[i, :, :])
     record.update_scan_and_time(grid_obj1)
     tracks = tracks.set_index(['cell'])
     tracks = tracks.to_xarray()
@@ -88,7 +90,7 @@ def make_tracks(grid_ds, field, params=None):
     tracks["cell_id"].attrs["parent"] = "storm_id"
     tracks["cell_id"].attrs["parent_id"] = "cell_parent_storm_id"
     tracks["cell_parent_storm_id"] = grid_ds["storm_id"]
-    tracks["cell_mask"] = cell_mask.astype(int)
+    tracks["cell_mask"] = cell_mask
     tracks["cell_mask"].attrs["cf_role"] = grid_ds.attrs["tree_id"]
     tracks["cell_mask"].attrs["long_name"] = "cell ID for this grid cell"
     tracks["cell_mask"].attrs['coordinates'] = 'cell_id time latitude longitude'    
@@ -146,8 +148,6 @@ def make_tracks_2d_field(grid_ds, field, params=None):
             current_objects = None
             newRain = True
             continue
-        print(frame2.shape)
-        print(frame1.shape)
         global_shift = get_global_shift(raw1, raw2, params)
         pairs = get_pairs(frame1, frame2, global_shift, current_objects, record, params)
         if newRain:
@@ -164,10 +164,13 @@ def make_tracks_2d_field(grid_ds, field, params=None):
         record.add_uids(current_objects)
         tracks = write_tracks(
             tracks, record, current_objects, obj_props)
-        uids = current_objects['uid']
-        for j in range(len(uids)):
-            cell_mask[i, :, :] = np.where(frame1 == j, int(uids[j]), cell_mask[i, :, :])
-
+        uids = np.array([int(x) for x in current_objects['uid']])
+        id2 = np.array([int(x) for x in current_objects['id2']])
+        for j in range(uids.max()):
+            ind = np.argwhere(uids == j)
+            cell_mask[i, :, :] = np.where(frame2 == id2[ind], j, cell_mask[i, :, :])
+        cell_mask[i, :, :] = np.ma.masked_where(frame2 == 0, cell_mask[i, :, :])
+    cell_mask = np.ma.masked_where(cell_mask == 0, cell_mask)
     record.update_scan_and_time(grid_obj1)
     tracks = tracks.set_index(['cell'])
     tracks = tracks.to_xarray()
@@ -180,7 +183,7 @@ def make_tracks_2d_field(grid_ds, field, params=None):
     tracks["cell_id"].attrs["parent"] = "storm_id"
     tracks["cell_id"].attrs["parent_id"] = "cell_parent_storm_id"
     tracks["cell_parent_storm_id"] = grid_ds["storm_id"]
-    tracks["cell_mask"] = cell_mask.astype(int)
+    tracks["cell_mask"] = cell_mask
     tracks["cell_mask"].attrs["cf_role"] = grid_ds.attrs["tree_id"]
     tracks["cell_mask"].attrs["long_name"] = "cell ID for this grid cell"
     tracks["cell_mask"].attrs['coordinates'] = 'cell_id time latitude longitude'
