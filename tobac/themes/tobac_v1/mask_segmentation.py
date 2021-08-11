@@ -122,11 +122,16 @@ def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,m
         # https://github.com/pandas-dev/pandas/issues/41796
         round_time=features['time'].dt.floor("S") +\
                    pd.to_timedelta((features['time'].dt.microsecond>=5e5).astype('int'), 'S')
+
+	# convert time to string for direct comparison
+        round_time=round_time.dt.strftime('%Y-%m-%d_%H:%M:%S')
+        time_i=time_i.strftime('%Y-%m-%d_%H:%M:%S')
+
         features_i=features.loc[round_time==time_i]
         segmentation_out_i,features_out_i=segmentation_timestep(field_i,features_i,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance,vertical_coord=vertical_coord)
         segmentation_out_list.append(segmentation_out_i)
         features_out_list.append(features_out_i)
-        logging.debug('Finished segmentation for '+time_i.strftime('%Y-%m-%d_%H:%M:%S'))
+        logging.debug('Finished segmentation for '+time_i)
 
     #Merge output from individual timesteps:
     segmentation_out=segmentation_out_list.merge_cube()
