@@ -31,17 +31,20 @@ def check_isolation(raw, filtered, grid_size, params):
                                       params['ISO_THRESH'])
     nobj_iso = np.max(iso_filtered)
     iso = np.empty(nobj, dtype='bool')
+    neighbors = np.ones(nobj)*(-9999)
 
     for iso_id in np.arange(nobj_iso) + 1:
         obj_ind = np.where(iso_filtered == iso_id)
         objects = np.unique(filtered[obj_ind])
         objects = objects[objects != 0]
-        
+
+        obj_count = len(objects)
+        neighbors[objects-1] = obj_count-1
         if len(objects) == 1 and single_max(obj_ind, raw, params):
             iso[objects - 1] = True
         else:
             iso[objects - 1] = False
-    return iso
+    return iso, neighbors
 
 
 def get_obj_extent(labeled_image, obj_label):
@@ -211,7 +214,7 @@ def get_object_prop(image1, grid1, field, record, params):
             volume.append(np.nan)
             field_max.append(np.max(obj_slices))
     # cell isolation
-    isolation = check_isolation(raw3D, image1, record.grid_size, params)
+    isolation, neighborhood = check_isolation(raw3D, image1, record.grid_size, params)
 
     objprop = {'id1': id1,
                'center': center,
@@ -223,7 +226,8 @@ def get_object_prop(image1, grid1, field, record, params):
                'volume': volume,
                'lon': longitude,
                'lat': latitude,
-               'isolated': isolation}
+               'isolated': isolation,
+               'neighborhood': neighborhood}
     return objprop
 
 
@@ -247,7 +251,8 @@ def write_tracks(old_tracks, record, current_objects, obj_props):
         'vol': obj_props['volume'],
         'max': obj_props['field_max'],
         'max_alt': obj_props['max_height'],
-        'isolated': obj_props['isolated']
+        'isolated': obj_props['isolated'],
+        'neighborhood': obj_props['neighborhood']
     })
     new_tracks.set_index(['scan'], inplace=True)
     tracks = old_tracks.append(new_tracks)
