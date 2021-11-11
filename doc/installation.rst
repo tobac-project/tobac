@@ -12,7 +12,7 @@ or
 mamba install -c conda-forge tobac
 ```
 
-This will take care of all necessary dependencies and should do the job for most users and also allows for an easy update of the installation by
+This will take care of all necessary dependencies and should do the job for most users. It also allows for an easy update of the installation by
 
 ```
 conda update -c conda-forge tobac 
@@ -23,7 +23,7 @@ mamba update -c conda-forge tobac
 ```
 
 
-You can also install conda via pip, which is mainly interesting for development purposed or to use specific development branches for the Github repository.
+You can also install conda via pip, which is mainly interesting for development purposes or using specific development branches for the Github repository.
 
 The follwoing python packages are required (including dependencies of these packages):
    
