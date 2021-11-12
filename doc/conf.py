@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.abspath('extensions'))
 
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.todo',
               'sphinx.ext.coverage', 'sphinx.ext.imgmath', 'sphinx.ext.ifconfig',
-              'sphinx_rtd_theme',]
+              'sphinx_rtd_theme','sphinx.ext.napoleon']
 
 
 html_theme = "sphinx_rtd_theme"

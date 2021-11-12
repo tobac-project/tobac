@@ -1,16 +1,19 @@
 import logging
 
 def calculate_cog(tracks,mass,mask):
-    '''caluclate centre of gravity and mass forech individual tracked cell in the simulation
-    Input:
-    tracks:     pandas.DataFrame
+    '''Caluclate centre of gravity and mass for each individual tracked cell in the simulation
+
+    Parameters
+    ----------
+    tracks : pandas.DataFrame
                 DataFrame containing trajectories of cell centres
-    mass:       iris.cube.Cube 
+    mass : iris.cube.Cube 
                 cube of quantity (need coordinates 'time', 'geopotential_height','projection_x_coordinate' and 'projection_y_coordinate')
-    mask:       iris.cube.Cube 
+    mask : iris.cube.Cube 
                 cube containing mask (int > where belonging to cloud volume, 0 everywhere else )
-    Output:
-    tracks_out  pandas.DataFrame
+    Returns
+    -------
+    pandas.DataFrame
                 Dataframe containing t,x,y,z positions of centre of gravity and total cloud mass each tracked cells at each timestep
     
     '''
@@ -38,15 +41,18 @@ def calculate_cog(tracks,mass,mask):
     return tracks_out
     
 def calculate_cog_untracked(mass,mask):
-    ''' caluclate centre of gravity and mass for untracked parts of domain
-    Input:
-    mass:       iris.cube.Cube 
+    '''caluclate centre of gravity and mass for untracked parts of domain
+
+    Parameters
+    ----------
+    mass : iris.cube.Cube 
                 cube of quantity (need coordinates 'time', 'geopotential_height','projection_x_coordinate' and 'projection_y_coordinate')
         
-    mask:       iris.cube.Cube 
+    mask : iris.cube.Cube 
                 cube containing mask (int > where belonging to cloud volume, 0 everywhere else )
-    Output:
-    tracks_out  pandas.DataFrame
+    Returns
+    -------
+    pandas.DataFrame
                 Dataframe containing t,x,y,z positions of centre of gravity and total cloud mass for untracked part of dimain
     '''
     from pandas import DataFrame
@@ -75,12 +81,15 @@ def calculate_cog_untracked(mass,mask):
     return tracks_out
 
 def calculate_cog_domain(mass):
-    ''' caluclate centre of gravity and mass for entire domain
-    Input:
-    mass:       iris.cube.Cube 
+    '''caluclate centre of gravity and mass for entire domain
+
+    Parameters
+    ----------
+    mass : iris.cube.Cube 
                 cube of quantity (need coordinates 'time', 'geopotential_height','projection_x_coordinate' and 'projection_y_coordinate')
-    Output:
-    tracks_out  pandas.DataFrame
+    Returns
+    -------
+    pandas.DataFrame
                 Dataframe containing t,x,y,z positions of centre of gravity and total cloud mass
     '''
     from pandas import DataFrame
@@ -108,18 +117,22 @@ def calculate_cog_domain(mass):
     return tracks_out
 
 def center_of_gravity(cube_in):
-    ''' caluclate centre of gravity and sum of quantity 
-    Input:
-    cube_in:       iris.cube.Cube 
+    '''caluclate centre of gravity and sum of quantity 
+
+    Parameters
+    ----------
+    cube_in : iris.cube.Cube 
                    cube (potentially masked) of quantity (need coordinates 'geopotential_height','projection_x_coordinate' and 'projection_y_coordinate')
-    Output:
-    x:             float 
+   
+    Returns
+    -------
+    float 
                    x position of centre of gravity 
-    y:             float 
+    float 
                    y position of centre of gravity 
-    z:             float 
+    float 
                    z position of centre of gravity 
-    variable_sum:  float 
+    float 
                    sum of quantity of over unmasked part of the cube
 
     '''
