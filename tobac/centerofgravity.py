@@ -1,7 +1,7 @@
 import logging
 
 def calculate_cog(tracks,mass,mask):
-    ''' caluclate centre of gravity and mass forech individual tracked cell in the simulation
+    '''caluclate centre of gravity and mass forech individual tracked cell in the simulation
     Input:
     tracks:     pandas.DataFrame
                 DataFrame containing trajectories of cell centres
@@ -12,6 +12,7 @@ def calculate_cog(tracks,mass,mask):
     Output:
     tracks_out  pandas.DataFrame
                 Dataframe containing t,x,y,z positions of centre of gravity and total cloud mass each tracked cells at each timestep
+    
     '''
     from .utils import mask_cube_cell
     from iris import Constraint    

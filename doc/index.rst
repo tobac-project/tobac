@@ -32,3 +32,10 @@ The project is currently being extended by several contributors to include addit
    :maxdepth: 2
 
    feature_detection_output
+
+.. toctree::
+   :caption: API Reference
+   :maxdepth: 2
+
+   tobac
+
