@@ -13,10 +13,10 @@ def linking_trackpy(features,field_in,dt,dxy,
                        adaptive_step=None,adaptive_stop=None,
                        cell_number_start=1
                        ):
-    """
-    Function to perform the linking of features in trajectories
+    """Function to perform the linking of features in trajectories
     
-    Parameters:
+    Parameters
+    ----------
     features:     pandas.DataFrame 
                   Detected features to be linked             
     v_max:        float
@@ -33,6 +33,10 @@ def linking_trackpy(features,field_in,dt,dxy,
                       flag choosing method used for feature detection
     method_linking:   str('predict' or 'random')
                       flag choosing method used for trajectory linking
+    Returns
+    -------
+    pandas.dataframe
+        Pandas dataframe containing the linked features
     """
     #    from trackpy import link_df
     #    from trackpy import link_df
@@ -150,8 +154,10 @@ def linking_trackpy(features,field_in,dt,dxy,
 
 
 def fill_gaps(t,order=1,extrapolate=0,frame_max=None,hdim_1_max=None,hdim_2_max=None):
-    ''' add cell time as time since the initiation of each cell   
-    Input:
+    '''add cell time as time since the initiation of each cell   
+    
+    Parameters
+    ----------
     t:             pandas dataframe 
                    trajectories from trackpy
     order:         int
@@ -164,9 +170,10 @@ def fill_gaps(t,order=1,extrapolate=0,frame_max=None,hdim_1_max=None,hdim_2_max=
                     size of input data along first horizontal axis
     hdim_2_max:     int
                     size of input data along second horizontal axis
-    Output:
-    t:             pandas dataframe 
-                   trajectories from trackpy with with filled gaps and potentially extrapolated
+    Returns
+    -------
+    pandas dataframe 
+        trajectories from trackpy with with filled gaps and potentially extrapolated
     '''
     from scipy.interpolate import InterpolatedUnivariateSpline
     logging.debug('start filling gaps')
@@ -214,10 +221,14 @@ def fill_gaps(t,order=1,extrapolate=0,frame_max=None,hdim_1_max=None,hdim_2_max=
 
 def add_cell_time(t):
     ''' add cell time as time since the initiation of each cell   
-    Input:
+    
+    Parameters
+    ----------
     t:             pandas  DataFrame
                    trajectories with added coordinates
-    Output:
+    
+    Returns
+    -------
     t:             pandas dataframe 
                    trajectories with added cell time
     '''
@@ -231,12 +242,14 @@ def add_cell_time(t):
 
 def remap_particle_to_cell_nv(particle_cell_map, input_particle):
     '''Remaps the particles to new cells given an input map and the current particle.
-    Designed to be vectorized with np.vectorize
+    Helper function that is designed to be vectorized with np.vectorize
 
-    Input: 
-    t:             pandas  DataFrame
-                   trajectories with added coordinates
-
+    Parameters
+    ----------
+    particle_cell_map: dict-like
+        The dictionary mapping particle number to cell number
+    input_particle: key for particle_cell_map
+        The particle number to remap
     
     '''
     return particle_cell_map[input_particle]
