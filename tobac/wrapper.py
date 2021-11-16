@@ -79,10 +79,10 @@ def maketrack(field_in,
     from .feature_detection import feature_detection_multithreshold
     from .tracking import linking_trackpy
 
-    """
-    Function identifiying features  andlinking them into trajectories
+    """Function identifiying features and linking them into trajectories
     
-    Parameters:
+    Parameters
+    ----------
     field_in:     iris.cube.Cube 
                   2D input field tracking is performed on
     grid_spacing: float
@@ -118,8 +118,9 @@ def maketrack(field_in,
     
     return_intermediate: boolean
                          flag to tetermine if only final tracjectories are output (False, default) or if detected features, filtered features and unfilled tracks are returned additionally (True)
-
-    Output:
+    
+    Returns
+    -------
     trajectories_final: pandas.DataFrame
                  Tracked updrafts, one row per timestep and updraft, includes dimensions 'time','latitude','longitude','projection_x_variable', 'projection_y_variable' based on w cube. 
                  'hdim_1' and 'hdim_2' are used for segementation step.

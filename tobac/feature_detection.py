@@ -300,7 +300,9 @@ def feature_detection_multithreshold(field_in,
                                      feature_number_start=1
                                      ):
     '''Function to perform feature detection based on contiguous regions above/below a threshold
-    Input:
+    
+    Parameters
+    ----------
     field_in:      iris.cube.Cube
                    2D field to perform the tracking on (needs to have coordinate 'time' along one of its dimensions)
     
@@ -320,8 +322,10 @@ def feature_detection_multithreshold(field_in,
                      minimum number of identified features
     min_distance:  float
                    minimum distance between detected features (m)
-    Output:
-    features:      pandas DataFrame 
+    
+    Returns
+    -------
+    pandas DataFrame 
                    detected features
     '''
     from .utils import add_coordinates
@@ -377,16 +381,20 @@ def feature_detection_multithreshold(field_in,
     return features
 
 def filter_min_distance(features,dxy,min_distance):
-    ''' Function to perform feature detection based on contiguous regions above/below a threshold
-    Input:    
+    '''Function to perform feature detection based on contiguous regions above/below a threshold
+    
+    Parameters
+    ----------
     features:      pandas DataFrame 
                    features
     dxy:           float
                    horzontal grid spacing (m)
     min_distance:  float
                    minimum distance between detected features (m)
-    Output:
-    features:      pandas DataFrame 
+    
+    Returns
+    -------
+    pandas DataFrame 
                    features
     '''
     from itertools import combinations
