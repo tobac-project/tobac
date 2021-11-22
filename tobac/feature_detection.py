@@ -2,6 +2,79 @@ import logging
 import numpy as np
 import pandas as pd
 
+def get_label_props_in_dict(labels):
+    '''Function to get the label properties into a dictionary format.
+    
+    Parameters
+    ----------
+    labels:    2D or 3D array-like
+        comes from the `skimage.measure.label` function
+    
+    Returns
+    -------
+    dict
+        output from skimage.measure.regionprops in dictionary format, where they key is the label number
+    '''
+    import skimage.measure
+    
+    region_properties_raw = skimage.measure.regionprops(labels)
+    region_properties_dict = dict()
+    for region_prop in region_properties_raw:
+        region_properties_dict[region_prop.label] = region_prop
+    
+    return region_properties_dict
+
+
+def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
+    '''Function to get the x, y, and z indices (as well as point count) of all labeled regions.
+    This function should produce similar output as new_get_indices_of_labels, but 
+    allows for re-use of the region_property_dict. 
+    
+    Parameters
+    ----------
+    region_property_dict:    dict of region_property objects
+        This dict should come from the get_label_props_in_dict function.
+    
+    Returns
+    -------
+    dict (key: label number, int)
+        The number of points in the label number
+    dict (key: label number, int)
+        The z indices in the label number
+    dict (key: label number, int)
+        the y indices in the label number
+    dict (key: label number, int)
+        the x indices in the label number
+
+    Raises
+    ------
+    ValueError
+        a ValueError is raised if 
+    '''
+    
+    import skimage.measure
+
+    if len(region_property_dict) ==0:
+        raise ValueError("No regions!")
+    
+    y_indices = dict()
+    x_indices = dict()
+    curr_loc_indices = dict()
+        
+    #loop through all skimage identified regions
+    for region_prop_key in region_property_dict:
+        region_prop = region_property_dict[region_prop_key]
+        index = region_prop.label
+        curr_y_ixs, curr_x_ixs = np.transpose(region_prop.coords)
+        y_indices[index] = curr_y_ixs
+        x_indices[index] = curr_x_ixs
+        curr_loc_indices[index] = len(curr_x_ixs)
+                        
+    #print("indices found")
+    return [curr_loc_indices, y_indices, x_indices]
+
+
+
 def feature_position(hdim1_indices,hdim2_indeces,region,track_data,threshold_i,position_threshold, target):
     '''Function to  determine feature position
     
@@ -163,34 +236,51 @@ def feature_detection_threshold(data_i,i_time,
 
     # if looking for minima, set values above threshold to 0 and scale by data minimum:
     if target == 'maximum':
-        mask=1*(data_i >= threshold)
+        mask=(data_i >= threshold)
         # if looking for minima, set values above threshold to 0 and scale by data minimum:
     elif target == 'minimum': 
-        mask=1*(data_i <= threshold)  
+        mask=(data_i <= threshold)  
     # only include values greater than threshold
     # erode selected regions by n pixels 
     if n_erosion_threshold>0:
         selem=np.ones((n_erosion_threshold,n_erosion_threshold))
-        mask=binary_erosion(mask,selem).astype(np.int64)
+        mask=binary_erosion(mask,selem).astype(bool)
         # detect individual regions, label  and count the number of pixels included:
     labels = label(mask, background=0)
-    values, count = np.unique(labels[:,:].ravel(), return_counts=True)
-    values_counts=dict(zip(values, count))
+    label_props = get_label_props_in_dict(labels)
+    if len(label_props)>0:
+        [total_indices_all, hdim1_indices_all, hdim2_indices_all] = get_indices_of_labels_from_reg_prop_dict(label_props)
+
+
+    #values, count = np.unique(labels[:,:].ravel(), return_counts=True)
+    #values_counts=dict(zip(values, count))
     # Filter out regions that have less pixels than n_min_threshold
-    values_counts={k:v for k, v in values_counts.items() if v>n_min_threshold}
+    #values_counts={k:v for k, v in values_counts.items() if v>n_min_threshold}
     #check if not entire domain filled as one feature
-    if 0 in values_counts:       
-    #Remove background counts:
-        values_counts.pop(0)       
+    if len(label_props)>0:       
         #create empty list to store individual features for this threshold
         list_features_threshold=[]
         #create empty dict to store regions for individual features for this threshold
         regions=dict()
         #create emptry list of features to remove from parent threshold value
+
+        region = np.empty(mask.shape, dtype=bool)
         #loop over individual regions:       
-        for cur_idx,count in values_counts.items():
-            region=labels[:,:] == cur_idx
-            [hdim1_indices,hdim2_indeces]= np.nonzero(region)
+        for cur_idx in total_indices_all:
+            #skip this if there aren't enough points to be considered a real feature
+            #as defined above by n_min_threshold
+            curr_count = total_indices_all[cur_idx]
+            if curr_count <=n_min_threshold:
+                continue
+
+            label_bbox = label_props[cur_idx].bbox
+
+            hdim1_indices = hdim1_indices_all[cur_idx]
+            hdim2_indeces = hdim2_indices_all[cur_idx]
+            region.fill(False)
+            region[hdim1_indices,hdim2_indeces]=True
+
+            #[hdim1_indices,hdim2_indeces]= np.nonzero(region)
             #write region for individual threshold and feature to dict
             region_i=list(zip(hdim1_indices,hdim2_indeces))
             regions[cur_idx+idx_start]=region_i
@@ -201,7 +291,7 @@ def feature_detection_threshold(data_i,i_time,
                                             'idx':cur_idx+idx_start,
                                             'hdim_1': hdim1_index,
                                             'hdim_2':hdim2_index,
-                                            'num':count,
+                                            'num':curr_count,
                                             'threshold_value':threshold})
         features_threshold=pd.DataFrame(list_features_threshold)
     else:
