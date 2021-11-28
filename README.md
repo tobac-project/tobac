@@ -56,8 +56,18 @@ pip install tobac/
 
 Contributing
 ------------
+
 Please take a look at our CONTRIBUTING file.
 
 License
 -------
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+=======
+The current development branch is v2.0-dev.
+
+For more details on contributing, please see https://github.com/climate-processes/tobac/blob/v2.0-dev/CONTRIBUTING.md
+
+Roadmap
+------------
+A roadmap for the future development of tobac is available here: https://github.com/fsenf/tobac-roadmap/blob/master/tobac-roadmap-main.md
+
