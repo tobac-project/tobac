@@ -1,0 +1,16 @@
+﻿Variable Name,Description,Units,Type
+frame,Frame/time/file number; starts from 0 and increments by 1 to N times. ,n/a,int64
+idx,"Feature number within that frame; starts at 1, increments by 1 to the number of features for each frame, and resets to 1 when the frame increments",n/a,int64
+hdim_1,"First horizontal dimension in grid point space (typically, although not always, N/S or y space)",Number of grid points,float64
+hdim_2,"Second horizontal dimension in grid point space (typically, although not always, E/W or x space)",Number of grid points,float64
+num,Number of grid points that are within the threshold of this feature,Number of grid points,int64
+threshold_value,Maximum threshold value reached by the feature,Units of the input feature,int64(?)
+feature,Unique number of the feature; starts from 1 and increments by 1 to the number of features,n/a,int64
+time,Time of the feature,Date and time,object/python datetime
+timestr,String representation of the feature time,YYYY-MM-DD HH:MM:SS,object/string
+y,Grid point y location of the feature (see hdim_1 and hdim_2). Note that this is not necessarily an integer value depending on your selection of position_threshold,Number of grid points,float64
+x,Grid point x location of the feature (see also y),Number of grid points,float64
+projection_y_coordinate,Y location of the feature in projection coordinates,Projection coordinates (usually m),float64
+projection_x_coordinate,X location of the feature in projection coodinates,Projection coordinates (usually m),float64
+lat,Latitude of the feature,Decimal degrees,float64
+lon,Longitude of the feature,Decimal degrees,float64

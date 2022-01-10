@@ -2,30 +2,110 @@ import logging
 import numpy as np
 import pandas as pd
 
-def feature_position(hdim1_indices,hdim2_indeces,region,track_data,threshold_i,position_threshold, target):
+def get_label_props_in_dict(labels):
+    '''Function to get the label properties into a dictionary format.
+    
+    Parameters
+    ----------
+    labels:    2D or 3D array-like
+        comes from the `skimage.measure.label` function
+    
+    Returns
+    -------
+    dict
+        output from skimage.measure.regionprops in dictionary format, where they key is the label number
     '''
-    function to  determine feature position
-    Input:
-        hdim1_indices:    list
-        
-        hdim2_indeces:    list
-        
-        region:    list
-                   list of 2-element tuples
-        track_data:     numpy.ndarray
-                        2D numpy array containing the data
-        
-        threshold_i:    float
-        
-        position_threshold:    str
-        
-        target:    str
+    import skimage.measure
+    
+    region_properties_raw = skimage.measure.regionprops(labels)
+    region_properties_dict = dict()
+    for region_prop in region_properties_raw:
+        region_properties_dict[region_prop.label] = region_prop
+    
+    return region_properties_dict
 
-    Output:
-        hdim1_index:    float
-                        feature position along 1st horizontal dimension
-        hdim2_index:    float
-                        feature position along 2nd horizontal dimension
+
+def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
+    '''Function to get the x, y, and z indices (as well as point count) of all labeled regions.
+    This function should produce similar output as new_get_indices_of_labels, but 
+    allows for re-use of the region_property_dict. 
+    
+    Parameters
+    ----------
+    region_property_dict:    dict of region_property objects
+        This dict should come from the get_label_props_in_dict function.
+    
+    Returns
+    -------
+    dict (key: label number, int)
+        The number of points in the label number
+    dict (key: label number, int)
+        The z indices in the label number
+    dict (key: label number, int)
+        the y indices in the label number
+    dict (key: label number, int)
+        the x indices in the label number
+
+    Raises
+    ------
+    ValueError
+        a ValueError is raised if 
+    '''
+    
+    import skimage.measure
+
+    if len(region_property_dict) ==0:
+        raise ValueError("No regions!")
+    
+    y_indices = dict()
+    x_indices = dict()
+    curr_loc_indices = dict()
+        
+    #loop through all skimage identified regions
+    for region_prop_key in region_property_dict:
+        region_prop = region_property_dict[region_prop_key]
+        index = region_prop.label
+        curr_y_ixs, curr_x_ixs = np.transpose(region_prop.coords)
+        y_indices[index] = curr_y_ixs
+        x_indices[index] = curr_x_ixs
+        curr_loc_indices[index] = len(curr_x_ixs)
+                        
+    #print("indices found")
+    return [curr_loc_indices, y_indices, x_indices]
+
+
+
+def feature_position(hdim1_indices,hdim2_indeces,region,track_data,threshold_i,position_threshold, target):
+    '''Function to  determine feature position
+    
+    Parameters
+    ----------
+        hdim1_indices : list
+            list of indices along hdim1 (typically ```y```)
+        
+        hdim2_indeces : list
+            List of indices of feature along hdim2 (typically ```x```)
+        
+        region : list
+            List of 2-element tuples
+        track_data : array-like
+            2D array containing the data
+        
+        threshold_i : float
+            TODO: ??
+        
+        position_threshold : str
+            TODO: ??
+        
+        target : str
+            TODO: ??
+
+    Returns
+    -------
+        hdim1_index : float
+            feature position along 1st horizontal dimension
+        hdim2_index : float
+            feature position along 2nd horizontal dimension
     '''
     if position_threshold=='center':
         # get position as geometrical centre of identified region:
@@ -64,34 +144,39 @@ def feature_position(hdim1_indices,hdim2_indeces,region,track_data,threshold_i,p
     return hdim1_index,hdim2_index
 
 def test_overlap(region_inner,region_outer):
-    '''
-    function to test for overlap between two regions (probably scope for further speedup here)
-    Input:
-    region_1:      list
-                   list of 2-element tuples defining the indeces of all cell in the region
-    region_2:      list
-                   list of 2-element tuples defining the indeces of all cell in the region
+    '''function to test for overlap between two regions (TODO: probably scope for further speedup here)
 
-    Output:
-    overlap:       bool
-                   True if there are any shared points between the two regions
+    Parameters
+    ----------
+    region_1 : list
+        list of 2-element tuples defining the indeces of all cell in the region
+    region_2 : list
+        list of 2-element tuples defining the indeces of all cell in the region
+
+    Returns
+    -------
+    bool
+        True if there are any shared points between the two regions
     '''
     overlap=frozenset(region_outer).isdisjoint(region_inner)
     return not overlap
 
 def remove_parents(features_thresholds,regions_i,regions_old):
-    '''
-    function to remove features whose regions surround newly detected feature regions
-    Input:
-        features_thresholds:    pandas.DataFrame
-                                Dataframe containing detected features
-    regions_i:                  dict
-                                dictionary containing the regions above/below threshold for the newly detected feature (feature ids as keys)
-    regions_old:                dict
-                                dictionary containing the regions above/below threshold from previous threshold (feature ids as keys)
-    Output:
-        features_thresholds     pandas.DataFrame
-                                Dataframe containing detected features excluding those that are superseded by newly detected ones
+    '''function to remove features whose regions surround newly detected feature regions
+
+    Parameters
+    ----------
+    features_thresholds : pandas.DataFrame
+        Dataframe containing detected features
+    regions_i : dict
+        dictionary containing the regions above/below threshold for the newly detected feature (feature ids as keys)
+    regions_old : dict
+        dictionary containing the regions above/below threshold from previous threshold (feature ids as keys)
+
+    Returns
+    -------
+    pandas.DataFrame
+        Dataframe containing detected features excluding those that are superseded by newly detected ones
     '''
     list_remove=[]
     for idx_i,region_i in regions_i.items():    
@@ -115,68 +200,87 @@ def feature_detection_threshold(data_i,i_time,
                                 n_min_threshold=0,
                                 min_distance=0,
                                 idx_start=0):
-    '''
-    function to find features based on individual threshold value:
-    Input:
-    data_i:      iris.cube.Cube
-                 2D field to perform the feature detection (single timestep)
-    i_time:      int
-                 number of the current timestep
-    threshold:    float
-                  threshold value used to select target regions to track
-    target:       str ('minimum' or 'maximum')
-                  flag to determine if tracking is targetting minima or maxima in the data
-    position_threshold: str('extreme', 'weighted_diff', 'weighted_abs' or 'center')
-                      flag choosing method used for the position of the tracked feature
-    sigma_threshold: float
-                     standard deviation for intial filtering step
-    n_erosion_threshold: int
-                         number of pixel by which to erode the identified features
-    n_min_threshold: int
-                     minimum number of identified features
-    min_distance:  float
-                   minimum distance between detected features (m)
-    idx_start: int
-               feature id to start with
-    Output:
-    features_threshold:      pandas DataFrame 
-                             detected features for individual threshold
-    regions:                 dict
-                             dictionary containing the regions above/below threshold used for each feature (feature ids as keys)
+    '''function to find features based on individual threshold value
+
+    Parameters
+    ----------
+    data_i : iris.cube.Cube
+        2D field to perform the feature detection (single timestep)
+    i_time : int
+        number of the current timestep
+    threshold : float
+        threshold value used to select target regions to track
+    target : str ('minimum' or 'maximum')
+        flag to determine if tracking is targetting minima or maxima in the data
+    position_threshold : str('extreme', 'weighted_diff', 'weighted_abs' or 'center')
+        flag choosing method used for the position of the tracked feature
+    sigma_threshold : float
+        standard deviation for intial filtering step
+    n_erosion_threshold : int
+        number of pixel by which to erode the identified features
+    n_min_threshold : int
+        minimum number of identified features
+    min_distance : float
+        minimum distance between detected features (m)
+    idx_start : int
+        feature id to start with
+    Returns
+    -------
+    pandas DataFrame 
+        detected features for individual threshold
+    dict
+        dictionary containing the regions above/below threshold used for each feature (feature ids as keys)
     '''
     from skimage.measure import label
     from skimage.morphology import binary_erosion
 
     # if looking for minima, set values above threshold to 0 and scale by data minimum:
     if target == 'maximum':
-        mask=1*(data_i >= threshold)
+        mask=(data_i >= threshold)
         # if looking for minima, set values above threshold to 0 and scale by data minimum:
     elif target == 'minimum': 
-        mask=1*(data_i <= threshold)  
+        mask=(data_i <= threshold)  
     # only include values greater than threshold
     # erode selected regions by n pixels 
     if n_erosion_threshold>0:
         selem=np.ones((n_erosion_threshold,n_erosion_threshold))
-        mask=binary_erosion(mask,selem).astype(np.int64)
+        mask=binary_erosion(mask,selem).astype(bool)
         # detect individual regions, label  and count the number of pixels included:
     labels = label(mask, background=0)
-    values, count = np.unique(labels[:,:].ravel(), return_counts=True)
-    values_counts=dict(zip(values, count))
+    label_props = get_label_props_in_dict(labels)
+    if len(label_props)>0:
+        [total_indices_all, hdim1_indices_all, hdim2_indices_all] = get_indices_of_labels_from_reg_prop_dict(label_props)
+
+
+    #values, count = np.unique(labels[:,:].ravel(), return_counts=True)
+    #values_counts=dict(zip(values, count))
     # Filter out regions that have less pixels than n_min_threshold
-    values_counts={k:v for k, v in values_counts.items() if v>n_min_threshold}
+    #values_counts={k:v for k, v in values_counts.items() if v>n_min_threshold}
     #check if not entire domain filled as one feature
-    if 0 in values_counts:       
-    #Remove background counts:
-        values_counts.pop(0)       
+    if len(label_props)>0:       
         #create empty list to store individual features for this threshold
         list_features_threshold=[]
         #create empty dict to store regions for individual features for this threshold
         regions=dict()
         #create emptry list of features to remove from parent threshold value
+
+        region = np.empty(mask.shape, dtype=bool)
         #loop over individual regions:       
-        for cur_idx,count in values_counts.items():
-            region=labels[:,:] == cur_idx
-            [hdim1_indices,hdim2_indeces]= np.nonzero(region)
+        for cur_idx in total_indices_all:
+            #skip this if there aren't enough points to be considered a real feature
+            #as defined above by n_min_threshold
+            curr_count = total_indices_all[cur_idx]
+            if curr_count <=n_min_threshold:
+                continue
+
+            label_bbox = label_props[cur_idx].bbox
+
+            hdim1_indices = hdim1_indices_all[cur_idx]
+            hdim2_indeces = hdim2_indices_all[cur_idx]
+            region.fill(False)
+            region[hdim1_indices,hdim2_indeces]=True
+
+            #[hdim1_indices,hdim2_indeces]= np.nonzero(region)
             #write region for individual threshold and feature to dict
             region_i=list(zip(hdim1_indices,hdim2_indeces))
             regions[cur_idx+idx_start]=region_i
@@ -187,7 +291,7 @@ def feature_detection_threshold(data_i,i_time,
                                             'idx':cur_idx+idx_start,
                                             'hdim_1': hdim1_index,
                                             'hdim_2':hdim2_index,
-                                            'num':count,
+                                            'num':curr_count,
                                             'threshold_value':threshold})
         features_threshold=pd.DataFrame(list_features_threshold)
     else:
@@ -207,35 +311,36 @@ def feature_detection_multithreshold_timestep(data_i,i_time,
                                               min_distance=0,
                                               feature_number_start=1
                                               ):
-    '''
-    function to find features in each timestep based on iteratively finding regions above/below a set of thresholds
-    Input:
-    data_i:      iris.cube.Cube
-                 2D field to perform the feature detection (single timestep)
-    i_time:      int
-                 number of the current timestep 
+    '''function to find features in each timestep based on iteratively finding regions above/below a set of thresholds
     
-    threshold:    list of floats
-                  threshold values used to select target regions to track
-    dxy:          float
-                  grid spacing of the input data (m)
-    target:       str ('minimum' or 'maximum')
-                  flag to determine if tracking is targetting minima or maxima in the data
-    position_threshold: str('extreme', 'weighted_diff', 'weighted_abs' or 'center')
-                      flag choosing method used for the position of the tracked feature
-    sigma_threshold: float
-                     standard deviation for intial filtering step
-    n_erosion_threshold: int
-                         number of pixel by which to erode the identified features
-    n_min_threshold: int
-                     minimum number of identified features
-    min_distance:  float
-                   minimum distance between detected features (m)
-    feature_number_start: int
-                          feature number to start with
-    Output:
-    features_threshold:      pandas DataFrame 
-                             detected features for individual timestep
+    Parameters
+    ----------
+    data_i : iris.cube.Cube
+        2D field to perform the feature detection (single timestep)
+    i_time : int
+        number of the current timestep 
+    threshold : list of floats
+        threshold values used to select target regions to track
+    dxy : float
+        grid spacing of the input data (m)
+    target : str ('minimum' or 'maximum')
+        flag to determine if tracking is targetting minima or maxima in the data
+    position_threshold : str('extreme', 'weighted_diff', 'weighted_abs' or 'center')
+        flag choosing method used for the position of the tracked feature
+    sigma_threshold : float
+        standard deviation for intial filtering step
+    n_erosion_threshold : int
+        number of pixel by which to erode the identified features
+    n_min_threshold : int
+        minimum number of identified features
+    min_distance : float
+        minimum distance between detected features (m)
+    feature_number_start : int
+        feature number to start with
+    Returns
+    -------
+    pandas DataFrame 
+        detected features for individual timestep
     '''
     from scipy.ndimage.filters import gaussian_filter
 
@@ -284,8 +389,10 @@ def feature_detection_multithreshold(field_in,
                                      min_distance=0,
                                      feature_number_start=1
                                      ):
-    ''' Function to perform feature detection based on contiguous regions above/below a threshold
-    Input:
+    '''Function to perform feature detection based on contiguous regions above/below a threshold
+    
+    Parameters
+    ----------
     field_in:      iris.cube.Cube
                    2D field to perform the tracking on (needs to have coordinate 'time' along one of its dimensions)
     
@@ -305,8 +412,10 @@ def feature_detection_multithreshold(field_in,
                      minimum number of identified features
     min_distance:  float
                    minimum distance between detected features (m)
-    Output:
-    features:      pandas DataFrame 
+    
+    Returns
+    -------
+    pandas DataFrame 
                    detected features
     '''
     from .utils import add_coordinates
@@ -362,16 +471,20 @@ def feature_detection_multithreshold(field_in,
     return features
 
 def filter_min_distance(features,dxy,min_distance):
-    ''' Function to perform feature detection based on contiguous regions above/below a threshold
-    Input:    
+    '''Function to perform feature detection based on contiguous regions above/below a threshold
+    
+    Parameters
+    ----------
     features:      pandas DataFrame 
                    features
     dxy:           float
                    horzontal grid spacing (m)
     min_distance:  float
                    minimum distance between detected features (m)
-    Output:
-    features:      pandas DataFrame 
+    
+    Returns
+    -------
+    pandas DataFrame 
                    features
     '''
     from itertools import combinations
