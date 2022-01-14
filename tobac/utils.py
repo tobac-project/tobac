@@ -1,18 +1,16 @@
 import logging
 
 def column_mask_from2D(mask_2D,cube,z_coord='model_level_number'):
-    '''function to turn 2D watershedding mask into a 3D mask of selected columns
-    Parameters
-    ----------
+    '''     function to turn 2D watershedding mask into a 3D mask of selected columns
+    Input:
     cube:              iris.cube.Cube 
                        data cube
     mask_2D:           iris.cube.Cube 
                        2D cube containing mask (int id for tacked volumes 0 everywhere else)
     z_coord:           str
                        name of the vertical coordinate in the cube
-    Returns
-    -------
-    iris.cube.Cube 
+    Output:
+    mask_2D:           iris.cube.Cube 
                        3D cube containing columns of 2D mask (int id for tacked volumes 0 everywhere else)
     '''
     from copy import deepcopy
@@ -28,20 +26,16 @@ def column_mask_from2D(mask_2D,cube,z_coord='model_level_number'):
 
 
 def mask_cube_cell(variable_cube,mask,cell,track):
-    '''Mask cube for tracked volume of an individual cell   
-    
-    Parameters
-    ----------
+    ''' Mask cube for tracked volume of an individual cell   
+    Input:
     variable_cube:     iris.cube.Cube 
                        unmasked data cube
     mask:              iris.cube.Cube 
                        cube containing mask (int id for tacked volumes 0 everywhere else)
     cell:          int
                        interger id of cell to create masked cube for
-    
-    Returns
-    -------
-    iris.cube.Cube 
+    Output:
+    variable_cube_out: iris.cube.Cube 
                        Masked cube with data for respective cell
     '''
     from copy import deepcopy
@@ -52,16 +46,12 @@ def mask_cube_cell(variable_cube,mask,cell,track):
 
 def mask_cube_all(variable_cube,mask):
     ''' Mask cube for untracked volume 
-    
-    Parameters
-    ----------
+    Input:
     variable_cube:     iris.cube.Cube 
                        unmasked data cube
     mask:              iris.cube.Cube 
                        cube containing mask (int id for tacked volumes 0 everywhere else)
-    
-    Returns
-    -------
+    Output:
     variable_cube_out: iris.cube.Cube 
                        Masked cube for untracked volume
     '''
@@ -72,17 +62,13 @@ def mask_cube_all(variable_cube,mask):
     return variable_cube_out
 
 def mask_cube_untracked(variable_cube,mask):
-    '''Mask cube for untracked volume 
-    
-    Parameters
-    ----------
+    ''' Mask cube for untracked volume 
+    Input:
     variable_cube:     iris.cube.Cube 
                        unmasked data cube
     mask:              iris.cube.Cube 
                        cube containing mask (int id for tacked volumes 0 everywhere else)
-    
-    Returns
-    -------
+    Output:
     variable_cube_out: iris.cube.Cube 
                        Masked cube for untracked volume
     '''
@@ -94,17 +80,13 @@ def mask_cube_untracked(variable_cube,mask):
 
 def mask_cube(cube_in,mask):
     ''' Mask cube where mask is larger than zero
-    
-    Parameters
-    ----------
+    Input:
     cube_in:           iris.cube.Cube 
                        unmasked data cube
     mask:              numpy.ndarray or dask.array 
                        mask to use for masking, >0 where cube is supposed to be masked
-    
-    Returns
-    -------
-    iris.cube.Cube 
+    Output:
+    cube_out:          iris.cube.Cube 
                        Masked cube
     '''
     from dask.array import ma
@@ -114,16 +96,12 @@ def mask_cube(cube_in,mask):
     return cube_out
 
 def mask_cell(mask,cell,track,masked=False):
-    '''create mask for specific cell
-    
-    Parameters
-    ----------
+    ''' create mask for specific cell
+    Input:
     mask:              iris.cube.Cube 
                        cube containing mask (int id for tacked volumes 0 everywhere else)
-    
-    Returns
-    -------
-    numpy.ndarray 
+    Output:
+    variable_cube_out: numpy.ndarray 
                        Masked cube for untracked volume
     '''
     feature_ids=track.loc[track['cell']==cell,'feature'].values
@@ -132,15 +110,11 @@ def mask_cell(mask,cell,track,masked=False):
 
 def mask_cell_surface(mask,cell,track,masked=False,z_coord='model_level_number'):
     '''Create surface projection of mask for individual cell
-    
-    Parameters
-    ----------
+    Input:
     mask:              iris.cube.Cube 
                        cube containing mask (int id for tacked volumes 0 everywhere else)
-    
-    Returns
-    -------
-    iris.cube.Cube 
+    Output:
+    variable_cube_out: iris.cube.Cube 
                        Masked cube for untracked volume
     '''
     feature_ids=track.loc[track['cell']==cell,'feature'].values
@@ -149,15 +123,11 @@ def mask_cell_surface(mask,cell,track,masked=False,z_coord='model_level_number')
 
 def mask_cell_columns(mask,cell,track,masked=False,z_coord='model_level_number'):
     '''Create mask with entire columns for individual cell
-    
-    Parameters
-    ----------
+    Input:
     mask:              iris.cube.Cube 
                        cube containing mask (int id for tacked volumes 0 everywhere else)
-    
-    Returns
-    -------
-    iris.cube.Cube 
+    Output:
+    variable_cube_out: iris.cube.Cube 
                        Masked cube for untracked volume
     '''
     feature_ids=track.loc[track['cell']==cell].loc['feature']
@@ -166,19 +136,15 @@ def mask_cell_columns(mask,cell,track,masked=False,z_coord='model_level_number')
 
 def mask_cube_features(variable_cube,mask,feature_ids):
     ''' Mask cube for tracked volume of an individual cell   
-    
-    Parameters
-    ----------
+    Input:
     variable_cube:     iris.cube.Cube 
                        unmasked data cube
     mask:              iris.cube.Cube 
                        cube containing mask (int id for tacked volumes 0 everywhere else)
     cell:          int
                        interger id of cell to create masked cube for
-    
-    Returns
-    -------
-    iris.cube.Cube 
+    Output:
+    variable_cube_out: iris.cube.Cube 
                        Masked cube with data for respective cell
     '''
     from dask.array import ma,isin
@@ -188,16 +154,12 @@ def mask_cube_features(variable_cube,mask,feature_ids):
     return variable_cube_out
 
 def mask_features(mask,feature_ids,masked=False):
-    '''create mask for specific features
-    
-    Parameters
-    ----------
+    ''' create mask for specific features
+    Input:
     mask:              iris.cube.Cube 
                        cube containing mask (int id for tacked volumes 0 everywhere else)
-    
-    Returns
-    -------
-    numpy.ndarray 
+    Output:
+    variable_cube_out: numpy.ndarray 
                        Masked cube for untracked volume
     '''
     from dask.array import ma,isin
@@ -211,15 +173,11 @@ def mask_features(mask,feature_ids,masked=False):
 
 def mask_features_surface(mask,feature_ids,masked=False,z_coord='model_level_number'):
     ''' create surface mask for individual features 
-    
-    Parameters
-    ----------
+    Input:
     mask:              iris.cube.Cube 
                        cube containing mask (int id for tacked volumes 0 everywhere else)
-    
-    Returns
-    -------
-    iris.cube.Cube 
+    Output:
+    variable_cube_out: iris.cube.Cube 
                        Masked cube for untracked volume
     '''
     from iris.analysis import MAX
@@ -236,14 +194,10 @@ def mask_features_surface(mask,feature_ids,masked=False,z_coord='model_level_num
 
 def mask_all_surface(mask,masked=False,z_coord='model_level_number'):
     ''' create surface mask for individual features 
-    
-    Parameters
-    ----------
+    Input:
     mask:              iris.cube.Cube 
                        cube containing mask (int id for tacked volumes 0 everywhere else)
-    
-    Returns
-    -------
+    Output:
     mask_i_surface:    iris.cube.Cube (2D)
                        Mask with 1 below features and 0 everywhere else
     '''
@@ -324,18 +278,14 @@ def mask_all_surface(mask,masked=False,z_coord='model_level_number'):
     
 def add_coordinates(t,variable_cube):
     import numpy as np
-    '''Function adding coordinates from the tracking cube to the trajectories: time, longitude&latitude, x&y dimensions
-    
-    Parameters
-    ----------
+    ''' Function adding coordinates from the tracking cube to the trajectories: time, longitude&latitude, x&y dimensions
+    Input:
     t:             pandas DataFrame
                    trajectories/features
     variable_cube: iris.cube.Cube 
                    Cube containing the dimensions 'time','longitude','latitude','x_projection_coordinate','y_projection_coordinate', usually cube that the tracking is performed on
-    
-    Returns
-    -------
-    pandas DataFrame 
+    Output:
+    t:             pandas DataFrame 
                    trajectories with added coordinated
     '''
     from scipy.interpolate import interp2d, interp1d
@@ -441,7 +391,7 @@ def add_coordinates(t,variable_cube):
 
 def get_bounding_box(x,buffer=1):
     from numpy import delete,arange,diff,nonzero,array
-    """Calculates the bounding box of a ndarray
+    """ Calculates the bounding box of a ndarray
     https://stackoverflow.com/questions/31400769/bounding-box-of-numpy-array
     """
     mask = x == 0

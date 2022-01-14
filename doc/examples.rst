@@ -1,5 +1,5 @@
 Example notebooks
-==================
+===============
 tobac is provided with a set of Jupyter notebooks that show examples of the application of tobac for different types of datasets.
 
 The notebooks can be found in the **examples** folder in the the repository. The necessary input data for these examples is avaliable on zenodo:

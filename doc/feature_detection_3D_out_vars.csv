@@ -1,4 +1,0 @@
-﻿Variable Name,Description,Units,Type
-vdim,vertical dimension in grid point space,Number of grid points,float64
-z,grid point z location of the feature (see vdim). Note that this is not necessarily an integer value depending on your selection of position_threshold,Number of grid points,float64
-altitude,z location of the feature above ground level,meters,float64

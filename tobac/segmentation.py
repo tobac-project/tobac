@@ -8,10 +8,10 @@ def segmentation_2D(features,field,dxy,threshold=3e-3,target='maximum',level=Non
 
 
 def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,vertical_coord='auto'):    
-    """Function performing watershedding for an individual timestep of the data
+    """
+    Function performing watershedding for an individual timestep of the data
     
-    Parameters
-    ----------
+    Parameters:
     features:   pandas.DataFrame 
                 features for one specific point in time
     field:      iris.cube.Cube 
@@ -27,14 +27,13 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
     max_distance: float
                   maximum distance from a marker allowed to be classified as belonging to that cell
     
-    Returns
-    -------
-    iris.cube.Cube
+    Output:
+    segmentation_out: iris.cube.Cube
                       cloud mask, 0 outside and integer numbers according to track inside the clouds
-    pandas.DataFrame
+    features_out: pandas.DataFrame
                   feature dataframe including the number of cells (2D or 3D) in the segmented area/volume of the feature at the timestep
     """
-    from skimage.segmentation import watershed
+    from skimage.morphology import watershed
     # from skimage.segmentation import random_walker
     from scipy.ndimage import distance_transform_edt
     from copy import deepcopy
@@ -137,10 +136,10 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
     return segmentation_out,features_out
 
 def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,vertical_coord='auto'):
-    """Function using watershedding or random walker to determine cloud volumes associated with tracked updrafts
+    """
+    Function using watershedding or random walker to determine cloud volumes associated with tracked updrafts
     
-    Parameters
-    ----------
+    Parameters:
     features:         pandas.DataFrame 
                    output from trackpy/maketrack
     field:      iris.cube.Cube 
@@ -159,9 +158,8 @@ def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,m
     max_distance: float
                   Maximum distance from a marker allowed to be classified as belonging to that cell
     
-    Returns
-    -------
-    iris.cube.Cube
+    Output:
+    segmentation_out: iris.cube.Cube
                    Cloud mask, 0 outside and integer numbers according to track inside the cloud
     """
     import pandas as pd
