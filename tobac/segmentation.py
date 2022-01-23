@@ -34,7 +34,12 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
     pandas.DataFrame
                   feature dataframe including the number of cells (2D or 3D) in the segmented area/volume of the feature at the timestep
     """
-    from skimage.segmentation import watershed
+
+    # The location of watershed within skimage submodules changes with v0.19, but I've kept both for backward compatibility for now
+    try:
+        from skimage.segmentation import watershed
+    except ImportError:
+        from skimage.morphology import watershed
     # from skimage.segmentation import random_walker
     from scipy.ndimage import distance_transform_edt
     from copy import deepcopy
