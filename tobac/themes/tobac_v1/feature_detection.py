@@ -31,7 +31,7 @@ def feature_detection_multithreshold(field_in,
                                      n_erosion_threshold=0,
                                      n_min_threshold=0,
                                      min_distance=0,
-                                     feature_number_start=1
+                                     feature_number_start=1,
                                      ):
     '''Perform feature detection based on contiguous regions.
 
@@ -150,8 +150,8 @@ def feature_detection_multithreshold_timestep(data_i,i_time,
                                               n_erosion_threshold=0,
                                               n_min_threshold=0,
                                               min_distance=0,
-                                              feature_number_start=1
-                                              ):
+                                              feature_number_start=1,
+                                              wavelength_filtering = None):
     '''Find features in each timestep.
 
     Based on iteratively finding regions above/below a set of
@@ -206,6 +206,11 @@ def feature_detection_multithreshold_timestep(data_i,i_time,
     track_data = data_i.core_data()
 
     track_data=gaussian_filter(track_data, sigma=sigma_threshold) #smooth data slightly to create rounded, continuous field
+
+    # spectrally filtering of data, if desired 
+    if wavelength_filtering is not None:
+        track_data = spectral_filtering(dxy, track_data, wavelength_filtering[0], wavelength_filtering[1])
+
     # create empty lists to store regions and features for individual timestep
     features_thresholds=pd.DataFrame()
     regions_old={}
@@ -509,3 +514,62 @@ def filter_min_distance(features,dxy,min_distance):
                         remove_list_distance.append(index_2)
     features=features[~features.index.isin(remove_list_distance)]
     return features
+
+
+
+
+def spectral_filtering(dxy, field_in, lambda_min, lambda_max):
+    """
+    This function creates a 2D transfer function that can be used as a bandpass filter to remove 
+    certain wavelengths of an atmospheric field (e.g. vorticity). 
+    
+    Args:
+        dxy(float): grid spacing in km 
+        lambda_min(float): minimum acceptable wavelength in km 
+        lambda_max(float): maximum acceptable wavelength in km 
+        
+    Returns:
+        field_out: spectrally filtered 2D field of data
+    """
+    from scipy import signal
+    from scipy import fft
+
+    # get number of grid cells in x and y direction
+    Ni = field_in.shape[-1]
+    Nj = field_in.shape[-2]
+
+    # get wavelengths for input field 
+    m, n  = np.meshgrid(np.arange(Nj), np.arange(Ni))
+    alpha = np.sqrt(m**2/Nj**2  +  n**2/Ni**2)
+    # compute wavelengths in km 
+    lambda_rect= 2*dxy/ alpha
+
+    ############### create a 2D bandpass filter(butterworth) #######################
+    b, a = signal.iirfilter(2, [1/lambda_max,1/lambda_min], btype='band', ftype='butter', fs= 1/dx, output ='ba')
+    w, h = signal.freqz(b, a, 1/lambda_rect.flatten(),fs = 1/dx)
+    transfer_function = np.reshape(abs(h), lambda_rect.shape)
+
+    # use discrete cosine transformation to convert data to spectral space 
+    spectral = fft.dctn(field_in.data) * transfer_function
+    # inverse discrete cosine transformation 
+    filtered_field = fft.idctn(spectral)
+    field_in.data = filtered_field
+
+    return field_in
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
