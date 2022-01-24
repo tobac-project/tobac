@@ -81,6 +81,7 @@ def feature_detection_multithreshold(
 
     wavelength_filtering: tuple, optional
         minimum and maximum wavelengths in km, if spectral filtering of input field is desired
+        note that the wavelengths need to be smaller than the distances along x and y
 
 
     Returns
@@ -224,7 +225,7 @@ def feature_detection_multithreshold_timestep(
 
     wavelength_filtering: tuple, optional
         minimum and maximum wavelengths in km, if spectral filtering of input field is desired
-
+        common fields for spectral filtering are e.g.specific humidity or relative vorticity
 
     Returns
     -------
@@ -241,6 +242,7 @@ def feature_detection_multithreshold_timestep(
     )  # smooth data slightly to create rounded, continuous field
 
     # spectrally filtering of data, if desired
+    # note that grid spacing needs to be provided in km, so that it matches wavelengths
     if wavelength_filtering is not None:
         track_data = spectral_filtering(
             dxy / 1000, track_data, wavelength_filtering[0], wavelength_filtering[1]
