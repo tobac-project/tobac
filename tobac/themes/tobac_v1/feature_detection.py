@@ -34,6 +34,7 @@ def feature_detection_multithreshold(
     n_min_threshold=0,
     min_distance=0,
     feature_number_start=1,
+    wavelength_filtering=None,
 ):
     """Perform feature detection based on contiguous regions.
 
@@ -77,6 +78,11 @@ def feature_detection_multithreshold(
     feature_number_start : int, optional
         Feature id to start with. Default is 1.
 
+
+    wavelength_filtering: tuple, optional
+        minimum and maximum wavelengths in km, if spectral filtering of input field is desired
+
+
     Returns
     -------
     features : xarray.Dataset
@@ -102,6 +108,7 @@ def feature_detection_multithreshold(
     for i_time, data_i in enumerate(data_time):
         time_i = data_i.coord("time").units.num2date(data_i.coord("time").points[0])
         features_thresholds = feature_detection_multithreshold_timestep(
+            dxy,
             data_i,
             i_time,
             threshold=threshold,
@@ -113,6 +120,7 @@ def feature_detection_multithreshold(
             n_min_threshold=n_min_threshold,
             min_distance=min_distance,
             feature_number_start=feature_number_start,
+            wavelength_filtering=wavelength_filtering,
         )
         # check if list of features is not empty, then merge features from different threshold values
         # into one DataFrame and append to list for individual timesteps:
@@ -151,6 +159,7 @@ def feature_detection_multithreshold(
 
 
 def feature_detection_multithreshold_timestep(
+    dxy,
     data_i,
     i_time,
     threshold=None,
@@ -172,6 +181,11 @@ def feature_detection_multithreshold_timestep(
 
     Parameters
     ----------
+
+    dxy : float
+        Grid spacing of the input data.
+
+
     data_i : iris.cube.Cube
         2D field to perform the feature detection (single timestep) on.
 
@@ -229,7 +243,7 @@ def feature_detection_multithreshold_timestep(
     # spectrally filtering of data, if desired
     if wavelength_filtering is not None:
         track_data = spectral_filtering(
-            dxy, track_data, wavelength_filtering[0], wavelength_filtering[1]
+            dxy / 1000, track_data, wavelength_filtering[0], wavelength_filtering[1]
         )
 
     # create empty lists to store regions and features for individual timestep
@@ -594,24 +608,31 @@ def spectral_filtering(dxy, field_in, lambda_min, lambda_max):
 
     Args:
         dxy(float): grid spacing in km
+        field_in(np.array): 2D field with input data
         lambda_min(float): minimum acceptable wavelength in km
         lambda_max(float): maximum acceptable wavelength in km
 
     Returns:
-        field_out: spectrally filtered 2D field of data
+        filtered_field(np.array): spectrally filtered 2D field of data
     """
     from scipy import signal
     from scipy import fft
 
     # get number of grid cells in x and y direction
-    Ni = field_in.shape[-1]
-    Nj = field_in.shape[-2]
-
-    # get wavelengths for input field
+    Ni = field_in.shape[-2]
+    Nj = field_in.shape[-1]
+    # wavenumber space
     m, n = np.meshgrid(np.arange(Nj), np.arange(Ni))
+
+    # if domain is squared:
+    if Ni == Nj:
+        wavenumber = np.sqrt(m ** 2 + n ** 2)
+        lambda_mn = (2 * Ni * (dx)) / wavenumber
+
+    # alpha is the normalized wavenumber in wavenumber space
     alpha = np.sqrt(m ** 2 / Nj ** 2 + n ** 2 / Ni ** 2)
-    # compute wavelengths in km
-    lambda_rect = 2 * dxy / alpha
+    # compute wavelengths for target grid in km
+    lambda_mn = 2 * dxy / alpha
 
     ############### create a 2D bandpass filter(butterworth) #######################
     b, a = signal.iirfilter(
@@ -619,16 +640,16 @@ def spectral_filtering(dxy, field_in, lambda_min, lambda_max):
         [1 / lambda_max, 1 / lambda_min],
         btype="band",
         ftype="butter",
-        fs=1 / dx,
+        fs=1 / dxy,
         output="ba",
     )
-    w, h = signal.freqz(b, a, 1 / lambda_rect.flatten(), fs=1 / dx)
-    transfer_function = np.reshape(abs(h), lambda_rect.shape)
+    w, h = signal.freqz(b, a, 1 / lambda_mn.flatten(), fs=1 / dxy)
+    transfer_function = np.reshape(abs(h), lambda_mn.shape)
 
-    # use discrete cosine transformation to convert data to spectral space
-    spectral = fft.dctn(field_in.data) * transfer_function
+    # 2-dimensional discrete cosine transformation to convert data to spectral space
+    spectral = fft.dctn(field_in.data)
+    filtered = spectral * transfer_function
     # inverse discrete cosine transformation
-    filtered_field = fft.idctn(spectral)
-    field_in.data = filtered_field
+    filtered_field = fft.idctn(filtered)
 
-    return field_in
+    return filtered_field
