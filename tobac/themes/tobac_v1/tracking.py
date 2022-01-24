@@ -211,28 +211,23 @@ def linking_trackpy(features,field_in,dt,dxy,
 
     # Reset particle numbers from the arbitray numbers at the end of the feature detection and linking to consecutive cell numbers
     # keep 'particle' for reference to the feature detection step.
-    trajectories_unfiltered['cell']=None
-    for i_particle,particle in enumerate(pd.Series.unique(trajectories_unfiltered['particle'])):
-        cell=int(i_particle+cell_number_start)
-        trajectories_unfiltered.loc[trajectories_unfiltered['particle']==particle,'cell']=cell
+
+    logging.debug('set cell number')
+    # https://stackoverflow.com/questions/51834175/
+    #   assigning-incremental-values-based-on-an-unique-value-of-a-column
+    trajectories_unfiltered['cell'] = pd.factorize(trajectories_unfiltered['particle'])[0] + int(cell_number_start)
+
     trajectories_unfiltered.drop(columns=['particle'],inplace=True)
 
-    trajectories_bycell=trajectories_unfiltered.groupby('cell')
-    for cell,trajectories_cell in trajectories_bycell:
-        logging.debug("cell: "+str(cell))
-        logging.debug("feature: "+str(trajectories_cell['feature'].values))
-        logging.debug("trajectories_cell.shape[0]: "+ str(trajectories_cell.shape[0]))
-
-        if trajectories_cell.shape[0] < stubs:
-            logging.debug("cell" + str(cell)+ "  is a stub ("+str(trajectories_cell.shape[0])+ "), setting cell number to Nan..")
-            trajectories_unfiltered.loc[trajectories_unfiltered['cell']==cell,'cell']=np.nan
+    logging.debug('set cell to nan if count < stubs')
+    # https://stackoverflow.com/questions/47813994/
+    #   python-pandas-how-to-replace-values-that-have-a-count-smaller-than-x
+    trajectories_unfiltered.loc[trajectories_unfiltered.groupby('cell').cell.transform('count').lt(stubs), 'cell'] = np.nan
 
     trajectories_filtered=trajectories_unfiltered
 
-
     #Interpolate to fill the gaps in the trajectories (left from allowing memory in the linking)
     trajectories_filtered_unfilled=deepcopy(trajectories_filtered)
-
 
 #    trajectories_filtered_filled=fill_gaps(trajectories_filtered_unfilled,order=order,
 #                                extrapolate=extrapolate,frame_max=field_in.shape[0]-1,
@@ -242,14 +237,17 @@ def linking_trackpy(features,field_in,dt,dxy,
 #    trajectories_filtered_filled=add_coordinates(trajectories_filtered_filled,field_in)
 #     add time coordinate relative to cell initiation:
 #    logging.debug('start adding cell time to trajectories')
+
     trajectories_filtered_filled=trajectories_filtered_unfilled
-    trajectories_final=add_cell_time(trajectories_filtered_filled)
+
+    logging.debug('start adding time relative to cell initiation')
+    trajectories_filtered_filled['time_cell'] = trajectories_filtered_filled.groupby('cell').time.apply(lambda x: x - x.iloc[0])
 
     # add coordinate to raw features identified:
     logging.debug('start adding coordinates to detected features')
     logging.debug('feature linking completed')
     
-    trajectories_final=trajectories_final.to_xarray()
+    trajectories_final = trajectories_filtered_filled.to_xarray()
     return trajectories_final
 
 def fill_gaps(t,order=1,extrapolate=0,frame_max=None,hdim_1_max=None,hdim_2_max=None):
@@ -324,27 +322,3 @@ def fill_gaps(t,order=1,extrapolate=0,frame_max=None,hdim_1_max=None,hdim_2_max=
     t_out=t_out.reset_index(drop=True)
     return t_out
 
-def add_cell_time(t):
-    '''Add cell time as time since the initiation of each cell.
-
-    Parameters
-    ----------
-    t : pandas.DataFrame
-        Trajectories from trackpy.
-
-    Returns
-    -------
-    t : pandas.DataFrame
-        Trajectories with added cell time.
-    '''
-
-    logging.debug('start adding time relative to cell initiation')
-    t_grouped=t.groupby('cell')
-    t['time_cell']=np.nan
-    for cell,track in t_grouped:
-        track_0=track.head(n=1)
-        for i,row in track.iterrows():
-            t.loc[i,'time_cell']=row['time']-track_0.loc[track_0.index[0],'time']
-    # turn series into pandas timedelta DataSeries
-    t['time_cell']=pd.to_timedelta(t['time_cell'])
-    return t
