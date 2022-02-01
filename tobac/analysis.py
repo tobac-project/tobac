@@ -316,7 +316,7 @@ def area_histogram(features,mask,bin_edges=np.arange(0,30000,500),
                    return_values=False,representative_area=False):
     if 'area' not in features.columns:
         logging.info('calculate area')
-        features=calculate_area(features,method_area)
+        features=calculate_area(features, mask, method_area)
     areas=features['area'].values
     # restrict to non NaN values:
     areas=areas[~np.isnan(areas)]
