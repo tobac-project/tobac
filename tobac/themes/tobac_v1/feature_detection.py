@@ -47,7 +47,7 @@ def feature_detection_multithreshold(
         'time' along one of its dimensions),
 
     dxy : float
-        Grid spacing of the input data.
+        Grid spacing of the input data (in meter).
 
     thresholds : list of floats, optional
         Threshold values used to select target regions to track.
