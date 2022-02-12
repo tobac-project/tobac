@@ -604,19 +604,35 @@ def filter_min_distance(features, dxy, min_distance):
 
 
 def spectral_filtering(dxy, field_in, lambda_min, lambda_max):
-    """
+    '''
     This function creates and applies a 2D transfer function that can be used as a bandpass filter to remove
     certain wavelengths of an atmospheric field (e.g. vorticity).
 
-    Args:
-        dxy(float): grid spacing in km
-        field_in(np.array): 2D field with input data
-        lambda_min(float): minimum acceptable wavelength in km
-        lambda_max(float): maximum acceptable wavelength in km
+    Parameters:
+    -----------
+
+    dxy : float
+        grid spacing in km
+
+
+    field_in: numpy.array
+        2D field with input data
+
+    lambda_min: float
+        minimum wavelength in km
+
+
+    lambda_max: float
+        maximum wavelength in km
 
     Returns:
-        filtered_field(np.array): spectrally filtered 2D field of data
-    """
+    --------
+
+    filtered_field: numpy.array
+        spectrally filtered 2D field of data
+
+    '''
+
     from scipy import signal
     from scipy import fft
 
@@ -624,7 +640,7 @@ def spectral_filtering(dxy, field_in, lambda_min, lambda_max):
     Ni = field_in.shape[-2]
     Nj = field_in.shape[-1]
     # wavenumber space
-    m, n = np.meshgrid(np.arange(Nj), np.arange(Ni))
+    m, n = np.meshgrid(np.arange(Ni), np.arange(Nj), indexing = 'ij')
 
     # if domain is squared:
     if Ni == Nj:
@@ -636,7 +652,7 @@ def spectral_filtering(dxy, field_in, lambda_min, lambda_max):
     # compute wavelengths for target grid in km
     lambda_mn = 2 * dxy / alpha
 
-    ############### create a 2D bandpass filter(butterworth) #######################
+    ############### create a 2D bandpass filter (butterworth) #######################
     b, a = signal.iirfilter(
         2,
         [1 / lambda_max, 1 / lambda_min],
