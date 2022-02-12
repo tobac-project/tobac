@@ -109,7 +109,6 @@ def feature_detection_multithreshold(
     for i_time, data_i in enumerate(data_time):
         time_i = data_i.coord("time").units.num2date(data_i.coord("time").points[0])
         features_thresholds = feature_detection_multithreshold_timestep(
-            dxy,
             data_i,
             i_time,
             threshold=threshold,
@@ -122,6 +121,7 @@ def feature_detection_multithreshold(
             min_distance=min_distance,
             feature_number_start=feature_number_start,
             wavelength_filtering=wavelength_filtering,
+            dxy
         )
         # check if list of features is not empty, then merge features from different threshold values
         # into one DataFrame and append to list for individual timesteps:
@@ -160,7 +160,6 @@ def feature_detection_multithreshold(
 
 
 def feature_detection_multithreshold_timestep(
-    dxy,
     data_i,
     i_time,
     threshold=None,
@@ -173,6 +172,7 @@ def feature_detection_multithreshold_timestep(
     min_distance=0,
     feature_number_start=1,
     wavelength_filtering=None,
+    dxy = -1,
 ):
     """Find features in each timestep.
 
@@ -182,10 +182,6 @@ def feature_detection_multithreshold_timestep(
 
     Parameters
     ----------
-
-    dxy : float
-        Grid spacing of the input data.
-
 
     data_i : iris.cube.Cube
         2D field to perform the feature detection (single timestep) on.
@@ -227,6 +223,10 @@ def feature_detection_multithreshold_timestep(
         minimum and maximum wavelengths in km, if spectral filtering of input field is desired
         common fields for spectral filtering are e.g.specific humidity or relative vorticity
 
+    dxy : float
+        If wavelength_filtering is not None, grid spacing of the input data needs to be specified in meter.
+
+
     Returns
     -------
     features_threshold : pandas.DataFrame
@@ -245,7 +245,7 @@ def feature_detection_multithreshold_timestep(
     # note that grid spacing needs to be provided in km, so that it matches wavelengths
     if wavelength_filtering is not None:
         track_data = spectral_filtering(
-            dxy / 1000, track_data, wavelength_filtering[0], wavelength_filtering[1]
+            dxy, track_data, wavelength_filtering[0], wavelength_filtering[1]
         )
 
     # create empty lists to store regions and features for individual timestep
@@ -612,7 +612,7 @@ def spectral_filtering(dxy, field_in, lambda_min, lambda_max):
     -----------
 
     dxy : float
-        grid spacing in km
+        grid spacing in m
 
 
     field_in: numpy.array
@@ -635,6 +635,13 @@ def spectral_filtering(dxy, field_in, lambda_min, lambda_max):
 
     from scipy import signal
     from scipy import fft
+
+    # check if valid value for dxy is given
+    if dxy <= 0:
+        raise ValueError("Invalid value for dxy. Please provide the grid spacing in meter.")
+
+    # convert grid spacing to km to get same units as given wavelengths
+    dxy = dxy / 1000
 
     # get number of grid cells in x and y direction
     Ni = field_in.shape[-2]
