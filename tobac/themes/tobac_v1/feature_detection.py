@@ -20,6 +20,7 @@ import logging
 import numpy as np
 import pandas as pd
 from tobac.utils import xarray_to_iris
+from tobac.utils.general import spectral_filtering 
 
 
 def feature_detection_multithreshold(
@@ -602,79 +603,3 @@ def filter_min_distance(features, dxy, min_distance):
     features = features[~features.index.isin(remove_list_distance)]
     return features
 
-
-def spectral_filtering(dxy, field_in, lambda_min, lambda_max):
-    '''
-    This function creates and applies a 2D transfer function that can be used as a bandpass filter to remove
-    certain wavelengths of an atmospheric field (e.g. vorticity).
-
-    Parameters:
-    -----------
-
-    dxy : float
-        grid spacing in m
-
-
-    field_in: numpy.array
-        2D field with input data
-
-    lambda_min: float
-        minimum wavelength in km
-
-
-    lambda_max: float
-        maximum wavelength in km
-
-    Returns:
-    --------
-
-    filtered_field: numpy.array
-        spectrally filtered 2D field of data
-
-    '''
-
-    from scipy import signal
-    from scipy import fft
-
-    # check if valid value for dxy is given
-    if dxy <= 0:
-        raise ValueError("Invalid value for dxy. Please provide the grid spacing in meter.")
-
-    # convert grid spacing to km to get same units as given wavelengths
-    dxy = dxy / 1000
-
-    # get number of grid cells in x and y direction
-    Ni = field_in.shape[-2]
-    Nj = field_in.shape[-1]
-    # wavenumber space
-    m, n = np.meshgrid(np.arange(Ni), np.arange(Nj), indexing = 'ij')
-
-    # if domain is squared:
-    if Ni == Nj:
-        wavenumber = np.sqrt(m ** 2 + n ** 2)
-        lambda_mn = (2 * Ni * (dx)) / wavenumber
-
-    # alpha is the normalized wavenumber in wavenumber space
-    alpha = np.sqrt(m ** 2 / Nj ** 2 + n ** 2 / Ni ** 2)
-    # compute wavelengths for target grid in km
-    lambda_mn = 2 * dxy / alpha
-
-    ############### create a 2D bandpass filter (butterworth) #######################
-    b, a = signal.iirfilter(
-        2,
-        [1 / lambda_max, 1 / lambda_min],
-        btype="band",
-        ftype="butter",
-        fs=1 / dxy,
-        output="ba",
-    )
-    w, h = signal.freqz(b, a, 1 / lambda_mn.flatten(), fs=1 / dxy)
-    transfer_function = np.reshape(abs(h), lambda_mn.shape)
-
-    # 2-dimensional discrete cosine transformation to convert data to spectral space
-    spectral = fft.dctn(field_in.data)
-    filtered = spectral * transfer_function
-    # inverse discrete cosine transformation
-    filtered_field = fft.idctn(filtered)
-
-    return filtered_field
