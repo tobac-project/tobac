@@ -20,7 +20,7 @@ import logging
 import numpy as np
 import pandas as pd
 from tobac.utils import xarray_to_iris
-from tobac.utils.general import spectral_filtering 
+from tobac.utils.general import spectral_filtering
 
 
 def feature_detection_multithreshold(
@@ -109,7 +109,7 @@ def feature_detection_multithreshold(
 
     for i_time, data_i in enumerate(data_time):
         time_i = data_i.coord("time").units.num2date(data_i.coord("time").points[0])
-        features_thresholds = feature_detection_multithreshold_timestep(dxy,
+        features_thresholds = feature_detection_multithreshold_timestep(
             data_i,
             i_time,
             threshold=threshold,
@@ -121,6 +121,7 @@ def feature_detection_multithreshold(
             n_min_threshold=n_min_threshold,
             min_distance=min_distance,
             feature_number_start=feature_number_start,
+            dxy=dxy,
             wavelength_filtering=wavelength_filtering,
         )
         # check if list of features is not empty, then merge features from different threshold values
@@ -160,7 +161,6 @@ def feature_detection_multithreshold(
 
 
 def feature_detection_multithreshold_timestep(
-    dxy =-1, 
     data_i,
     i_time,
     threshold=None,
@@ -172,7 +172,8 @@ def feature_detection_multithreshold_timestep(
     n_min_threshold=0,
     min_distance=0,
     feature_number_start=1,
-    wavelength_filtering=None
+    dxy=-1,
+    wavelength_filtering=None,
 ):
     """Find features in each timestep.
 
@@ -182,10 +183,6 @@ def feature_detection_multithreshold_timestep(
 
     Parameters
     ----------
-
-
-    dxy : float
-        Grid spacing in meter, that has to be specified if  wavelength_filtering is not None.
 
     data_i : iris.cube.Cube
         2D field to perform the feature detection (single timestep) on.
@@ -222,14 +219,12 @@ def feature_detection_multithreshold_timestep(
     feature_number_start : int, optional
         Feature id to start with. Default is 1.
 
+    dxy : float
+        Grid spacing in meter, that is set to an invalid value, but has to be specified if  wavelength_filtering is not None.
 
     wavelength_filtering: tuple, optional
         minimum and maximum wavelengths in km, if spectral filtering of input field is desired
         common fields for spectral filtering are e.g.specific humidity or relative vorticity
-
-    dxy : float
-        If wavelength_filtering is not None, grid spacing of the input data needs to be specified in meter.
-
 
     Returns
     -------
@@ -605,4 +600,3 @@ def filter_min_distance(features, dxy, min_distance):
                         remove_list_distance.append(index_2)
     features = features[~features.index.isin(remove_list_distance)]
     return features
-
