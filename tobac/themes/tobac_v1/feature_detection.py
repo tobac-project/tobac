@@ -109,7 +109,7 @@ def feature_detection_multithreshold(
 
     for i_time, data_i in enumerate(data_time):
         time_i = data_i.coord("time").units.num2date(data_i.coord("time").points[0])
-        features_thresholds = feature_detection_multithreshold_timestep(
+        features_thresholds = feature_detection_multithreshold_timestep(dxy,
             data_i,
             i_time,
             threshold=threshold,
@@ -122,7 +122,6 @@ def feature_detection_multithreshold(
             min_distance=min_distance,
             feature_number_start=feature_number_start,
             wavelength_filtering=wavelength_filtering,
-            dxy
         )
         # check if list of features is not empty, then merge features from different threshold values
         # into one DataFrame and append to list for individual timesteps:
@@ -161,6 +160,7 @@ def feature_detection_multithreshold(
 
 
 def feature_detection_multithreshold_timestep(
+    dxy =-1, 
     data_i,
     i_time,
     threshold=None,
@@ -172,8 +172,7 @@ def feature_detection_multithreshold_timestep(
     n_min_threshold=0,
     min_distance=0,
     feature_number_start=1,
-    wavelength_filtering=None,
-    dxy = -1,
+    wavelength_filtering=None
 ):
     """Find features in each timestep.
 
@@ -183,6 +182,10 @@ def feature_detection_multithreshold_timestep(
 
     Parameters
     ----------
+
+
+    dxy : float
+        Grid spacing in meter, that has to be specified if  wavelength_filtering is not None.
 
     data_i : iris.cube.Cube
         2D field to perform the feature detection (single timestep) on.
