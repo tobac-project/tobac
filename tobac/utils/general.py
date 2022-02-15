@@ -290,9 +290,7 @@ def get_spacings(field_in, grid_spacing=None, time_spacing=None):
     return dxy, dt
 
 
-
-
-def spectral_filtering(dxy, field_in, lambda_min, lambda_max):
+def spectral_filtering(dxy, field_in, lambda_min, lambda_max, return_transfer_function = False):
     '''
     This function creates and applies a 2D transfer function that can be used as a bandpass filter to remove
     certain wavelengths of an atmospheric field (e.g. vorticity).
@@ -314,14 +312,21 @@ def spectral_filtering(dxy, field_in, lambda_min, lambda_max):
     lambda_max: float
         maximum wavelength in km
 
+    return_transfer_function: boolean, optional
+        default: False. If set to True, then the 1D transfer function are returned. 
+
     Returns:
     --------
 
     filtered_field: numpy.array
         spectrally filtered 2D field of data
 
-    '''
+    transfer_function: tuple
+        Two 2D fields, where the first one corresponds to the wavelengths of the domain and the second one
+        to the 2D transfer function of the bandpass filter. Only returned, if return_transfer_function is True.
 
+    '''
+    import numpy as np 
     from scipy import signal
     from scipy import fft
 
@@ -342,6 +347,8 @@ def spectral_filtering(dxy, field_in, lambda_min, lambda_max):
     if Ni == Nj:
         wavenumber = np.sqrt(m ** 2 + n ** 2)
         lambda_mn = (2 * Ni * (dx)) / wavenumber
+
+    # if domain is a rectangle:
 
     # alpha is the normalized wavenumber in wavenumber space
     alpha = np.sqrt(m ** 2 / Nj ** 2 + n ** 2 / Ni ** 2)
@@ -366,8 +373,10 @@ def spectral_filtering(dxy, field_in, lambda_min, lambda_max):
     # inverse discrete cosine transformation
     filtered_field = fft.idctn(filtered)
 
-    return filtered_field
-
+    if return_transfer_function is True:
+        return (lambda_mn, transfer_function), filtered_field
+    else:
+        return filtered_field
 
 
 
