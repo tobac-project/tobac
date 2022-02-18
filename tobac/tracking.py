@@ -8,7 +8,7 @@ def linking_trackpy(features,field_in,dt,dxy,
                        order=1,extrapolate=0, 
                        method_linking='random',
                        adaptive_step=None,adaptive_stop=None,
-                       cell_number_start=1
+                       cell_number_start=1, stub_set_number = -1
                        ):
     """
     Function to perform the linking of features in trajectories
@@ -30,6 +30,10 @@ def linking_trackpy(features,field_in,dt,dxy,
                       flag choosing method used for feature detection
     method_linking:   str('predict' or 'random')
                       flag choosing method used for trajectory linking
+    stub_set_number: int
+        Number to set the stub/non-tracked cells to. By default, this is -1. 
+        Note that if you set this to `np.nan`, the data type of 'cell' will
+        change to float. 
     """
     #    from trackpy import link_df
     import trackpy as tp
@@ -110,8 +114,8 @@ def linking_trackpy(features,field_in,dt,dxy,
         logging.debug("trajectories_cell.shape[0]: "+ str(trajectories_cell.shape[0]))
 
         if trajectories_cell.shape[0] < stubs:
-            logging.debug("cell" + str(cell)+ "  is a stub ("+str(trajectories_cell.shape[0])+ "), setting cell number to Nan..")
-            trajectories_unfiltered.loc[trajectories_unfiltered['cell']==cell,'cell']=np.nan
+            logging.debug("cell" + str(cell)+ "  is a stub ("+str(trajectories_cell.shape[0])+ "), setting cell number to " + str(stub_set_number))
+            trajectories_unfiltered.loc[trajectories_unfiltered['cell']==cell,'cell']=stub_set_number
 
     trajectories_filtered=trajectories_unfiltered
 
