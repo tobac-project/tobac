@@ -1,7 +1,18 @@
 import logging
 import numpy as np
 import pandas as pd
+import math
 
+
+def njit_if_available(func, **kwargs):
+    '''Decorator to wrap a function with numba.njit if available.
+    If numba isn't available, it just returns the function. 
+    '''
+    try:
+        from numba import njit
+        return njit(func, kwargs)
+    except ModuleNotFoundError:
+        return func
 
 
 
@@ -11,7 +22,10 @@ def linking_trackpy(features,field_in,dt,dxy,
                        order=1,extrapolate=0, 
                        method_linking='random',
                        adaptive_step=None,adaptive_stop=None,
-                       cell_number_start=1
+                       cell_number_start=1,
+                       min_h1 = None, max_h1 = None, 
+                       min_h2 = None, max_h2 = None,
+                       PBC_flag = 'none'
                        ):
     """Function to perform the linking of features in trajectories
     
@@ -29,10 +43,23 @@ def linking_trackpy(features,field_in,dt,dxy,
                   number of output timesteps features allowed to vanish for to be still considered tracked
     subnetwork_size int
                     maximim size of subnetwork for linking  
-    method_detection: str('trackpy' or 'threshold')
-                      flag choosing method used for feature detection
     method_linking:   str('predict' or 'random')
                       flag choosing method used for trajectory linking
+    min_h1: int
+        Minimum hdim_1 value, required when PBC_flag is 'hdim_1' or 'both'
+    max_h1: int
+        Maximum hdim_1 value, required when PBC_flag is 'hdim_1' or 'both'
+    min_h2: int
+        Minimum hdim_2 value, required when PBC_flag is 'hdim_2' or 'both'
+    max_h2: int
+        Maximum hdim_2 value, required when PBC_flag is 'hdim_2' or 'both'
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
+
     Returns
     -------
     pandas.dataframe
@@ -44,6 +71,14 @@ def linking_trackpy(features,field_in,dt,dxy,
     from copy import deepcopy
 #    from trackpy import filter_stubs
 #    from .utils import add_coordinates
+
+    # make sure that we have min and max for h1 and h2 if we are PBC
+    if PBC_flag in ['hdim_1', 'both'] and (min_h1 is None or max_h1 is None):
+        raise ValueError("For PBC tracking, must set min and max coordinates.")
+    
+    if PBC_flag in ['hdim_2', 'both'] and (min_h2 is None or max_h2 is None):
+        raise ValueError("For PBC tracking, must set min and max coordinates.")
+
 
     # calculate search range based on timestep and grid spacing
     if v_max is not None:
@@ -71,6 +106,26 @@ def linking_trackpy(features,field_in,dt,dxy,
         tp.linking.Linker.MAX_SUB_NET_SIZE=subnetwork_size
     # deep copy to preserve features field:
     features_linking=deepcopy(features)
+    # check if we are 3D or not
+    
+    if 'vdim' in features_linking:
+        is_3D = True
+        pos_columns_tp = ['vdim','hdim_1','hdim_2']
+    else:
+        is_3D = False
+        pos_columns_tp = ['hdim_1', 'hdim_2']
+    
+    # Check if we have PBCs. 
+    if PBC_flag in ['hdim_1', 'hdim_2', 'both']:
+        # Per the trackpy docs, to specify a custom distance function 
+        # which we need for PBCs, neighbor_strategy must be 'BTree'. 
+        # I think this shouldn't change results, but it will degrade performance.
+        neighbor_strategy = 'BTree'
+        dist_func = build_distance_function(min_h1, max_h1, min_h2, max_h2, PBC_flag)
+
+    else:
+        neighbor_strategy = 'KDTree'
+        dist_func = None
     
     
     if method_linking is 'random':
@@ -79,18 +134,20 @@ def linking_trackpy(features,field_in,dt,dxy,
                                search_range=search_range, 
                                memory=memory, 
                                t_column='frame',
-                               pos_columns=['hdim_2','hdim_1'],
+                               pos_columns=pos_columns_tp,
                                adaptive_step=adaptive_step,adaptive_stop=adaptive_stop,
-                               neighbor_strategy='KDTree', link_strategy='auto'
+                               neighbor_strategy=neighbor_strategy, link_strategy='auto',
+                               dist_func = dist_func
                                )
     elif method_linking is 'predict':
 
         pred = tp.predict.NearestVelocityPredict(span=1)
         trajectories_unfiltered = pred.link_df(features_linking, search_range=search_range, memory=memory,
-                                 pos_columns=['hdim_1','hdim_2'],
+                                 pos_columns=pos_columns_tp,
                                  t_column='frame',
-                                 neighbor_strategy='KDTree', link_strategy='auto',
-                                 adaptive_step=adaptive_step,adaptive_stop=adaptive_stop
+                                 neighbor_strategy=neighbor_strategy, link_strategy='auto',
+                                 adaptive_step=adaptive_step,adaptive_stop=adaptive_stop,
+                                 dist_func = dist_func
 #                                 copy_features=False, diagnostics=False,
 #                                 hash_size=None, box_size=None, verify_integrity=True,
 #                                 retain_index=False
@@ -151,7 +208,7 @@ def linking_trackpy(features,field_in,dt,dxy,
     #logging.debug('feature linking completed')
 
     return trajectories_final
-
+  
 
 def fill_gaps(t,order=1,extrapolate=0,frame_max=None,hdim_1_max=None,hdim_2_max=None):
     '''add cell time as time since the initiation of each cell   
@@ -253,3 +310,93 @@ def remap_particle_to_cell_nv(particle_cell_map, input_particle):
     
     '''
     return particle_cell_map[input_particle]
+
+def build_distance_function(min_h1, max_h1, min_h2, max_h2, PBC_flag):
+    '''Function to build a partial ```calc_distance_coords_pbc``` function 
+    suitable for use with trackpy
+
+    Parameters
+    ----------
+    min_h1: int
+        Minimum point in hdim_1
+    max_h1: int
+        Maximum point in hdim_1
+    min_h2: int
+        Minimum point in hdim_2
+    max_h2: int
+        Maximum point in hdim_2
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
+    
+    Returns
+    -------
+    function object
+        A version of calc_distance_coords_pbc suitable to be called by
+        just f(coords_1, coords_2)
+
+    '''
+    import functools
+    return functools.partial(calc_distance_coords_pbc, 
+                             min_h1 = min_h1, max_h1 = max_h1, min_h2 = min_h2, 
+                             max_h2 = max_h2, PBC_flag = PBC_flag)
+
+@njit_if_available
+def calc_distance_coords_pbc(coords_1, coords_2, min_h1, max_h1, min_h2, max_h2,
+                             PBC_flag):
+    '''Function to calculate the distance between cartesian
+    coordinate set 1 and coordinate set 2. Note that we assume both
+    coordinates are within their min/max already. 
+
+    Parameters
+    ----------
+    coords_1: 2D or 3D array-like
+        Set of coordinates passed in from trackpy of either (vdim, hdim_1, hdim_2)
+        coordinates or (hdim_1, hdim_2) coordinates.
+    coords_2: 2D or 3D array-like
+        Similar to coords_1, but for the second pair of coordinates
+    min_h1: int
+        Minimum point in hdim_1
+    max_h1: int
+        Maximum point in hdim_1
+    min_h2: int
+        Minimum point in hdim_2
+    max_h2: int
+        Maximum point in hdim_2
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
+    
+    Returns
+    -------
+    float
+        Distance between coords_1 and coords_2 in cartesian space.
+
+    '''
+    is_3D = len(coords_1)== 3
+    size_h1 = max_h1 - min_h1
+    size_h2 = max_h2 - min_h2
+
+    if not is_3D:
+        # Let's make the accounting easier.
+        coords_1 = np.array((0, coords_1[0], coords_1[1]))
+        coords_2 = np.array((0, coords_2[0], coords_2[1]))
+
+    if PBC_flag in ['hdim_1', 'both']:
+        mod_h1 = size_h1
+    else:
+        mod_h1 = 0
+    if PBC_flag in ['hdim_2', 'both']:
+        mod_h2 = size_h2
+    else:
+        mod_h2 = 0
+    max_dims = np.array((0, mod_h1, mod_h2))
+    deltas = np.abs(coords_1 - coords_2)
+    deltas = np.where(deltas > 0.5 * max_dims, deltas - max_dims, deltas)
+    return np.sqrt(np.sum(deltas**2))
