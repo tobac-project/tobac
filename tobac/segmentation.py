@@ -1,13 +1,140 @@
 import logging
 
-def segmentation_3D(features,field,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None):
-    return segmentation(features,field,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance)
+def get_label_props_in_dict(labels):
+    '''Function to get the label properties into a dictionary format.
+    
+    Parameters
+    ----------
+    labels:    2D or 3D array-like
+        comes from the `skimage.measure.label` function
+    
+    Returns
+    -------
+    dict
+        output from skimage.measure.regionprops in dictionary format, where they key is the label number
+    '''
+    import skimage.measure
+    
+    region_properties_raw = skimage.measure.regionprops(labels)
+    region_properties_dict = dict()
+    for region_prop in region_properties_raw:
+        region_properties_dict[region_prop.label] = region_prop
+    
+    return region_properties_dict
 
-def segmentation_2D(features,field,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None):
-    return segmentation(features,field,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance)
+def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
+    '''Function to get the x, y, and z indices (as well as point count) of all labeled regions.
+    This function should produce similar output as new_get_indices_of_labels, but 
+    allows for re-use of the region_property_dict. 
+    
+    Parameters
+    ----------
+    region_property_dict:    dict of region_property objects
+        This dict should come from the get_label_props_in_dict function.
+    
+    Returns
+    -------
+    dict (key: label number, int)
+        The number of points in the label number
+    dict (key: label number, int)
+        The z indices in the label number
+    dict (key: label number, int)
+        the y indices in the label number
+    dict (key: label number, int)
+        the x indices in the label number
+    Raises
+    ------
+    ValueError
+        a ValueError is raised if 
+    '''
+    
+    import skimage.measure
+
+    if len(region_property_dict) ==0:
+        raise ValueError("No regions!")
+    
+    z_indices = dict()
+    y_indices = dict()
+    x_indices = dict()
+    curr_loc_indices = dict()
+        
+    #loop through all skimage identified regions
+    for region_prop_key in region_property_dict:
+        region_prop = region_property_dict[region_prop_key]
+        index = region_prop.label
+        curr_z_ixs, curr_y_ixs, curr_x_ixs = np.transpose(region_prop.coords)
+        z_indices[index] = curr_z_ixs
+        y_indices[index] = curr_y_ixs
+        x_indices[index] = curr_x_ixs
+        curr_loc_indices[index] = len(curr_x_ixs)
+                        
+    #print("indices found")
+    return [curr_loc_indices, z_indices, y_indices, x_indices]
+
+def adjust_pbc_point(in_dim, dim_min, dim_max):
+    '''Function to adjust a point to the other boundary for PBCs
+    
+    Parameters
+    ----------
+    in_dim : int
+        Input coordinate to adjust
+    dim_min : int
+        Minimum point for the dimension
+    dim_max : int
+        Maximum point for the dimension (inclusive)
+    
+    Returns
+    -------
+    int
+        The adjusted point on the opposite boundary
+    
+    Raises
+    ------
+    ValueError
+        If in_dim isn't on one of the boundary points
+    '''
+    if in_dim == dim_min:
+        return dim_max
+    elif in_dim == dim_max:
+        return dim_min
+    else:
+        raise ValueError("In adjust_pbc_point, in_dim isn't on a boundary.")
+        
+def transfm_pbc_point(in_dim, dim_min, dim_max):
+    '''Function to transform a PBC-feature point for contiguity
+    
+    Parameters
+    ----------
+    in_dim : int
+        Input coordinate to adjust
+    dim_min : int
+        Minimum point for the dimension
+    dim_max : int
+        Maximum point for the dimension (inclusive)
+    
+    Returns
+    -------
+    int
+        The transformed point
+    
+    Raises
+    ------
+    ValueError
+        If in_dim isn't on one of the boundary points
+    '''
+    if in_dim < ((dim_min+dim_max)/2):
+        return in_dim+dim_max+1
+    else:
+        return in_dim
+
+def segmentation_3D(features,field,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,PBC_flag=0):
+    return segmentation(features,field,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance,PBC_flag=PBC_flag)
+
+def segmentation_2D(features,field,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,PBC_flag=0):
+    return segmentation(features,field,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance,PBC_flag=PBC_flag)
 
 
-def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,vertical_coord='auto'):    
+def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,vertical_coord='auto',PBC_flag='None',seed_3D_flag='column'):    
     """Function performing watershedding for an individual timestep of the data
     
     Parameters
@@ -26,6 +153,14 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                 flag determining the algorithm to use (currently watershedding implemented)
     max_distance: float
                   maximum distance from a marker allowed to be classified as belonging to that cell
+    PBC_flag:   string
+                options: 'none' (default), 'hdim_1', 'hdim_2', 'both'
+                flag indicating whether to use PBC treatment or not
+                note to self: should be expanded to account for singly periodic boundaries also
+                rather than just doubly periodic
+    seed_3D_flag: string
+                options: 'column' (default), 'box'
+                Seed 3D field with
     
     Returns
     -------
@@ -39,6 +174,16 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
     from scipy.ndimage import distance_transform_edt
     from copy import deepcopy
     import numpy as np
+    
+    #saving intermediary fields for testing
+    #original mask, secondary seeding, final version
+    #so we can ascertain deltas of each
+    #inter_fp = '/sumatra/asokolowsky/tobac_data/segmentation/testing/'
+    
+    #if (np.all(features_in.frame.values[:] == 0)):
+    #    print("creating output file")
+    #    out_f = h5py.File('/sumatra/asokolowsky/tobac_data/segmentation/testing/seg_fields_progression.h5','w')
+    #    print(out_f)
 
     # copy feature dataframe for output 
     features_out=deepcopy(features_in)
@@ -76,33 +221,118 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
             markers[int(row['hdim_1']), int(row['hdim_2'])]=row['feature']
 
     elif field_in.ndim==3: #3D watershedding
-        list_coord_names=[coord.name() for coord in field_in.coords()]
-        #determine vertical axis:
-        if vertical_coord=='auto':
-            list_vertical=['z','model_level_number','altitude','geopotential_height']
-            for coord_name in list_vertical:
-                if coord_name in list_coord_names:
-                    vertical_axis=coord_name
-                    break
-        elif vertical_coord in list_coord_names:
-            vertical_axis=vertical_coord
-        else:
-            raise ValueError('Plese specify vertical coordinate')
-        ndim_vertical=field_in.coord_dims(vertical_axis)
-        if len(ndim_vertical)>1:
-            raise ValueError('please specify 1 dimensional vertical coordinate')
-        for index, row in features_in.iterrows():
-            if ndim_vertical[0]==0:
-                markers[:,int(row['hdim_1']), int(row['hdim_2'])]=row['feature']
-            elif ndim_vertical[0]==1:
-                markers[int(row['hdim_1']),:, int(row['hdim_2'])]=row['feature']
-            elif ndim_vertical[0]==2:
-                markers[int(row['hdim_1']), int(row['hdim_2']),:]=row['feature']
+        if (seed_3D_flag == 'column'):
+            list_coord_names=[coord.name() for coord in field_in.coords()]
+            #determine vertical axis:
+            if vertical_coord=='auto':
+                list_vertical=['z','model_level_number','altitude','geopotential_height']
+                for coord_name in list_vertical:
+                    if coord_name in list_coord_names:
+                        vertical_axis=coord_name
+                        break
+            elif vertical_coord in list_coord_names:
+                vertical_axis=vertical_coord
+            else:
+                raise ValueError('Plese specify vertical coordinate')
+            ndim_vertical=field_in.coord_dims(vertical_axis)
+            if len(ndim_vertical)>1:
+                raise ValueError('please specify 1 dimensional vertical coordinate')
+            for index, row in features_in.iterrows():
+                if ndim_vertical[0]==0:
+                    markers[:,int(row['hdim_1']), int(row['hdim_2'])]=row['feature']
+                elif ndim_vertical[0]==1:
+                    markers[int(row['hdim_1']),:, int(row['hdim_2'])]=row['feature']
+                elif ndim_vertical[0]==2:
+                    markers[int(row['hdim_1']), int(row['hdim_2']),:]=row['feature']
+                    
+        elif (seed_3D_flag == 'box'):
+            list_coord_names=[coord.name() for coord in field_in.coords()]
+            #determine vertical axis:
+            #print(list_coord_names)
+            if vertical_coord=='auto':
+                list_vertical=['vdim','z','model_level_number','altitude','geopotential_height']
+                for coord_name in list_vertical:
+                    if coord_name in list_coord_names:
+                        vertical_axis=coord_name
+                        #print(vertical_axis)
+                        break
+            elif vertical_coord in list_coord_names:
+                vertical_axis=vertical_coord
+            else:
+                raise ValueError('Please specify vertical coordinate')
+            ndim_vertical=field_in.coord_dims(vertical_axis)
+            #print(ndim_vertical,ndim_vertical[0])
+        
+            if len(ndim_vertical)>1:
+                raise ValueError('please specify 1 dimensional vertical coordinate')
+            z_len = len(field_in.coord('z').points)
+            y_len = len(field_in.coord('y').points)
+            x_len = len(field_in.coord('x').points)
+        
+            #print(z_len,y_len,x_len)
+            #display(features_in)
+        
+            for index, row in features_in.iterrows():
+                #creation of 5x5x5 point ranges for 3D marker seeding
+                #and PBC flags for cross-boundary seeding - nixing this idea for now, but described in PBC Segmentation notes
+                #PBC_y_chk = 0
+                #PBC_x_chk = 0
+            
+                #print("feature: ",row['feature'])
+                #print("z-ctr: ",row['vdim'])
+                #print("y-ctr: ",row['hdim_1'])
+                #print("x-ctr: ",row['hdim_2'])
+                
+            
+            
+                if(int(row['vdim']) >=2 and int(row['vdim']) <= z_len-3):
+                    z_list = np.arange(int(row['vdim']-2),int(row['vdim']+3))
+                elif(int(row['vdim']) < 2):
+                    z_list = np.arange(0,5)
+                else:
+                    z_list = np.arange(z_len-5,z_len)
+                
+                if(int(row['hdim_1']) >=2 and int(row['hdim_1']) <= y_len-3):
+                    y_list = np.arange(int(row['hdim_1']-2),int(row['hdim_1']+3))
+                elif(int(row['hdim_1']) < 2):
+                    y_list = np.arange(0,5)
+                    #PBC_y_chk = 1
+                else:
+                    y_list = np.arange(y_len-5,y_len)
+                    #PBC_y_chk = 1
+                
+                if(int(row['hdim_2']) >=2 and int(row['hdim_2']) <= x_len-3):
+                    x_list = np.arange(int(row['hdim_2']-2),int(row['hdim_2']+3))
+                elif(int(row['hdim_2']) < 2):
+                    x_list = np.arange(0,5)
+                    #PBC_x_chk = 1
+                else:
+                    x_list = np.arange(x_len-5,x_len)
+                    #PBC_x_chk = 1
+                
+                #loop thru 5x5x5 z times y times x range
+                for k in range(0,5):
+                    for j in range(0,5):
+                        for i in range(0,5):
+                        
+                            if ndim_vertical[0]==0:
+                                markers[z_list[k],y_list[j],x_list[i]]=row['feature']
+                            elif ndim_vertical[0]==1:
+                                markers[y_list[j],z_list[k],x_list[i]]=row['feature']
+                            elif ndim_vertical[0]==2:
+                                markers[y_list[j],x_list[i],z_list[k]]=row['feature']
+                                
+                                
+        #else:
+             #error for unspec method
+            
+            
     else:
         raise ValueError('Segmentations routine only possible with 2 or 3 spatial dimensions')
 
     # set markers in cells not fulfilling threshold condition to zero:
     markers[~unmasked]=0
+    marker_vals = np.unique(markers)
   
     # Turn into np arrays (not necessary for markers) as dask arrays don't yet seem to work for watershedding algorithm
     data_segmentation=np.array(data_segmentation)
@@ -121,9 +351,633 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
     if max_distance is not None:
         D=distance_transform_edt((markers==0).astype(int))
         segmentation_mask[np.bitwise_and(segmentation_mask>0, D>max_distance_pixel)]=0
+        
+    #mask all segmentation_mask points below th=reshold as -1
+    #to differentiate from those unmasked points NOT filled by watershedding
+    print(np.unique(segmentation_mask))
+    segmentation_mask[~unmasked] = -1
+    
+    #saves/prints below for testing
+    #seg_m_data = segmentation_mask[:]
+    
+    #if (np.all(features_in.frame.values[:] == 0)):
+    #    print("saving first field")
+    #    first_seg_mask = out_f.create_dataset("seg_mask_1",data=seg_m_data)
+    
+    #print(seg_m_data)
+    
+    #read in labeling/masks and region-finding functions
+    reg_props_dict = get_label_props_in_dict(seg_m_data)
+    
+    del seg_m_data
+    gc.collect()
 
-    #Write resulting mask into cube for output
-    segmentation_out.data=segmentation_mask
+
+    curr_reg_inds, z_reg_inds, y_reg_inds, x_reg_inds= get_indices_of_labels_from_reg_prop_dict(reg_props_dict)
+    
+    print(np.unique(segmentation_mask[:]))
+    print(curr_reg_inds)
+    
+    #z_unf,y_unf,x_unf = np.where(segmentation_mask==0)
+    
+    #print(np.where(segmentation_mask==-1))
+    #print(np.where(segmentation_mask==0))
+    
+    hdim1_min = 0
+    hdim1_max = segmentation_mask.shape[1] - 1
+    hdim2_min = 0
+    hdim2_max = segmentation_mask.shape[2] - 1
+    
+    # all options that involve dealing with periodic boundaries
+    pbc_options = ['hdim_1', 'hdim_2', 'both']
+ 
+    if PBC_flag in pbc_options:
+
+    #Return all indices where segmentation field == 0
+        #meaning unfilled but above threshold
+        vdim_unf,hdim1_unf,hdim2_unf = np.where(segmentation_mask==0)
+        
+        
+        
+        #vdim_unf = z_reg_inds[0.]
+        #hdim1_unf = y_reg_inds[0.]
+        #hdim2_unf = x_reg_inds[0.]
+        
+        #for cur_idx in wall_labels:
+        #skip this if there aren't enough points to be considered a real feature
+        #as defined above by n_min_threshold
+        #curr_count = curr_reg_inds[cur_idx]
+        #print("Current wall feature: ",cur_idx)
+    
+        seg_mask_unseeded = np.zeros(segmentation_mask.shape)
+    
+        seg_mask_unseeded[vdim_unf,hdim1_unf,hdim2_unf]=1
+    
+        #create labeled field of unfilled, unseeded features
+        labels_unseeded,label_num = label(seg_mask_unseeded)
+    
+        print(label_num)
+    
+        markers_2 = np.zeros(unmasked.shape).astype(np.int32)
+    
+        print(segmentation_mask.shape)
+    
+        #new, shorter PBC marker seeding approach
+        #loop thru LB points
+        #then check if fillable region (labels_unseeded > 0)
+        #then check if point on other side of boundary is > 0 in segmentation_mask
+        
+        if PBC_flag == 'hdim_1' or PBC_flag == 'both':
+            for vdim_ind in range(0,segmentation_mask.shape[0]):
+                for hdim1_ind in [hdim1_min,hdim1_max]:
+                    for hdim2_ind in range(hdim2_min,hdim2_max):
+                
+                        #print(z_ind,y_ind,x_ind)
+                        #print(labels_unseeded[z_ind,y_ind,x_ind])
+                
+                        if(labels_unseeded[vdim_ind,hdim1_ind,hdim2_ind] == 0):
+                            continue
+                        else:
+                            if hdim1_ind == 0:
+                                if (segmentation_mask[vdim_ind,hdim1_max,hdim2_ind]<=0):
+                                    continue
+                                else:
+                                    markers_2[vdim_ind,hdim1_ind,hdim2_ind] = segmentation_mask[vdim_ind,hdim1_max,hdim2_ind]
+                                    #print(z_ind,y_ind,x_ind)
+                                    #print("seeded")
+                            elif hdim1_ind == hdim1_max:
+                                if (segmentation_mask[vdim_ind,hdim1_min,hdim2_ind]<=0):
+                                    continue
+                                else:
+                                    markers_2[vdim_ind,hdim1_ind,hdim2_ind] = segmentation_mask[vdim_ind,hdim1_min,hdim2_ind]
+                                    #print(z_ind,y_ind,x_ind)
+                                    #print("seeded")
+                                    
+        if PBC_flag == 'hdim_2' or PBC_flag == 'both':
+            for vdim_ind in range(0,segmentation_mask.shape[0]):
+                for hdim1_ind in range(hdim1_min,hdim1_max):
+                    for hdim2_ind in [hdim2_min,hdim2_max]:
+                
+                        #print(z_ind,y_ind,x_ind)
+                        #print(labels_unseeded[z_ind,y_ind,x_ind])
+                
+                        if(labels_unseeded[vdim_ind,hdim1_ind,hdim2_ind] == 0):
+                            continue
+                        else:
+                            if hdim2_ind == hdim2_min:
+                                if (segmentation_mask[vdim_ind,hdim1_ind,hdim2_max]<=0):
+                                    continue
+                                else:
+                                    markers_2[vdim_ind,hdim1_ind,hdim2_ind] = segmentation_mask[vdim_ind,hdim1_ind,hdim2_max]
+                                    #print(z_ind,y_ind,x_ind)
+                                    #print("seeded")
+                            elif hdim2_ind == hdim2_max:
+                                if (segmentation_mask[vdim_ind,hdim1_ind,hdim2_min]<=0):
+                                    continue
+                                else:
+                                    markers_2[vdim_ind,hdim1_ind,hdim2_ind] = segmentation_mask[vdim_ind,hdim1_ind,hdim2_min]
+                                    #print(z_ind,y_ind,x_ind)
+                                    #print("seeded")
+        
+        
+        print("PBC cross-boundary markers planted")
+        print("Beginning PBC segmentation for secondary mask")
+    
+        markers_2[~unmasked]=0
+        
+        if method=='watershed':
+            segmentation_mask_2 = watershed(np.array(data_segmentation),markers_2.astype(np.int32), mask=unmasked)
+    #    elif method=='random_walker':
+    #        segmentation_mask=random_walker(data_segmentation, markers.astype(np.int32),
+    #                                          beta=130, mode='bf', tol=0.001, copy=True, multichannel=False, return_full_prob=False, spacing=None)
+        else:                
+            raise ValueError('unknown method, must be watershed')
+
+        # remove everything from the individual masks that is more than max_distance_pixel away from the markers
+        if max_distance is not None:
+            D=distance_transform_edt((markers==0).astype(int))
+            segmentation_mask_2[np.bitwise_and(segmentation_mask_2>0, D>max_distance_pixel)]=0
+    
+        print("Sum up original mask and secondary PBC-mask for full PBC segmentation")
+    
+        #Write resulting mask into cube for output
+        segmentation_out.data=segmentation_mask + segmentation_mask_2
+        
+        segmentation_mask_3 = segmentation_out.data
+        
+        #if (np.all(features_in.frame.values[:] == 0)):
+        #    print("saving second field")
+        #    second_seg_mask = out_f.create_dataset("seg_mask_2",data=segmentation_mask_3)
+    
+        
+        print("Secondary seeding complete, now blending periodic boundaries")
+        
+        #keep segmentation mask fields for now so we can save these all later
+        #for demos of changes
+        
+        #print("Test of PBC segmentation boundary blending below")
+        
+        #update mask coord regions
+        
+        reg_props_dict = get_label_props_in_dict(segmentation_out.data)
+
+
+        curr_reg_inds, z_reg_inds, y_reg_inds, x_reg_inds= get_indices_of_labels_from_reg_prop_dict(reg_props_dict)
+
+        wall_labels = np.array([])
+        #skip_list = np.array([])
+        #bdry_buddies = np.array([])
+
+        #y_min = 0
+        #y_max = test_mask2.shape[1] - 1
+        #x_min = 0
+        #x_max = test_mask2.shape[2] - 1
+
+        w_wall = np.unique(segmentation_mask_3[:,:,0])
+        wall_labels = np.append(wall_labels,w_wall)
+
+        e_wall = np.unique(segmentation_mask_3[:,:,-1])
+        wall_labels = np.append(wall_labels,e_wall)
+
+        n_wall = np.unique(segmentation_mask_3[:,-1,:])
+        wall_labels = np.append(wall_labels,n_wall)
+
+        s_wall = np.unique(segmentation_mask_3[:,0,:])
+        wall_labels = np.append(wall_labels,s_wall)
+
+        wall_labels = np.unique(wall_labels)
+        wall_labels = wall_labels[(wall_labels) > 0].astype(int)
+        #print(wall_labels)
+        
+        for cur_idx in wall_labels:
+            #skip this if there aren't enough points to be considered a real feature
+            #as defined above by n_min_threshold
+            curr_count = curr_reg_inds[cur_idx]
+            #print("Current wall feature: ",cur_idx)
+            #print(np.where(wall_labels==cur_idx))
+    
+            vdim_indices = z_reg_inds[cur_idx]
+            hdim1_indices = y_reg_inds[cur_idx]
+            hdim2_indices = x_reg_inds[cur_idx]
+    
+            #start buddies array with feature of interest
+            buddies = np.array([cur_idx],dtype=int)
+            
+            for label_z, label_y, label_x in zip(vdim_indices, hdim1_indices, hdim2_indices):
+                    
+                # check if this is the special case of being a corner point. 
+                # if it's doubly periodic AND on both x and y boundaries, it's a corner point
+                # and we have to look at the other corner. 
+                # here, we will only look at the corner point and let the below deal with x/y only. 
+                if PBC_flag == 'both' and (np.any(label_y == [hdim1_min,hdim1_max]) and np.any(label_x == [hdim2_min,hdim2_max])):
+                        
+                    #adjust x and y points to the other side
+                    y_val_alt = adjust_pbc_point(label_y, hdim1_min, hdim1_max)
+                    x_val_alt = adjust_pbc_point(label_x, hdim2_min, hdim2_max)
+                        
+                    label_on_corner = segmentation_mask_3[label_z,y_val_alt,x_val_alt]
+                        
+                    if((label_on_corner > 0)):
+                        #add opposite-corner buddy if it exists
+                        buddies = np.append(buddies,label_on_corner)
+                
+                    
+                # on the hdim1 boundary and periodic on hdim1
+                if (PBC_flag == 'hdim_1' or PBC_flag == 'both') and np.any(label_y == [hdim1_min,hdim1_max]):                        
+                    y_val_alt = adjust_pbc_point(label_y, hdim1_min, hdim1_max)
+
+                    #get the label value on the opposite side
+                    label_alt = segmentation_mask_3[label_z,y_val_alt,label_x]
+                        
+                    #if it's labeled and not already been dealt with
+                    if((label_alt > 0)):
+                        #add above/below buddy if it exists
+                        buddies = np.append(buddies,label_alt)
+                   
+                if (PBC_flag == 'hdim_2' or PBC_flag == 'both') and np.any(label_x == [hdim2_min,hdim2_max]):                        
+                    x_val_alt = adjust_pbc_point(label_x, hdim2_min, hdim2_max)
+
+                    #get the seg value on the opposite side
+                    label_alt = segmentation_mask_3[label_z,label_y,x_val_alt]
+                        
+                    #if it's labeled and not already been dealt with
+                    if((label_alt > 0)):
+                        #add left/right buddy if it exists
+                        buddies = np.append(buddies,label_alt)
+                        
+                
+            buddies = np.unique(buddies)
+    
+            #print(buddies)
+        
+            if np.all(buddies==cur_idx):
+                continue
+            else:
+                inter_buddies,feat_inds,buddy_inds=np.intersect1d(features_in.feature.values[:],buddies,return_indices=True)
+        
+            buddy_features = copy.deepcopy(features_in.iloc[feat_inds])
+            #display(buddy_features)
+        
+            #create arrays to contain points of all buddies
+            #and their transpositions/transformations
+            #for use in Buddy Box space
+            
+            buddy_z = np.array([],dtype=int)
+            buddy_y = np.array([],dtype=int)
+            buddy_x = np.array([],dtype=int)
+            buddy_z2 = np.array([],dtype=int)
+            buddy_y2 = np.array([],dtype=int)
+            buddy_x2 = np.array([],dtype=int)
+        
+            buddy_zf = np.array([],dtype=int)
+            buddy_yf = np.array([],dtype=int)
+            buddy_xf = np.array([],dtype=int)
+        
+            buddy_looper = 0
+            
+            #loop thru buddies
+            for buddy in buddies:
+                print("Now on buddy: ",buddy)
+                print("points: ",len(z_reg_inds[buddy]))
+                
+                #if buddy == cur_idx:
+                buddy_feat = features_in[features_in['feature'] == buddy]
+            
+                #display(buddy_feat)
+            
+                yf2 = transfm_pbc_point(int(buddy_feat.hdim_1), hdim1_min, hdim1_max)
+                xf2 = transfm_pbc_point(int(buddy_feat.hdim_2), hdim2_min, hdim2_max)
+            
+                buddy_features.hdim_1.values[buddy_looper] = transfm_pbc_point(float(buddy_feat.hdim_1), hdim1_min, hdim1_max)
+                buddy_features.hdim_2.values[buddy_looper] = transfm_pbc_point(float(buddy_feat.hdim_2), hdim2_min, hdim2_max)
+            
+                #print(int(buddy_feat.vdim),yf2,xf2)
+                #display(buddy_features)
+            
+                buddy_zf = np.append(buddy_zf,int(buddy_feat.vdim))
+                buddy_yf = np.append(buddy_yf,yf2)
+                buddy_xf = np.append(buddy_xf,xf2)
+            
+                buddy_looper = buddy_looper+1
+            
+                for z,y,x in zip(z_reg_inds[buddy],y_reg_inds[buddy],x_reg_inds[buddy]):
+                
+                    buddy_z = np.append(buddy_z,z)
+                    buddy_y = np.append(buddy_y,y)
+                    buddy_x = np.append(buddy_x,x)
+                
+                #else:
+                
+                    y2 = transfm_pbc_point(y, hdim1_min, hdim1_max)
+                    x2 = transfm_pbc_point(x, hdim2_min, hdim2_max)
+                
+                    buddy_z2 = np.append(buddy_z2,z)
+                    buddy_y2 = np.append(buddy_y2,y2)
+                    buddy_x2 = np.append(buddy_x2,x2)
+                    
+            #Buddy Box!
+            print("Buddy Box space:")
+            bbox_zstart = int(np.min(buddy_z2))
+            bbox_ystart = int(np.min(buddy_y2))
+            bbox_xstart = int(np.min(buddy_x2))
+            bbox_zend = int(np.max(buddy_z2)+1)
+            bbox_yend = int(np.max(buddy_y2)+1)
+            bbox_xend = int(np.max(buddy_x2)+1)
+    
+            bbox_zsize = bbox_zend - bbox_zstart
+            bbox_ysize = bbox_yend - bbox_ystart
+            bbox_xsize = bbox_xend - bbox_xstart
+        
+            print('vdim: ',bbox_zstart,bbox_zend)
+            print('hdim_1: ',bbox_ystart,bbox_yend)
+            print('hdim_2: ',bbox_xstart,bbox_xend)
+    
+            print(bbox_zsize,bbox_ysize,bbox_xsize)
+    
+            #Buddy Box for smooth watershedding of features at PBC boundaries
+            buddy_rgn = np.zeros((bbox_zsize, bbox_ysize, bbox_xsize))
+            ind_ctr = 0
+        
+            #need to loop thru ALL z,y,x inds in buddy box
+            #not just the ones that have nonzero seg mask values
+            
+            for z in range(bbox_zstart,bbox_zend):
+                for y in range(bbox_ystart,bbox_yend):
+                    for x in range(bbox_xstart,bbox_xend):
+                        z_a1 = z
+                        if y > hdim1_max:
+                            y_a1 = y - (hdim1_max + 1)
+                        else:
+                            y_a1 = y
+                        
+                        if x > hdim2_max:
+                            x_a1 = x - (hdim2_max + 1)
+                        else:
+                            x_a1 = x
+
+                        buddy_rgn[z-bbox_zstart,y-bbox_ystart,x-bbox_xstart] = field_in.data[z_a1,y_a1,x_a1]
+            
+            
+            #buddy_rgn = np.expand_dims(buddy_rgn,0)
+            #print(buddy_rgn.shape)
+        
+            rgn_cube = iris.cube.Cube(data=buddy_rgn)
+        
+            #date = '2018-08-22'
+            #ftime = m.group(2)
+            #time = "2100"
+        
+            #dd 
+            #current_time = dati.datetime(year=yyyy,month=mm,day=dd,hour=hh,minute=mins,second=0) 
+        
+            #timediff = current_time - start_time
+            #print(timediff.days, timediff.seconds, timediff.microseconds)
+            #iris_time = timediff.days*86400 + timediff.seconds
+            #itime = iris.coords.Coord([field_in.time.point], standard_name='time', long_name='index_time', var_name='itime', units='seconds since 2018-08-21 00:00')
+            coord_system=None
+        
+            #h2_coord=iris.coords.DimCoord(np.arange(bbox_xstart,bbox_xend), long_name='hdim_2', units='1', bounds=None, attributes=None, coord_system=coord_system)
+            #h1_coord=iris.coords.DimCoord(np.arange(bbox_ystart,bbox_yend), long_name='hdim_1', units='1', bounds=None, attributes=None, coord_system=coord_system)
+            #v_coord=iris.coords.DimCoord(np.arange(bbox_zstart,bbox_zend), long_name='vdim', units='1', bounds=None, attributes=None, coord_system=coord_system)
+            h2_coord=iris.coords.DimCoord(np.arange(bbox_xsize), long_name='hdim_2', units='1', bounds=None, attributes=None, coord_system=coord_system)
+            h1_coord=iris.coords.DimCoord(np.arange(bbox_ysize), long_name='hdim_1', units='1', bounds=None, attributes=None, coord_system=coord_system)
+            v_coord=iris.coords.DimCoord(np.arange(bbox_zsize), long_name='vdim', units='1', bounds=None, attributes=None, coord_system=coord_system)
+        
+            rgn_cube.add_dim_coord(h2_coord,2)
+            rgn_cube.add_dim_coord(h1_coord,1)
+            rgn_cube.add_dim_coord(v_coord,0)
+            #rgn_cube.add_dim_coord(itime,0)
+        
+            rgn_cube.units = 'kg kg-1'
+        
+            print(rgn_cube)
+            #print(rgn_cube.vdim)
+        
+            #buddy correction to bounding box
+
+    
+            for buddy_looper in range(0,len(buddy_features)):
+                buddy_features.vdim.values[buddy_looper] = buddy_features.vdim.values[buddy_looper] - bbox_zstart
+                buddy_features.hdim_1.values[buddy_looper] = buddy_features.hdim_1.values[buddy_looper] - bbox_ystart
+                buddy_features.hdim_2.values[buddy_looper] = buddy_features.hdim_2.values[buddy_looper] - bbox_xstart
+            
+            # Create cube of the same dimensions and coordinates as input data to store mask:        
+            buddies_out=1*rgn_cube
+            buddies_out.rename('buddies_mask')
+            buddies_out.units=1
+
+            #Create dask array from input data:
+            #data=rgn_cube.core_data()
+            buddy_data = buddy_rgn
+            #Set level at which to create "Seed" for each feature in the case of 3D watershedding:
+            # If none, use all levels (later reduced to the ones fulfilling the theshold conditions)
+            if level==None:
+                level=slice(None)
+
+            # transform max_distance in metres to distance in pixels:
+            if max_distance is not None:
+                max_distance_pixel=np.ceil(max_distance/dxy)
+                #note - this doesn't consider vertical distance in pixels
+
+            # mask data outside region above/below threshold and invert data if tracking maxima:
+            if target == 'maximum':
+                unmasked_buddies=buddy_data>threshold
+                buddy_segmentation=-1*buddy_data
+            elif target == 'minimum':
+                unmasked_buddies=buddy_data<threshold
+                buddy_segmentation=buddy_data
+            else:
+                raise ValueError('unknown type of target')
+
+            # set markers at the positions of the features:
+            buddy_markers = np.zeros(unmasked_buddies.shape).astype(np.int32)
+    
+            if rgn_cube.ndim==2: #2D watershedding        
+                for index, row in buddy_features.iterrows():
+                    buddy_markers[int(row['hdim_1']), int(row['hdim_2'])]=row['feature']
+
+            elif rgn_cube.ndim==3: #3D watershedding
+        
+        
+                list_coord_names=[coord.name() for coord in rgn_cube.coords()]
+                #determine vertical axis:
+                print(list_coord_names)
+                if vertical_coord=='auto':
+                    list_vertical=['vdim','z','model_level_number','altitude','geopotential_height']
+                    for coord_name in list_vertical:
+                        if coord_name in list_coord_names:
+                            vertical_axis=coord_name
+                            print(vertical_axis)
+                            break
+                elif vertical_coord in list_coord_names:
+                    vertical_axis=vertical_coord
+                else:
+                    raise ValueError('Please specify vertical coordinate')
+                ndim_vertical=rgn_cube.coord_dims(vertical_axis)
+        
+                if len(ndim_vertical)>1:
+                    raise ValueError('please specify 1 dimensional vertical coordinate')
+                z_len = len(rgn_cube.coord('vdim').points)
+                y_len = len(rgn_cube.coord('hdim_1').points)
+                x_len = len(rgn_cube.coord('hdim_2').points)
+        
+        
+                for index, row in buddy_features.iterrows():
+                #creation of 5x5x5 point ranges for 3D marker seeding
+                #and PBC flags for cross-boundary seeding - nixing this idea for now, but described in PBC Segmentation notes
+                #PBC_y_chk = 0
+                #PBC_x_chk = 0
+            
+                    #print("feature: ",row['feature'])
+                    #print("z-ctr: ",row['vdim'])
+                    #print("y-ctr: ",row['hdim_1'])
+                    #print("x-ctr: ",row['hdim_2'])
+            
+            
+                    if(int(row['vdim']) >=2 and int(row['vdim']) <= z_len-3):
+                        z_list = np.arange(int(row['vdim']-2),int(row['vdim']+3))
+                    elif(int(row['vdim']) < 2):
+                        z_list = np.arange(0,5)
+                    else:
+                        z_list = np.arange(z_len-5,z_len)
+                
+                    if(int(row['hdim_1']) >=2 and int(row['hdim_1']) <= y_len-3):
+                        y_list = np.arange(int(row['hdim_1']-2),int(row['hdim_1']+3))
+                    elif(int(row['hdim_1']) < 2):
+                        y_list = np.arange(0,5)
+                        #PBC_y_chk = 1
+                    else:
+                        y_list = np.arange(y_len-5,y_len)
+                        #PBC_y_chk = 1
+                
+                    if(int(row['hdim_2']) >=2 and int(row['hdim_2']) <= x_len-3):
+                        x_list = np.arange(int(row['hdim_2']-2),int(row['hdim_2']+3))
+                    elif(int(row['hdim_2']) < 2):
+                        x_list = np.arange(0,5)
+                        #PBC_x_chk = 1
+                    else:
+                        x_list = np.arange(x_len-5,x_len)
+                        #PBC_x_chk = 1
+                
+                    #loop thru 5x5x5 z times y times x range
+                    for k in range(0,5):
+                        for j in range(0,5):
+                            for i in range(0,5):
+                        
+                                if ndim_vertical[0]==0:
+                                    buddy_markers[z_list[k],y_list[j],x_list[i]]=row['feature']
+                                elif ndim_vertical[0]==1:
+                                    buddy_markers[y_list[j],z_list[k],x_list[i]]=row['feature']
+                                elif ndim_vertical[0]==2:
+                                    buddy_markers[y_list[j],x_list[i],z_list[k]]=row['feature']
+                                    
+            else:
+                raise ValueError('Segmentations routine only possible with 2 or 3 spatial dimensions')
+
+            # set markers in cells not fulfilling threshold condition to zero:
+            print(np.unique(buddy_markers))
+            buddy_markers[~unmasked_buddies]=0
+    
+            marker_vals = np.unique(buddy_markers)
+            #print("vals: ",marker_vals)
+    
+            #for marker in np.unique(markers):
+            #    print(marker)
+            #    if marker == 0:
+            #        continue
+            #    z_mark,y_mark,x_mark = np.where(markers==marker)
+            #    print(z_mark,y_mark,x_mark)
+            #    print(np.min(data_segmentation[z_mark,y_mark,x_mark]),np.max(data_segmentation[z_mark,y_mark,x_mark]))
+    
+  
+            # Turn into np arrays (not necessary for markers) as dask arrays don't yet seem to work for watershedding algorithm
+            buddy_segmentation=np.array(buddy_segmentation)
+            unmasked_buddies=np.array(unmasked_buddies)
+
+            # perform segmentation:
+            if method=='watershed':
+                segmentation_mask_4 = watershed(np.array(buddy_segmentation),buddy_markers.astype(np.int32), mask=unmasked_buddies)
+                
+            else:                
+                raise ValueError('unknown method, must be watershed')
+
+            # remove everything from the individual masks that is more than max_distance_pixel away from the markers
+            if max_distance is not None:
+                D=distance_transform_edt((markers==0).astype(int))
+                segmentation_mask_4[np.bitwise_and(segmentation_mask_4>0, D>max_distance_pixel)]=0
+
+    
+            #mask all segmentation_mask points below th=reshold as -1
+            #to differentiate from those unmasked points NOT filled by watershedding
+            print(np.unique(segmentation_mask_4))
+            segmentation_mask_4[~unmasked_buddies] = -1
+            
+            
+            #transform seg_mask_4 data back to original mask
+            #print(np.unique(test_mask3.data))
+        
+            #loop through buddy box inds and analogous seg mask inds
+            for z_val in range(bbox_zstart,bbox_zend):
+                z_seg = z_val - bbox_zstart
+                z_val_o = z_val
+                for y_val in range(bbox_ystart,bbox_yend):
+                    y_seg = y_val - bbox_ystart
+                    #y_val_o = y_val
+                    if y_val > hdim1_max:
+                        y_val_o = y_val - (hdim1_max+1)
+                    else:
+                        y_val_o = y_val
+                    for x_val in range(bbox_xstart,bbox_xend):
+                        x_seg = x_val - bbox_xstart
+                        #x_val_o = x_val
+                        if x_val > hdim2_max:
+                            x_val_o = x_val - (hdim2_max+1)
+                        else:
+                            x_val_o = x_val
+                            #print(z_seg,y_seg,x_seg)
+                            #print(z_val,y_val,x_val)
+                    
+                        #fix to
+                        #overwrite IF:
+                        #1) feature of interest
+                        #2) changing to/from feature of interest or adjacent segmented feature
+                    
+                        #We don't want to overwrite other features that may be in the
+                        #buddy box if not contacting the intersected seg field
+                        #print("Transformed z,y,x: ",z_val,y_val,x_val)
+                        #print("Real z,y,x: ",z_val_o,y_val_o,x_val_o)
+                        #print("Seg z,y,x: ",z_seg,y_seg,x_seg)
+                        #print("original: ",test_mask2[z_val_o,y_val_o,x_val_o])
+                        #print("new: ",test_mask3.data[z_seg,y_seg,x_seg])
+                        #print("input cube: ",rgn_cube.data[0,z_seg,y_seg,x_seg])
+                        #print("orig cube: ",hr_21_cube.data[z_val_o,y_val_o,x_val_o])
+                        #print(rgn_cube.data[0,z_seg,y_seg,x_seg] > 1.e-5)
+                        
+                        if (np.any(segmentation_mask_3[z_val_o,y_val_o,x_val_o]==buddies) and np.any(segmentation_mask_4.data[z_seg,y_seg,x_seg]==buddies)):
+                            #only do updating procedure if old and new values both in buddy set
+                            #and values are different
+                            if(segmentation_mask_3[z_val_o,y_val_o,x_val_o] != segmentation_mask_4.data[z_seg,y_seg,x_seg]):
+                                #print("Transformed z,y,x: ",z_val,y_val,x_val)
+                                #print("Real z,y,x: ",z_val_o,y_val_o,x_val_o)
+                                #print("Seg z,y,x: ",z_seg,y_seg,x_seg)
+                                #print("transformed z,y,x: ",)
+                                #print(segmentation_mask_3[z_val_o,y_val_o,x_val_o], " -> ", segmentation_mask_4.data[z_seg,y_seg,x_seg])
+                                #print(segmentation_mask_3[z_val_o,y_val_o,x_val_o]+600845, " -> ", segmentation_mask_4.data[z_seg,y_seg,x_seg]+600845)
+                                #print(rgn_cube.data[z_seg,y_seg,x_seg])
+                                segmentation_mask_3[z_val_o,y_val_o,x_val_o] = segmentation_mask_4.data[z_seg,y_seg,x_seg]
+                                #print("updated")
+                
+        segmentation_out.data = segmentation_mask_3
+            
+        if (np.all(features_in.frame.values[:] == 0)):
+            print("saving final field")
+            final_seg_mask = out_f.create_dataset("seg_mask_3",data=segmentation_mask_3)
+            out_f.close()
+                
+    
+    else:
+        #Write resulting mask into cube for output
+        segmentation_out.data = segmentation_mask
 
     # count number of grid cells asoociated to each tracked cell and write that into DataFrame:
     values, count = np.unique(segmentation_mask, return_counts=True)
