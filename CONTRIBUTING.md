@@ -36,7 +36,7 @@ Please create a new issue on [GitHub](https://github.com/climate-processes/tobac
 * Before you start a pull request, please make sure that you added [numpydoc docstrings](#docstringExample) to your functions. This way the api documentation will be parsed properly.
 * If it is a larger change or an newly added feature or workflow, please place an example of use in the [tobac-tutorials](https://github.com/climate-processes/tobac-tutorials) repository or adapt the existing examples there.
 * If necessary add a folder or modify a file.
-
+* The code should be PEP 8 compliant, as this facilitates our collaboration. Please use the latest version of [black](https://black.readthedocs.io/en/stable/) to format your code. When you submit a pull request, all files are checked for formatting.
 
 We hope that we can respond within two weeks.
 
@@ -44,7 +44,7 @@ We hope that we can respond within two weeks.
 ```python
   
    '''
-   caluclate centre of gravity and mass forech individual tracked cell in the simulation
+   calculate centre of gravity and mass forech individual tracked cell in the simulation
 
 
     Parameters
