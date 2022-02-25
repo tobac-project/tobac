@@ -11,4 +11,4 @@ jobs:
       - run: pip install .
       - run: pip install black
       - run: black tobac --check
-      - run: black test --check
+      
