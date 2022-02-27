@@ -349,9 +349,8 @@ def spectral_filtering(dxy, field_in, lambda_min, lambda_max, return_transfer_fu
         lambda_mn = (2 * Ni * (dx)) / wavenumber
 
     # if domain is a rectangle:
-
     # alpha is the normalized wavenumber in wavenumber space
-    alpha = np.sqrt(m ** 2 / Nj ** 2 + n ** 2 / Ni ** 2)
+    alpha = np.sqrt(m ** 2 / Ni ** 2 + n ** 2 / Nj ** 2)
     # compute wavelengths for target grid in km
     lambda_mn = 2 * dxy / alpha
 
@@ -373,10 +372,11 @@ def spectral_filtering(dxy, field_in, lambda_min, lambda_max, return_transfer_fu
     # inverse discrete cosine transformation
     filtered_field = fft.idctn(filtered)
 
-    if return_transfer_function is True:
-        return (lambda_mn, transfer_function), filtered_field
-    else:
+    if return_transfer_function is False:
         return filtered_field
+    else:
+         return (lambda_mn, transfer_function), filtered_field)
+
 
 
 
