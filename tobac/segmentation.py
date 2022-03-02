@@ -7,7 +7,7 @@ def segmentation_2D(features,field,dxy,threshold=3e-3,target='maximum',level=Non
     return segmentation(features,field,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance)
 
 
-def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,vertical_coord='auto',ISO_dilate = ISO_dilate):    
+def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,vertical_coord='auto',ISO_dilate = 8):    
     """
     Function performing watershedding for an individual timestep of the data
     
@@ -25,16 +25,15 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
     method:     string
                 flag determining the algorithm to use (currently watershedding implemented)
     max_distance: float
-                  maximum distance from a marker allowed to be classified as belonging to that cell
+                maximum distance from a marker allowed to be classified as belonging to that cell
     ISO_dilate: int
-                value by which to dilate the feature size for the isolation parameter. 
-                Default is 8
+                value by which to dilate the feature size for the isolation parameter. Default is 8
     
     Output:
     segmentation_out: iris.cube.Cube
-                      cloud mask, 0 outside and integer numbers according to track inside the clouds
+                cloud mask, 0 outside and integer numbers according to track inside the clouds
     features_out: pandas.DataFrame
-                  feature dataframe including the number of cells (2D or 3D) in the segmented area/volume of the feature at the timestep
+                feature dataframe including the number of cells (2D or 3D) in the segmented area/volume of the feature at the timestep
     """
     # The location of watershed within skimage submodules changes with v0.19, but I've kept both for backward compatibility for now
     try:
@@ -43,6 +42,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         from skimage.morphology import watershed
     # from skimage.segmentation import random_walker
     from scipy.ndimage import distance_transform_edt
+    from skimage.morphology import dilation, disk
     from copy import deepcopy
     import numpy as np
 
@@ -124,25 +124,24 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         raise ValueError('unknown method, must be watershed')
 
 	#create isolation, currently only available for 2d tracking
-	if field_in.ndim==2:
-    	nobj = features_in['feature'].values
-    	nobj_len = len(nobj)
-    
-    	iso = np.empty(nobj_len, dtype='bool')
-    	iso[:] = False
-    	num_obj_around = np.zeros(nobj_len, dtype = 'int')
-    	segmask2 = dilation(segmentation_mask,disk(ISO_dilate)) #formerly square
-    	for iso_id in np.arange(nobj_len):
-        	if iso_id == 0:
-            	continue
-        	obj_ind = np.where(segmask2 == nobj[iso_id])
-        	objects = np.unique(segmentation_mask[obj_ind])
-        	if len(objects) >= 3: #one object will always be 0, the element of the feature, any more than those two are considered neighbors
-            	iso[iso_id] = True
-        	num_obj_around[iso_id] = len(objects)-1 #this subtracts the 0 element included in the count
+    if field_in.ndim==2:
+        nobj = features_in['feature'].values
+        nobj_len = len(nobj)
+        iso = np.empty(nobj_len, dtype='bool')
+        iso[:] = False
+        num_obj_around = np.zeros(nobj_len, dtype = 'int')
+        segmask2 = dilation(segmentation_mask,disk(ISO_dilate)) #formerly square
+        for iso_id in np.arange(nobj_len):
+            if iso_id == 0:
+                continue
+            obj_ind = np.where(segmask2 == nobj[iso_id])
+            objects = np.unique(segmentation_mask[obj_ind])
+            if len(objects) >= 3: #one object will always be 0, the element of the feature, any more than those two are considered neighbors
+                iso[iso_id] = True
+            num_obj_around[iso_id] = len(objects)-1 #this subtracts the 0 element included in the count
 
-    	features_out['isolated'] = iso
-    	features_out['num_objects'] = num_obj_around
+        features_out['isolated'] = iso
+        features_out['num_objects'] = num_obj_around
 
 
 
@@ -206,7 +205,8 @@ def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,m
     from iris.cube import CubeList
     
     features['isolated'] = None
-	features['num_objects'] = None
+    features['num_objects'] = None
+    print(['iso_dilate:'+str(ISO_dilate)])
     
     logging.info('Start watershedding 3D')
 
@@ -225,7 +225,7 @@ def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,m
     for i,field_i in enumerate(field_time):
         time_i=field_i.coord('time').units.num2date(field_i.coord('time').points[0])
         features_i=features.loc[features['time']==time_i]
-        segmentation_out_i,features_out_i=segmentation_timestep(field_i,features_i,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance,vertical_coord=vertical_coord)                 
+        segmentation_out_i,features_out_i=segmentation_timestep(field_i,features_i,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance,vertical_coord=vertical_coord, ISO_dilate = ISO_dilate)                 
         segmentation_out_list.append(segmentation_out_i)
         features_out_list.append(features_out_i)
         logging.debug('Finished segmentation for '+time_i.strftime('%Y-%m-%d_%H:%M:%S'))
