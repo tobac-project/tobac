@@ -1,104 +1,5 @@
 import logging
-
-def get_label_props_in_dict(labels):
-    '''Function to get the label properties into a dictionary format.
-    
-    Parameters
-    ----------
-    labels:    2D or 3D array-like
-        comes from the `skimage.measure.label` function
-    
-    Returns
-    -------
-    dict
-        output from skimage.measure.regionprops in dictionary format, where they key is the label number
-    '''
-    import skimage.measure
-    
-    region_properties_raw = skimage.measure.regionprops(labels)
-    region_properties_dict = dict()
-    for region_prop in region_properties_raw:
-        region_properties_dict[region_prop.label] = region_prop
-    
-    return region_properties_dict
-
-def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
-    '''Function to get the x, y, and z indices (as well as point count) of all labeled regions.
-    This function should produce similar output as new_get_indices_of_labels, but 
-    allows for re-use of the region_property_dict. 
-    
-    Parameters
-    ----------
-    region_property_dict:    dict of region_property objects
-        This dict should come from the get_label_props_in_dict function.
-    
-    Returns
-    -------
-    dict (key: label number, int)
-        The number of points in the label number
-    dict (key: label number, int)
-        The z indices in the label number
-    dict (key: label number, int)
-        the y indices in the label number
-    dict (key: label number, int)
-        the x indices in the label number
-    Raises
-    ------
-    ValueError
-        a ValueError is raised if 
-    '''
-    
-    import skimage.measure
-
-    if len(region_property_dict) ==0:
-        raise ValueError("No regions!")
-    
-    z_indices = dict()
-    y_indices = dict()
-    x_indices = dict()
-    curr_loc_indices = dict()
-        
-    #loop through all skimage identified regions
-    for region_prop_key in region_property_dict:
-        region_prop = region_property_dict[region_prop_key]
-        index = region_prop.label
-        curr_z_ixs, curr_y_ixs, curr_x_ixs = np.transpose(region_prop.coords)
-        z_indices[index] = curr_z_ixs
-        y_indices[index] = curr_y_ixs
-        x_indices[index] = curr_x_ixs
-        curr_loc_indices[index] = len(curr_x_ixs)
-                        
-    #print("indices found")
-    return [curr_loc_indices, z_indices, y_indices, x_indices]
-
-def adjust_pbc_point(in_dim, dim_min, dim_max):
-    '''Function to adjust a point to the other boundary for PBCs
-    
-    Parameters
-    ----------
-    in_dim : int
-        Input coordinate to adjust
-    dim_min : int
-        Minimum point for the dimension
-    dim_max : int
-        Maximum point for the dimension (inclusive)
-    
-    Returns
-    -------
-    int
-        The adjusted point on the opposite boundary
-    
-    Raises
-    ------
-    ValueError
-        If in_dim isn't on one of the boundary points
-    '''
-    if in_dim == dim_min:
-        return dim_max
-    elif in_dim == dim_max:
-        return dim_min
-    else:
-        raise ValueError("In adjust_pbc_point, in_dim isn't on a boundary.")
+import utils
         
 def transfm_pbc_point(in_dim, dim_min, dim_max):
     '''Function to transform a PBC-feature point for contiguity
@@ -117,10 +18,6 @@ def transfm_pbc_point(in_dim, dim_min, dim_max):
     int
         The transformed point
     
-    Raises
-    ------
-    ValueError
-        If in_dim isn't on one of the boundary points
     '''
     if in_dim < ((dim_min+dim_max)/2):
         return in_dim+dim_max+1
@@ -367,13 +264,13 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
     #print(seg_m_data)
     
     #read in labeling/masks and region-finding functions
-    reg_props_dict = get_label_props_in_dict(seg_m_data)
+    reg_props_dict = utils.get_label_props_in_dict(seg_m_data)
     
     del seg_m_data
     gc.collect()
 
 
-    curr_reg_inds, z_reg_inds, y_reg_inds, x_reg_inds= get_indices_of_labels_from_reg_prop_dict(reg_props_dict)
+    curr_reg_inds, z_reg_inds, y_reg_inds, x_reg_inds= utils.get_indices_of_labels_from_reg_prop_dict(reg_props_dict)
     
     print(np.unique(segmentation_mask[:]))
     print(curr_reg_inds)
@@ -519,10 +416,10 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         
         #update mask coord regions
         
-        reg_props_dict = get_label_props_in_dict(segmentation_out.data)
+        reg_props_dict = utils.get_label_props_in_dict(segmentation_out.data)
 
 
-        curr_reg_inds, z_reg_inds, y_reg_inds, x_reg_inds= get_indices_of_labels_from_reg_prop_dict(reg_props_dict)
+        curr_reg_inds, z_reg_inds, y_reg_inds, x_reg_inds= utils.get_indices_of_labels_from_reg_prop_dict(reg_props_dict)
 
         wall_labels = np.array([])
         #skip_list = np.array([])
@@ -572,8 +469,8 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                 if PBC_flag == 'both' and (np.any(label_y == [hdim1_min,hdim1_max]) and np.any(label_x == [hdim2_min,hdim2_max])):
                         
                     #adjust x and y points to the other side
-                    y_val_alt = adjust_pbc_point(label_y, hdim1_min, hdim1_max)
-                    x_val_alt = adjust_pbc_point(label_x, hdim2_min, hdim2_max)
+                    y_val_alt = utils.adjust_pbc_point(label_y, hdim1_min, hdim1_max)
+                    x_val_alt = utils.adjust_pbc_point(label_x, hdim2_min, hdim2_max)
                         
                     label_on_corner = segmentation_mask_3[label_z,y_val_alt,x_val_alt]
                         
@@ -584,7 +481,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                     
                 # on the hdim1 boundary and periodic on hdim1
                 if (PBC_flag == 'hdim_1' or PBC_flag == 'both') and np.any(label_y == [hdim1_min,hdim1_max]):                        
-                    y_val_alt = adjust_pbc_point(label_y, hdim1_min, hdim1_max)
+                    y_val_alt = utils.adjust_pbc_point(label_y, hdim1_min, hdim1_max)
 
                     #get the label value on the opposite side
                     label_alt = segmentation_mask_3[label_z,y_val_alt,label_x]
@@ -595,7 +492,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                         buddies = np.append(buddies,label_alt)
                    
                 if (PBC_flag == 'hdim_2' or PBC_flag == 'both') and np.any(label_x == [hdim2_min,hdim2_max]):                        
-                    x_val_alt = adjust_pbc_point(label_x, hdim2_min, hdim2_max)
+                    x_val_alt = utils.adjust_pbc_point(label_x, hdim2_min, hdim2_max)
 
                     #get the seg value on the opposite side
                     label_alt = segmentation_mask_3[label_z,label_y,x_val_alt]

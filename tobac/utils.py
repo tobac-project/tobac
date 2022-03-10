@@ -638,3 +638,103 @@ def get_spacings(field_in,grid_spacing=None,time_spacing=None):
         # use value of time_spacing for dt:
         dt=time_spacing
     return dxy,dt
+
+def get_label_props_in_dict(labels):
+    '''Function to get the label properties into a dictionary format.
+    
+    Parameters
+    ----------
+    labels:    2D or 3D array-like
+        comes from the `skimage.measure.label` function
+    
+    Returns
+    -------
+    dict
+        output from skimage.measure.regionprops in dictionary format, where they key is the label number
+    '''
+    import skimage.measure
+    
+    region_properties_raw = skimage.measure.regionprops(labels)
+    region_properties_dict = dict()
+    for region_prop in region_properties_raw:
+        region_properties_dict[region_prop.label] = region_prop
+    
+    return region_properties_dict
+
+def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
+    '''Function to get the x, y, and z indices (as well as point count) of all labeled regions.
+    This function should produce similar output as new_get_indices_of_labels, but 
+    allows for re-use of the region_property_dict. 
+    
+    Parameters
+    ----------
+    region_property_dict:    dict of region_property objects
+        This dict should come from the get_label_props_in_dict function.
+    
+    Returns
+    -------
+    dict (key: label number, int)
+        The number of points in the label number
+    dict (key: label number, int)
+        The z indices in the label number
+    dict (key: label number, int)
+        the y indices in the label number
+    dict (key: label number, int)
+        the x indices in the label number
+    Raises
+    ------
+    ValueError
+        a ValueError is raised if 
+    '''
+    
+    import skimage.measure
+
+    if len(region_property_dict) ==0:
+        raise ValueError("No regions!")
+    
+    z_indices = dict()
+    y_indices = dict()
+    x_indices = dict()
+    curr_loc_indices = dict()
+        
+    #loop through all skimage identified regions
+    for region_prop_key in region_property_dict:
+        region_prop = region_property_dict[region_prop_key]
+        index = region_prop.label
+        curr_z_ixs, curr_y_ixs, curr_x_ixs = np.transpose(region_prop.coords)
+        z_indices[index] = curr_z_ixs
+        y_indices[index] = curr_y_ixs
+        x_indices[index] = curr_x_ixs
+        curr_loc_indices[index] = len(curr_x_ixs)
+                        
+    #print("indices found")
+    return [curr_loc_indices, z_indices, y_indices, x_indices]
+
+def adjust_pbc_point(in_dim, dim_min, dim_max):
+    '''Function to adjust a point to the other boundary for PBCs
+    
+    Parameters
+    ----------
+    in_dim : int
+        Input coordinate to adjust
+    dim_min : int
+        Minimum point for the dimension
+    dim_max : int
+        Maximum point for the dimension (inclusive)
+    
+    Returns
+    -------
+    int
+        The adjusted point on the opposite boundary
+    
+    Raises
+    ------
+    ValueError
+        If in_dim isn't on one of the boundary points
+    '''
+    if in_dim == dim_min:
+        return dim_max
+    elif in_dim == dim_max:
+        return dim_min
+    else:
+        raise ValueError("In adjust_pbc_point, in_dim isn't on a boundary.")
