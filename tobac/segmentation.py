@@ -25,7 +25,7 @@ def transfm_pbc_point(in_dim, dim_min, dim_max):
         return in_dim
 
 def segmentation_3D(features,field,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,PBC_flag='none',seed_3D_flag='column'):
-    return segmentation(features,field,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance,PBC_flag=PBC_flag)
+    return segmentation(features,field,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance,PBC_flag=PBC_flag,seed_3D_flag='column')
 
 def segmentation_2D(features,field,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,PBC_flag='none',seed_3D_flag='column'):
     return segmentation(features,field,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance,PBC_flag=PBC_flag,seed_3D_flag='column')
