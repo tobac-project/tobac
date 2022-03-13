@@ -405,8 +405,8 @@ def make_feature_blob(in_arr, h1_loc, h2_loc, v_loc = None,
         start_loc = 1
         v_min = 0
         v_max = in_arr.shape[start_loc]
-        start_v = round(max(v_min, v_loc - v_size/2))
-        end_v = round(min(v_max-1, v_loc + v_size/2))
+        start_v = int(np.ceil(max(v_min, v_loc - v_size/2)))
+        end_v = int(np.ceil(min(v_max-1, v_loc + v_size/2)))
         if v_size > v_max - v_min:
             raise ValueError("v_size larger than domain size")
 
@@ -423,11 +423,11 @@ def make_feature_blob(in_arr, h1_loc, h2_loc, v_loc = None,
         raise ValueError("Horizontal size larger than domain size")
 
     # let's get start/end x/y/z
-    start_h1 = round(h1_loc - h1_size/2)
-    end_h1 = round(h1_loc + h1_size/2)
+    start_h1 = int(np.ceil(h1_loc - h1_size/2))
+    end_h1 = int(np.ceil(h1_loc + h1_size/2))
 
-    start_h2 = round(h2_loc - h2_size/2)
-    end_h2 = round(h2_loc + h2_size/2)
+    start_h2 = int(np.ceil(h2_loc - h2_size/2))
+    end_h2 = int(np.ceil(h2_loc + h2_size/2))
     in_arr = set_arr_2D_3D(in_arr, amplitude, start_h1, end_h1, 
                            start_h2, end_h2, start_v, end_v)
     return in_arr    
