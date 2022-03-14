@@ -7,11 +7,13 @@ from datetime import datetime
 
 try:
     import pyproj
+
     _PYPROJ_AVAILABLE = True
 except ImportError:
     _PYPROJ_AVAILABLE = False
 
-def cartesian_to_geographic_aeqd(x, y, lon_0, lat_0, R=6370997.):
+
+def cartesian_to_geographic_aeqd(x, y, lon_0, lat_0, R=6370997.0):
     """
     Azimuthal equidistant Cartesian to geographic coordinate transform.
 
@@ -65,28 +67,30 @@ def cartesian_to_geographic_aeqd(x, y, lon_0, lat_0, R=6370997.):
     lat_0_rad = np.deg2rad(lat_0)
     lon_0_rad = np.deg2rad(lon_0)
 
-    rho = np.sqrt(x*x + y*y)
+    rho = np.sqrt(x * x + y * y)
     c = rho / R
 
     with warnings.catch_warnings():
         # division by zero may occur here but is properly addressed below so
         # the warnings can be ignored
         warnings.simplefilter("ignore", RuntimeWarning)
-        lat_rad = np.arcsin(np.cos(c) * np.sin(lat_0_rad) +
-                            y * np.sin(c) * np.cos(lat_0_rad) / rho)
+        lat_rad = np.arcsin(
+            np.cos(c) * np.sin(lat_0_rad) + y * np.sin(c) * np.cos(lat_0_rad) / rho
+        )
     lat_deg = np.rad2deg(lat_rad)
     # fix cases where the distance from the center of the projection is zero
     lat_deg[rho == 0] = lat_0
 
     x1 = x * np.sin(c)
-    x2 = rho*np.cos(lat_0_rad)*np.cos(c) - y*np.sin(lat_0_rad)*np.sin(c)
+    x2 = rho * np.cos(lat_0_rad) * np.cos(c) - y * np.sin(lat_0_rad) * np.sin(c)
     lon_rad = lon_0_rad + np.arctan2(x1, x2)
     lon_deg = np.rad2deg(lon_rad)
     # Longitudes should be from -180 to 180 degrees
-    lon_deg[lon_deg > 180] -= 360.
-    lon_deg[lon_deg < -180] += 360.
+    lon_deg[lon_deg > 180] -= 360.0
+    lon_deg[lon_deg < -180] += 360.0
 
     return lon_deg, lat_deg
+
 
 def cartesian_to_geographic(grid_ds):
     """
@@ -112,13 +116,13 @@ def cartesian_to_geographic(grid_ds):
     x = grid_ds.x.values
     y = grid_ds.y.values
     z = grid_ds.z.values
-    z, y, x = np.meshgrid(z, y, x, indexing='ij')
-    if projparams.attrs['grid_mapping_name'] == 'azimuthal_equidistant':
+    z, y, x = np.meshgrid(z, y, x, indexing="ij")
+    if projparams.attrs["grid_mapping_name"] == "azimuthal_equidistant":
         # Use Py-ART's Azimuthal equidistance projection
-        lat_0 = projparams.attrs['latitude_of_projection_origin']
-        lon_0 = projparams.attrs['longitude_of_projection_origin']
-        if 'semi_major_axis' in projparams:
-            R = projparams.attrs['semi_major_axis']
+        lat_0 = projparams.attrs["latitude_of_projection_origin"]
+        lon_0 = projparams.attrs["longitude_of_projection_origin"]
+        if "semi_major_axis" in projparams:
+            R = projparams.attrs["semi_major_axis"]
             lon, lat = cartesian_to_geographic_aeqd(x, y, lon_0, lat_0, R)
         else:
             lon, lat = cartesian_to_geographic_aeqd(x, y, lon_0, lat_0)
@@ -129,7 +133,8 @@ def cartesian_to_geographic(grid_ds):
             raise MissingOptionalDependency(
                 "PyProj is required to use cartesian_to_geographic "
                 "with a projection other than pyart_aeqd but it is not "
-                "installed")
+                "installed"
+            )
         proj = pyproj.Proj(projparams)
         lon, lat = proj(x, y, inverse=True)
     return lon, lat
@@ -145,25 +150,27 @@ def add_lat_lon_grid(grid_ds):
     grid_ds["point_longitude"].attrs["units"] = "degrees"
     return grid_ds
 
+
 def parse_grid_datetime(my_ds):
-    year = my_ds['time'].dt.year
-    month = my_ds['time'].dt.month
-    day = my_ds['time'].dt.day
-    hour = my_ds['time'].dt.hour
-    minute = my_ds['time'].dt.minute
-    second = my_ds['time'].dt.second
-    return datetime(year=year, month=month, day=day,
-                    hour=hour, minute=minute, second=second)
+    year = my_ds["time"].dt.year
+    month = my_ds["time"].dt.month
+    day = my_ds["time"].dt.day
+    hour = my_ds["time"].dt.hour
+    minute = my_ds["time"].dt.minute
+    second = my_ds["time"].dt.second
+    return datetime(
+        year=year, month=month, day=day, hour=hour, minute=minute, second=second
+    )
 
 
 def get_vert_projection(grid, thresh=40):
-    """ Returns boolean vertical projection from grid. """
+    """Returns boolean vertical projection from grid."""
     return np.any(grid > thresh, axis=0)
 
 
 def get_filtered_frame(grid, min_size, thresh):
-    """ Returns a labeled frame from gridded radar data. Smaller objects
-    are removed and the rest are labeled. """
+    """Returns a labeled frame from gridded radar data. Smaller objects
+    are removed and the rest are labeled."""
     if len(grid.shape) == 3:
         echo_height = get_vert_projection(grid, thresh)
     else:
@@ -174,7 +181,7 @@ def get_filtered_frame(grid, min_size, thresh):
 
 
 def clear_small_echoes(label_image, min_size):
-    """ Takes in binary image and clears objects less than min_size. """
+    """Takes in binary image and clears objects less than min_size."""
     flat_image = label_image.flatten()
     flat_image = flat_image[flat_image > 0]
     unique_elements, size_table = np.unique(flat_image, return_counts=True)
@@ -187,18 +194,18 @@ def clear_small_echoes(label_image, min_size):
 
 
 def get_grid_alt(grid_z, alt_meters=1500):
-    """ Returns z-index closest to alt_meters. """
+    """Returns z-index closest to alt_meters."""
     return np.argmin(np.abs(grid_z - alt_meters))
 
 
 def extract_grid_data(grid_obj, field, grid_size, params):
-    """ Returns filtered grid frame and raw grid slice at global shift
-    altitude. """
-    min_size = params['MIN_SIZE'] / np.prod(grid_size[1:]/1000)
+    """Returns filtered grid frame and raw grid slice at global shift
+    altitude."""
+    min_size = params["MIN_SIZE"] / np.prod(grid_size[1:] / 1000)
     masked = grid_obj.variables[field].fillna(0).values
-    gs_alt = params['GS_ALT']
+    gs_alt = params["GS_ALT"]
     raw = masked[get_grid_alt(grid_obj.z.values, gs_alt), :, :]
-    frame = get_filtered_frame(masked, min_size, params['FIELD_THRESH'])
+    frame = get_filtered_frame(masked, min_size, params["FIELD_THRESH"])
     return raw, frame
 
 
@@ -214,12 +221,11 @@ def get_grid_size(grid_obj):
 
 def extract_grid_data_2d(grid_obj, field, params):
     grid_size = np.array(grid_obj[field].values.shape)
-    min_size = params['MIN_SIZE']
+    min_size = params["MIN_SIZE"]
     masked = grid_obj.variables[field].values
-    masked = masked > params['FIELD_THRESH']
+    masked = masked > params["FIELD_THRESH"]
     print(np.sum(masked))
     raw = masked
     labeled_echo = ndimage.label(masked)[0]
     frame = clear_small_echoes(labeled_echo, min_size)
-    return raw, frame    
-
+    return raw, frame
