@@ -31,7 +31,7 @@ def segmentation_2D(features,field,dxy,threshold=3e-3,target='maximum',level=Non
     return segmentation(features,field,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance,PBC_flag=PBC_flag,seed_3D_flag='column')
 
 
-def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,vertical_coord='auto',PBC_flag='none',seed_3D_flag='column'):    
+def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,vertical_coord='auto',PBC_flag='none',seed_3D_flag='column', seed_3D_size=5):    
     """Function performing watershedding for an individual timestep of the data
     
     Parameters
@@ -58,6 +58,10 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
     seed_3D_flag: string
                 options: 'column' (default), 'box'
                 Seed 3D field at feature positions with either the full column (default) or a box of user-set size
+    seed_3D_size: int or tuple (dimensions equal to dimensions of `field`)
+        This sets the size of the seed box when `seed_3D_flag` is 'box'. If it's an 
+        integer, the seed box is identical in all dimensions. If it's a tuple, it specifies the 
+        seed area for each dimension separately. 
     
     Returns
     -------
@@ -67,10 +71,12 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                   feature dataframe including the number of cells (2D or 3D) in the segmented area/volume of the feature at the timestep
     """
     from skimage.segmentation import watershed
+    import skimage.measure
     # from skimage.segmentation import random_walker
     from scipy.ndimage import distance_transform_edt
     from copy import deepcopy
     import numpy as np
+    import iris
     
     #saving intermediary fields for testing
     #original mask, secondary seeding, final version
@@ -89,7 +95,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
     segmentation_out.rename('segmentation_mask')
     segmentation_out.units=1
 
-    #Create dask array from input data:
+    # Get raw array from input data:
     data=field_in.core_data()
     
     #Set level at which to create "Seed" for each feature in the case of 3D watershedding:
@@ -168,9 +174,21 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         
             #print(z_len,y_len,x_len)
             #display(features_in)
+
+            # Get the size of the seed box from the input parameter
+            try:
+                seed_z = seed_3D_size[0]
+                seed_y = seed_3D_size[1]
+                seed_x = seed_3D_size[2]
+            except TypeError:
+                # Not iterable, assume int. 
+                seed_z = seed_3D_size
+                seed_y = seed_3D_size
+                seed_x = seed_3D_size
+
         
             for index, row in features_in.iterrows():
-                #creation of 5x5x5 point ranges for 3D marker seeding
+                #creation of point ranges for 3D marker seeding
                 #and PBC flags for cross-boundary seeding - nixing this idea for now, but described in PBC Segmentation notes
                 #PBC_y_chk = 0
                 #PBC_x_chk = 0
@@ -185,32 +203,32 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                 if(int(row['vdim']) >=2 and int(row['vdim']) <= z_len-3):
                     z_list = np.arange(int(row['vdim']-2),int(row['vdim']+3))
                 elif(int(row['vdim']) < 2):
-                    z_list = np.arange(0,5)
+                    z_list = np.arange(0,seed_z)
                 else:
-                    z_list = np.arange(z_len-5,z_len)
+                    z_list = np.arange(z_len-seed_z,z_len)
                 
                 if(int(row['hdim_1']) >=2 and int(row['hdim_1']) <= y_len-3):
                     y_list = np.arange(int(row['hdim_1']-2),int(row['hdim_1']+3))
                 elif(int(row['hdim_1']) < 2):
-                    y_list = np.arange(0,5)
+                    y_list = np.arange(0,seed_y)
                     #PBC_y_chk = 1
                 else:
-                    y_list = np.arange(y_len-5,y_len)
+                    y_list = np.arange(y_len-seed_y,y_len)
                     #PBC_y_chk = 1
                 
                 if(int(row['hdim_2']) >=2 and int(row['hdim_2']) <= x_len-3):
                     x_list = np.arange(int(row['hdim_2']-2),int(row['hdim_2']+3))
                 elif(int(row['hdim_2']) < 2):
-                    x_list = np.arange(0,5)
+                    x_list = np.arange(0,seed_x)
                     #PBC_x_chk = 1
                 else:
-                    x_list = np.arange(x_len-5,x_len)
+                    x_list = np.arange(x_len-seed_x,x_len)
                     #PBC_x_chk = 1
                 
                 #loop thru 5x5x5 z times y times x range
-                for k in range(0,5):
-                    for j in range(0,5):
-                        for i in range(0,5):
+                for k in range(0,seed_z):
+                    for j in range(0,seed_y):
+                        for i in range(0,seed_x):
                         
                             if ndim_vertical[0]==0:
                                 markers[z_list[k],y_list[j],x_list[i]]=row['feature']
@@ -255,25 +273,12 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
     segmentation_mask[~unmasked] = -1
     
     #saves/prints below for testing
-    #seg_m_data = segmentation_mask[:]
-    
-    #if (np.all(features_in.frame.values[:] == 0)):
-    #    print("saving first field")
-    #    first_seg_mask = out_f.create_dataset("seg_mask_1",data=seg_m_data)
-    
-    #print(seg_m_data)
-    
+    seg_m_data = segmentation_mask[:]
+        
     #read in labeling/masks and region-finding functions
     reg_props_dict = utils.get_label_props_in_dict(seg_m_data)
-    
-    del seg_m_data
-    gc.collect()
-
 
     curr_reg_inds, z_reg_inds, y_reg_inds, x_reg_inds= utils.get_indices_of_labels_from_reg_prop_dict(reg_props_dict)
-    
-    print(np.unique(segmentation_mask[:]))
-    print(curr_reg_inds)
     
     #z_unf,y_unf,x_unf = np.where(segmentation_mask==0)
     
@@ -293,32 +298,16 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
     #Return all indices where segmentation field == 0
         #meaning unfilled but above threshold
         vdim_unf,hdim1_unf,hdim2_unf = np.where(segmentation_mask==0)
-        
-        
-        
-        #vdim_unf = z_reg_inds[0.]
-        #hdim1_unf = y_reg_inds[0.]
-        #hdim2_unf = x_reg_inds[0.]
-        
-        #for cur_idx in wall_labels:
-        #skip this if there aren't enough points to be considered a real feature
-        #as defined above by n_min_threshold
-        #curr_count = curr_reg_inds[cur_idx]
-        #print("Current wall feature: ",cur_idx)
-    
+            
         seg_mask_unseeded = np.zeros(segmentation_mask.shape)
     
         seg_mask_unseeded[vdim_unf,hdim1_unf,hdim2_unf]=1
     
         #create labeled field of unfilled, unseeded features
-        labels_unseeded,label_num = label(seg_mask_unseeded)
-    
-        print(label_num)
-    
+        labels_unseeded,label_num = skimage.measure.label(seg_mask_unseeded)
+        
         markers_2 = np.zeros(unmasked.shape).astype(np.int32)
-    
-        print(segmentation_mask.shape)
-    
+        
         #new, shorter PBC marker seeding approach
         #loop thru LB points
         #then check if fillable region (labels_unseeded > 0)
@@ -329,8 +318,6 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                 for hdim1_ind in [hdim1_min,hdim1_max]:
                     for hdim2_ind in range(hdim2_min,hdim2_max):
                 
-                        #print(z_ind,y_ind,x_ind)
-                        #print(labels_unseeded[z_ind,y_ind,x_ind])
                 
                         if(labels_unseeded[vdim_ind,hdim1_ind,hdim2_ind] == 0):
                             continue
@@ -340,15 +327,11 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                                     continue
                                 else:
                                     markers_2[vdim_ind,hdim1_ind,hdim2_ind] = segmentation_mask[vdim_ind,hdim1_max,hdim2_ind]
-                                    #print(z_ind,y_ind,x_ind)
-                                    #print("seeded")
                             elif hdim1_ind == hdim1_max:
                                 if (segmentation_mask[vdim_ind,hdim1_min,hdim2_ind]<=0):
                                     continue
                                 else:
                                     markers_2[vdim_ind,hdim1_ind,hdim2_ind] = segmentation_mask[vdim_ind,hdim1_min,hdim2_ind]
-                                    #print(z_ind,y_ind,x_ind)
-                                    #print("seeded")
                                     
         if PBC_flag == 'hdim_2' or PBC_flag == 'both':
             for vdim_ind in range(0,segmentation_mask.shape[0]):
@@ -375,11 +358,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                                     markers_2[vdim_ind,hdim1_ind,hdim2_ind] = segmentation_mask[vdim_ind,hdim1_ind,hdim2_min]
                                     #print(z_ind,y_ind,x_ind)
                                     #print("seeded")
-        
-        
-        print("PBC cross-boundary markers planted")
-        print("Beginning PBC segmentation for secondary mask")
-    
+            
         markers_2[~unmasked]=0
         
         if method=='watershed':
@@ -395,40 +374,25 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
             D=distance_transform_edt((markers==0).astype(int))
             segmentation_mask_2[np.bitwise_and(segmentation_mask_2>0, D>max_distance_pixel)]=0
     
-        print("Sum up original mask and secondary PBC-mask for full PBC segmentation")
-    
+        # Sum up original mask and secondary PBC-mask for full PBC segmentation
         #Write resulting mask into cube for output
         segmentation_out.data=segmentation_mask + segmentation_mask_2
         
         segmentation_mask_3 = segmentation_out.data
-        
-        #if (np.all(features_in.frame.values[:] == 0)):
-        #    print("saving second field")
-        #    second_seg_mask = out_f.create_dataset("seg_mask_2",data=segmentation_mask_3)
-    
-        
-        print("Secondary seeding complete, now blending periodic boundaries")
-        
+            
+        # Secondary seeding complete, now blending periodic boundaries
         #keep segmentation mask fields for now so we can save these all later
         #for demos of changes
         
-        #print("Test of PBC segmentation boundary blending below")
+        # Test of PBC segmentation boundary blending below
         
         #update mask coord regions
         
         reg_props_dict = utils.get_label_props_in_dict(segmentation_out.data)
 
-
         curr_reg_inds, z_reg_inds, y_reg_inds, x_reg_inds= utils.get_indices_of_labels_from_reg_prop_dict(reg_props_dict)
 
         wall_labels = np.array([])
-        #skip_list = np.array([])
-        #bdry_buddies = np.array([])
-
-        #y_min = 0
-        #y_max = test_mask2.shape[1] - 1
-        #x_min = 0
-        #x_max = test_mask2.shape[2] - 1
 
         w_wall = np.unique(segmentation_mask_3[:,:,0])
         wall_labels = np.append(wall_labels,w_wall)
@@ -512,7 +476,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
             else:
                 inter_buddies,feat_inds,buddy_inds=np.intersect1d(features_in.feature.values[:],buddies,return_indices=True)
         
-            buddy_features = copy.deepcopy(features_in.iloc[feat_inds])
+            buddy_features = deepcopy(features_in.iloc[feat_inds])
             #display(buddy_features)
         
             #create arrays to contain points of all buddies
@@ -572,8 +536,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                     buddy_y2 = np.append(buddy_y2,y2)
                     buddy_x2 = np.append(buddy_x2,x2)
                     
-            #Buddy Box!
-            print("Buddy Box space:")
+            # Buddy Box!
             bbox_zstart = int(np.min(buddy_z2))
             bbox_ystart = int(np.min(buddy_y2))
             bbox_xstart = int(np.min(buddy_x2))
@@ -585,10 +548,6 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
             bbox_ysize = bbox_yend - bbox_ystart
             bbox_xsize = bbox_xend - bbox_xstart
         
-            print('vdim: ',bbox_zstart,bbox_zend)
-            print('hdim_1: ',bbox_ystart,bbox_yend)
-            print('hdim_2: ',bbox_xstart,bbox_xend)
-    
             print(bbox_zsize,bbox_ysize,bbox_xsize)
     
             #Buddy Box for smooth watershedding of features at PBC boundaries
@@ -865,13 +824,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                                 #print("updated")
                 
         segmentation_out.data = segmentation_mask_3
-            
-        if (np.all(features_in.frame.values[:] == 0)):
-            print("saving final field")
-            final_seg_mask = out_f.create_dataset("seg_mask_3",data=segmentation_mask_3)
-            out_f.close()
                 
-    
     else:
         #Write resulting mask into cube for output
         segmentation_out.data = segmentation_mask
