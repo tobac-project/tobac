@@ -290,10 +290,8 @@ def get_spacings(field_in, grid_spacing=None, time_spacing=None):
     return dxy, dt
 
 
-def spectral_filtering(
-    dxy, field_in, lambda_min, lambda_max, return_transfer_function=False
-):
-    """
+def spectral_filtering(dxy, field_in, lambda_min, lambda_max, return_transfer_function = False):
+    '''
     This function creates and applies a 2D transfer function that can be used as a bandpass filter to remove
     certain wavelengths of an atmospheric field (e.g. vorticity).
 
@@ -315,7 +313,7 @@ def spectral_filtering(
         maximum wavelength in km
 
     return_transfer_function: boolean, optional
-        default: False. If set to True, then the 1D transfer function are returned.
+        default: False. If set to True, then the 1D transfer function are returned. 
 
     Returns:
     --------
@@ -327,16 +325,14 @@ def spectral_filtering(
         Two 2D fields, where the first one corresponds to the wavelengths of the domain and the second one
         to the 2D transfer function of the bandpass filter. Only returned, if return_transfer_function is True.
 
-    """
-    import numpy as np
+    '''
+    import numpy as np 
     from scipy import signal
     from scipy import fft
 
     # check if valid value for dxy is given
     if dxy <= 0:
-        raise ValueError(
-            "Invalid value for dxy. Please provide the grid spacing in meter."
-        )
+        raise ValueError("Invalid value for dxy. Please provide the grid spacing in meter.")
 
     # convert grid spacing to km to get same units as given wavelengths
     dxy = dxy / 1000
@@ -345,16 +341,17 @@ def spectral_filtering(
     Ni = field_in.shape[-2]
     Nj = field_in.shape[-1]
     # wavenumber space
-    m, n = np.meshgrid(np.arange(Ni), np.arange(Nj), indexing="ij")
+    m, n = np.meshgrid(np.arange(Ni), np.arange(Nj), indexing = 'ij')
 
     # if domain is squared:
     if Ni == Nj:
-        wavenumber = np.sqrt(m**2 + n**2)
+        wavenumber = np.sqrt(m ** 2 + n ** 2)
         lambda_mn = (2 * Ni * (dx)) / wavenumber
 
     # if domain is a rectangle:
+
     # alpha is the normalized wavenumber in wavenumber space
-    alpha = np.sqrt(m**2 / Ni**2 + n**2 / Nj**2)
+    alpha = np.sqrt(m ** 2 / Nj ** 2 + n ** 2 / Ni ** 2)
     # compute wavelengths for target grid in km
     lambda_mn = 2 * dxy / alpha
 
@@ -376,10 +373,11 @@ def spectral_filtering(
     # inverse discrete cosine transformation
     filtered_field = fft.idctn(filtered)
 
-    if return_transfer_function is False:
-        return filtered_field
-    else:
+    if return_transfer_function is True:
         return (lambda_mn, transfer_function), filtered_field
+    else:
+        return filtered_field
+
 
 
 # @xarray_to_iris
