@@ -1,6 +1,6 @@
 # Contributing to tobac
 
-__Welcome! We are very happy that you are interessted in our project and thanks for taking time to contribute! :)__
+__Welcome! We are very happy that you are interested in our project and thanks for taking time to contribute! :)__
 
 We are currently reorganizing our project. So, please check our modifications later.
 
@@ -18,7 +18,6 @@ You will find our documentation at [https://tobac.readthedocs.io](https://tobac.
 
 ### Testing
 The tests are located in the [tests folder](https://github.com/climate-processes/tobac/tree/master/tobac/tests).
-
 
 
 ## Reporting Bugs
