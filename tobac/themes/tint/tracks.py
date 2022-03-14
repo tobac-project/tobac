@@ -40,16 +40,15 @@ def make_tracks(grid_ds, field, params=None):
     counter = Counter()
     tracks = pd.DataFrame()
     cell_mask = xr.DataArray(
-        np.ones((len(times), frame2.shape[0], frame2.shape[1])),
-        dims=('time', 'x', 'y'))
+        np.ones((len(times), frame2.shape[0], frame2.shape[1])), dims=("time", "x", "y")
+    )
     for i in range(1, len(times)):
         raw1 = raw2
         frame1 = frame2
         grid_obj1 = grid_obj2
         grid_obj2 = grid_ds.isel(time=i)
-        record.update_scan_and_time(grid_obj1, grid_obj2)        
-        raw2, frame2 = extract_grid_data(
-            grid_obj2, field, grid_size, params)
+        record.update_scan_and_time(grid_obj1, grid_obj2)
+        raw2, frame2 = extract_grid_data(grid_obj2, field, grid_size, params)
         if np.max(frame1) == 0:
             print("No cells found in scan %d" % i)
             current_objects = None
@@ -61,29 +60,29 @@ def make_tracks(grid_ds, field, params=None):
         if newRain:
             # first nonempty scan after a period of empty scans
             current_objects, counter = init_current_objects(
-                frame1, frame2, pairs, counter)
+                frame1, frame2, pairs, counter
+            )
             newRain = False
         else:
             current_objects, counter = update_current_objects(
-                frame1, frame2, pairs, current_objects, counter)
+                frame1, frame2, pairs, current_objects, counter
+            )
 
-        obj_props = get_object_prop(frame1, grid_obj1, field,
-                                    record, params)
+        obj_props = get_object_prop(frame1, grid_obj1, field, record, params)
         record.add_uids(current_objects)
-        tracks = write_tracks(
-            tracks, record, current_objects, obj_props)
-        uids = np.array([int(x) for x in current_objects['uid']])
-        id2 = np.array([int(x) for x in current_objects['id2']])
+        tracks = write_tracks(tracks, record, current_objects, obj_props)
+        uids = np.array([int(x) for x in current_objects["uid"]])
+        id2 = np.array([int(x) for x in current_objects["id2"]])
         for j in range(uids.max()):
             ind = np.argwhere(uids == j)
             cell_mask[i, :, :] = np.where(frame2 == id2[ind], j, cell_mask[i, :, :])
         cell_mask[i, :, :] = np.ma.masked_where(frame2 == 0, cell_mask[i, :, :])
     record.update_scan_and_time(grid_obj1)
-    tracks = tracks.set_index(['cell'])
+    tracks = tracks.set_index(["cell"])
     tracks = tracks.to_xarray()
     tracks["cell_time"] = tracks["time"]
     tracks = tracks.drop("time")
-    tracks["time"] = grid_ds.time.astype('datetime64[s]')
+    tracks["time"] = grid_ds.time.astype("datetime64[s]")
     tracks.attrs["cf_tree_order"] = "storm_id cell_id"
     tracks.attrs["tree_id"] = grid_ds.attrs["tree_id"]
     tracks["cell_id"] = tracks["cell"]
@@ -93,7 +92,7 @@ def make_tracks(grid_ds, field, params=None):
     tracks["cell_mask"] = cell_mask
     tracks["cell_mask"].attrs["cf_role"] = grid_ds.attrs["tree_id"]
     tracks["cell_mask"].attrs["long_name"] = "cell ID for this grid cell"
-    tracks["cell_mask"].attrs['coordinates'] = 'cell_id time latitude longitude'    
+    tracks["cell_mask"].attrs["coordinates"] = "cell_id time latitude longitude"
     # Add hierarchy
 
     return tracks
@@ -122,18 +121,17 @@ def make_tracks_2d_field(grid_ds, field, params=None):
     times = grid_ds.Time.values
     grid_obj2 = grid_ds.isel(Time=0)
     raw2, frame2 = extract_grid_data_2d(grid_obj2, field, params)
-    
+
     record = Record(grid_ds)
-    record.grid_size = np.array([1,
-        grid_obj2.attrs["DY"], 
-        grid_obj2.attrs["DX"]])
+    record.grid_size = np.array([1, grid_obj2.attrs["DY"], grid_obj2.attrs["DX"]])
     current_objects = None
     counter = Counter()
     tracks = pd.DataFrame()
     cell_mask = xr.DataArray(
         np.zeros((len(times), frame2.shape[0], frame2.shape[1])),
-        dims=('Time', 'x', 'y'))
-    
+        dims=("Time", "x", "y"),
+    )
+
     for i in range(1, len(times)):
         raw1 = raw2
         frame1 = frame2
@@ -141,8 +139,7 @@ def make_tracks_2d_field(grid_ds, field, params=None):
         grid_obj2 = grid_ds.isel(Time=i)
         record.update_scan_and_time(grid_obj1, grid_obj2)
 
-        raw2, frame2 = extract_grid_data_2d(
-            grid_obj2, field, params)
+        raw2, frame2 = extract_grid_data_2d(grid_obj2, field, params)
         if np.max(frame1) == 0:
             print("No cells found in scan %d" % i)
             current_objects = None
@@ -153,30 +150,30 @@ def make_tracks_2d_field(grid_ds, field, params=None):
         if newRain:
             # first nonempty scan after a period of empty scans
             current_objects, counter = init_current_objects(
-                frame1, frame2, pairs, counter)
+                frame1, frame2, pairs, counter
+            )
             newRain = False
         else:
             current_objects, counter = update_current_objects(
-                frame1, frame2, pairs, current_objects, counter)
+                frame1, frame2, pairs, current_objects, counter
+            )
 
-        obj_props = get_object_prop(frame1, grid_obj1, field,
-                                    record, params)
+        obj_props = get_object_prop(frame1, grid_obj1, field, record, params)
         record.add_uids(current_objects)
-        tracks = write_tracks(
-            tracks, record, current_objects, obj_props)
-        uids = np.array([int(x) for x in current_objects['uid']])
-        id2 = np.array([int(x) for x in current_objects['id2']])
+        tracks = write_tracks(tracks, record, current_objects, obj_props)
+        uids = np.array([int(x) for x in current_objects["uid"]])
+        id2 = np.array([int(x) for x in current_objects["id2"]])
         for j in range(uids.max()):
             ind = np.argwhere(uids == j)
             cell_mask[i, :, :] = np.where(frame2 == id2[ind], j, cell_mask[i, :, :])
         cell_mask[i, :, :] = np.ma.masked_where(frame2 == 0, cell_mask[i, :, :])
     cell_mask = np.ma.masked_where(cell_mask == 0, cell_mask)
     record.update_scan_and_time(grid_obj1)
-    tracks = tracks.set_index(['cell'])
+    tracks = tracks.set_index(["cell"])
     tracks = tracks.to_xarray()
     tracks["cell_time"] = tracks["time"]
     tracks = tracks.drop("time")
-    tracks["time"] = grid_ds.time.astype('datetime64[s]')
+    tracks["time"] = grid_ds.time.astype("datetime64[s]")
     tracks.attrs["cf_tree_order"] = "storm_id cell_id"
     tracks.attrs["tree_id"] = grid_ds.attrs["tree_id"]
     tracks["cell_id"] = tracks["cell"]
@@ -186,7 +183,6 @@ def make_tracks_2d_field(grid_ds, field, params=None):
     tracks["cell_mask"] = cell_mask
     tracks["cell_mask"].attrs["cf_role"] = grid_ds.attrs["tree_id"]
     tracks["cell_mask"].attrs["long_name"] = "cell ID for this grid cell"
-    tracks["cell_mask"].attrs['coordinates'] = 'cell_id time latitude longitude'
+    tracks["cell_mask"].attrs["coordinates"] = "cell_id time latitude longitude"
 
     return tracks
-

@@ -1,4 +1,4 @@
-'''Provide tracking methods.
+"""Provide tracking methods.
 
 The individual features and associated area/volumes identified in
 each timestep have to be linked into cloud trajectories to analyse
@@ -17,21 +17,33 @@ References
    towards a flexible framework for tracking and analysis of clouds in
    diverse datasets, Geosci. Model Dev. Discuss.,
    https://doi.org/10.5194/gmd-2019-105 , in review, 2019, 9f.
-'''
+"""
 
 import logging
 import numpy as np
 import pandas as pd
 
-def linking_trackpy(features,field_in,dt,dxy,
-                       v_max=None,d_max=None,d_min=None,subnetwork_size=None,
-                       memory=0,stubs=1,time_cell_min=None,              
-                       order=1,extrapolate=0, 
-                       method_linking='random',
-                       adaptive_step=None,adaptive_stop=None,
-                       cell_number_start=1
-                       ):
-    '''Perform Linking of features in trajectories.
+
+def linking_trackpy(
+    features,
+    field_in,
+    dt,
+    dxy,
+    v_max=None,
+    d_max=None,
+    d_min=None,
+    subnetwork_size=None,
+    memory=0,
+    stubs=1,
+    time_cell_min=None,
+    order=1,
+    extrapolate=0,
+    method_linking="random",
+    adaptive_step=None,
+    adaptive_stop=None,
+    cell_number_start=1,
+):
+    """Perform Linking of features in trajectories.
 
     The linking determines which of the features detected in a specific
     timestep is identical to an existing feature in the previous
@@ -61,14 +73,14 @@ def linking_trackpy(features,field_in,dt,dxy,
         specific point in time).
 
     dt : float
-    	Time resolution of tracked features.
+        Time resolution of tracked features.
 
     dxy : float
         Grid spacing of the input data.
 
     d_max : float, optional
-    	Maximum search range
-        
+        Maximum search range
+
         Default is None.
 
     d_min : float, optional
@@ -99,17 +111,17 @@ def linking_trackpy(features,field_in,dt,dxy,
         Default is 1
 
     time_cell_min : float, optional
-    	Minimum length in time of tracked cell to be reported in minutes
-        
+        Minimum length in time of tracked cell to be reported in minutes
+
         Default is None.
 
     order : int, optional
-    	Order of polynomial used to extrapolate trajectory into gaps and
-        ond start and end point. 
+        Order of polynomial used to extrapolate trajectory into gaps and
+        ond start and end point.
         Default is 1.
 
     extrapolate : int, optional
-    	Number or timesteps to extrapolate trajectories. 
+        Number or timesteps to extrapolate trajectories.
         Default is 0.
 
     method_linking : {'random', 'predict'}, optional
@@ -118,15 +130,15 @@ def linking_trackpy(features,field_in,dt,dxy,
 
     adaptive_step : float, optional
         Reduce search range by multiplying it by this factor.
-        
+
     adaptive_stop : float, optional
         If not None, when encountering an oversize subnet, retry by progressively
         reducing search_range until the subnet is solvable. If search_range
         becomes <= adaptive_stop, give up and raise a SubnetOversizeException.
         Default is None
-        
+
     cell_number_start : int, optional
-        Cell number for first tracked cell. 
+        Cell number for first tracked cell.
         Default is 1
 
     Returns
@@ -140,130 +152,146 @@ def linking_trackpy(features,field_in,dt,dxy,
     ------
     ValueError
         If method_linking is neither 'random' nor 'predict'.
-    '''
+    """
 
     #    from trackpy import link_df
     import trackpy as tp
     from copy import deepcopy
-#    from trackpy import filter_stubs
-#    from tobac.utils import add_coordinates
+
+    #    from trackpy import filter_stubs
+    #    from tobac.utils import add_coordinates
 
     # convert to iris/pandas
-    field_in=field_in.to_iris()
-    features=features.to_dataframe()
+    field_in = field_in.to_iris()
+    features = features.to_dataframe()
 
     # calculate search range based on timestep and grid spacing
     if v_max is not None:
-        search_range=int(dt*v_max/dxy)
-    
+        search_range = int(dt * v_max / dxy)
+
     # calculate search range based on timestep and grid spacing
     if d_max is not None:
-        search_range=int(d_max/dxy)
-    
+        search_range = int(d_max / dxy)
+
     # calculate search range based on timestep and grid spacing
     if d_min is not None:
-        search_range=max(search_range,int(d_min/dxy))
+        search_range = max(search_range, int(d_min / dxy))
 
     if time_cell_min:
-        stubs=np.floor(time_cell_min/dt)+1
-    
-    
-    logging.debug('stubs: '+ str(stubs))
+        stubs = np.floor(time_cell_min / dt) + 1
 
-    logging.debug('start linking features into trajectories')
-    
-    
-    #If subnetwork size given, set maximum subnet size
+    logging.debug("stubs: " + str(stubs))
+
+    logging.debug("start linking features into trajectories")
+
+    # If subnetwork size given, set maximum subnet size
     if subnetwork_size is not None:
-        tp.linking.Linker.MAX_SUB_NET_SIZE=subnetwork_size
+        tp.linking.Linker.MAX_SUB_NET_SIZE = subnetwork_size
     # deep copy to preserve features field:
-    features_linking=deepcopy(features)
-    
-    if method_linking == 'random':
-#     link features into trajectories:
-        trajectories_unfiltered = tp.link(features_linking, 
-                               search_range=search_range, 
-                               memory=memory, 
-                               t_column='frame',
-                               pos_columns=['hdim_2','hdim_1'],
-                               adaptive_step=adaptive_step,adaptive_stop=adaptive_stop,
-                               neighbor_strategy='KDTree', link_strategy='auto'
-                               )
-    elif method_linking == 'predict':
+    features_linking = deepcopy(features)
+
+    if method_linking == "random":
+        #     link features into trajectories:
+        trajectories_unfiltered = tp.link(
+            features_linking,
+            search_range=search_range,
+            memory=memory,
+            t_column="frame",
+            pos_columns=["hdim_2", "hdim_1"],
+            adaptive_step=adaptive_step,
+            adaptive_stop=adaptive_stop,
+            neighbor_strategy="KDTree",
+            link_strategy="auto",
+        )
+    elif method_linking == "predict":
 
         pred = tp.predict.NearestVelocityPredict(span=1)
-        trajectories_unfiltered = pred.link_df(features_linking, search_range=search_range, memory=memory,
-                                 pos_columns=['hdim_1','hdim_2'],
-                                 t_column='frame',
-                                 neighbor_strategy='KDTree', link_strategy='auto',
-                                 adaptive_step=adaptive_step,adaptive_stop=adaptive_stop
-#                                 copy_features=False, diagnostics=False,
-#                                 hash_size=None, box_size=None, verify_integrity=True,
-#                                 retain_index=False
-                                 )
+        trajectories_unfiltered = pred.link_df(
+            features_linking,
+            search_range=search_range,
+            memory=memory,
+            pos_columns=["hdim_1", "hdim_2"],
+            t_column="frame",
+            neighbor_strategy="KDTree",
+            link_strategy="auto",
+            adaptive_step=adaptive_step,
+            adaptive_stop=adaptive_stop
+            #                                 copy_features=False, diagnostics=False,
+            #                                 hash_size=None, box_size=None, verify_integrity=True,
+            #                                 retain_index=False
+        )
     else:
-        raise ValueError('method_linking unknown')
-        
-        
+        raise ValueError("method_linking unknown")
+
         # Filter trajectories to exclude short trajectories that are likely to be spurious
-#    trajectories_filtered = filter_stubs(trajectories_unfiltered,threshold=stubs)
-#    trajectories_filtered=trajectories_filtered.reset_index(drop=True)
+    #    trajectories_filtered = filter_stubs(trajectories_unfiltered,threshold=stubs)
+    #    trajectories_filtered=trajectories_filtered.reset_index(drop=True)
 
     # Reset particle numbers from the arbitray numbers at the end of the feature detection and linking to consecutive cell numbers
     # keep 'particle' for reference to the feature detection step.
 
-    logging.debug('set cell number')
+    logging.debug("set cell number")
     # https://stackoverflow.com/questions/51834175/
     #   assigning-incremental-values-based-on-an-unique-value-of-a-column
-    trajectories_unfiltered['cell'] = pd.factorize(trajectories_unfiltered['particle'])[0] + int(cell_number_start)
+    trajectories_unfiltered["cell"] = pd.factorize(trajectories_unfiltered["particle"])[
+        0
+    ] + int(cell_number_start)
 
-    trajectories_unfiltered.drop(columns=['particle'],inplace=True)
+    trajectories_unfiltered.drop(columns=["particle"], inplace=True)
 
-    logging.debug('set cell to nan if count < stubs')
+    logging.debug("set cell to nan if count < stubs")
     # https://stackoverflow.com/questions/47813994/
     #   python-pandas-how-to-replace-values-that-have-a-count-smaller-than-x
-    trajectories_unfiltered.loc[trajectories_unfiltered.groupby('cell').cell.transform('count').lt(stubs), 'cell'] = np.nan
+    trajectories_unfiltered.loc[
+        trajectories_unfiltered.groupby("cell").cell.transform("count").lt(stubs),
+        "cell",
+    ] = np.nan
 
-    trajectories_filtered=trajectories_unfiltered
+    trajectories_filtered = trajectories_unfiltered
 
-    #Interpolate to fill the gaps in the trajectories (left from allowing memory in the linking)
-    trajectories_filtered_unfilled=deepcopy(trajectories_filtered)
+    # Interpolate to fill the gaps in the trajectories (left from allowing memory in the linking)
+    trajectories_filtered_unfilled = deepcopy(trajectories_filtered)
 
-#    trajectories_filtered_filled=fill_gaps(trajectories_filtered_unfilled,order=order,
-#                                extrapolate=extrapolate,frame_max=field_in.shape[0]-1,
-#                                hdim_1_max=field_in.shape[1],hdim_2_max=field_in.shape[2])
-#     add coorinates from input fields to output trajectories (time,dimensions)
-#    logging.debug('start adding coordinates to trajectories')
-#    trajectories_filtered_filled=add_coordinates(trajectories_filtered_filled,field_in)
-#     add time coordinate relative to cell initiation:
-#    logging.debug('start adding cell time to trajectories')
+    #    trajectories_filtered_filled=fill_gaps(trajectories_filtered_unfilled,order=order,
+    #                                extrapolate=extrapolate,frame_max=field_in.shape[0]-1,
+    #                                hdim_1_max=field_in.shape[1],hdim_2_max=field_in.shape[2])
+    #     add coorinates from input fields to output trajectories (time,dimensions)
+    #    logging.debug('start adding coordinates to trajectories')
+    #    trajectories_filtered_filled=add_coordinates(trajectories_filtered_filled,field_in)
+    #     add time coordinate relative to cell initiation:
+    #    logging.debug('start adding cell time to trajectories')
 
-    trajectories_filtered_filled=trajectories_filtered_unfilled
+    trajectories_filtered_filled = trajectories_filtered_unfilled
 
-    logging.debug('start adding time relative to cell initiation')
-    trajectories_filtered_filled['time_cell'] = trajectories_filtered_filled.groupby('cell').time.apply(lambda x: x - x.iloc[0])
+    logging.debug("start adding time relative to cell initiation")
+    trajectories_filtered_filled["time_cell"] = trajectories_filtered_filled.groupby(
+        "cell"
+    ).time.apply(lambda x: x - x.iloc[0])
 
     # add coordinate to raw features identified:
-    logging.debug('start adding coordinates to detected features')
-    logging.debug('feature linking completed')
-    
+    logging.debug("start adding coordinates to detected features")
+    logging.debug("feature linking completed")
+
     trajectories_final = trajectories_filtered_filled.to_xarray()
     return trajectories_final
 
-def fill_gaps(t,order=1,extrapolate=0,frame_max=None,hdim_1_max=None,hdim_2_max=None):
-    '''Add cell time as time since the initiation of each cell.
+
+def fill_gaps(
+    t, order=1, extrapolate=0, frame_max=None, hdim_1_max=None, hdim_2_max=None
+):
+    """Add cell time as time since the initiation of each cell.
 
     Parameters
     ----------
     t : pandas.DataFrame
-	Trajectories from trackpy.
+        Trajectories from trackpy.
 
     order : int, optional
-	Order of polynomial used to extrapolate trajectory into
-	gaps and beyond start and end point. Default is 1.
+        Order of polynomial used to extrapolate trajectory into
+        gaps and beyond start and end point. Default is 1.
 
     extrapolate : int, optional
-	Number or timesteps to extrapolate trajectories. Default is 0.
+        Number or timesteps to extrapolate trajectories. Default is 0.
 
     frame_max : int, optional
         Size of input data along time axis. Default is None.
@@ -277,48 +305,53 @@ def fill_gaps(t,order=1,extrapolate=0,frame_max=None,hdim_1_max=None,hdim_2_max=
     t : pandas.DataFrame
         Trajectories from trackpy with with filled gaps and potentially
         extrapolated.
-    '''
+    """
     from scipy.interpolate import InterpolatedUnivariateSpline
-    logging.debug('start filling gaps')
-    
-    t_list=[]    # empty list to store interpolated DataFrames
-    
-    # group by cell number and perform process for each cell individually:
-    t_grouped=t.groupby('cell')
-    for cell,track in t_grouped:        
-        
-        # Setup interpolator from existing points (of order given as keyword)      
-        frame_in=track['frame'].values
-        hdim_1_in=track['hdim_1'].values
-        hdim_2_in=track['hdim_2'].values
-        s_x = InterpolatedUnivariateSpline(frame_in, hdim_1_in, k=order)
-        s_y = InterpolatedUnivariateSpline(frame_in, hdim_2_in, k=order)        
-        
-        # Create new index filling in gaps and possibly extrapolating:
-        index_min=min(frame_in)-extrapolate
-        index_min=max(index_min,0)
-        index_max=max(frame_in)+extrapolate
-        index_max=min(index_max,frame_max)
-        new_index=range(index_min,index_max+1) # +1 here to include last value
-        track=track.reindex(new_index)
-        
-        # Interpolate to extended index:
-        frame_out=new_index
-        hdim_1_out=s_x(frame_out)
-        hdim_2_out=s_y(frame_out)
-        
-        # Replace fields in data frame with        
-        track['frame']=new_index
-        track['hdim_1']=hdim_1_out
-        track['hdim_2']=hdim_2_out
-        track['cell']=cell   
-        
-        # Append DataFrame to list of DataFrames
-        t_list.append(track)       
-    # Concatenate interpolated trajectories into one DataFrame:    
-    t_out=pd.concat(t_list)
-    # Restrict output trajectories to input data in time and space:
-    t_out=t_out.loc[(t_out['hdim_1']<hdim_1_max) & (t_out['hdim_2']<hdim_2_max) &(t_out['hdim_1']>0) & (t_out['hdim_2']>0)]
-    t_out=t_out.reset_index(drop=True)
-    return t_out
 
+    logging.debug("start filling gaps")
+
+    t_list = []  # empty list to store interpolated DataFrames
+
+    # group by cell number and perform process for each cell individually:
+    t_grouped = t.groupby("cell")
+    for cell, track in t_grouped:
+
+        # Setup interpolator from existing points (of order given as keyword)
+        frame_in = track["frame"].values
+        hdim_1_in = track["hdim_1"].values
+        hdim_2_in = track["hdim_2"].values
+        s_x = InterpolatedUnivariateSpline(frame_in, hdim_1_in, k=order)
+        s_y = InterpolatedUnivariateSpline(frame_in, hdim_2_in, k=order)
+
+        # Create new index filling in gaps and possibly extrapolating:
+        index_min = min(frame_in) - extrapolate
+        index_min = max(index_min, 0)
+        index_max = max(frame_in) + extrapolate
+        index_max = min(index_max, frame_max)
+        new_index = range(index_min, index_max + 1)  # +1 here to include last value
+        track = track.reindex(new_index)
+
+        # Interpolate to extended index:
+        frame_out = new_index
+        hdim_1_out = s_x(frame_out)
+        hdim_2_out = s_y(frame_out)
+
+        # Replace fields in data frame with
+        track["frame"] = new_index
+        track["hdim_1"] = hdim_1_out
+        track["hdim_2"] = hdim_2_out
+        track["cell"] = cell
+
+        # Append DataFrame to list of DataFrames
+        t_list.append(track)
+    # Concatenate interpolated trajectories into one DataFrame:
+    t_out = pd.concat(t_list)
+    # Restrict output trajectories to input data in time and space:
+    t_out = t_out.loc[
+        (t_out["hdim_1"] < hdim_1_max)
+        & (t_out["hdim_2"] < hdim_2_max)
+        & (t_out["hdim_1"] > 0)
+        & (t_out["hdim_2"] > 0)
+    ]
+    t_out = t_out.reset_index(drop=True)
+    return t_out
