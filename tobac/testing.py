@@ -1,6 +1,7 @@
 import datetime
 import numpy as np
 from xarray import DataArray
+import pandas as pd
 
 
 def make_simple_sample_data_2D(data_type="iris"):
@@ -420,3 +421,238 @@ def make_sample_data_3D_3blobs(data_type="iris", invert_xy=False):
         sample_data = DataArray.from_iris(sample_data)
 
     return sample_data
+
+
+def make_dataset_from_arr(in_arr, data_type="xarray"):
+    """Makes a dataset (xarray or iris) for feature detection/segmentation from
+    a raw numpy/dask/etc. array.
+
+    Parameters
+    ----------
+    in_arr: array-like
+        The input array to convert to iris/xarray
+    data_type: str('xarray' or 'iris')
+        Type of the dataset to return
+
+    Returns
+    -------
+    Iris or xarray dataset with everything we need for feature detection/tracking.
+
+    """
+    import xarray as xr
+
+    output_arr = xr.DataArray(in_arr)
+
+    if data_type == "xarray":
+        return output_arr
+    elif data_type == "iris":
+        return output_arr.to_iris()
+    else:
+        raise ValueError("data_type must be 'xarray' or 'iris'")
+
+
+def make_feature_blob(
+    in_arr,
+    h1_loc,
+    h2_loc,
+    v_loc=None,
+    h1_size=1,
+    h2_size=1,
+    v_size=1,
+    shape="rectangle",
+    amplitude=1,
+):
+    import xarray as xr
+
+    """Function to make a defined "blob" in location (zloc, yloc, xloc) with 
+    user-specified shape and amplitude. Note that this function will
+    round the size and locations to the nearest point within the array.
+    
+    Parameters
+    ----------
+    in_arr: array-like
+        input array to add the "blob" to
+    h1_loc: float
+        Center hdim_1 location of the blob, required
+    h2_loc: float
+        Center hdim_2 location of the blob, required
+    v_loc: float
+        Center vdim location of the blob, optional. If this is None, we assume that the
+        dataset is 2D.
+    h1_size: float
+        Size of the bubble in array coordinates in hdim_1
+    h2_size: float
+        Size of the bubble in array coordinates in hdim_2
+    v_size: float
+        Size of the bubble in array coordinates in vdim
+    shape: str('rectangle')
+        The shape of the blob that is added. For now, this is just rectangle
+        'rectangle' adds a rectangular/rectangular prism bubble with constant amplitude `amplitude`.
+    amplitude: float
+        Maximum amplitude of the blob
+
+    Returns
+    -------
+    array-like
+        An array with the same type as `in_arr` that has the blob added.
+    """
+
+    # Check if z location is there and set our 3D-ness based on this.
+    if v_loc is None:
+        is_3D = False
+        start_loc = 0
+        start_v = None
+        end_v = None
+
+    else:
+        is_3D = True
+        start_loc = 1
+        v_min = 0
+        v_max = in_arr.shape[start_loc]
+        start_v = int(np.ceil(max(v_min, v_loc - v_size / 2)))
+        end_v = int(np.ceil(min(v_max - 1, v_loc + v_size / 2)))
+        if v_size > v_max - v_min:
+            raise ValueError("v_size larger than domain size")
+
+    # Get min/max coordinates for hdim_1 and hdim_2
+    # Min is inclusive, end is exclusive
+    h1_min = 0
+    h1_max = in_arr.shape[start_loc]
+
+    h2_min = 0
+    h2_max = in_arr.shape[start_loc + 1]
+
+    if (h1_size > h1_max - h1_min) or (h2_size > h2_max - h2_min):
+        raise ValueError("Horizontal size larger than domain size")
+
+    # let's get start/end x/y/z
+    start_h1 = int(np.ceil(h1_loc - h1_size / 2))
+    end_h1 = int(np.ceil(h1_loc + h1_size / 2))
+
+    start_h2 = int(np.ceil(h2_loc - h2_size / 2))
+    end_h2 = int(np.ceil(h2_loc + h2_size / 2))
+    in_arr = set_arr_2D_3D(
+        in_arr, amplitude, start_h1, end_h1, start_h2, end_h2, start_v, end_v
+    )
+    return in_arr
+
+
+def set_arr_2D_3D(
+    in_arr, value, start_h1, end_h1, start_h2, end_h2, start_v=None, end_v=None
+):
+    """Function to set part of `in_arr` for either 2D or 3D points to `value`.
+    If `start_v` and `end_v` are not none, we assume that the array is 3D. If they
+    are none, we will set the array as if it is a 2D array.
+
+    Parameters
+    ----------
+    in_arr: array-like
+        Array of values to set
+    value: int, float, or array-like of size (end_v-start_v, end_h1-start_h1, end_h2-start_h2)
+        The value to assign to in_arr. This will work to assign an array, but the array
+        must have the same dimensions as the size specified in the function.
+    start_h1: int
+        Start index to set for hdim_1
+    end_h1: int
+        End index to set for hdim_1 (exclusive, so it acts like [start_h1:end_h1])
+    start_h2: int
+        Start index to set for hdim_2
+    end_h2: int
+        End index to set for hdim_2
+    start_v: int
+        Start index to set for vdim (optional)
+    end_v: int
+        End index to set for vdim (optional)
+
+    Returns
+    -------
+    array-like
+        in_arr with the new values set.
+    """
+    if start_v is not None and end_v is not None:
+        in_arr[start_v:end_v, start_h1:end_h1, start_h2:end_h2] = value
+    else:
+        in_arr[start_h1:end_h1, start_h2:end_h2] = value
+
+    return in_arr
+
+
+def generate_single_feature(
+    start_h1,
+    start_h2,
+    start_v=None,
+    spd_h1=1,
+    spd_h2=1,
+    spd_v=1,
+    min_h1=0,
+    max_h1=1000,
+    min_h2=0,
+    max_h2=1000,
+    num_frames=1,
+    dt=datetime.timedelta(minutes=5),
+    start_date=datetime.datetime(2022, 1, 1, 0),
+    frame_start=1,
+    feature_num=1,
+):
+    """Function to generate a dummy feature dataframe to test the tracking functionality
+
+    Parameters
+    ----------
+    start_h1: float
+        Starting point of the feature in hdim_1 space
+    start_h2: float
+        Starting point of the feature in hdim_2 space
+    start_v: float
+        Starting point of the feature in vdim space (if 3D). For 2D, set to None.
+    spd_h1: float
+        Speed (per frame) of the feature in hdim_1
+    spd_h2: float
+        Speed (per frame) of the feature in hdim_2
+    spd_v: float
+        Speed (per frame) of the feature in vdim
+    min_h1: int
+        Minimum value of hdim_1 allowed. If PBC_flag is not 'none', then
+        this will be used to know when to wrap around periodic boundaries.
+        If PBC_flag is 'none', features will disappear if they are above/below
+        these bounds.
+    max_h1: int
+        Similar to min_h1, but the max value of hdim_1 allowed.
+    min_h2: int
+        Similar to min_h1, but the minimum value of hdim_2 allowed.
+    max_h2: int
+        Similar to min_h1, but the maximum value of hdim_2 allowed.
+    num_frames: int
+        Number of frames to generate
+    dt: datetime.timedelta
+        Difference in time between each frame
+    start_date: datetime.datetime
+        Start datetime
+    frame_start: int
+        Number to start the frame at
+    feature_num: int
+        What number to start the feature at
+    """
+
+    out_list_of_dicts = list()
+    curr_h1 = start_h1
+    curr_h2 = start_h2
+    curr_v = start_v
+    curr_dt = start_date
+    is_3D = not (start_v is None)
+    for i in range(num_frames):
+        curr_dict = dict()
+        curr_dict["hdim_1"] = curr_h1
+        curr_dict["hdim_2"] = curr_h2
+        curr_dict["frame"] = frame_start + i
+        if curr_v is not None:
+            curr_dict["vdim"] = curr_v
+            curr_v += spd_v
+        curr_dict["time"] = curr_dt
+        curr_dict["feature"] = feature_num + i
+
+        curr_h1 += spd_h1
+        curr_h2 += spd_h2
+        curr_dt += dt
+        out_list_of_dicts.append(curr_dict)
+
+    return pd.DataFrame.from_dict(out_list_of_dicts)
