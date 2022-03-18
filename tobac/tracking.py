@@ -116,51 +116,54 @@ def linking_trackpy(
     # keep 'particle' for reference to the feature detection step.
     trajectories_unfiltered["cell"] = None
     particle_num_to_cell_num = dict()
-    for i_particle,particle in enumerate(pd.Series.unique(trajectories_unfiltered['particle'])):
-        cell=int(i_particle+cell_number_start)
+    for i_particle, particle in enumerate(
+        pd.Series.unique(trajectories_unfiltered["particle"])
+    ):
+        cell = int(i_particle + cell_number_start)
         particle_num_to_cell_num[particle] = int(cell)
     remap_particle_to_cell_vec = np.vectorize(remap_particle_to_cell_nv)
-    trajectories_unfiltered['cell'] = remap_particle_to_cell_vec(particle_num_to_cell_num, trajectories_unfiltered['particle'])
-    trajectories_unfiltered['cell'] = trajectories_unfiltered['cell'].astype(int)
-    trajectories_unfiltered.drop(columns=['particle'],inplace=True)
+    trajectories_unfiltered["cell"] = remap_particle_to_cell_vec(
+        particle_num_to_cell_num, trajectories_unfiltered["particle"]
+    )
+    trajectories_unfiltered["cell"] = trajectories_unfiltered["cell"].astype(int)
+    trajectories_unfiltered.drop(columns=["particle"], inplace=True)
 
-    trajectories_bycell=trajectories_unfiltered.groupby('cell')
+    trajectories_bycell = trajectories_unfiltered.groupby("cell")
     stub_cell_nums = list()
-    for cell,trajectories_cell in trajectories_bycell:
-        #logging.debug("cell: "+str(cell))
-        #logging.debug("feature: "+str(trajectories_cell['feature'].values))
-        #logging.debug("trajectories_cell.shape[0]: "+ str(trajectories_cell.shape[0]))
-        
+    for cell, trajectories_cell in trajectories_bycell:
+        # logging.debug("cell: "+str(cell))
+        # logging.debug("feature: "+str(trajectories_cell['feature'].values))
+        # logging.debug("trajectories_cell.shape[0]: "+ str(trajectories_cell.shape[0]))
+
         if trajectories_cell.shape[0] < stubs:
-            #logging.debug("cell" + str(cell)+ "  is a stub ("+str(trajectories_cell.shape[0])+ "), setting cell number to Nan..")
+            # logging.debug("cell" + str(cell)+ "  is a stub ("+str(trajectories_cell.shape[0])+ "), setting cell number to Nan..")
             stub_cell_nums.append(cell)
-    
-    trajectories_unfiltered.loc[trajectories_unfiltered['cell'].isin(stub_cell_nums),'cell']=np.nan
 
-    trajectories_filtered=trajectories_unfiltered
+    trajectories_unfiltered.loc[
+        trajectories_unfiltered["cell"].isin(stub_cell_nums), "cell"
+    ] = np.nan
 
+    trajectories_filtered = trajectories_unfiltered
 
-    #Interpolate to fill the gaps in the trajectories (left from allowing memory in the linking)
-    trajectories_filtered_unfilled=deepcopy(trajectories_filtered)
+    # Interpolate to fill the gaps in the trajectories (left from allowing memory in the linking)
+    trajectories_filtered_unfilled = deepcopy(trajectories_filtered)
 
-
-#    trajectories_filtered_filled=fill_gaps(trajectories_filtered_unfilled,order=order,
-#                                extrapolate=extrapolate,frame_max=field_in.shape[0]-1,
-#                                hdim_1_max=field_in.shape[1],hdim_2_max=field_in.shape[2])
-#     add coorinates from input fields to output trajectories (time,dimensions)
-#    logging.debug('start adding coordinates to trajectories')
-#    trajectories_filtered_filled=add_coordinates(trajectories_filtered_filled,field_in)
-#     add time coordinate relative to cell initiation:
-#    logging.debug('start adding cell time to trajectories')
-    trajectories_filtered_filled=trajectories_filtered_unfilled
-    trajectories_final=add_cell_time(trajectories_filtered_filled)
+    #    trajectories_filtered_filled=fill_gaps(trajectories_filtered_unfilled,order=order,
+    #                                extrapolate=extrapolate,frame_max=field_in.shape[0]-1,
+    #                                hdim_1_max=field_in.shape[1],hdim_2_max=field_in.shape[2])
+    #     add coorinates from input fields to output trajectories (time,dimensions)
+    #    logging.debug('start adding coordinates to trajectories')
+    #    trajectories_filtered_filled=add_coordinates(trajectories_filtered_filled,field_in)
+    #     add time coordinate relative to cell initiation:
+    #    logging.debug('start adding cell time to trajectories')
+    trajectories_filtered_filled = trajectories_filtered_unfilled
+    trajectories_final = add_cell_time(trajectories_filtered_filled)
 
     # add coordinate to raw features identified:
-    logging.debug('start adding coordinates to detected features')
-    logging.debug('feature linking completed')
+    logging.debug("start adding coordinates to detected features")
+    logging.debug("feature linking completed")
 
     return trajectories_final
-  
 
 
 def fill_gaps(
@@ -236,28 +239,29 @@ def fill_gaps(
 
 
 def add_cell_time(t):
-    ''' add cell time as time since the initiation of each cell   
-    
+    """add cell time as time since the initiation of each cell
+
     Parameters
     ----------
     t:             pandas  DataFrame
                    trajectories with added coordinates
-    
+
     Returns
     -------
-    t:             pandas dataframe 
+    t:             pandas dataframe
                    trajectories with added cell time
-    '''
+    """
 
-    #logging.debug('start adding time relative to cell initiation')
-    t_grouped=t.groupby('cell')
-    
-    t['time_cell'] = t['time']-t.groupby('cell')['time'].transform('min')
-    t['time_cell']=pd.to_timedelta(t['time_cell'])
+    # logging.debug('start adding time relative to cell initiation')
+    t_grouped = t.groupby("cell")
+
+    t["time_cell"] = t["time"] - t.groupby("cell")["time"].transform("min")
+    t["time_cell"] = pd.to_timedelta(t["time_cell"])
     return t
 
+
 def remap_particle_to_cell_nv(particle_cell_map, input_particle):
-    '''Remaps the particles to new cells given an input map and the current particle.
+    """Remaps the particles to new cells given an input map and the current particle.
     Helper function that is designed to be vectorized with np.vectorize
 
     Parameters
@@ -266,6 +270,6 @@ def remap_particle_to_cell_nv(particle_cell_map, input_particle):
         The dictionary mapping particle number to cell number
     input_particle: key for particle_cell_map
         The particle number to remap
-    
-    '''
+
+    """
     return particle_cell_map[input_particle]
