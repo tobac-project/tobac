@@ -1,5 +1,5 @@
 import logging
-import utils
+from . import utils as tb_utils
         
 def transfm_pbc_point(in_dim, dim_min, dim_max):
     '''Function to transform a PBC-feature point for contiguity
@@ -275,9 +275,9 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
     seg_m_data = segmentation_mask[:]
         
     #read in labeling/masks and region-finding functions
-    reg_props_dict = utils.get_label_props_in_dict(seg_m_data)
+    reg_props_dict = tb_utils.get_label_props_in_dict(seg_m_data)
 
-    curr_reg_inds, z_reg_inds, y_reg_inds, x_reg_inds= utils.get_indices_of_labels_from_reg_prop_dict(reg_props_dict)
+    curr_reg_inds, z_reg_inds, y_reg_inds, x_reg_inds= tb_utils.get_indices_of_labels_from_reg_prop_dict(reg_props_dict)
     
     #z_unf,y_unf,x_unf = np.where(segmentation_mask==0)
     
@@ -387,9 +387,9 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         
         #update mask coord regions
         
-        reg_props_dict = utils.get_label_props_in_dict(segmentation_out.data)
+        reg_props_dict = tb_utils.get_label_props_in_dict(segmentation_out.data)
 
-        curr_reg_inds, z_reg_inds, y_reg_inds, x_reg_inds= utils.get_indices_of_labels_from_reg_prop_dict(reg_props_dict)
+        curr_reg_inds, z_reg_inds, y_reg_inds, x_reg_inds= tb_utils.get_indices_of_labels_from_reg_prop_dict(reg_props_dict)
 
         wall_labels = np.array([])
 
@@ -432,8 +432,8 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                 if PBC_flag == 'both' and (np.any(label_y == [hdim1_min,hdim1_max]) and np.any(label_x == [hdim2_min,hdim2_max])):
                         
                     #adjust x and y points to the other side
-                    y_val_alt = utils.adjust_pbc_point(label_y, hdim1_min, hdim1_max)
-                    x_val_alt = utils.adjust_pbc_point(label_x, hdim2_min, hdim2_max)
+                    y_val_alt = tb_utils.adjust_pbc_point(label_y, hdim1_min, hdim1_max)
+                    x_val_alt = tb_utils.adjust_pbc_point(label_x, hdim2_min, hdim2_max)
                         
                     label_on_corner = segmentation_mask_3[label_z,y_val_alt,x_val_alt]
                         
@@ -444,7 +444,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                     
                 # on the hdim1 boundary and periodic on hdim1
                 if (PBC_flag == 'hdim_1' or PBC_flag == 'both') and np.any(label_y == [hdim1_min,hdim1_max]):                        
-                    y_val_alt = utils.adjust_pbc_point(label_y, hdim1_min, hdim1_max)
+                    y_val_alt = tb_utils.adjust_pbc_point(label_y, hdim1_min, hdim1_max)
 
                     #get the label value on the opposite side
                     label_alt = segmentation_mask_3[label_z,y_val_alt,label_x]
@@ -455,7 +455,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                         buddies = np.append(buddies,label_alt)
                    
                 if (PBC_flag == 'hdim_2' or PBC_flag == 'both') and np.any(label_x == [hdim2_min,hdim2_max]):                        
-                    x_val_alt = utils.adjust_pbc_point(label_x, hdim2_min, hdim2_max)
+                    x_val_alt = tb_utils.adjust_pbc_point(label_x, hdim2_min, hdim2_max)
 
                     #get the seg value on the opposite side
                     label_alt = segmentation_mask_3[label_z,label_y,x_val_alt]
