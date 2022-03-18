@@ -269,7 +269,6 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         
     #mask all segmentation_mask points below th=reshold as -1
     #to differentiate from those unmasked points NOT filled by watershedding
-    print(np.unique(segmentation_mask))
     segmentation_mask[~unmasked] = -1
     
     #saves/prints below for testing
