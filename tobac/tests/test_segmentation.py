@@ -9,7 +9,7 @@ def test_segmentation_timestep_2D_feature_2D_seg():
 
     # start by building a simple dataset with a single feature 
     import numpy as np
-    
+
     test_dset_size = (50, 50)
     test_hdim_1_pt = 20.0
     test_hdim_2_pt = 20.0
@@ -43,6 +43,47 @@ def test_segmentation_timestep_2D_feature_2D_seg():
     # Make sure that all labeled points are segmented
     assert np.all(out_seg_mask.core_data()[hdim_1_start_feat:hdim_1_end_feat, 
     hdim_2_start_feat:hdim_2_end_feat] == np.ones((test_hdim_1_sz, test_hdim_2_sz)))
+
+
+    # Now try PBCs
+    # First, something stretching across hdim_1
+    test_hdim_1_pt = 0.0
+    test_data = np.zeros(test_dset_size)
+
+    # Note that PBC flag here is 'both' as we still want the blob to be on both
+    # sides of the boundary to see if we accidentally grab it without PBC 
+    # segmentation
+    test_data = testing.make_feature_blob(
+        test_data,
+        test_hdim_1_pt,
+        test_hdim_2_pt,
+        h1_size=test_hdim_1_sz,
+        h2_size=test_hdim_2_sz,
+        amplitude=test_amp,
+        PBC_flag = 'both'
+    )
+
+    test_data_iris = testing.make_dataset_from_arr(test_data, data_type="iris")
+    # Generate dummy feature dataset
+    test_feature_ds = testing.generate_single_feature(start_h1 = test_hdim_1_pt, 
+                                                      start_h2 = test_hdim_2_pt)
+    
+    # First, try the cases where we shouldn't get the points on the opposite
+    # hdim_1 side
+    hdim_1_start_feat, hdim_1_end_feat = testing.get_start_end_of_feat(test_hdim_1_pt, 
+                                                            test_hdim_1_sz, 0,test_dset_size[0],
+                                                            is_pbc = False )
+
+    for pbc_option in ['none', 'hdim_2']:
+        out_seg_mask, out_df = seg.segmentation_timestep(field_in = test_data_iris, 
+                            features_in = test_feature_ds, dxy = test_dxy,
+                            threshold = test_amp-0.5, PBC_flag=pbc_option, )
+        # Make sure that all labeled points are segmented
+        assert np.all(out_seg_mask.core_data()[hdim_1_start_feat:hdim_1_end_feat, 
+        hdim_2_start_feat:hdim_2_end_feat] == np.ones((hdim_1_end_feat, test_hdim_2_sz)))
+
+
+
 
 
 def test_segmentation_timestep_level():

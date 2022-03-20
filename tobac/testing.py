@@ -838,3 +838,47 @@ def generate_single_feature(start_h1, start_h2, start_v = None,
 
 
     return pd.DataFrame.from_dict(out_list_of_dicts)
+
+def get_start_end_of_feat(center_point, size, axis_min, axis_max, is_pbc = False):
+    '''Gets the start and ending points for a feature given a size and PBC
+    conditions
+
+    Parameters
+    ----------
+    center_point: float
+        The center point of the feature
+    size: float
+        The size of the feature in this dimension
+    axis_min: int
+        Minimum point on the axis (usually 0)
+    axis_max: int
+        Maximum point on the axis (exclusive). This is 1 after
+        the last real point on the axis, such that axis_max - axis_min
+        is the size of the axis
+    is_pbc: bool
+        True if we should wrap around, false if we shouldn't.
+
+    Returns
+    -------
+    tuple (start_point, end_point)
+    '''
+    import numpy as np
+
+    min_pt = int(np.ceil(center_point - size / 2))
+    max_pt = int(np.ceil(center_point + size / 2))\
+
+    # adjust points for boundaries, if needed.
+    if min_pt < axis_min:
+        if is_pbc:
+            min_pt += (axis_max - axis_min)
+        else:
+            min_pt = axis_min
+    if max_pt > axis_max:
+        if is_pbc:
+            max_pt -= (axis_max - axis_min)
+        else:
+            max_pt = axis_max
+    
+    return (min_pt, max_pt)
+
+

@@ -321,3 +321,14 @@ def test_generate_single_feature():
                         min_h1 = 0, max_h1 = 10, min_h2 = 0, max_h2 = 10,
                         frame_start = 0, num_frames=4,
                         spd_h1 = 5, spd_h2 = 4, spd_v = 1, PBC_flag='both').sort_index(axis=1), expected_df.sort_index(axis=1))
+
+@pytest.mark.parametrize("in_pt,in_sz,axis_size,out_pts", 
+                         [(3, 0,(0,5), (3,3)), 
+                          (3, 3,(0,5), (2,5)),
+                          ]
+)
+def test_get_start_end_of_feat_nopbc(in_pt, in_sz, axis_size, out_pts):
+    '''Tests ```tobac.testing.get_start_end_of_feat```
+
+    '''
+    assert tbtest.get_start_end_of_feat(in_pt, in_sz, axis_size[0], axis_size[1]) == out_pts

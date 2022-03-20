@@ -166,15 +166,15 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                     markers[int(row['hdim_1']), int(row['hdim_2']),level]=row['feature']
                     
         elif (seed_3D_flag == 'box'):
-            z_len = len(field_in.coord('z').points)
-            y_len = len(field_in.coord('y').points)
-            x_len = len(field_in.coord('x').points)
+            z_len = data.shape[vertical_coord_axis]
+            y_len = data.shape[hdim_1_axis]
+            x_len = data.shape[hdim_2_axis]
         
             # Get the size of the seed box from the input parameter
             try:
-                seed_z = seed_3D_size[0]
-                seed_y = seed_3D_size[1]
-                seed_x = seed_3D_size[2]
+                seed_z = seed_3D_size[vertical_coord_axis]
+                seed_y = seed_3D_size[hdim_1_axis]
+                seed_x = seed_3D_size[hdim_2_axis]
             except TypeError:
                 # Not iterable, assume int. 
                 seed_z = seed_3D_size
@@ -265,16 +265,26 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
     # Only run this if we need to deal with PBCs
     if PBC_flag in pbc_options:
 
+        if not is_3D_seg:
+            # let's transpose segmentation_mask to a 1,y,x array to make calculations etc easier.
+            segmentation_mask = segmentation_mask[np.newaxis, :, :]
+            vertical_coord_axis = 0
+            hdim_1_axis = 1
+            hdim_2_axis = 2
+
+
+        seg_mask_unseeded = np.zeros(segmentation_mask.shape)
+
+
         # Return all indices where segmentation field == 0
         # meaning unfilled but above threshold
+        # TODO: is there a way to do this without np.where?
         vdim_unf,hdim1_unf,hdim2_unf = np.where(segmentation_mask==0)
-            
-        seg_mask_unseeded = np.zeros(segmentation_mask.shape)
+        seg_mask_unseeded[vdim_unf,hdim1_unf,hdim2_unf]=1            
     
-        seg_mask_unseeded[vdim_unf,hdim1_unf,hdim2_unf]=1
     
         #create labeled field of unfilled, unseeded features
-        labels_unseeded,label_num = skimage.measure.label(seg_mask_unseeded)
+        labels_unseeded,label_num = skimage.measure.label(seg_mask_unseeded, return_num=True)
         
         markers_2 = np.zeros(unmasked.shape).astype(np.int32)
         
@@ -336,28 +346,25 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         else:                
             raise ValueError('unknown method, must be watershed')
 
+        # For ease of use, switch segmentation_mask_2 to 3D if 2D.
+        if not is_3D_seg:
+            segmentation_mask_2 = segmentation_mask_2[np.newaxis, :, :]
+
         # remove everything from the individual masks that is more than max_distance_pixel away from the markers
         if max_distance is not None:
             D=distance_transform_edt((markers==0).astype(int))
             segmentation_mask_2[np.bitwise_and(segmentation_mask_2>0, D>max_distance_pixel)]=0
     
         # Sum up original mask and secondary PBC-mask for full PBC segmentation
-        #Write resulting mask into cube for output
-        segmentation_out.data=segmentation_mask + segmentation_mask_2
-        
-        segmentation_mask_3 = segmentation_out.data
-            
+        segmentation_mask_3=segmentation_mask + segmentation_mask_2
+                    
         # Secondary seeding complete, now blending periodic boundaries
-        #keep segmentation mask fields for now so we can save these all later
-        #for demos of changes
-
-        # Does any of this need to be run if there aren't PBCs?
-        
-        # Test of PBC segmentation boundary blending below
-        
+        # keep segmentation mask fields for now so we can save these all later
+        # for demos of changes
+                
         #update mask coord regions
         
-        reg_props_dict = tb_utils.get_label_props_in_dict(segmentation_out.data)
+        reg_props_dict = tb_utils.get_label_props_in_dict(segmentation_mask_3)
 
         curr_reg_inds, z_reg_inds, y_reg_inds, x_reg_inds= tb_utils.get_indices_of_labels_from_reg_prop_dict(reg_props_dict)
 
@@ -771,9 +778,10 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                                 #print(rgn_cube.data[z_seg,y_seg,x_seg])
                                 segmentation_mask_3[z_val_o,y_val_o,x_val_o] = segmentation_mask_4.data[z_seg,y_seg,x_seg]
                                 #print("updated")
-                
+        if not is_3D_seg:
+            segmentation_mask_3 = segmentation_mask_3[0]        
         segmentation_out.data = segmentation_mask_3
-                
+    # PBC checks not run            
     else:
         #Write resulting mask into cube for output
         segmentation_out.data = segmentation_mask
