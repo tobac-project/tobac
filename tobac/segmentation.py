@@ -76,6 +76,46 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
     from copy import deepcopy
     import numpy as np
     import iris
+
+    # How many dimensions are we using?
+    if field_in.ndim==2:
+        hdim_1_axis = 0
+        hdim_2_axis = 1
+        is_3D_seg = False
+    elif field_in.ndim == 3:
+        is_3D_seg = True
+        # Find which coordinate is the z coordinate
+        list_coord_names=[coord.name() for coord in field_in.coords()]
+        #determine vertical axis:
+        if vertical_coord=='auto':
+            list_vertical=['z','model_level_number','altitude','geopotential_height']
+            # TODO: there surely must be a better way to handle this
+            for coord_name in list_vertical:
+                if coord_name in list_coord_names:
+                    vertical_axis=coord_name
+                    break
+        elif vertical_coord in list_coord_names:
+            vertical_axis=vertical_coord
+        else:
+            raise ValueError('Plese specify vertical coordinate')
+        ndim_vertical=field_in.coord_dims(vertical_axis)
+        if len(ndim_vertical)>1:
+            raise ValueError('please specify 1 dimensional vertical coordinate')
+        vertical_coord_axis = ndim_vertical[0]
+        # Once we know the vertical coordinate, we can resolve the 
+        # horizontal coordinates
+        if vertical_coord_axis == 0:
+            hdim_1_axis = 1
+            hdim_2_axis = 2
+        elif vertical_coord_axis == 1:
+            hdim_1_axis = 0
+            hdim_2_axis = 2
+        elif vertical_coord_axis == 2:
+            hdim_1_axis = 0
+            hdim_2_axis = 1
+    else:
+        raise ValueError('Segmentation routine only possible with 2 or 3 spatial dimensions')
+
     
     # copy feature dataframe for output 
     features_out=deepcopy(features_in)
@@ -109,42 +149,11 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
 
     # set markers at the positions of the features:
     markers = np.zeros(unmasked.shape).astype(np.int32)
-    if field_in.ndim==2: #2D watershedding        
-        hdim_1_axis = 0
-        hdim_2_axis = 1
+    if not is_3D_seg: #2D watershedding        
         for index, row in features_in.iterrows():
             markers[int(row['hdim_1']), int(row['hdim_2'])]=row['feature']
 
-    elif field_in.ndim==3: #3D watershedding
-        # Find which coordinate is the z coordinate
-        list_coord_names=[coord.name() for coord in field_in.coords()]
-        #determine vertical axis:
-        if vertical_coord=='auto':
-            list_vertical=['z','model_level_number','altitude','geopotential_height']
-            # TODO: there surely must be a better way to handle this
-            for coord_name in list_vertical:
-                if coord_name in list_coord_names:
-                    vertical_axis=coord_name
-                    break
-        elif vertical_coord in list_coord_names:
-            vertical_axis=vertical_coord
-        else:
-            raise ValueError('Plese specify vertical coordinate')
-        ndim_vertical=field_in.coord_dims(vertical_axis)
-        if len(ndim_vertical)>1:
-            raise ValueError('please specify 1 dimensional vertical coordinate')
-        vertical_coord_axis = ndim_vertical[0]
-        # Once we know the vertical coordinate, we can resolve the 
-        # horizontal coordinates
-        if vertical_coord_axis == 0:
-            hdim_1_axis = 1
-            hdim_2_axis = 2
-        elif vertical_coord_axis == 1:
-            hdim_1_axis = 0
-            hdim_2_axis = 2
-        elif vertical_coord_axis == 2:
-            hdim_1_axis = 0
-            hdim_2_axis = 1
+    elif is_3D_seg: #3D watershedding
         
         # We need to generate seeds in 3D. 
         if (seed_3D_flag == 'column'):
@@ -215,8 +224,6 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                                 markers[y_list[j],x_list[i],z_list[k]]=row['feature']
                                             
             
-    else:
-        raise ValueError('Segmentations routine only possible with 2 or 3 spatial dimensions')
 
     # set markers in cells not fulfilling threshold condition to zero:
     markers[~unmasked]=0
@@ -460,8 +467,6 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
             
             #loop thru buddies
             for buddy in buddies:
-                print("Now on buddy: ",buddy)
-                print("points: ",len(z_reg_inds[buddy]))
                 
                 #if buddy == cur_idx:
                 buddy_feat = features_in[features_in['feature'] == buddy]
@@ -534,29 +539,11 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                             x_a1 = x
 
                         buddy_rgn[z-bbox_zstart,y-bbox_ystart,x-bbox_xstart] = field_in.data[z_a1,y_a1,x_a1]
-            
-            
-            #buddy_rgn = np.expand_dims(buddy_rgn,0)
-            #print(buddy_rgn.shape)
-        
+                    
             rgn_cube = iris.cube.Cube(data=buddy_rgn)
         
-            #date = '2018-08-22'
-            #ftime = m.group(2)
-            #time = "2100"
-        
-            #dd 
-            #current_time = dati.datetime(year=yyyy,month=mm,day=dd,hour=hh,minute=mins,second=0) 
-        
-            #timediff = current_time - start_time
-            #print(timediff.days, timediff.seconds, timediff.microseconds)
-            #iris_time = timediff.days*86400 + timediff.seconds
-            #itime = iris.coords.Coord([field_in.time.point], standard_name='time', long_name='index_time', var_name='itime', units='seconds since 2018-08-21 00:00')
             coord_system=None
         
-            #h2_coord=iris.coords.DimCoord(np.arange(bbox_xstart,bbox_xend), long_name='hdim_2', units='1', bounds=None, attributes=None, coord_system=coord_system)
-            #h1_coord=iris.coords.DimCoord(np.arange(bbox_ystart,bbox_yend), long_name='hdim_1', units='1', bounds=None, attributes=None, coord_system=coord_system)
-            #v_coord=iris.coords.DimCoord(np.arange(bbox_zstart,bbox_zend), long_name='vdim', units='1', bounds=None, attributes=None, coord_system=coord_system)
             h2_coord=iris.coords.DimCoord(np.arange(bbox_xsize), long_name='hdim_2', units='1', bounds=None, attributes=None, coord_system=coord_system)
             h1_coord=iris.coords.DimCoord(np.arange(bbox_ysize), long_name='hdim_1', units='1', bounds=None, attributes=None, coord_system=coord_system)
             v_coord=iris.coords.DimCoord(np.arange(bbox_zsize), long_name='vdim', units='1', bounds=None, attributes=None, coord_system=coord_system)
