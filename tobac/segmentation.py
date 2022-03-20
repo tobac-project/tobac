@@ -72,22 +72,11 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
     """
     from skimage.segmentation import watershed
     import skimage.measure
-    # from skimage.segmentation import random_walker
     from scipy.ndimage import distance_transform_edt
     from copy import deepcopy
     import numpy as np
     import iris
     
-    #saving intermediary fields for testing
-    #original mask, secondary seeding, final version
-    #so we can ascertain deltas of each
-    #inter_fp = '/sumatra/asokolowsky/tobac_data/segmentation/testing/'
-    
-    #if (np.all(features_in.frame.values[:] == 0)):
-    #    print("creating output file")
-    #    out_f = h5py.File('/sumatra/asokolowsky/tobac_data/segmentation/testing/seg_fields_progression.h5','w')
-    #    print(out_f)
-
     # copy feature dataframe for output 
     features_out=deepcopy(features_in)
     # Create cube of the same dimensions and coordinates as input data to store mask:        
@@ -97,6 +86,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
 
     # Get raw array from input data:
     data=field_in.core_data()
+    is_3D_seg = len(data.shape)==3
     
     #Set level at which to create "Seed" for each feature in the case of 3D watershedding:
     # If none, use all levels (later reduced to the ones fulfilling the theshold conditions)
@@ -120,61 +110,57 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
     # set markers at the positions of the features:
     markers = np.zeros(unmasked.shape).astype(np.int32)
     if field_in.ndim==2: #2D watershedding        
+        hdim_1_axis = 0
+        hdim_2_axis = 1
         for index, row in features_in.iterrows():
             markers[int(row['hdim_1']), int(row['hdim_2'])]=row['feature']
 
     elif field_in.ndim==3: #3D watershedding
+        # Find which coordinate is the z coordinate
+        list_coord_names=[coord.name() for coord in field_in.coords()]
+        #determine vertical axis:
+        if vertical_coord=='auto':
+            list_vertical=['z','model_level_number','altitude','geopotential_height']
+            # TODO: there surely must be a better way to handle this
+            for coord_name in list_vertical:
+                if coord_name in list_coord_names:
+                    vertical_axis=coord_name
+                    break
+        elif vertical_coord in list_coord_names:
+            vertical_axis=vertical_coord
+        else:
+            raise ValueError('Plese specify vertical coordinate')
+        ndim_vertical=field_in.coord_dims(vertical_axis)
+        if len(ndim_vertical)>1:
+            raise ValueError('please specify 1 dimensional vertical coordinate')
+        vertical_coord_axis = ndim_vertical[0]
+        # Once we know the vertical coordinate, we can resolve the 
+        # horizontal coordinates
+        if vertical_coord_axis == 0:
+            hdim_1_axis = 1
+            hdim_2_axis = 2
+        elif vertical_coord_axis == 1:
+            hdim_1_axis = 0
+            hdim_2_axis = 2
+        elif vertical_coord_axis == 2:
+            hdim_1_axis = 0
+            hdim_2_axis = 1
+        
+        # We need to generate seeds in 3D. 
         if (seed_3D_flag == 'column'):
-            list_coord_names=[coord.name() for coord in field_in.coords()]
-            #determine vertical axis:
-            if vertical_coord=='auto':
-                list_vertical=['z','model_level_number','altitude','geopotential_height']
-                for coord_name in list_vertical:
-                    if coord_name in list_coord_names:
-                        vertical_axis=coord_name
-                        break
-            elif vertical_coord in list_coord_names:
-                vertical_axis=vertical_coord
-            else:
-                raise ValueError('Plese specify vertical coordinate')
-            ndim_vertical=field_in.coord_dims(vertical_axis)
-            if len(ndim_vertical)>1:
-                raise ValueError('please specify 1 dimensional vertical coordinate')
             for index, row in features_in.iterrows():
-                if ndim_vertical[0]==0:
-                    markers[:,int(row['hdim_1']), int(row['hdim_2'])]=row['feature']
-                elif ndim_vertical[0]==1:
-                    markers[int(row['hdim_1']),:, int(row['hdim_2'])]=row['feature']
-                elif ndim_vertical[0]==2:
-                    markers[int(row['hdim_1']), int(row['hdim_2']),:]=row['feature']
+                if vertical_coord_axis==0:
+                    markers[level,int(row['hdim_1']), int(row['hdim_2'])]=row['feature']
+                elif vertical_coord_axis==1:
+                    markers[int(row['hdim_1']),level, int(row['hdim_2'])]=row['feature']
+                elif vertical_coord_axis==2:
+                    markers[int(row['hdim_1']), int(row['hdim_2']),level]=row['feature']
                     
         elif (seed_3D_flag == 'box'):
-            list_coord_names=[coord.name() for coord in field_in.coords()]
-            #determine vertical axis:
-            #print(list_coord_names)
-            if vertical_coord=='auto':
-                list_vertical=['vdim','z','model_level_number','altitude','geopotential_height']
-                for coord_name in list_vertical:
-                    if coord_name in list_coord_names:
-                        vertical_axis=coord_name
-                        #print(vertical_axis)
-                        break
-            elif vertical_coord in list_coord_names:
-                vertical_axis=vertical_coord
-            else:
-                raise ValueError('Please specify vertical coordinate')
-            ndim_vertical=field_in.coord_dims(vertical_axis)
-            #print(ndim_vertical,ndim_vertical[0])
-        
-            if len(ndim_vertical)>1:
-                raise ValueError('please specify 1 dimensional vertical coordinate')
             z_len = len(field_in.coord('z').points)
             y_len = len(field_in.coord('y').points)
             x_len = len(field_in.coord('x').points)
         
-            #print(z_len,y_len,x_len)
-            #display(features_in)
-
             # Get the size of the seed box from the input parameter
             try:
                 seed_z = seed_3D_size[0]
@@ -186,20 +172,11 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                 seed_y = seed_3D_size
                 seed_x = seed_3D_size
 
-        
+            # Can we use our testing function to generate 3D boxes (with PBC awareness)
+            # for a faster version of this?
             for index, row in features_in.iterrows():
-                #creation of point ranges for 3D marker seeding
-                #and PBC flags for cross-boundary seeding - nixing this idea for now, but described in PBC Segmentation notes
-                #PBC_y_chk = 0
-                #PBC_x_chk = 0
-            
-                #print("feature: ",row['feature'])
-                #print("z-ctr: ",row['vdim'])
-                #print("y-ctr: ",row['hdim_1'])
-                #print("x-ctr: ",row['hdim_2'])
-                
-            
-            
+                #creation of point ranges for 3D marker seeding                
+                # TODO: fix this so that it's not all 0-5
                 if(int(row['vdim']) >=2 and int(row['vdim']) <= z_len-3):
                     z_list = np.arange(int(row['vdim']-2),int(row['vdim']+3))
                 elif(int(row['vdim']) < 2):
@@ -225,7 +202,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                     x_list = np.arange(x_len-seed_x,x_len)
                     #PBC_x_chk = 1
                 
-                #loop thru 5x5x5 z times y times x range
+                #loop thru the box points
                 for k in range(0,seed_z):
                     for j in range(0,seed_y):
                         for i in range(0,seed_x):
@@ -236,18 +213,14 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                                 markers[y_list[j],z_list[k],x_list[i]]=row['feature']
                             elif ndim_vertical[0]==2:
                                 markers[y_list[j],x_list[i],z_list[k]]=row['feature']
-                                
-                                
-        #else:
-             #error for unspec method
-            
+                                            
             
     else:
         raise ValueError('Segmentations routine only possible with 2 or 3 spatial dimensions')
 
     # set markers in cells not fulfilling threshold condition to zero:
     markers[~unmasked]=0
-    marker_vals = np.unique(markers)
+    #marker_vals = np.unique(markers)
   
     # Turn into np arrays (not necessary for markers) as dask arrays don't yet seem to work for watershedding algorithm
     data_segmentation=np.array(data_segmentation)
@@ -256,9 +229,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
     # perform segmentation:
     if method=='watershed':
         segmentation_mask = watershed(np.array(data_segmentation),markers.astype(np.int32), mask=unmasked)
-#    elif method=='random_walker':
-#        segmentation_mask=random_walker(data_segmentation, markers.astype(np.int32),
-#                                          beta=130, mode='bf', tol=0.001, copy=True, multichannel=False, return_full_prob=False, spacing=None)
+
     else:                
         raise ValueError('unknown method, must be watershed')
 
@@ -267,7 +238,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         D=distance_transform_edt((markers==0).astype(int))
         segmentation_mask[np.bitwise_and(segmentation_mask>0, D>max_distance_pixel)]=0
         
-    #mask all segmentation_mask points below th=reshold as -1
+    #mask all segmentation_mask points below threshold as -1
     #to differentiate from those unmasked points NOT filled by watershedding
     segmentation_mask[~unmasked] = -1
     
@@ -276,26 +247,19 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         
     #read in labeling/masks and region-finding functions
     reg_props_dict = tb_utils.get_label_props_in_dict(seg_m_data)
-
-    curr_reg_inds, z_reg_inds, y_reg_inds, x_reg_inds= tb_utils.get_indices_of_labels_from_reg_prop_dict(reg_props_dict)
-    
-    #z_unf,y_unf,x_unf = np.where(segmentation_mask==0)
-    
-    #print(np.where(segmentation_mask==-1))
-    #print(np.where(segmentation_mask==0))
     
     hdim1_min = 0
-    hdim1_max = segmentation_mask.shape[1] - 1
+    hdim1_max = segmentation_mask.shape[hdim_1_axis] - 1
     hdim2_min = 0
-    hdim2_max = segmentation_mask.shape[2] - 1
+    hdim2_max = segmentation_mask.shape[hdim_2_axis] - 1
     
     # all options that involve dealing with periodic boundaries
     pbc_options = ['hdim_1', 'hdim_2', 'both']
- 
+    # Only run this if we need to deal with PBCs
     if PBC_flag in pbc_options:
 
-    #Return all indices where segmentation field == 0
-        #meaning unfilled but above threshold
+        # Return all indices where segmentation field == 0
+        # meaning unfilled but above threshold
         vdim_unf,hdim1_unf,hdim2_unf = np.where(segmentation_mask==0)
             
         seg_mask_unseeded = np.zeros(segmentation_mask.shape)
@@ -362,9 +326,6 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         
         if method=='watershed':
             segmentation_mask_2 = watershed(np.array(data_segmentation),markers_2.astype(np.int32), mask=unmasked)
-    #    elif method=='random_walker':
-    #        segmentation_mask=random_walker(data_segmentation, markers.astype(np.int32),
-    #                                          beta=130, mode='bf', tol=0.001, copy=True, multichannel=False, return_full_prob=False, spacing=None)
         else:                
             raise ValueError('unknown method, must be watershed')
 
@@ -382,6 +343,8 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         # Secondary seeding complete, now blending periodic boundaries
         #keep segmentation mask fields for now so we can save these all later
         #for demos of changes
+
+        # Does any of this need to be run if there aren't PBCs?
         
         # Test of PBC segmentation boundary blending below
         

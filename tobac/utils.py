@@ -663,52 +663,64 @@ def get_label_props_in_dict(labels):
 
 def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
     '''Function to get the x, y, and z indices (as well as point count) of all labeled regions.
-    This function should produce similar output as new_get_indices_of_labels, but 
-    allows for re-use of the region_property_dict. 
-    
+ 
     Parameters
     ----------
     region_property_dict:    dict of region_property objects
         This dict should come from the get_label_props_in_dict function.
-    
+
     Returns
     -------
     dict (key: label number, int)
         The number of points in the label number
     dict (key: label number, int)
-        The z indices in the label number
+        The z indices in the label number. If a 2D property dict is passed, this value is not returned
     dict (key: label number, int)
         the y indices in the label number
     dict (key: label number, int)
         the x indices in the label number
+    
     Raises
     ------
     ValueError
-        a ValueError is raised if 
+        a ValueError is raised if there are no regions in the region property dict
+
     '''
     
     import skimage.measure
+    import numpy as np
 
     if len(region_property_dict) ==0:
         raise ValueError("No regions!")
-    
+
+
     z_indices = dict()
     y_indices = dict()
     x_indices = dict()
     curr_loc_indices = dict()
+    is_3D = False
         
     #loop through all skimage identified regions
     for region_prop_key in region_property_dict:
         region_prop = region_property_dict[region_prop_key]
         index = region_prop.label
-        curr_z_ixs, curr_y_ixs, curr_x_ixs = np.transpose(region_prop.coords)
-        z_indices[index] = curr_z_ixs
+        if len(region_prop.coords[0])>=3:
+            is_3D = True
+            curr_z_ixs, curr_y_ixs, curr_x_ixs = np.transpose(region_prop.coords)
+            z_indices[index] = curr_z_ixs
+        else:
+            curr_y_ixs, curr_x_ixs = np.transpose(region_prop.coords)
+            z_indices[index] = -1
+
         y_indices[index] = curr_y_ixs
         x_indices[index] = curr_x_ixs
-        curr_loc_indices[index] = len(curr_x_ixs)
+        curr_loc_indices[index] = len(curr_y_ixs)
                         
     #print("indices found")
-    return [curr_loc_indices, z_indices, y_indices, x_indices]
+    if is_3D:
+        return [curr_loc_indices, z_indices, y_indices, x_indices]
+    else: 
+        return [curr_loc_indices, y_indices, x_indices]
 
 def adjust_pbc_point(in_dim, dim_min, dim_max):
     '''Function to adjust a point to the other boundary for PBCs

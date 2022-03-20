@@ -32,7 +32,7 @@ def test_linking_trackpy():
         PBC_flag = 'none'
     )
     # Just want to remove the time_cell column here. 
-    actual_out_feature = actual_out_feature[['hdim_1', 'hdim_2', 'frame', 'time', 'cell']]
+    actual_out_feature = actual_out_feature[['hdim_1', 'hdim_2', 'frame', 'feature', 'time', 'cell']]
 
     assert_frame_equal(expected_out_feature.sort_index(axis=1), actual_out_feature.sort_index(axis=1))
 
@@ -51,7 +51,7 @@ def test_linking_trackpy():
         PBC_flag = 'none'
     )
     # Just want to remove the time_cell column here. 
-    actual_out_feature = actual_out_feature[['hdim_1', 'hdim_2', 'vdim', 'frame', 'time', 'cell']]
+    actual_out_feature = actual_out_feature[['hdim_1', 'hdim_2', 'vdim', 'frame', 'feature', 'time', 'cell']]
 
     assert_frame_equal(expected_out_feature.sort_index(axis=1), actual_out_feature.sort_index(axis=1))
 
@@ -71,7 +71,7 @@ def test_linking_trackpy():
         PBC_flag = 'hdim_1'
     )
     # Just want to remove the time_cell column here. 
-    actual_out_feature = actual_out_feature[['hdim_1', 'hdim_2', 'vdim', 'frame', 'time', 'cell']]
+    actual_out_feature = actual_out_feature[['hdim_1', 'hdim_2', 'vdim', 'frame', 'feature', 'time', 'cell']]
 
     assert_frame_equal(expected_out_feature.sort_index(axis=1), actual_out_feature.sort_index(axis=1))
 
@@ -90,7 +90,7 @@ def test_linking_trackpy():
         PBC_flag = 'hdim_2'
     )
     # Just want to remove the time_cell column here. 
-    actual_out_feature = actual_out_feature[['hdim_1', 'hdim_2', 'vdim', 'frame', 'time', 'cell']]
+    actual_out_feature = actual_out_feature[['hdim_1', 'hdim_2', 'vdim', 'frame', 'feature', 'time', 'cell']]
 
     assert_frame_equal(expected_out_feature.sort_index(axis=1), actual_out_feature.sort_index(axis=1))
 
@@ -109,7 +109,7 @@ def test_linking_trackpy():
         PBC_flag = 'both'
     )
     # Just want to remove the time_cell column here. 
-    actual_out_feature = actual_out_feature[['hdim_1', 'hdim_2', 'vdim', 'frame', 'time', 'cell']]
+    actual_out_feature = actual_out_feature[['hdim_1', 'hdim_2', 'vdim', 'frame', 'feature', 'time', 'cell']]
 
     assert_frame_equal(expected_out_feature.sort_index(axis=1), actual_out_feature.sort_index(axis=1))
 

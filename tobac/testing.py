@@ -359,8 +359,15 @@ def make_sample_data_3D_3blobs(data_type='iris',invert_xy=False):
     return sample_data
 
 
-def make_dataset_from_arr(in_arr, data_type = 'xarray'):
-    '''Makes a dataset (xarray or iris) for feature detection/segmentation from
+def make_dataset_from_arr(
+    in_arr,
+    data_type="xarray",
+    time_dim_num=None,
+    z_dim_num=None,
+    y_dim_num=0,
+    x_dim_num=1,
+):
+    """Makes a dataset (xarray or iris) for feature detection/segmentation from
     a raw numpy/dask/etc. array.
 
     Parameters
@@ -369,20 +376,41 @@ def make_dataset_from_arr(in_arr, data_type = 'xarray'):
         The input array to convert to iris/xarray
     data_type: str('xarray' or 'iris')
         Type of the dataset to return
-    
+    time_dim_num: int or None
+        What axis is the time dimension on, None for a single timestep
+    z_dim_num: int or None
+        What axis is the z dimension on, None for a 2D array
+    y_dim_num: int
+        What axis is the y dimension on, typically 0 for a 2D array
+    x_dim_num: int
+        What axis is the x dimension on, typically 1 for a 2D array
+
     Returns
     -------
     Iris or xarray dataset with everything we need for feature detection/tracking.
 
-    '''
+    """
     import xarray as xr
-    
-    output_arr = xr.DataArray(in_arr)
+    import iris
 
-    if data_type == 'xarray':    
+    if time_dim_num is not None:
+        raise NotImplementedError("Time dimension not yet implemented in this function")
+
+    is_3D = z_dim_num is not None
+    output_arr = xr.DataArray(in_arr)
+    if is_3D:
+        z_max = in_arr.shape[z_dim_num]
+
+    if data_type == "xarray":
         return output_arr
-    elif data_type == 'iris':
-        return output_arr.to_iris()
+    elif data_type == "iris":
+        out_arr_iris = output_arr.to_iris()
+        if is_3D:
+            out_arr_iris.add_dim_coord(
+                iris.coords.DimCoord(np.arange(0, z_max), standard_name="altitude"),
+                z_dim_num,
+            )
+        return out_arr_iris
     else:
         raise ValueError("data_type must be 'xarray' or 'iris'")
 
@@ -738,7 +766,7 @@ def generate_single_feature(start_h1, start_h2, start_v = None,
                             min_h1 = 0, max_h1 = 1000, min_h2 = 0, max_h2 = 1000,
                             num_frames = 1, dt = datetime.timedelta(minutes=5),
                             start_date = datetime.datetime(2022,1,1,0),
-                            PBC_flag = 'none', frame_start = 1):
+                            PBC_flag = 'none', frame_start = 1, feature_num=1,):
     '''Function to generate a dummy feature dataframe to test the tracking functionality
 
     Parameters
@@ -780,6 +808,8 @@ def generate_single_feature(start_h1, start_h2, start_v = None,
         'both' means that we are periodic along both horizontal dimensions
     frame_start: int
         Number to start the frame at
+    feature_num: int
+        What number to start the feature at
     '''
 
     out_list_of_dicts = list()
@@ -799,7 +829,7 @@ def generate_single_feature(start_h1, start_h2, start_v = None,
             curr_dict['vdim'] = curr_v
             curr_v += spd_v
         curr_dict['time'] = curr_dt
-
+        curr_dict["feature"] = feature_num + i
 
         curr_h1 += spd_h1
         curr_h2 += spd_h2
