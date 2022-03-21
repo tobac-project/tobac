@@ -6,7 +6,7 @@ from . import utils as tb_utils
 
 def feature_position(
     hdim1_indices,
-    hdim2_indeces,
+    hdim2_indices,
     region_small=None,
     region_bbox=None,
     track_data=None,
@@ -21,7 +21,7 @@ def feature_position(
     hdim1_indices : list
         list of indices along hdim1 (typically ```y```)
 
-    hdim2_indeces : list
+    hdim2_indices : list
         List of indices of feature along hdim2 (typically ```x```)
 
     region_small : 2D array-like
@@ -68,7 +68,7 @@ def feature_position(
     if position_threshold == "center":
         # get position as geometrical centre of identified region:
         hdim1_index = np.mean(hdim1_indices)
-        hdim2_index = np.mean(hdim2_indeces)
+        hdim2_index = np.mean(hdim2_indices)
 
     elif position_threshold == "extreme":
         # get position as max/min position inside the identified region:
@@ -77,7 +77,7 @@ def feature_position(
         if target == "minimum":
             index = np.argmin(track_data_region[region_small])
         hdim1_index = hdim1_indices[index]
-        hdim2_index = hdim2_indeces[index]
+        hdim2_index = hdim2_indices[index]
 
     elif position_threshold == "weighted_diff":
         # get position as centre of identified region, weighted by difference from the threshold:
@@ -85,7 +85,7 @@ def feature_position(
         if sum(weights) == 0:
             weights = None
         hdim1_index = np.average(hdim1_indices, weights=weights)
-        hdim2_index = np.average(hdim2_indeces, weights=weights)
+        hdim2_index = np.average(hdim2_indices, weights=weights)
 
     elif position_threshold == "weighted_abs":
         # get position as centre of identified region, weighted by absolute values if the field:
@@ -93,7 +93,7 @@ def feature_position(
         if sum(weights) == 0:
             weights = None
         hdim1_index = np.average(hdim1_indices, weights=weights)
-        hdim2_index = np.average(hdim2_indeces, weights=weights)
+        hdim2_index = np.average(hdim2_indices, weights=weights)
 
     else:
         raise ValueError(
@@ -107,9 +107,9 @@ def test_overlap(region_inner, region_outer):
     function to test for overlap between two regions (probably scope for further speedup here)
     Input:
     region_1:      list
-                   list of 2-element tuples defining the indeces of all cell in the region
+                   list of 2-element tuples defining the indices of all cell in the region
     region_2:      list
-                   list of 2-element tuples defining the indeces of all cell in the region
+                   list of 2-element tuples defining the indices of all cell in the region
 
     Output:
     overlap:       bool
@@ -245,7 +245,7 @@ def feature_detection_threshold(
                 continue
 
             hdim1_indices = hdim1_indices_all[cur_idx]
-            hdim2_indeces = hdim2_indices_all[cur_idx]
+            hdim2_indices = hdim2_indices_all[cur_idx]
 
             # Get location and size of the minimum bounding box
             # that will cover the whole labeled region
@@ -259,18 +259,18 @@ def feature_detection_threshold(
             # on the full array
             region_small = np.full((bbox_ysize, bbox_xsize), False)
             region_small[
-                hdim1_indices - bbox_ystart, hdim2_indeces - bbox_xstart
+                hdim1_indices - bbox_ystart, hdim2_indices - bbox_xstart
             ] = True
 
             # Later on, rather than doing (more expensive) operations
             # on tuples, let's convert to 1D coordinates.
-            region_i = np.array(hdim1_indices * x_size + hdim2_indeces)
+            region_i = np.array(hdim1_indices * x_size + hdim2_indices)
 
             regions[cur_idx + idx_start] = region_i
 
             single_indices = feature_position(
                 hdim1_indices,
-                hdim2_indeces,
+                hdim2_indices,
                 region_small=region_small,
                 region_bbox=label_bbox,
                 track_data=data_i,
@@ -521,9 +521,9 @@ def filter_min_distance(features, dxy, min_distance):
 
     remove_list_distance = []
     # create list of tuples with all combinations of features at the timestep:
-    indeces = combinations(features.index.values, 2)
+    indices = combinations(features.index.values, 2)
     # Loop over combinations to remove features that are closer together than min_distance and keep larger one (either higher threshold or larger area)
-    for index_1, index_2 in indeces:
+    for index_1, index_2 in indices:
         if index_1 is not index_2:
             features.loc[index_1, "hdim_1"]
             distance = dxy * np.sqrt(
