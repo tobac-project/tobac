@@ -527,9 +527,9 @@ def get_label_props_in_dict(labels):
     import skimage.measure
 
     region_properties_raw = skimage.measure.regionprops(labels)
-    region_properties_dict = dict()
-    for region_prop in region_properties_raw:
-        region_properties_dict[region_prop.label] = region_prop
+    region_properties_dict = {
+        region_prop.label: region_prop for region_prop in region_properties_raw
+    }
 
     return region_properties_dict
 
@@ -577,28 +577,4 @@ def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
         x_indices[index] = curr_x_ixs
         curr_loc_indices[index] = len(curr_y_ixs)
 
-    return [curr_loc_indices, y_indices, x_indices]
-
-
-def get_label_props_in_dict(labels):
-    """Function to get the label properties into a dictionary format.
-
-    Parameters
-    ----------
-    labels:    2D array-like
-        comes from the `skimage.measure.label` function
-
-    Returns
-    -------
-    dict
-        output from skimage.measure.regionprops in dictionary format,
-        where they key is the label number
-    """
-    import skimage.measure
-
-    region_properties_raw = skimage.measure.regionprops(labels)
-    region_properties_dict = dict()
-    for region_prop in region_properties_raw:
-        region_properties_dict[region_prop.label] = region_prop
-
-    return region_properties_dict
+    return (curr_loc_indices, y_indices, x_indices)

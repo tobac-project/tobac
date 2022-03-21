@@ -221,11 +221,11 @@ def feature_detection_threshold(
 
     label_props = tb_utils.get_label_props_in_dict(labels)
     if len(label_props) > 0:
-        [
+        (
             total_indices_all,
             hdim1_indices_all,
             hdim2_indices_all,
-        ] = tb_utils.get_indices_of_labels_from_reg_prop_dict(label_props)
+        ) = tb_utils.get_indices_of_labels_from_reg_prop_dict(label_props)
 
     x_size = labels.shape[1]
 
