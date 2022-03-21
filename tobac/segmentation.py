@@ -268,6 +268,8 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         if not is_3D_seg:
             # let's transpose segmentation_mask to a 1,y,x array to make calculations etc easier.
             segmentation_mask = segmentation_mask[np.newaxis, :, :]
+            unmasked = unmasked[np.newaxis, :, :]
+            data_segmentation = data_segmentation[np.newaxis, :, :]
             vertical_coord_axis = 0
             hdim_1_axis = 1
             hdim_2_axis = 2
@@ -286,7 +288,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         #create labeled field of unfilled, unseeded features
         labels_unseeded,label_num = skimage.measure.label(seg_mask_unseeded, return_num=True)
         
-        markers_2 = np.zeros(unmasked.shape).astype(np.int32)
+        markers_2 = np.zeros(data_segmentation.shape).astype(np.int32)
         
         #new, shorter PBC marker seeding approach
         #loop thru LB points
@@ -342,13 +344,9 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         markers_2[~unmasked]=0
         
         if method=='watershed':
-            segmentation_mask_2 = watershed(np.array(data_segmentation),markers_2.astype(np.int32), mask=unmasked)
+            segmentation_mask_2 = watershed(data_segmentation,markers_2.astype(np.int32), mask=unmasked)
         else:                
             raise ValueError('unknown method, must be watershed')
-
-        # For ease of use, switch segmentation_mask_2 to 3D if 2D.
-        if not is_3D_seg:
-            segmentation_mask_2 = segmentation_mask_2[np.newaxis, :, :]
 
         # remove everything from the individual masks that is more than max_distance_pixel away from the markers
         if max_distance is not None:

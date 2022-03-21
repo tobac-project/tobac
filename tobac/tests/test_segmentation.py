@@ -81,7 +81,23 @@ def test_segmentation_timestep_2D_feature_2D_seg():
         # Make sure that all labeled points are segmented
         assert np.all(out_seg_mask.core_data()[hdim_1_start_feat:hdim_1_end_feat, 
         hdim_2_start_feat:hdim_2_end_feat] == np.ones((hdim_1_end_feat, test_hdim_2_sz)))
+        assert (np.sum(out_seg_mask.core_data()[out_seg_mask.core_data()==1]) == 
+                np.sum(np.ones((hdim_1_end_feat, test_hdim_2_sz))))
 
+    # Now try the same case, but when we *should* wrap around. 
+    for pbc_option in ['hdim_1', 'both']:
+        out_seg_mask, out_df = seg.segmentation_timestep(field_in = test_data_iris, 
+                            features_in = test_feature_ds, dxy = test_dxy,
+                            threshold = test_amp-0.5, PBC_flag=pbc_option, )
+        # Make sure that all labeled points are segmented
+        assert np.all(out_seg_mask.core_data()[0:hdim_1_end_feat, 
+        hdim_2_start_feat:hdim_2_end_feat] == np.ones((hdim_1_end_feat, test_hdim_2_sz)))
+        # Make sure that we are also segmenting across the boundary
+        assert np.all(out_seg_mask.core_data()[test_dset_size[1]-2:test_dset_size[1], 
+        hdim_2_start_feat:hdim_2_end_feat] == np.ones((2, test_hdim_2_sz)))
+
+        assert (np.sum(out_seg_mask.core_data()[out_seg_mask.core_data()==1]) == 
+                np.sum(np.ones((test_hdim_1_sz, test_hdim_2_sz))))
 
 
 
