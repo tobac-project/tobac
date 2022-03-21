@@ -121,7 +121,10 @@ def linking_trackpy(
     ):
         cell = int(i_particle + cell_number_start)
         particle_num_to_cell_num[particle] = int(cell)
-    remap_particle_to_cell_vec = np.vectorize(remap_particle_to_cell_nv)
+
+    remap_particle_to_cell_vec = np.vectorize(
+        lambda particle_cell_map, input_particle: particle_cell_map[input_particle]
+    )
     trajectories_unfiltered["cell"] = remap_particle_to_cell_vec(
         particle_num_to_cell_num, trajectories_unfiltered["particle"]
     )
@@ -258,18 +261,3 @@ def add_cell_time(t):
     t["time_cell"] = t["time"] - t.groupby("cell")["time"].transform("min")
     t["time_cell"] = pd.to_timedelta(t["time_cell"])
     return t
-
-
-def remap_particle_to_cell_nv(particle_cell_map, input_particle):
-    """Remaps the particles to new cells given an input map and the current particle.
-    Helper function that is designed to be vectorized with np.vectorize
-
-    Parameters
-    ----------
-    particle_cell_map: dict-like
-        The dictionary mapping particle number to cell number
-    input_particle: key for particle_cell_map
-        The particle number to remap
-
-    """
-    return particle_cell_map[input_particle]
