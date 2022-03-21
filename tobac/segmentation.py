@@ -148,7 +148,6 @@ def segmentation_timestep(
         if len(ndim_vertical) > 1:
             raise ValueError("please specify 1 dimensional vertical coordinate")
         for index, row in features_in.iterrows():
-            print("type: ", type(level))
             if ndim_vertical[0] == 0:
                 markers[level, int(row["hdim_1"]), int(row["hdim_2"])] = row["feature"]
             elif ndim_vertical[0] == 1:
