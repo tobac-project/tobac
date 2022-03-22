@@ -423,7 +423,14 @@ def make_sample_data_3D_3blobs(data_type="iris", invert_xy=False):
     return sample_data
 
 
-def make_dataset_from_arr(in_arr, data_type="xarray"):
+def make_dataset_from_arr(
+    in_arr,
+    data_type="xarray",
+    time_dim_num=None,
+    z_dim_num=None,
+    y_dim_num=0,
+    x_dim_num=1,
+):
     """Makes a dataset (xarray or iris) for feature detection/segmentation from
     a raw numpy/dask/etc. array.
 
@@ -433,6 +440,14 @@ def make_dataset_from_arr(in_arr, data_type="xarray"):
         The input array to convert to iris/xarray
     data_type: str('xarray' or 'iris')
         Type of the dataset to return
+    time_dim_num: int or None
+        What axis is the time dimension on, None for a single timestep
+    z_dim_num: int or None
+        What axis is the z dimension on, None for a 2D array
+    y_dim_num: int
+        What axis is the y dimension on, typically 0 for a 2D array
+    x_dim_num: int
+        What axis is the x dimension on, typically 1 for a 2D array
 
     Returns
     -------
@@ -440,13 +455,26 @@ def make_dataset_from_arr(in_arr, data_type="xarray"):
 
     """
     import xarray as xr
+    import iris
 
+    if time_dim_num is not None:
+        raise NotImplementedError("Time dimension not yet implemented in this function")
+
+    is_3D = z_dim_num is not None
     output_arr = xr.DataArray(in_arr)
+    if is_3D:
+        z_max = in_arr.shape[z_dim_num]
 
     if data_type == "xarray":
         return output_arr
     elif data_type == "iris":
-        return output_arr.to_iris()
+        out_arr_iris = output_arr.to_iris()
+        if is_3D:
+            out_arr_iris.add_dim_coord(
+                iris.coords.DimCoord(np.arange(0, z_max), standard_name="altitude"),
+                z_dim_num,
+            )
+        return out_arr_iris
     else:
         raise ValueError("data_type must be 'xarray' or 'iris'")
 

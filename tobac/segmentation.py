@@ -69,7 +69,7 @@ def segmentation_timestep(
     target:     string
                 switch to determine if algorithm looks strating from maxima or minima in input field (maximum: starting from maxima (default), minimum: starting from minima)
     level       slice
-                levels at which to seed the cells for the watershedding algorithm
+                vertical levels at which to seed the cells for the watershedding algorithm
     method:     string
                 flag determining the algorithm to use (currently watershedding implemented)
     max_distance: float
@@ -149,11 +149,11 @@ def segmentation_timestep(
             raise ValueError("please specify 1 dimensional vertical coordinate")
         for index, row in features_in.iterrows():
             if ndim_vertical[0] == 0:
-                markers[:, int(row["hdim_1"]), int(row["hdim_2"])] = row["feature"]
+                markers[level, int(row["hdim_1"]), int(row["hdim_2"])] = row["feature"]
             elif ndim_vertical[0] == 1:
-                markers[int(row["hdim_1"]), :, int(row["hdim_2"])] = row["feature"]
+                markers[int(row["hdim_1"]), level, int(row["hdim_2"])] = row["feature"]
             elif ndim_vertical[0] == 2:
-                markers[int(row["hdim_1"]), int(row["hdim_2"]), :] = row["feature"]
+                markers[int(row["hdim_1"]), int(row["hdim_2"]), level] = row["feature"]
     else:
         raise ValueError(
             "Segmentations routine only possible with 2 or 3 spatial dimensions"
