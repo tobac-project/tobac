@@ -856,11 +856,14 @@ def get_start_end_of_feat(center_point, size, axis_min, axis_max, is_pbc = False
         the last real point on the axis, such that axis_max - axis_min
         is the size of the axis
     is_pbc: bool
-        True if we should wrap around, false if we shouldn't.
+        True if we should give wrap around points, false if we shouldn't.
 
     Returns
     -------
     tuple (start_point, end_point)
+    Note that if is_pbc is True, start_point can be less than axis_min and
+    end_point can be greater than or equal to axis_max. This is designed to be used with
+    ```get_pbc_coordinates```
     '''
     import numpy as np
 
@@ -868,16 +871,10 @@ def get_start_end_of_feat(center_point, size, axis_min, axis_max, is_pbc = False
     max_pt = int(np.ceil(center_point + size / 2))\
 
     # adjust points for boundaries, if needed.
-    if min_pt < axis_min:
-        if is_pbc:
-            min_pt += (axis_max - axis_min)
-        else:
-            min_pt = axis_min
-    if max_pt > axis_max:
-        if is_pbc:
-            max_pt -= (axis_max - axis_min)
-        else:
-            max_pt = axis_max
+    if min_pt < axis_min and not is_pbc:
+        min_pt = axis_min
+    if max_pt > axis_max and not is_pbc:
+        max_pt = axis_max
     
     return (min_pt, max_pt)
 
