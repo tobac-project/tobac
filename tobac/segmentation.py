@@ -663,7 +663,8 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                     #print("y-ctr: ",row['hdim_1'])
                     #print("x-ctr: ",row['hdim_2'])
             
-            
+                    # TODO: fix point ranges here. 
+                    # TODO: why is this repeated?
                     if(int(row['vdim']) >=2 and int(row['vdim']) <= z_len-3):
                         z_list = np.arange(int(row['vdim']-2),int(row['vdim']+3))
                     elif(int(row['vdim']) < 2):
