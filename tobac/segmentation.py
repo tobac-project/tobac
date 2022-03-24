@@ -285,7 +285,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         seg_mask_unseeded[vdim_unf,hdim1_unf,hdim2_unf]=1            
     
     
-        #create labeled field of unfilled, unseeded features
+        # create labeled field of unfilled, unseeded features
         labels_unseeded,label_num = skimage.measure.label(seg_mask_unseeded, return_num=True)
         
         markers_2 = np.zeros(data_segmentation.shape).astype(np.int32)
@@ -314,14 +314,12 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                                     continue
                                 else:
                                     markers_2[vdim_ind,hdim1_ind,hdim2_ind] = segmentation_mask[vdim_ind,hdim1_min,hdim2_ind]
-                                    
+        # TODO: better documentation of these points                     
         if PBC_flag == 'hdim_2' or PBC_flag == 'both':
+            # TODO: This seems quite slow, is there scope for further speedup?
             for vdim_ind in range(0,segmentation_mask.shape[0]):
                 for hdim1_ind in range(hdim1_min,hdim1_max):
                     for hdim2_ind in [hdim2_min,hdim2_max]:
-                
-                        #print(z_ind,y_ind,x_ind)
-                        #print(labels_unseeded[z_ind,y_ind,x_ind])
                 
                         if(labels_unseeded[vdim_ind,hdim1_ind,hdim2_ind] == 0):
                             continue
@@ -341,6 +339,24 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                                     #print(z_ind,y_ind,x_ind)
                                     #print("seeded")
             
+        # Deal with the opposite corner only
+        if PBC_flag == 'both':
+            # TODO: This seems quite slow, is there scope for further speedup?
+            for vdim_ind in range(0,segmentation_mask.shape[0]):
+                for hdim1_ind in [hdim1_min, hdim1_max]:
+                    for hdim2_ind in [hdim2_min,hdim2_max]:
+                        # If this point is unseeded and unlabeled
+                        if(labels_unseeded[vdim_ind,hdim1_ind,hdim2_ind] == 0):
+                            continue
+                        
+                        # Find the opposite point in hdim1 space
+                        hdim1_opposite_corner = (hdim1_min if hdim1_ind == hdim1_max else hdim1_max)
+                        hdim2_opposite_corner = (hdim2_min if hdim2_ind == hdim2_max else hdim2_max)
+                        if segmentation_mask[vdim_ind, hdim1_opposite_corner, hdim2_opposite_corner] <= 0:
+                            continue
+
+                        markers_2[vdim_ind, hdim1_ind, hdim2_ind] = segmentation_mask[vdim_ind,hdim1_opposite_corner,hdim2_opposite_corner]
+
         markers_2[~unmasked]=0
         
         if method=='watershed':
@@ -409,9 +425,10 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                     #adjust x and y points to the other side
                     y_val_alt = tb_utils.adjust_pbc_point(label_y, hdim1_min, hdim1_max)
                     x_val_alt = tb_utils.adjust_pbc_point(label_x, hdim2_min, hdim2_max)
-                        
                     label_on_corner = segmentation_mask_3[label_z,y_val_alt,x_val_alt]
-                        
+                    print('label points:', label_z, y_val_alt, x_val_alt,
+                    'label on corner', label_on_corner)
+
                     if((label_on_corner > 0)):
                         #add opposite-corner buddy if it exists
                         buddies = np.append(buddies,label_on_corner)
