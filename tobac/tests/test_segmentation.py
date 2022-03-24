@@ -1,3 +1,4 @@
+import pytest
 import tobac.testing as testing
 import tobac.segmentation as seg
 
@@ -303,12 +304,95 @@ def test_segmentation_timestep_level():
         == np.zeros((test_vdim_sz, test_hdim_1_sz, test_hdim_2_sz))
     )
 
-def test_segmentation_timestep_3d_seed_box():
+@pytest.mark.parametrize("blob_size, shift_pts, seed_3D_size"
+                         ", expected_both_segmented", 
+                         [((3,3,3), (0,0,4), 3, False), 
+                          ((3,3,3), (0,0,4), 5, False),
+                          ((3,3,3), (0,0,4), 7, True),
+                          ]
+)
+def test_segmentation_timestep_3d_seed_box_nopbcs(blob_size, shift_pts, 
+                                                  seed_3D_size, expected_both_segmented):
     '''Tests ```tobac.segmentation.segmentation_timestep```
     to make sure that the 3D seed box works. 
+    Parameters
+    ----------
+    blob_size: tuple(int, int, int)
+        Size of the initial blob to add to the domain in (z, y, x) space. 
+        We strongly recommend that these be *odd* numbers. 
+    shift_pts: tuple(int, int, int)
+        Number of points *relative to the center* to shift the blob in
+        (z, y, x) space.
+    seed_3D_size: int or tuple
+        Seed size to pass to tobac
+    expected_both_segmented: bool
+        True if we expect both features to be segmented, false 
+        if we don't expect them both to be segmented
+
     '''
 
-    # start by building a simple dataset with a single feature
     import numpy as np
 
-    pass
+    # For now, just testing this for no PBCs.
+    '''
+    The best way to do this I think is to create two blobs near (but not touching)
+    each other, varying the seed_3D_size so that they are either segmented together
+    or not segmented together. 
+    '''
+    test_dset_size = (20, 50, 50)
+    test_hdim_1_pt_1 = 20.0
+    test_hdim_2_pt_1 = 20.0
+    test_vdim_pt_1 = 8
+    test_dxy = 1000
+    test_amp = 2
+
+    PBC_opt = 'none'
+
+
+    test_data = np.zeros(test_dset_size)
+    test_data = testing.make_feature_blob(
+        test_data,
+        test_hdim_1_pt_1,
+        test_hdim_2_pt_1,
+        test_vdim_pt_1,
+        h1_size=blob_size[1],
+        h2_size=blob_size[2],
+        v_size=blob_size[0],
+        amplitude=test_amp,
+    )
+
+    # Make a second feature
+    test_data = testing.make_feature_blob(
+        test_data,
+        test_hdim_1_pt_1 + shift_pts[1],
+        test_hdim_2_pt_1 + shift_pts[2],
+        test_vdim_pt_1 + shift_pts[0],
+        h1_size=blob_size[1],
+        h2_size=blob_size[2],
+        v_size=blob_size[0],
+        amplitude=test_amp,
+    )
+
+    test_data_iris = testing.make_dataset_from_arr(
+        test_data, data_type="iris", z_dim_num=0, y_dim_num=1, x_dim_num=2
+    )
+    # Generate dummy feature dataset only on the first feature.
+    test_feature_ds = testing.generate_single_feature(start_v=test_vdim_pt_1,
+                                                      start_h1=test_hdim_1_pt_1,
+                                                      start_h2=test_hdim_2_pt_1)
+
+    out_seg_mask, out_df = seg.segmentation_timestep(
+        field_in=test_data_iris,
+        features_in=test_feature_ds,
+        dxy=test_dxy,
+        threshold=1.5,
+        seed_3D_flag= 'box',
+        seed_3D_size=seed_3D_size
+    )
+
+    second_point_seg = out_seg_mask.core_data()[int(test_vdim_pt_1 + shift_pts[0]), 
+                                            int(test_hdim_1_pt_1 + shift_pts[1]),
+                                            int(test_hdim_2_pt_1 + shift_pts[2])]
+    # We really only need to check the center point here for this test. 
+    seg_point_overlaps = second_point_seg == 1
+    assert seg_point_overlaps == expected_both_segmented
