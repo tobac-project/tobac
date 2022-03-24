@@ -1,7 +1,5 @@
 import logging
 from . import utils as tb_utils
-
-#blah
         
 def transfm_pbc_point(in_dim, dim_min, dim_max):
     '''Function to transform a PBC-feature point for contiguity
