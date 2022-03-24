@@ -484,16 +484,29 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
             #create arrays to contain points of all buddies
             #and their transpositions/transformations
             #for use in Buddy Box space
-            
+
+            #z,y,x points in the grid domain with no transformations
+            #NOTE: when I think about it, not sure if these are really needed
+            # as we use the y_a1/x_a1 points for the data transposition
+            # to the buddy box rather than these and their z2/y2/x2 counterparts
             buddy_z = np.array([],dtype=int)
             buddy_y = np.array([],dtype=int)
             buddy_x = np.array([],dtype=int)
-            # buddy box points which are in INTERNAL BUDDY BOX SPACE
+
+            # z,y,x points from the grid domain WHICH MAY OR MAY NOT BE TRANSFORMED
+            # so as to be continuous/contiguous across a grid boundary for that dimension
+            #(e.g., instead of [1496,1497,0,1,2,3] it would be [1496,1497,1498,1499,1500,1501])
             buddy_z2 = np.array([],dtype=int)
             buddy_y2 = np.array([],dtype=int)
             buddy_x2 = np.array([],dtype=int)
 
-            # These are just for feature positions and are in DOMAIN SPACE
+            # These are just for feature positions and are in z2/y2/x2 space
+            # (may or may not be within real grid domain)
+            # so that when the buddy box is constructed, seeding is done properly
+            # in the buddy box space
+
+            #NOTE: We may not need this, as we already do this editing the buddy_features df
+            # and an iterrows call through this is what's used to actually seed the buddy box
             buddy_zf = np.array([],dtype=int)
             buddy_yf = np.array([],dtype=int)
             buddy_xf = np.array([],dtype=int)
@@ -503,23 +516,30 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
             #loop thru buddies
             for buddy in buddies:
                 
+                #isolate feature from set of buddies
                 buddy_feat = features_in[features_in['feature'] == buddy]
-                        
+
+                #transform buddy feature position if needed for positioning in z2/y2/x2 space
+                #MAY be redundant with what is done just below here        
                 yf2 = transfm_pbc_point(int(buddy_feat.hdim_1), hdim1_min, hdim1_max)
                 xf2 = transfm_pbc_point(int(buddy_feat.hdim_2), hdim2_min, hdim2_max)
-            
+
+                #edit value in buddy_features dataframe 
                 buddy_features.hdim_1.values[buddy_looper] = transfm_pbc_point(float(buddy_feat.hdim_1), hdim1_min, hdim1_max)
                 buddy_features.hdim_2.values[buddy_looper] = transfm_pbc_point(float(buddy_feat.hdim_2), hdim2_min, hdim2_max)
             
                 #print(int(buddy_feat.vdim),yf2,xf2)
                 #display(buddy_features)
-            
+                
+                #again, this may be redundant as I don't think we use buddy_zf/yf/xf after this
+                #in favor of iterrows thru the updated buddy_features
                 buddy_zf = np.append(buddy_zf,int(buddy_feat.vdim))
                 buddy_yf = np.append(buddy_yf,yf2)
                 buddy_xf = np.append(buddy_xf,xf2)
             
                 buddy_looper = buddy_looper+1
-                # Create 1:1 map through actual domain points and buddy box points
+                # Create 1:1 map through actual domain points and continuous/contiguous points
+                # used to identify buddy box dimension lengths for its construction
                 for z,y,x in zip(z_reg_inds[buddy],y_reg_inds[buddy],x_reg_inds[buddy]):
                 
                     buddy_z = np.append(buddy_z,z)
@@ -534,6 +554,8 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                     buddy_x2 = np.append(buddy_x2,x2)
                     
             # Buddy Box!
+            # Indentify mins and maxes of buddy box continuous points range
+            # so that box of correct size can be constructred
             bbox_zstart = int(np.min(buddy_z2))
             bbox_ystart = int(np.min(buddy_y2))
             bbox_xstart = int(np.min(buddy_x2))
@@ -547,13 +569,17 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         
             #print(bbox_zsize,bbox_ysize,bbox_xsize)
     
-            #Buddy Box for smooth watershedding of features at PBC boundaries
+            # Creation of actual Buddy Box space for transposition
+            # of data in domain and re-seeding with Buddy feature markers
             buddy_rgn = np.zeros((bbox_zsize, bbox_ysize, bbox_xsize))
             ind_ctr = 0
         
             #need to loop thru ALL z,y,x inds in buddy box
             #not just the ones that have nonzero seg mask values
-            
+
+            # "_a1" points are re-transformations from the continuous buddy box points
+            # back to original grid/domain space to ensure that the correct data are
+            # copied to the proper Buddy Box locations
             for z in range(bbox_zstart,bbox_zend):
                 for y in range(bbox_ystart,bbox_yend):
                     for x in range(bbox_xstart,bbox_xend):
@@ -570,6 +596,9 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
 
                         buddy_rgn[z-bbox_zstart,y-bbox_ystart,x-bbox_xstart] = field_in.data[z_a1,y_a1,x_a1]
                     
+            
+            #construction of iris cube corresponding to buddy box and its data
+            #for marker seeding and watershedding of buddy box
             rgn_cube = iris.cube.Cube(data=buddy_rgn)
         
             coord_system=None
@@ -588,15 +617,14 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
             print(rgn_cube)
             #print(rgn_cube.vdim)
         
-            #buddy correction to bounding box
-
-    
+            #Update buddy_features feature positions to correspond to buddy box space
+            #rather than domain space or continuous/contiguous point space
             for buddy_looper in range(0,len(buddy_features)):
                 buddy_features.vdim.values[buddy_looper] = buddy_features.vdim.values[buddy_looper] - bbox_zstart
                 buddy_features.hdim_1.values[buddy_looper] = buddy_features.hdim_1.values[buddy_looper] - bbox_ystart
                 buddy_features.hdim_2.values[buddy_looper] = buddy_features.hdim_2.values[buddy_looper] - bbox_xstart
             
-            # Create cube of the same dimensions and coordinates as input data to store mask:        
+            # Create cube of the same dimensions and coordinates as Buddy Box to store updated mask:        
             buddies_out=1*rgn_cube
             buddies_out.rename('buddies_mask')
             buddies_out.units=1
@@ -604,6 +632,12 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
             #Create dask array from input data:
             #data=rgn_cube.core_data()
             buddy_data = buddy_rgn
+
+            #All of the below is, I think, the same overarching segmentation procedure as in the original
+            #segmentation approach until the line which states
+            # "#transform seg_mask_4 data back to original mask after PBC first-pass ("segmentation_mask_3")"
+            # It's just performed on the buddy box and its data rather than our full domain
+
             #Set level at which to create "Seed" for each feature in the case of 3D watershedding:
             # If none, use all levels (later reduced to the ones fulfilling the theshold conditions)
             if level==None:
@@ -726,13 +760,13 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                 segmentation_mask_4[np.bitwise_and(segmentation_mask_4>0, D>max_distance_pixel)]=0
 
     
-            #mask all segmentation_mask points below th=reshold as -1
+            #mask all segmentation_mask points below threshold as -1
             #to differentiate from those unmasked points NOT filled by watershedding
             print(np.unique(segmentation_mask_4))
             segmentation_mask_4[~unmasked_buddies] = -1
             
             
-            #transform seg_mask_4 data back to original mask
+            #transform seg_mask_4 data back to original mask after PBC first-pass ("segmentation_mask_3")
             #print(np.unique(test_mask3.data))
         
             #loop through buddy box inds and analogous seg mask inds
