@@ -61,7 +61,9 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
     seed_3D_size: int or tuple (dimensions equal to dimensions of `field`)
         This sets the size of the seed box when `seed_3D_flag` is 'box'. If it's an 
         integer, the seed box is identical in all dimensions. If it's a tuple, it specifies the 
-        seed area for each dimension separately. 
+        seed area for each dimension separately. Note: we recommend the use
+        of odd numbers for this. If you give an even number, your seed box will be 
+        biased and not centered around the feature. 
     
     Returns
     -------
@@ -252,8 +254,6 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
     #saves/prints below for testing
     seg_m_data = segmentation_mask[:]
         
-    #read in labeling/masks and region-finding functions
-    reg_props_dict = tb_utils.get_label_props_in_dict(seg_m_data)
     
     hdim1_min = 0
     hdim1_max = segmentation_mask.shape[hdim_1_axis] - 1
@@ -264,6 +264,9 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
     pbc_options = ['hdim_1', 'hdim_2', 'both']
     # Only run this if we need to deal with PBCs
     if PBC_flag in pbc_options:
+
+        # read in labeling/masks and region-finding functions
+        reg_props_dict = tb_utils.get_label_props_in_dict(seg_m_data)
 
         if not is_3D_seg:
             # let's transpose segmentation_mask to a 1,y,x array to make calculations etc easier.

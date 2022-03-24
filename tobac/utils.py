@@ -750,3 +750,148 @@ def adjust_pbc_point(in_dim, dim_min, dim_max):
         return dim_min
     else:
         raise ValueError("In adjust_pbc_point, in_dim isn't on a boundary.")
+
+
+def get_pbc_coordinates(h1_min, h1_max, h2_min, h2_max, 
+                        h1_start_coord, h1_end_coord, h2_start_coord, h2_end_coord,
+                        PBC_flag = 'none'):
+    '''Function to get the *actual* coordinate boxes of interest given a set of shifted 
+    coordinates with periodic boundaries. 
+    
+    For example, if you pass in [as h1_start_coord, h1_end_coord, h2_start_coord, h2_end_coord] 
+    (-3, 5, 2,6) with PBC_flag of 'both' or 'hdim_1', h1_max of 10, and h1_min of 0
+    this function will return: [(0,5,2,6), (7,10,2,6)].
+
+    If you pass in something outside the bounds of the array, this will truncate your
+    requested box. For example, if you pass in [as h1_start_coord, h1_end_coord, h2_start_coord, h2_end_coord] 
+    (-3, 5, 2,6) with PBC_flag of 'none' or 'hdim_2', this function will return:
+    [(0,5,2,6)], assuming h1_min is 0. 
+
+    For cases where PBC_flag is 'both' and we have a corner case, it is possible
+    to get overlapping boundaries. For example, if you pass in (-6, 5, -6, 5)
+
+    Parameters
+    ----------
+    h1_min: int
+        Minimum array value in hdim_1, typically 0.
+    h1_max: int
+        Maximum array value in hdim_1 (exclusive). h1_max - h1_min should be the size in h1.
+    h2_min: int
+        Minimum array value in hdim_2, typically 0.
+    h2_max: int
+        Maximum array value in hdim_2 (exclusive). h2_max - h2_min should be the size in h2. 
+    h1_start_coord: int
+        Start coordinate in hdim_1. Can be < h1_min if dealing with PBCs.
+    h1_end_coord: int
+        End coordinate in hdim_1. Can be >= h1_max if dealing with PBCs.
+    h2_start_coord: int
+        Start coordinate in hdim_2. Can be < h2_min if dealing with PBCs.
+    h2_end_coord: int
+        End coordinate in hdim_2. Can be >= h2_max if dealing with PBCs.
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
+
+    Returns
+    -------
+    list of tuples
+        A list of tuples containing (h1_start, h1_end, h2_start, h2_end) of each of the
+        boxes needed to encompass the coordinates.
+    '''
+
+    if PBC_flag not in ['none', 'hdim_1', 'hdim_2', 'both']:
+        raise ValueError("PBC_flag must be 'none', 'hdim_1', 'hdim_2', or 'both'")
+    
+
+    h1_start_coords = list()
+    h1_end_coords = list()
+    h2_start_coords = list()
+    h2_end_coords = list()
+
+
+    # In both of these cases, we just need to truncate the hdim_1 points. 
+    if PBC_flag in ['none', 'hdim_2']:
+        h1_start_coords.append(max(h1_min, h1_start_coord))
+        h1_end_coords.append(min(h1_max, h1_end_coord))
+    
+    
+    # In both of these cases, we only need to truncate the hdim_2 points.
+    if PBC_flag in ['none', 'hdim_1']:
+        h2_start_coords.append(max(h2_min, h2_start_coord))
+        h2_end_coords.append(min(h2_max, h2_end_coord))
+
+    # If the PBC flag is none, we can just return.
+    if PBC_flag == 'none':
+        return [(h1_start_coords[0], h1_end_coords[0], h2_start_coords[0], h2_end_coords[0])]
+
+    # We have at least one periodic boundary.         
+
+    # hdim_1 boundary is periodic. 
+    if PBC_flag in ['hdim_1', 'both']:
+        if (h1_end_coord - h1_start_coord) >= (h1_max - h1_min):
+            # In this case, we have selected the full h1 length of the domain,
+            # so we set the start and end coords to just that.
+            h1_start_coords.append(h1_min)
+            h1_end_coords.append(h1_max)
+
+        # We know we only have either h1_end_coord > h1_max or h1_start_coord < h1_min
+        # and not both. If both are true, the previous if statement should trigger.
+        elif h1_start_coord < h1_min:
+            # First set of h1 start coordinates
+            h1_start_coords.append(h1_min)
+            h1_end_coords.append(h1_end_coord)
+            # Second set of h1 start coordinates
+            pts_from_begin = h1_min - h1_start_coord
+            h1_start_coords.append(h1_max - pts_from_begin)
+            h1_end_coords.append(h1_max)
+
+        elif h1_end_coord > h1_max:
+            h1_start_coords.append(h1_start_coord)
+            h1_end_coords.append(h1_max)
+            pts_from_end = h1_end_coord - h1_max
+            h1_start_coords.append(h1_min)
+            h1_end_coords.append(h1_min + pts_from_end)
+
+        # We have no PBC-related issues, actually
+        else:
+            h1_start_coords.append(h1_start_coord)
+            h1_end_coords.append(h1_end_coord)
+    
+    if PBC_flag in ['hdim_2', 'both']:
+        if (h2_end_coord - h2_start_coord) >= (h2_max - h2_min):
+            # In this case, we have selected the full h2 length of the domain,
+            # so we set the start and end coords to just that.
+            h2_start_coords.append(h2_min)
+            h2_end_coords.append(h2_max)
+
+        # We know we only have either h1_end_coord > h1_max or h1_start_coord < h1_min
+        # and not both. If both are true, the previous if statement should trigger.
+        elif h2_start_coord < h2_min:
+            # First set of h1 start coordinates
+            h2_start_coords.append(h2_min)
+            h2_end_coords.append(h2_end_coord)
+            # Second set of h1 start coordinates
+            pts_from_begin = h2_min - h2_start_coord
+            h2_start_coords.append(h2_max - pts_from_begin)
+            h2_end_coords.append(h2_max)
+
+        elif h2_end_coord > h2_max:
+            h2_start_coords.append(h2_start_coord)
+            h2_end_coords.append(h2_max)
+            pts_from_end = h2_end_coord - h2_max
+            h2_start_coords.append(h2_min)
+            h2_end_coords.append(h2_min + pts_from_end)
+
+        # We have no PBC-related issues, actually
+        else:
+            h2_start_coords.append(h2_start_coord)
+            h2_end_coords.append(h2_end_coord)
+
+    out_coords = list()
+    for h1_start_coord_single, h1_end_coord_single in zip(h1_start_coords, h1_end_coords):
+        for h2_start_coord_single, h2_end_coord_single in zip(h2_start_coords, h2_end_coords):
+            out_coords.append((h1_start_coord_single, h1_end_coord_single, h2_start_coord_single, h2_end_coord_single))
+    return out_coords
