@@ -302,3 +302,13 @@ def test_segmentation_timestep_level():
         ]
         == np.zeros((test_vdim_sz, test_hdim_1_sz, test_hdim_2_sz))
     )
+
+def test_segmentation_timestep_3d_seed_box():
+    '''Tests ```tobac.segmentation.segmentation_timestep```
+    to make sure that the 3D seed box works. 
+    '''
+
+    # start by building a simple dataset with a single feature
+    import numpy as np
+
+    pass

@@ -55,9 +55,9 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                 flag indicating whether to use PBC treatment or not
                 note to self: should be expanded to account for singly periodic boundaries also
                 rather than just doubly periodic
-    seed_3D_flag: string
-                options: 'column' (default), 'box'
-                Seed 3D field at feature positions with either the full column (default) or a box of user-set size
+    seed_3D_flag: str('column', 'box')
+        Seed 3D field at feature positions with either the full column (default)
+         or a box of user-set size
     seed_3D_size: int or tuple (dimensions equal to dimensions of `field`)
         This sets the size of the seed box when `seed_3D_flag` is 'box'. If it's an 
         integer, the seed box is identical in all dimensions. If it's a tuple, it specifies the 
