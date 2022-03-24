@@ -184,8 +184,8 @@ def test_segmentation_timestep_2D_feature_2D_seg():
         for seg_box in segmented_box_expected:
             print(pbc_option, seg_box)
             #TODO: something is wrong with this case, unclear what.
-            #assert np.all(out_seg_mask.core_data()[seg_box[0]:seg_box[1], 
-            #seg_box[2]:seg_box[3]] == np.ones((seg_box[1]-seg_box[0], seg_box[3]-seg_box[2])))
+            assert np.all(out_seg_mask.core_data()[seg_box[0]:seg_box[1], 
+            seg_box[2]:seg_box[3]] == np.ones((seg_box[1]-seg_box[0], seg_box[3]-seg_box[2])))
 
         #TODO: Make sure for none, hdim_1, hdim_2 that only the appropriate points are segmented
 
