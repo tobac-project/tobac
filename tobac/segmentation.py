@@ -249,6 +249,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         
     #mask all segmentation_mask points below threshold as -1
     #to differentiate from those unmasked points NOT filled by watershedding
+    # TODO: allow user to specify
     segmentation_mask[~unmasked] = -1
     
     #saves/prints below for testing
@@ -287,7 +288,6 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         vdim_unf,hdim1_unf,hdim2_unf = np.where(segmentation_mask==0)
         seg_mask_unseeded[vdim_unf,hdim1_unf,hdim2_unf]=1            
     
-    
         # create labeled field of unfilled, unseeded features
         labels_unseeded,label_num = skimage.measure.label(seg_mask_unseeded, return_num=True)
         
@@ -297,7 +297,16 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         #loop thru LB points
         #then check if fillable region (labels_unseeded > 0)
         #then check if point on other side of boundary is > 0 in segmentation_mask
-        
+        '''
+        "First pass" at seeding features across the boundaries. This first pass will bring in
+        eligible (meaning values that are higher than threshold) but not previously watershedded 
+        points across the boundary by seeding them with the appropriate feature across the boundary.
+
+        Later, we will run the second pass or "buddy box" approach that handles cases where points across the boundary
+        have been watershedded already. 
+        '''
+
+        # TODO: clean up code. 
         if PBC_flag == 'hdim_1' or PBC_flag == 'both':
             for vdim_ind in range(0,segmentation_mask.shape[0]):
                 for hdim1_ind in [hdim1_min,hdim1_max]:
@@ -317,7 +326,6 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                                     continue
                                 else:
                                     markers_2[vdim_ind,hdim1_ind,hdim2_ind] = segmentation_mask[vdim_ind,hdim1_min,hdim2_ind]
-        # TODO: better documentation of these points                     
         if PBC_flag == 'hdim_2' or PBC_flag == 'both':
             # TODO: This seems quite slow, is there scope for further speedup?
             for vdim_ind in range(0,segmentation_mask.shape[0]):
@@ -380,6 +388,12 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         # for demos of changes
                 
         #update mask coord regions
+
+        '''
+        Now, start the second round of watershedding- the "buddy box" approach
+        buddies contains features of interest and any neighbors that across the boundary or in 
+        physical contact with that label
+        '''
         
         reg_props_dict = tb_utils.get_label_props_in_dict(segmentation_mask_3)
 
@@ -387,14 +401,16 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
 
         wall_labels = np.array([])
 
+        # TODO: move indices around with specific z axis
         w_wall = np.unique(segmentation_mask_3[:,:,0])
         wall_labels = np.append(wall_labels,w_wall)
 
-        e_wall = np.unique(segmentation_mask_3[:,:,-1])
-        wall_labels = np.append(wall_labels,e_wall)
+        # TODO: add test case that tests buddy box
+        #e_wall = np.unique(segmentation_mask_3[:,:,-1])
+        #wall_labels = np.append(wall_labels,e_wall)
 
-        n_wall = np.unique(segmentation_mask_3[:,-1,:])
-        wall_labels = np.append(wall_labels,n_wall)
+        #n_wall = np.unique(segmentation_mask_3[:,-1,:])
+        #wall_labels = np.append(wall_labels,n_wall)
 
         s_wall = np.unique(segmentation_mask_3[:,0,:])
         wall_labels = np.append(wall_labels,s_wall)
@@ -403,20 +419,16 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         wall_labels = wall_labels[(wall_labels) > 0].astype(int)
         #print(wall_labels)
         
+        # Loop through all segmentation mask labels on the wall 
         for cur_idx in wall_labels:
-            #skip this if there aren't enough points to be considered a real feature
-            #as defined above by n_min_threshold
-            curr_count = curr_reg_inds[cur_idx]
-            #print("Current wall feature: ",cur_idx)
-            #print(np.where(wall_labels==cur_idx))
-    
+            
             vdim_indices = z_reg_inds[cur_idx]
             hdim1_indices = y_reg_inds[cur_idx]
             hdim2_indices = x_reg_inds[cur_idx]
     
             #start buddies array with feature of interest
             buddies = np.array([cur_idx],dtype=int)
-            
+            # Loop through all points in the segmentation mask that we're intertested in
             for label_z, label_y, label_x in zip(vdim_indices, hdim1_indices, hdim2_indices):
                     
                 # check if this is the special case of being a corner point. 
@@ -429,8 +441,6 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                     y_val_alt = tb_utils.adjust_pbc_point(label_y, hdim1_min, hdim1_max)
                     x_val_alt = tb_utils.adjust_pbc_point(label_x, hdim2_min, hdim2_max)
                     label_on_corner = segmentation_mask_3[label_z,y_val_alt,x_val_alt]
-                    print('label points:', label_z, y_val_alt, x_val_alt,
-                    'label on corner', label_on_corner)
 
                     if((label_on_corner > 0)):
                         #add opposite-corner buddy if it exists
@@ -460,18 +470,16 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                         #add left/right buddy if it exists
                         buddies = np.append(buddies,label_alt)
                         
-                
+            
             buddies = np.unique(buddies)
-    
-            #print(buddies)
-        
+            
             if np.all(buddies==cur_idx):
                 continue
             else:
                 inter_buddies,feat_inds,buddy_inds=np.intersect1d(features_in.feature.values[:],buddies,return_indices=True)
-        
+
+            # Get features that are needed for the buddy box
             buddy_features = deepcopy(features_in.iloc[feat_inds])
-            #display(buddy_features)
         
             #create arrays to contain points of all buddies
             #and their transpositions/transformations
@@ -480,10 +488,12 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
             buddy_z = np.array([],dtype=int)
             buddy_y = np.array([],dtype=int)
             buddy_x = np.array([],dtype=int)
+            # buddy box points which are in INTERNAL BUDDY BOX SPACE
             buddy_z2 = np.array([],dtype=int)
             buddy_y2 = np.array([],dtype=int)
             buddy_x2 = np.array([],dtype=int)
-        
+
+            # These are just for feature positions and are in DOMAIN SPACE
             buddy_zf = np.array([],dtype=int)
             buddy_yf = np.array([],dtype=int)
             buddy_xf = np.array([],dtype=int)
@@ -493,11 +503,8 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
             #loop thru buddies
             for buddy in buddies:
                 
-                #if buddy == cur_idx:
                 buddy_feat = features_in[features_in['feature'] == buddy]
-            
-                #display(buddy_feat)
-            
+                        
                 yf2 = transfm_pbc_point(int(buddy_feat.hdim_1), hdim1_min, hdim1_max)
                 xf2 = transfm_pbc_point(int(buddy_feat.hdim_2), hdim2_min, hdim2_max)
             
@@ -512,15 +519,13 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                 buddy_xf = np.append(buddy_xf,xf2)
             
                 buddy_looper = buddy_looper+1
-            
+                # Create 1:1 map through actual domain points and buddy box points
                 for z,y,x in zip(z_reg_inds[buddy],y_reg_inds[buddy],x_reg_inds[buddy]):
                 
                     buddy_z = np.append(buddy_z,z)
                     buddy_y = np.append(buddy_y,y)
                     buddy_x = np.append(buddy_x,x)
-                
-                #else:
-                
+                                
                     y2 = transfm_pbc_point(y, hdim1_min, hdim1_max)
                     x2 = transfm_pbc_point(x, hdim2_min, hdim2_max)
                 
@@ -540,7 +545,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
             bbox_ysize = bbox_yend - bbox_ystart
             bbox_xsize = bbox_xend - bbox_xstart
         
-            print(bbox_zsize,bbox_ysize,bbox_xsize)
+            #print(bbox_zsize,bbox_ysize,bbox_xsize)
     
             #Buddy Box for smooth watershedding of features at PBC boundaries
             buddy_rgn = np.zeros((bbox_zsize, bbox_ysize, bbox_xsize))
@@ -568,7 +573,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
             rgn_cube = iris.cube.Cube(data=buddy_rgn)
         
             coord_system=None
-        
+            # TODO: clean this up
             h2_coord=iris.coords.DimCoord(np.arange(bbox_xsize), long_name='hdim_2', units='1', bounds=None, attributes=None, coord_system=coord_system)
             h1_coord=iris.coords.DimCoord(np.arange(bbox_ysize), long_name='hdim_1', units='1', bounds=None, attributes=None, coord_system=coord_system)
             v_coord=iris.coords.DimCoord(np.arange(bbox_zsize), long_name='vdim', units='1', bounds=None, attributes=None, coord_system=coord_system)
@@ -655,13 +660,6 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                 for index, row in buddy_features.iterrows():
                 #creation of 5x5x5 point ranges for 3D marker seeding
                 #and PBC flags for cross-boundary seeding - nixing this idea for now, but described in PBC Segmentation notes
-                #PBC_y_chk = 0
-                #PBC_x_chk = 0
-            
-                    #print("feature: ",row['feature'])
-                    #print("z-ctr: ",row['vdim'])
-                    #print("y-ctr: ",row['hdim_1'])
-                    #print("x-ctr: ",row['hdim_2'])
             
                     # TODO: fix point ranges here. 
                     # TODO: why is this repeated?
@@ -710,16 +708,6 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
             buddy_markers[~unmasked_buddies]=0
     
             marker_vals = np.unique(buddy_markers)
-            #print("vals: ",marker_vals)
-    
-            #for marker in np.unique(markers):
-            #    print(marker)
-            #    if marker == 0:
-            #        continue
-            #    z_mark,y_mark,x_mark = np.where(markers==marker)
-            #    print(z_mark,y_mark,x_mark)
-            #    print(np.min(data_segmentation[z_mark,y_mark,x_mark]),np.max(data_segmentation[z_mark,y_mark,x_mark]))
-    
   
             # Turn into np arrays (not necessary for markers) as dask arrays don't yet seem to work for watershedding algorithm
             buddy_segmentation=np.array(buddy_segmentation)
@@ -775,26 +763,11 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                     
                         #We don't want to overwrite other features that may be in the
                         #buddy box if not contacting the intersected seg field
-                        #print("Transformed z,y,x: ",z_val,y_val,x_val)
-                        #print("Real z,y,x: ",z_val_o,y_val_o,x_val_o)
-                        #print("Seg z,y,x: ",z_seg,y_seg,x_seg)
-                        #print("original: ",test_mask2[z_val_o,y_val_o,x_val_o])
-                        #print("new: ",test_mask3.data[z_seg,y_seg,x_seg])
-                        #print("input cube: ",rgn_cube.data[0,z_seg,y_seg,x_seg])
-                        #print("orig cube: ",hr_21_cube.data[z_val_o,y_val_o,x_val_o])
-                        #print(rgn_cube.data[0,z_seg,y_seg,x_seg] > 1.e-5)
                         
                         if (np.any(segmentation_mask_3[z_val_o,y_val_o,x_val_o]==buddies) and np.any(segmentation_mask_4.data[z_seg,y_seg,x_seg]==buddies)):
                             #only do updating procedure if old and new values both in buddy set
                             #and values are different
                             if(segmentation_mask_3[z_val_o,y_val_o,x_val_o] != segmentation_mask_4.data[z_seg,y_seg,x_seg]):
-                                #print("Transformed z,y,x: ",z_val,y_val,x_val)
-                                #print("Real z,y,x: ",z_val_o,y_val_o,x_val_o)
-                                #print("Seg z,y,x: ",z_seg,y_seg,x_seg)
-                                #print("transformed z,y,x: ",)
-                                #print(segmentation_mask_3[z_val_o,y_val_o,x_val_o], " -> ", segmentation_mask_4.data[z_seg,y_seg,x_seg])
-                                #print(segmentation_mask_3[z_val_o,y_val_o,x_val_o]+600845, " -> ", segmentation_mask_4.data[z_seg,y_seg,x_seg]+600845)
-                                #print(rgn_cube.data[z_seg,y_seg,x_seg])
                                 segmentation_mask_3[z_val_o,y_val_o,x_val_o] = segmentation_mask_4.data[z_seg,y_seg,x_seg]
                                 #print("updated")
         if not is_3D_seg:
