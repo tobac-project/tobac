@@ -1,4 +1,6 @@
 import logging
+
+from numpy import transpose
 from . import utils as tb_utils
         
 def transfm_pbc_point(in_dim, dim_min, dim_max):
@@ -92,20 +94,25 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         if vertical_coord=='auto':
             list_vertical=['z','model_level_number','altitude','geopotential_height']
             # TODO: there surely must be a better way to handle this
+            vertical_axis = None
             for coord_name in list_vertical:
                 if coord_name in list_coord_names:
                     vertical_axis=coord_name
                     break
+            if vertical_axis is None:
+                raise ValueError('Please specify vertical coordinate')
         elif vertical_coord in list_coord_names:
             vertical_axis=vertical_coord
         else:
-            raise ValueError('Plese specify vertical coordinate')
+            raise ValueError('Please specify vertical coordinate')
         ndim_vertical=field_in.coord_dims(vertical_axis)
         if len(ndim_vertical)>1:
             raise ValueError('please specify 1 dimensional vertical coordinate')
         vertical_coord_axis = ndim_vertical[0]
         # Once we know the vertical coordinate, we can resolve the 
         # horizontal coordinates
+        # To make things easier, we will transpose the axes
+        # so that they are consistent. 
         if vertical_coord_axis == 0:
             hdim_1_axis = 1
             hdim_2_axis = 2
@@ -129,6 +136,18 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
     # Get raw array from input data:
     data=field_in.core_data()
     is_3D_seg = len(data.shape)==3
+    # To make things easier, we will transpose the axes
+    # so that they are consistent: z, hdim_1, hdim_2
+    # We only need to do this for 3D. 
+    transposed_data = False
+    if is_3D_seg:
+        if vertical_coord_axis == 1:
+            data = np.transpose(data, axes=(1, 0, 2))
+            transposed_data = True
+        elif vertical_coord_axis == 2:
+            data = np.transpose(data, axes=(2, 0, 1))
+            transposed_data = True
+
     
     #Set level at which to create "Seed" for each feature in the case of 3D watershedding:
     # If none, use all levels (later reduced to the ones fulfilling the theshold conditions)
@@ -162,23 +181,18 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         # z, h1, h2. 
         if (seed_3D_flag == 'column'):
             for index, row in features_in.iterrows():
-                if vertical_coord_axis==0:
-                    markers[level,int(row['hdim_1']), int(row['hdim_2'])]=row['feature']
-                elif vertical_coord_axis==1:
-                    markers[int(row['hdim_1']),level, int(row['hdim_2'])]=row['feature']
-                elif vertical_coord_axis==2:
-                    markers[int(row['hdim_1']), int(row['hdim_2']),level]=row['feature']
+                markers[level,int(row['hdim_1']), int(row['hdim_2'])]=row['feature']
                     
         elif (seed_3D_flag == 'box'):
-            z_len = data.shape[vertical_coord_axis]
-            h1_len = data.shape[hdim_1_axis]
-            h2_len = data.shape[hdim_2_axis]
+            z_len = data.shape[0]
+            h1_len = data.shape[1]
+            h2_len = data.shape[2]
         
             # Get the size of the seed box from the input parameter
             try:
-                seed_z = seed_3D_size[vertical_coord_axis]
-                seed_h1 = seed_3D_size[hdim_1_axis]
-                seed_h2 = seed_3D_size[hdim_2_axis]
+                seed_z = seed_3D_size[0]
+                seed_h1 = seed_3D_size[1]
+                seed_h2 = seed_3D_size[2]
             except TypeError:
                 # Not iterable, assume int. 
                 seed_z = seed_3D_size
@@ -212,19 +226,9 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                     0, h1_len, 0, h2_len, PBC_flag= PBC_flag
                 )
                 for seed_box in all_seed_boxes:
-                    #print("seed box: ", seed_box)
-                    if vertical_coord_axis==0:
-                        markers[z_seed_start:z_seed_end,
-                                seed_box[0]:seed_box[1], 
-                                seed_box[2]:seed_box[3]]=row['feature']
-                    elif vertical_coord_axis==1:
-                        markers[seed_box[0]:seed_box[1], 
-                                z_seed_start:z_seed_end,
-                                seed_box[2]:seed_box[3]]=row['feature']
-                    elif vertical_coord_axis==2:
-                        markers[seed_box[0]:seed_box[1], 
-                                seed_box[2]:seed_box[3],
-                                z_seed_start:z_seed_end]=row['feature']
+                    markers[z_seed_start:z_seed_end,
+                            seed_box[0]:seed_box[1], 
+                            seed_box[2]:seed_box[3]]=row['feature']
                                             
 
     # set markers in cells not fulfilling threshold condition to zero:
@@ -805,12 +809,17 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                                 segmentation_mask_3[z_val_o,y_val_o,x_val_o] = segmentation_mask_4.data[z_seg,y_seg,x_seg]
                                 #print("updated")
         if not is_3D_seg:
-            segmentation_mask_3 = segmentation_mask_3[0]        
-        segmentation_out.data = segmentation_mask_3
-    # PBC checks not run            
-    else:
-        #Write resulting mask into cube for output
-        segmentation_out.data = segmentation_mask
+            segmentation_mask_3 = segmentation_mask_3[0]  
+
+        segmentation_mask = segmentation_mask_3
+
+    if transposed_data:
+        segmentation_mask = np.transpose(segmentation_mask, axes = 
+                                        [vertical_coord_axis, hdim_1_axis, hdim_2_axis])
+
+    # Finished PBC checks and new PBC updated segmentation now in segmentation_mask. 
+    #Write resulting mask into cube for output
+    segmentation_out.data = segmentation_mask
 
     # count number of grid cells asoociated to each tracked cell and write that into DataFrame:
     values, count = np.unique(segmentation_mask, return_counts=True)

@@ -396,3 +396,77 @@ def test_segmentation_timestep_3d_seed_box_nopbcs(blob_size, shift_pts,
     # We really only need to check the center point here for this test. 
     seg_point_overlaps = second_point_seg == 1
     assert seg_point_overlaps == expected_both_segmented
+
+
+@pytest.mark.parametrize("test_dset_size, vertical_axis_num, "
+                         "vertical_coord_name,"
+                         " vertical_coord_opt, expected_raise", 
+                         [((20,30,40), 0, 'altitude', 'auto', False), 
+                          ((20,30,40), 1, 'altitude', 'auto', False),
+                          ((20,30,40), 2, 'altitude', 'auto', False),
+                          ((20,30,40), 0, 'air_pressure', 'air_pressure', False),
+                          ((20,30,40), 0, 'air_pressure', 'auto', True),
+                          ((20,30,40), 0, 'model_level_number', 'auto', False),
+                          ((20,30,40), 0, 'altitude', 'auto', False),
+                          ((20,30,40), 0, 'geopotential_height', 'auto', False)
+                          ]
+)
+def test_different_z_axes(test_dset_size, vertical_axis_num, vertical_coord_name,
+                          vertical_coord_opt, expected_raise):
+    '''Tests ```tobac.segmentation.segmentation_timestep```
+    Tests:
+    The output is the same no matter what order we have axes in.
+    The 
+
+    '''
+    import numpy as np
+
+    # First, just check that input and output shapes are the same. 
+    test_dxy = 1000 
+    test_vdim_pt_1 = 8 
+    test_hdim_1_pt_1 = 12
+    test_hdim_2_pt_1 = 12
+    test_data = np.zeros(test_dset_size)
+    common_dset_opts = {
+        'in_arr': test_data, 
+        'data_type': 'iris',
+        'z_dim_name': vertical_coord_name
+    }
+    if vertical_axis_num == 0:
+        test_data_iris = testing.make_dataset_from_arr(
+            z_dim_num=0, y_dim_num=1, x_dim_num=2, **common_dset_opts
+        )
+    elif vertical_axis_num == 1:
+        test_data_iris = testing.make_dataset_from_arr(
+            z_dim_num=1, y_dim_num=0, x_dim_num=1, **common_dset_opts
+        )
+    elif vertical_axis_num == 2:
+        test_data_iris = testing.make_dataset_from_arr(
+            z_dim_num=1, y_dim_num=0, x_dim_num=1, **common_dset_opts
+        )
+
+    # Generate dummy feature dataset only on the first feature.
+    test_feature_ds = testing.generate_single_feature(start_v=test_vdim_pt_1,
+                                                      start_h1=test_hdim_1_pt_1,
+                                                      start_h2=test_hdim_2_pt_1)
+    if not expected_raise:
+        out_seg_mask, out_df = seg.segmentation_timestep(
+            field_in=test_data_iris,
+            features_in=test_feature_ds,
+            dxy=test_dxy,
+            threshold=1.5,
+            vertical_coord=vertical_coord_opt
+        )
+        # Check that shapes don't change. 
+        assert test_data.shape == out_seg_mask.core_data().shape
+
+    else:
+        # Expecting a raise
+        with pytest.raises(ValueError):
+            out_seg_mask, out_df = seg.segmentation_timestep(
+                field_in=test_data_iris,
+                features_in=test_feature_ds,
+                dxy=test_dxy,
+                threshold=1.5,
+            )
+

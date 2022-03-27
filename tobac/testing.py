@@ -364,6 +364,7 @@ def make_dataset_from_arr(
     data_type="xarray",
     time_dim_num=None,
     z_dim_num=None,
+    z_dim_name = 'altitude',
     y_dim_num=0,
     x_dim_num=1,
 ):
@@ -380,6 +381,8 @@ def make_dataset_from_arr(
         What axis is the time dimension on, None for a single timestep
     z_dim_num: int or None
         What axis is the z dimension on, None for a 2D array
+    z_dim_name: str
+        What the z dimension name is named
     y_dim_num: int
         What axis is the y dimension on, typically 0 for a 2D array
     x_dim_num: int
@@ -407,7 +410,7 @@ def make_dataset_from_arr(
         out_arr_iris = output_arr.to_iris()
         if is_3D:
             out_arr_iris.add_dim_coord(
-                iris.coords.DimCoord(np.arange(0, z_max), standard_name="altitude"),
+                iris.coords.DimCoord(np.arange(0, z_max), standard_name=z_dim_name),
                 z_dim_num,
             )
         return out_arr_iris
