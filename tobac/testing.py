@@ -766,7 +766,7 @@ def get_pbc_coordinates(h1_min, h1_max, h2_min, h2_max,
 
 def generate_single_feature(start_h1, start_h2, start_v = None,
                             spd_h1 = 1, spd_h2 = 1, spd_v = 1, 
-                            min_h1 = 0, max_h1 = 1000, min_h2 = 0, max_h2 = 1000,
+                            min_h1 = 0, max_h1 = None, min_h2 = 0, max_h2 = None,
                             num_frames = 1, dt = datetime.timedelta(minutes=5),
                             start_date = datetime.datetime(2022,1,1,0),
                             PBC_flag = 'none', frame_start = 1, feature_num=1,):
@@ -814,6 +814,10 @@ def generate_single_feature(start_h1, start_h2, start_v = None,
     feature_num: int
         What number to start the feature at
     '''
+
+    if max_h1 is None or max_h2 is None:
+        raise ValueError('Max coords must be specified.')
+
 
     out_list_of_dicts = list()
     curr_h1 = start_h1

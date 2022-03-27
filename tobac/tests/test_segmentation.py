@@ -35,7 +35,8 @@ def test_segmentation_timestep_2D_feature_2D_seg():
     )
     test_data_iris = testing.make_dataset_from_arr(test_data, data_type="iris")
     # Generate dummy feature dataset
-    test_feature_ds = testing.generate_single_feature(start_h1 = 20.0, start_h2 = 20.0)
+    test_feature_ds = testing.generate_single_feature(start_h1 = 20.0, start_h2 = 20.0, 
+                                                      max_h1 = 1000, max_h2 = 1000)
     
     out_seg_mask, out_df = seg.segmentation_timestep(field_in = test_data_iris, 
                         features_in = test_feature_ds, dxy = test_dxy,
@@ -67,7 +68,9 @@ def test_segmentation_timestep_2D_feature_2D_seg():
     test_data_iris = testing.make_dataset_from_arr(test_data, data_type="iris")
     # Generate dummy feature dataset
     test_feature_ds = testing.generate_single_feature(start_h1 = test_hdim_1_pt, 
-                                                      start_h2 = test_hdim_2_pt)
+                                                      start_h2 = test_hdim_2_pt,
+                                                      max_h1 = 1000, max_h2 = 1000
+                                                      )
     
     hdim_1_start_feat, hdim_1_end_feat = testing.get_start_end_of_feat(test_hdim_1_pt, 
                                                             test_hdim_1_sz, 0,test_dset_size[0],
@@ -113,7 +116,8 @@ def test_segmentation_timestep_2D_feature_2D_seg():
     test_data_iris = testing.make_dataset_from_arr(test_data, data_type="iris")
     # Generate dummy feature dataset
     test_feature_ds = testing.generate_single_feature(start_h1 = test_hdim_1_pt, 
-                                                      start_h2 = test_hdim_2_pt)
+                                                      start_h2 = test_hdim_2_pt,
+                                                      max_h1 = 1000, max_h2 = 1000)
     hdim_1_start_feat, hdim_1_end_feat = testing.get_start_end_of_feat(test_hdim_1_pt, 
                                                             test_hdim_1_sz, 0,test_dset_size[0],
                                                             is_pbc = True )
@@ -164,7 +168,8 @@ def test_segmentation_timestep_2D_feature_2D_seg():
     test_data_iris = testing.make_dataset_from_arr(test_data, data_type="iris")
     # Generate dummy feature dataset
     test_feature_ds = testing.generate_single_feature(start_h1 = test_hdim_1_pt, 
-                                                      start_h2 = test_hdim_2_pt)
+                                                      start_h2 = test_hdim_2_pt,
+                                                      max_h1 = 1000, max_h2 = 1000)
     hdim_1_start_feat, hdim_1_end_feat = testing.get_start_end_of_feat(test_hdim_1_pt, 
                                                             test_hdim_1_sz, 0,test_dset_size[0],
                                                             is_pbc = True )
@@ -248,7 +253,8 @@ def test_segmentation_timestep_level():
         test_data, data_type="iris", z_dim_num=0, y_dim_num=1, x_dim_num=2
     )
     # Generate dummy feature dataset
-    test_feature_ds = testing.generate_single_feature(start_h1=20.0, start_h2=20.0)
+    test_feature_ds = testing.generate_single_feature(start_h1=20.0, start_h2=20.0,
+                                                      max_h1 = 1000, max_h2 = 1000)
 
     out_seg_mask, out_df = seg.segmentation_timestep(
         field_in=test_data_iris,
@@ -379,7 +385,8 @@ def test_segmentation_timestep_3d_seed_box_nopbcs(blob_size, shift_pts,
     # Generate dummy feature dataset only on the first feature.
     test_feature_ds = testing.generate_single_feature(start_v=test_vdim_pt_1,
                                                       start_h1=test_hdim_1_pt_1,
-                                                      start_h2=test_hdim_2_pt_1)
+                                                      start_h2=test_hdim_2_pt_1,
+                                                      max_h1 = 1000, max_h2 = 1000)
 
     out_seg_mask, out_df = seg.segmentation_timestep(
         field_in=test_data_iris,
@@ -416,8 +423,21 @@ def test_different_z_axes(test_dset_size, vertical_axis_num, vertical_coord_name
     '''Tests ```tobac.segmentation.segmentation_timestep```
     Tests:
     The output is the same no matter what order we have axes in.
-    The 
+    A ValueError is raised if an invalid vertical coordinate is 
+    passed in
 
+    Parameters
+    ----------
+    test_dset_size: tuple(int, int, int)
+        Size of the test dataset
+    vertical_axis_num: int (0-2, inclusive)
+        Which axis in test_dset_size is the vertical axis
+    vertical_coord_name: str
+        Name of the vertical coordinate. 
+    vertical_coord_opt: str
+        What to pass in as the vertical coordinate option to segmentation_timestep
+    expected_raise: bool
+        True if we expect a ValueError to be raised, false otherwise
     '''
     import numpy as np
 
@@ -448,7 +468,8 @@ def test_different_z_axes(test_dset_size, vertical_axis_num, vertical_coord_name
     # Generate dummy feature dataset only on the first feature.
     test_feature_ds = testing.generate_single_feature(start_v=test_vdim_pt_1,
                                                       start_h1=test_hdim_1_pt_1,
-                                                      start_h2=test_hdim_2_pt_1)
+                                                      start_h2=test_hdim_2_pt_1,
+                                                      max_h1 = 1000, max_h2 = 1000)
     if not expected_raise:
         out_seg_mask, out_df = seg.segmentation_timestep(
             field_in=test_data_iris,
@@ -469,4 +490,143 @@ def test_different_z_axes(test_dset_size, vertical_axis_num, vertical_coord_name
                 dxy=test_dxy,
                 threshold=1.5,
             )
+
+# TODO: add more tests to make sure buddy box code is run. 
+@pytest.mark.parametrize("dset_size, blob_1_loc, blob_1_size, blob_2_loc, blob_2_size,"
+                                            "shift_domain, seed_3D_size", 
+                         [((20,30,40), (8,0,0), (5,5,5), (8, 3,3), (5,5,5), (0,-8,-8), None), 
+                          ((20,30,40), (8,0,0), (5,5,5), (8, 3,3), (5,5,5), (0,-8,-8), 5),
+                          ((20,30,40), (8,0,0), (5,5,5), (8, 28,38), (5,5,5), (0,15,15), 5),
+                          ((20,30,40), (8,0,0), (5,5,5), (8, 28,38), (5,5,5), (0,-8,-8), None),
+                          ]
+)
+def test_segmentation_timestep_3d_buddy_box(dset_size,blob_1_loc, blob_1_size, blob_2_loc, blob_2_size,
+                                            shift_domain, seed_3D_size):
+    '''Tests ```tobac.segmentation.segmentation_timestep```
+    to make sure that the "buddy box" 3D PBC implementation works. 
+    Basic procedure: build a dataset with two features (preferrably on the corner)
+    and then run segmentation, shift the points, and then run segmentation again.
+    After shifting back, the results should be identical. 
+    Note: only tests 'both' PBC condition.
+    Parameters
+    ----------
+    dset_size: tuple(int, int, int)
+        Size of the domain (assumes z, hdim_1, hdim_2)
+    blob_1_loc: tuple(int, int, int)
+        Location of the first blob
+    blob_1_size: tuple(int, int, int)
+        Size of the first blob. Note: use odd numbers here. 
+    blob_2_loc: tuple(int, int, int)
+        Location of the second blob
+    blob_2_size: tuple(int, int, int)
+        Size of the second blob. Note: use odd numbers here.
+    shift_domain: tuple(int, int, int)
+        How many points to shift the domain by. 
+    seed_3D_size: None, int, or tuple
+        Seed size to pass to tobac. If None, passes in a column seed
+    '''
+
+    import numpy as np
+    import pandas as pd
+
+    '''
+    The best way to do this I think is to create two blobs near (but not touching)
+    each other, varying the seed_3D_size so that they are either segmented together
+    or not segmented together. 
+    '''
+    test_dxy = 1000
+    test_amp = 2
+
+    test_data = np.zeros(dset_size)
+    test_data = testing.make_feature_blob(
+        test_data,
+        blob_1_loc[1],
+        blob_1_loc[2],
+        blob_1_loc[0],
+        h1_size=blob_1_size[1],
+        h2_size=blob_1_size[2],
+        v_size=blob_1_size[0],
+        amplitude=test_amp,
+        PBC_flag='both'
+
+    )
+
+    # Make a second feature
+    test_data = testing.make_feature_blob(
+        test_data,
+        blob_2_loc[1],
+        blob_2_loc[2],
+        blob_2_loc[0],
+        h1_size=blob_2_size[1],
+        h2_size=blob_2_size[2],
+        v_size=blob_2_size[0],
+        amplitude=test_amp,
+        PBC_flag='both'
+    )
+
+    test_data_iris = testing.make_dataset_from_arr(
+        test_data, data_type="iris", z_dim_num=0, y_dim_num=1, x_dim_num=2
+    )
+    # Generate dummy feature dataset only on the first feature.
+    test_feature_ds_1 = testing.generate_single_feature(start_v=blob_1_loc[0],
+                                                      start_h1=blob_1_loc[1],
+                                                      start_h2=blob_1_loc[2], 
+                                                      max_h1 = dset_size[1],
+                                                      max_h2 = dset_size[2],
+                                                      PBC_flag='both')
+    test_feature_ds_2 = testing.generate_single_feature(start_v=blob_2_loc[0],
+                                                      start_h1=blob_2_loc[1],
+                                                      start_h2=blob_2_loc[2], 
+                                                      max_h1 = dset_size[1],
+                                                      max_h2 = dset_size[2],
+                                                      PBC_flag='both')
+    test_feature_ds = pd.concat([test_feature_ds_1, test_feature_ds_2])
+
+    common_seg_opts = {
+        'dxy': test_dxy,
+        'threshold': 1.5,
+        'PBC_flag': 'both'
+    }
+    if seed_3D_size is None:
+        common_seg_opts['seed_3D_flag'] = 'column'
+    else:
+        common_seg_opts['seed_3D_flag'] = 'box'
+        common_seg_opts['seed_3D_size'] = seed_3D_size
+
+
+    out_seg_mask, out_df = seg.segmentation_timestep(
+        field_in=test_data_iris,
+        features_in=test_feature_ds,
+        **common_seg_opts
+    )
+
+    # Now, shift the data over and re-run segmentation. 
+    test_data_shifted = np.roll(test_data, shift_domain, axis=(0,1,2))
+    test_data_iris_shifted = testing.make_dataset_from_arr(
+        test_data_shifted, data_type="iris", z_dim_num=0, y_dim_num=1, x_dim_num=2
+    )
+    test_feature_ds_1 = testing.generate_single_feature(start_v=blob_1_loc[0]+shift_domain[0],
+                                                      start_h1=blob_1_loc[1]+shift_domain[1],
+                                                      start_h2=blob_1_loc[2]+shift_domain[2], 
+                                                      max_h1 = dset_size[1],
+                                                      max_h2 = dset_size[2],
+                                                      PBC_flag='both')
+    test_feature_ds_2 = testing.generate_single_feature(start_v=blob_2_loc[0]+shift_domain[0],
+                                                      start_h1=blob_2_loc[1]+shift_domain[1],
+                                                      start_h2=blob_2_loc[2]+shift_domain[2], 
+                                                      max_h1 = dset_size[1],
+                                                      max_h2 = dset_size[2],
+                                                      PBC_flag='both')
+    test_feature_ds_shifted = pd.concat([test_feature_ds_1, test_feature_ds_2])
+    out_seg_mask_shifted, out_df = seg.segmentation_timestep(
+        field_in=test_data_iris_shifted,
+        features_in=test_feature_ds_shifted,
+        **common_seg_opts
+    )
+
+    # Now, shift output back. 
+    out_seg_reshifted = np.roll(out_seg_mask_shifted.core_data(),
+                                tuple((-x for x in shift_domain)), axis=(0,1,2))
+
+    assert np.all(out_seg_mask.core_data() == out_seg_reshifted)
 

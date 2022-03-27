@@ -398,7 +398,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         buddies contains features of interest and any neighbors that across the boundary or in 
         physical contact with that label
         '''
-        
+        # TODO: this can cause a crash if there are no segmentation regions        
         reg_props_dict = tb_utils.get_label_props_in_dict(segmentation_mask_3)
 
         curr_reg_inds, z_reg_inds, y_reg_inds, x_reg_inds= tb_utils.get_indices_of_labels_from_reg_prop_dict(reg_props_dict)

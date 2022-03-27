@@ -246,13 +246,13 @@ def test_generate_single_feature():
         {'hdim_1': 1, 'hdim_2': 1, 'vdim': 1, 'frame': 0, 'feature': 1, 'time': datetime.datetime(2022, 1, 1,0,0)}
     ])
 
-    assert_frame_equal(generate_single_feature(1, 1, start_v = 1, frame_start = 0).sort_index(axis=1), expected_df.sort_index(axis=1))
+    assert_frame_equal(generate_single_feature(1, 1, start_v = 1, frame_start = 0, max_h1 = 1000, max_h2 = 1000).sort_index(axis=1), expected_df.sort_index(axis=1))
 
     # Testing a simple 2D case
     expected_df = pd.DataFrame.from_dict([
         {'hdim_1': 1, 'hdim_2': 1, 'frame': 0, 'feature': 1, 'time': datetime.datetime(2022, 1, 1,0,0)}
     ])
-    assert_frame_equal(generate_single_feature(1, 1, frame_start = 0).sort_index(axis=1), expected_df.sort_index(axis=1))
+    assert_frame_equal(generate_single_feature(1, 1, frame_start = 0, max_h1 = 1000, max_h2 = 1000).sort_index(axis=1), expected_df.sort_index(axis=1))
 
     # Testing a simple 2D case with movement
     expected_df = pd.DataFrame.from_dict([
@@ -262,7 +262,7 @@ def test_generate_single_feature():
         {'hdim_1': 4, 'hdim_2': 4, 'frame': 3, 'feature': 4, 'time': datetime.datetime(2022, 1, 1,0,15)},
     ])
     assert_frame_equal(generate_single_feature(1, 1, frame_start = 0, num_frames=4,
-                       spd_h1 = 1, spd_h2 = 1).sort_index(axis=1), expected_df.sort_index(axis=1))
+                       spd_h1 = 1, spd_h2 = 1, max_h1 = 1000, max_h2 = 1000).sort_index(axis=1), expected_df.sort_index(axis=1))
     
     # Testing a simple 3D case with movement
     expected_df = pd.DataFrame.from_dict([
@@ -272,7 +272,7 @@ def test_generate_single_feature():
         {'hdim_1': 4, 'hdim_2': 4, 'vdim': 4, 'frame': 3, 'feature': 4, 'time': datetime.datetime(2022, 1, 1,0,15)},
     ])
     assert_frame_equal(generate_single_feature(1, 1, start_v = 1, frame_start = 0, num_frames=4,
-                       spd_h1 = 1, spd_h2 = 1, spd_v = 1).sort_index(axis=1), expected_df.sort_index(axis=1))
+                       spd_h1 = 1, spd_h2 = 1, spd_v = 1, max_h1 = 1000, max_h2 = 1000).sort_index(axis=1), expected_df.sort_index(axis=1))
 
     # Testing a simple 3D case with movement that passes the hdim_1 boundary
     expected_df = pd.DataFrame.from_dict([
