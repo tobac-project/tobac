@@ -114,7 +114,7 @@ def plot_tracks_mask_field(
         .units.num2date(field.coord("time").points[0])
         .strftime("%Y-%m-%d %H:%M:%S")
     )
-    if title is "datestr":
+    if title == "datestr":
         if title_str is None:
             titlestring = datestr
         elif type(title_str is str):
@@ -167,9 +167,9 @@ def plot_tracks_mask_field(
         )
         if label_colorbar is None:
             label_colorbar = field.name() + "(" + field.units.symbol + ")"
-        if orientation_colorbar is "horizontal":
+        if orientation_colorbar == "horizontal":
             cbar.ax.set_xlabel(label_colorbar)
-        elif orientation_colorbar is "vertical":
+        elif orientation_colorbar == "vertical":
             cbar.ax.set_ylabel(label_colorbar)
         tick_locator = ticker.MaxNLocator(nbins=5)
         cbar.locator = tick_locator

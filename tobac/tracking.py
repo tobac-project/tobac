@@ -75,7 +75,7 @@ def linking_trackpy(
     # deep copy to preserve features field:
     features_linking = deepcopy(features)
 
-    if method_linking is "random":
+    if method_linking == "random":
         #     link features into trajectories:
         trajectories_unfiltered = tp.link(
             features_linking,
@@ -88,7 +88,7 @@ def linking_trackpy(
             neighbor_strategy="KDTree",
             link_strategy="auto",
         )
-    elif method_linking is "predict":
+    elif method_linking == "predict":
 
         pred = tp.predict.NearestVelocityPredict(span=1)
         trajectories_unfiltered = pred.link_df(
