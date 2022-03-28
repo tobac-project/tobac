@@ -21,6 +21,7 @@ def linking_trackpy(
     adaptive_step=None,
     adaptive_stop=None,
     cell_number_start=1,
+    cell_number_unassigned=-1,
 ):
     """
     Function to perform the linking of features in trajectories
@@ -42,6 +43,10 @@ def linking_trackpy(
                       flag choosing method used for feature detection
     method_linking:   str('predict' or 'random')
                       flag choosing method used for trajectory linking
+    cell_number_unassigned: int
+        Number to set the unassigned/non-tracked cells to. By default, this is -1.
+        Note that if you set this to `np.nan`, the data type of 'cell' will
+        change to float.
     """
     #    from trackpy import link_df
     import trackpy as tp
@@ -139,12 +144,17 @@ def linking_trackpy(
         # logging.debug("trajectories_cell.shape[0]: "+ str(trajectories_cell.shape[0]))
 
         if trajectories_cell.shape[0] < stubs:
-            # logging.debug("cell" + str(cell)+ "  is a stub ("+str(trajectories_cell.shape[0])+ "), setting cell number to Nan..")
-            stub_cell_nums.append(cell)
-
-    trajectories_unfiltered.loc[
-        trajectories_unfiltered["cell"].isin(stub_cell_nums), "cell"
-    ] = np.nan
+            logging.debug(
+                "cell"
+                + str(cell)
+                + "  is a stub ("
+                + str(trajectories_cell.shape[0])
+                + "), setting cell number to "
+                + str(cell_number_unassigned)
+            )
+            trajectories_unfiltered.loc[
+                trajectories_unfiltered["cell"] == cell, "cell"
+            ] = cell_number_unassigned
 
     trajectories_filtered = trajectories_unfiltered
 
@@ -161,6 +171,8 @@ def linking_trackpy(
     #    logging.debug('start adding cell time to trajectories')
     trajectories_filtered_filled = trajectories_filtered_unfilled
     trajectories_final = add_cell_time(trajectories_filtered_filled)
+    # Add metadata
+    trajectories_final.attrs["cell_number_unassigned"] = cell_number_unassigned
 
     # add coordinate to raw features identified:
     logging.debug("start adding coordinates to detected features")
