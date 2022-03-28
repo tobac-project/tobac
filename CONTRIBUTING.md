@@ -36,8 +36,9 @@ Please create a new issue on [GitHub](https://github.com/climate-processes/tobac
 * If it is a larger change or an newly added feature or workflow, please place an example of use in the [tobac-tutorials](https://github.com/climate-processes/tobac-tutorials) repository or adapt the existing examples there.
 * If necessary add a folder or modify a file.
 * The code should be PEP 8 compliant, as this facilitates our collaboration. Please use the latest version of [black](https://black.readthedocs.io/en/stable/) to format your code. When you submit a pull request, all files are checked for formatting.
+* The tobac repository is set up with pre-commit hooks to automatically format your code when commiting changes. Please run the command "pre-commit install" in the root directory of tobac to set up pre-commit formatting.
 
-We hope that we can respond within two weeks.
+We aim to respond to all new issues/pull requests as soon as possible, however at times this is not possible due to work commitments.
 
 ### Numpydoc Example <a name='docstringExample'>
 ```python
