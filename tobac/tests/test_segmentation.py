@@ -498,8 +498,10 @@ def test_different_z_axes(test_dset_size, vertical_axis_num, vertical_coord_name
                           ((20,30,40), (8,0,0), (5,5,5), (8, 3,3), (5,5,5), (0,-8,-8), None),
                           ((20,30,40), (8,1,1), (5,5,5), (8, 28,38), (5,5,5), (0,15,15), None),
                           ((20,30,40), (8,0,0), (5,5,5), (8, 28,38), (5,5,5), (0,-8,-8), None),
+                          ((20,30,40), (8,0,0), (5,5,5), (8, 28,38), (5,5,5), (0,-8,-8), (5,5,5)),
                           ]
 )
+# TODO: last test fails
 def test_segmentation_timestep_3d_buddy_box(dset_size,blob_1_loc, blob_1_size, blob_2_loc, blob_2_size,
                                             shift_domain, seed_3D_size):
     '''Tests ```tobac.segmentation.segmentation_timestep```

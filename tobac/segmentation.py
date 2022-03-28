@@ -146,7 +146,7 @@ def add_markers(features, marker_arr, seed_3D_flag, seed_3D_size, level, PBC_fla
                     # we need to find the best way to seed them. 
                     # Currently seeding with the closest point. 
                     # Loop through all points in the box
-                    with np.nditer(curr_box_markers) as it:
+                    with np.nditer(curr_box_markers, flags=['multi_index']) as it:
                         for curr_box_pt in it: 
                             # Get its global index so that we can calculate 
                             # distance and set the array.
@@ -167,7 +167,7 @@ def add_markers(features, marker_arr, seed_3D_flag, seed_3D_size, level, PBC_fla
                                 curr_coord =  (0, row['hdim_1'], row['hdim_2'])
 
                             dist_from_curr_pt = tb_utils.calc_distance_coords_pbc(
-                                global_index, curr_coord,
+                                np.array(global_index), np.array(curr_coord),
                                 min_h1 = 0, max_h1 = h1_len, 
                                 min_h2 = 0, max_h2 = h2_len, PBC_flag= PBC_flag
                             )
@@ -181,7 +181,7 @@ def add_markers(features, marker_arr, seed_3D_flag, seed_3D_size, level, PBC_fla
                             else:
                                 orig_coord =  (0, orig_row['hdim_1'], orig_row['hdim_2'])
                             dist_from_orig_pt = tb_utils.calc_distance_coords_pbc(
-                                global_index, orig_coord,
+                                np.array(global_index), np.array(orig_coord),
                                 min_h1 = 0, max_h1 = h1_len, 
                                 min_h2 = 0, max_h2 = h2_len, PBC_flag= PBC_flag
                             )
