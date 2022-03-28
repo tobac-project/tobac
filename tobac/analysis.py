@@ -423,6 +423,7 @@ def calculate_area(features, mask, method_area=None):
     from tobac.utils import mask_features_surface, mask_features
     from iris import Constraint
     from iris.analysis.cartography import area_weights
+    from scipy.ndimage import labeled_comprehension
 
     features["area"] = np.nan
 
@@ -438,7 +439,7 @@ def calculate_area(features, mask, method_area=None):
             raise ValueError(
                 "either latitude/longitude or projection_x_coordinate/projection_y_coordinate have to be present to calculate distances"
             )
-    logging.debug("calculating area using method " + method_area)
+    # logging.debug("calculating area using method " + method_area)
     if method_area == "xy":
         if not (
             mask.coord("projection_x_coordinate").has_bounds()
@@ -467,19 +468,10 @@ def calculate_area(features, mask, method_area=None):
     else:
         raise ValueError("method undefined")
 
-    for time_i, features_i in features.groupby("time"):
-        logging.debug("timestep:" + str(time_i))
-        constraint_time = Constraint(time=time_i)
-        mask_i = mask.extract(constraint_time)
-        for i in features_i.index:
-            if len(mask_i.shape) == 3:
-                mask_i_surface = mask_features_surface(
-                    mask_i, features_i.loc[i, "feature"], z_coord="model_level_number"
-                )
-            elif len(mask_i.shape) == 2:
-                mask_i_surface = mask_features(mask_i, features_i.loc[i, "feature"])
-            area_feature = np.sum(area * (mask_i_surface.data > 0))
-            features.at[i, "area"] = area_feature
+    feature_areas = labeled_comprehension(area, mask.data, features["feature"], np.sum, area.dtype, np.nan)
+
+    features["area"] = feature_areas
+
     return features
 
 
