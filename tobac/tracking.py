@@ -2,17 +2,7 @@ import logging
 import numpy as np
 import pandas as pd
 import math
-
-
-def njit_if_available(func, **kwargs):
-    '''Decorator to wrap a function with numba.njit if available.
-    If numba isn't available, it just returns the function. 
-    '''
-    try:
-        from numba import njit
-        return njit(func, kwargs)
-    except ModuleNotFoundError:
-        return func
+from . import utils as tb_utils
 
 
 
@@ -340,63 +330,6 @@ def build_distance_function(min_h1, max_h1, min_h2, max_h2, PBC_flag):
 
     '''
     import functools
-    return functools.partial(calc_distance_coords_pbc, 
+    return functools.partial(tb_utils.calc_distance_coords_pbc, 
                              min_h1 = min_h1, max_h1 = max_h1, min_h2 = min_h2, 
                              max_h2 = max_h2, PBC_flag = PBC_flag)
-
-@njit_if_available
-def calc_distance_coords_pbc(coords_1, coords_2, min_h1, max_h1, min_h2, max_h2,
-                             PBC_flag):
-    '''Function to calculate the distance between cartesian
-    coordinate set 1 and coordinate set 2. Note that we assume both
-    coordinates are within their min/max already. 
-
-    Parameters
-    ----------
-    coords_1: 2D or 3D array-like
-        Set of coordinates passed in from trackpy of either (vdim, hdim_1, hdim_2)
-        coordinates or (hdim_1, hdim_2) coordinates.
-    coords_2: 2D or 3D array-like
-        Similar to coords_1, but for the second pair of coordinates
-    min_h1: int
-        Minimum point in hdim_1
-    max_h1: int
-        Maximum point in hdim_1
-    min_h2: int
-        Minimum point in hdim_2
-    max_h2: int
-        Maximum point in hdim_2
-    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
-        Sets whether to use periodic boundaries, and if so in which directions.
-        'none' means that we do not have periodic boundaries
-        'hdim_1' means that we are periodic along hdim1
-        'hdim_2' means that we are periodic along hdim2
-        'both' means that we are periodic along both horizontal dimensions
-    
-    Returns
-    -------
-    float
-        Distance between coords_1 and coords_2 in cartesian space.
-
-    '''
-    is_3D = len(coords_1)== 3
-    size_h1 = max_h1 - min_h1
-    size_h2 = max_h2 - min_h2
-
-    if not is_3D:
-        # Let's make the accounting easier.
-        coords_1 = np.array((0, coords_1[0], coords_1[1]))
-        coords_2 = np.array((0, coords_2[0], coords_2[1]))
-
-    if PBC_flag in ['hdim_1', 'both']:
-        mod_h1 = size_h1
-    else:
-        mod_h1 = 0
-    if PBC_flag in ['hdim_2', 'both']:
-        mod_h2 = size_h2
-    else:
-        mod_h2 = 0
-    max_dims = np.array((0, mod_h1, mod_h2))
-    deltas = np.abs(coords_1 - coords_2)
-    deltas = np.where(deltas > 0.5 * max_dims, deltas - max_dims, deltas)
-    return np.sqrt(np.sum(deltas**2))

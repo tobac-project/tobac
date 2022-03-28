@@ -490,13 +490,13 @@ def test_different_z_axes(test_dset_size, vertical_axis_num, vertical_coord_name
                 dxy=test_dxy,
                 threshold=1.5,
             )
-
 # TODO: add more tests to make sure buddy box code is run. 
+# From this list right now, I'm not sure why buddy box isn't run actually. 
 @pytest.mark.parametrize("dset_size, blob_1_loc, blob_1_size, blob_2_loc, blob_2_size,"
                                             "shift_domain, seed_3D_size", 
                          [((20,30,40), (8,0,0), (5,5,5), (8, 3,3), (5,5,5), (0,-8,-8), None), 
-                          ((20,30,40), (8,0,0), (5,5,5), (8, 3,3), (5,5,5), (0,-8,-8), 5),
-                          ((20,30,40), (8,0,0), (5,5,5), (8, 28,38), (5,5,5), (0,15,15), 5),
+                          ((20,30,40), (8,0,0), (5,5,5), (8, 3,3), (5,5,5), (0,-8,-8), None),
+                          ((20,30,40), (8,1,1), (5,5,5), (8, 28,38), (5,5,5), (0,15,15), None),
                           ((20,30,40), (8,0,0), (5,5,5), (8, 28,38), (5,5,5), (0,-8,-8), None),
                           ]
 )
@@ -573,12 +573,14 @@ def test_segmentation_timestep_3d_buddy_box(dset_size,blob_1_loc, blob_1_size, b
                                                       start_h2=blob_1_loc[2], 
                                                       max_h1 = dset_size[1],
                                                       max_h2 = dset_size[2],
+                                                      feature_num = 1,
                                                       PBC_flag='both')
     test_feature_ds_2 = testing.generate_single_feature(start_v=blob_2_loc[0],
                                                       start_h1=blob_2_loc[1],
                                                       start_h2=blob_2_loc[2], 
                                                       max_h1 = dset_size[1],
                                                       max_h2 = dset_size[2],
+                                                      feature_num = 2,
                                                       PBC_flag='both')
     test_feature_ds = pd.concat([test_feature_ds_1, test_feature_ds_2])
 
@@ -610,12 +612,14 @@ def test_segmentation_timestep_3d_buddy_box(dset_size,blob_1_loc, blob_1_size, b
                                                       start_h2=blob_1_loc[2]+shift_domain[2], 
                                                       max_h1 = dset_size[1],
                                                       max_h2 = dset_size[2],
+                                                      feature_num = 1,
                                                       PBC_flag='both')
     test_feature_ds_2 = testing.generate_single_feature(start_v=blob_2_loc[0]+shift_domain[0],
                                                       start_h1=blob_2_loc[1]+shift_domain[1],
                                                       start_h2=blob_2_loc[2]+shift_domain[2], 
                                                       max_h1 = dset_size[1],
                                                       max_h2 = dset_size[2],
+                                                      feature_num = 2,
                                                       PBC_flag='both')
     test_feature_ds_shifted = pd.concat([test_feature_ds_1, test_feature_ds_2])
     out_seg_mask_shifted, out_df = seg.segmentation_timestep(

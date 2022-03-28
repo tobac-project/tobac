@@ -1,4 +1,5 @@
 import logging
+from operator import is_
 
 from numpy import transpose
 from . import utils as tb_utils
@@ -26,11 +27,190 @@ def transfm_pbc_point(in_dim, dim_min, dim_max):
     else:
         return in_dim
 
+def add_markers(features, marker_arr, seed_3D_flag, seed_3D_size, level, PBC_flag):
+    '''Adds markers for watershedding using the `features` dataframe
+    to the marker_arr. 
+
+    Parameters
+    ----------
+    features: pandas.DataFrame
+        Features for one point in time to add as markers.
+    marker_arr: 2D or 3D array-like
+        Array to add the markers to. Assumes a (z, y, x) configuration.
+    seed_3D_flag: str('column', 'box')
+        Seed 3D field at feature positions with either the full column 
+         or a box of user-set size
+    seed_3D_size: int or tuple (dimensions equal to dimensions of `field`)
+        This sets the size of the seed box when `seed_3D_flag` is 'box'. If it's an 
+        integer, the seed box is identical in all dimensions. If it's a tuple, it specifies the 
+        seed area for each dimension separately. 
+        Note: we recommend the use of odd numbers for this. If you give 
+        an even number, your seed box will be biased and not centered 
+        around the feature. 
+        Note: if two seed boxes overlap, the feature that is seeded will be the
+        closer feature.
+    level: slice or None
+        If `seed_3D_flag` is 'column', the levels at which to seed the 
+        cells for the watershedding algorithm. If None, seeds all levels.
+    PBC_flag : {'none', 'hdim_1', 'hdim_2', 'both'}
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
+    
+    Returns
+    -------
+    2D or 3D array like (same type as `marker_arr`)
+        The marker array
+    '''
+    import numpy as np
+
+    # What marker number is the background? Assumed 0.
+    bg_marker = 0
+
+    if level is None:
+        level=slice(None)
+
+    if len(marker_arr.shape)==3:
+        is_3D = True
+        z_len = marker_arr.shape[0]
+        h1_len = marker_arr.shape[1]
+        h2_len = marker_arr.shape[2]
+
+    else:
+        is_3D = False
+        z_len = 0
+        h1_len = marker_arr.shape[0]
+        h2_len = marker_arr.shape[1]
+        # transpose to 3D array to make things easier. 
+        marker_arr = marker_arr[np.newaxis, :, :]
+
+    if seed_3D_flag == 'column':
+        for index, row in features.iterrows():
+            marker_arr[level,int(row['hdim_1']), int(row['hdim_2'])]=row['feature']
+
+    elif seed_3D_flag == 'box':
+        # Get the size of the seed box from the input parameter
+        try:
+            if is_3D:
+                seed_z = seed_3D_size[0]
+                start_num = 1 
+            else:
+                start_num = 0
+            seed_h1 = seed_3D_size[start_num]
+            seed_h2 = seed_3D_size[start_num + 1]
+        except TypeError:
+            # Not iterable, assume int. 
+            seed_z = seed_3D_size
+            seed_h1 = seed_3D_size
+            seed_h2 = seed_3D_size
+
+        for index, row in features.iterrows():
+            if is_3D:
+                # If we have a 3D input and we need to do box seeding
+                # we need to have 3D features. 
+                try: 
+                    row['vdim']
+                except KeyError:
+                    raise ValueError("For Box seeding on 3D segmentation,"
+                    " you must have a 3D input source.")
+            
+            # Because we don't support PBCs on the vertical axis,
+            # this is simple- just go in the seed_z/2 points around the 
+            # vdim of the feature, up to the limits of the array. 
+            if is_3D:
+                z_seed_start = int(np.max([0, np.ceil(row['vdim']-seed_z/2)]))
+                z_seed_end = int(np.min([z_len, np.ceil(row['vdim']+seed_z/2)]))
+            
+            # For the horizontal dimensions, it's more complicated if we have
+            # PBCs. 
+            hdim_1_min = int(np.ceil(row['hdim_1'] - seed_h1/2))
+            hdim_1_max = int(np.ceil(row['hdim_1'] + seed_h1/2))
+            hdim_2_min = int(np.ceil(row['hdim_2'] - seed_h2/2))
+            hdim_2_max = int(np.ceil(row['hdim_2'] + seed_h2/2))
+
+            all_seed_boxes = tb_utils.get_pbc_coordinates(
+                hdim_1_min, hdim_1_max, hdim_2_min, hdim_2_max,
+                0, h1_len, 0, h2_len, PBC_flag= PBC_flag
+            )
+            for seed_box in all_seed_boxes:
+                # Need to see if there are any other points seeded 
+                # in this seed box first.
+                curr_box_markers = (marker_arr[z_seed_start:z_seed_end,
+                        seed_box[0]:seed_box[1], 
+                        seed_box[2]:seed_box[3]])
+                all_feats_in_box = np.unique(curr_box_markers)
+                if np.any(curr_box_markers!=bg_marker):
+                    # If we have non-background points already seeded,
+                    # we need to find the best way to seed them. 
+                    # Currently seeding with the closest point. 
+                    # Loop through all points in the box
+                    with np.nditer(curr_box_markers) as it:
+                        for curr_box_pt in it: 
+                            # Get its global index so that we can calculate 
+                            # distance and set the array.
+                            local_index = it.multi_index
+                            global_index = (local_index[0]+z_seed_start,
+                                            local_index[1] + seed_box[0],
+                                            local_index[2] + seed_box[2])
+                            # If it's a background marker, we can just set it
+                            # with the feature we're working on. 
+                            if curr_box_pt == bg_marker:
+                                marker_arr[global_index] = row['feature']
+                                continue
+                            # it has another feature in it. Calculate the distance
+                            # from its current set feature and the new feature.
+                            if is_3D:
+                                curr_coord =  (row['vdim'], row['hdim_1'], row['hdim_2'])
+                            else:
+                                curr_coord =  (0, row['hdim_1'], row['hdim_2'])
+
+                            dist_from_curr_pt = tb_utils.calc_distance_coords_pbc(
+                                global_index, curr_coord,
+                                min_h1 = 0, max_h1 = h1_len, 
+                                min_h2 = 0, max_h2 = h2_len, PBC_flag= PBC_flag
+                            )
+
+                            # This is technically an O(N^2) operation, but 
+                            # hopefully performance isn't too bad as this should
+                            # be rare.
+                            orig_row = features[features['feature'] == curr_box_pt].iloc[0]
+                            if is_3D:
+                                orig_coord =  (orig_row['vdim'], orig_row['hdim_1'], orig_row['hdim_2'])
+                            else:
+                                orig_coord =  (0, orig_row['hdim_1'], orig_row['hdim_2'])
+                            dist_from_orig_pt = tb_utils.calc_distance_coords_pbc(
+                                global_index, orig_coord,
+                                min_h1 = 0, max_h1 = h1_len, 
+                                min_h2 = 0, max_h2 = h2_len, PBC_flag= PBC_flag
+                            )
+                            # The current point center is further away
+                            # than the original point center, so do nothing
+                            if dist_from_curr_pt > dist_from_orig_pt:
+                                continue
+                            else:
+                                # the current point center is closer.
+                                marker_arr[global_index] = row['feature']
+                # completely unseeded region so far. 
+                else:
+                    marker_arr[z_seed_start:z_seed_end,
+                        seed_box[0]:seed_box[1], 
+                        seed_box[2]:seed_box[3]]=row['feature']
+                                            
+
+    # If we aren't 3D, transpose back.
+    if not is_3D:
+        marker_arr = marker_arr[0, :, :]
+
+    return marker_arr
+
+
 def segmentation_3D(features,field,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,PBC_flag='none',seed_3D_flag='column'):
-    return segmentation(features,field,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance,PBC_flag=PBC_flag,seed_3D_flag='column')
+    return segmentation(features,field,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance,PBC_flag=PBC_flag,seed_3D_flag=seed_3D_flag)
 
 def segmentation_2D(features,field,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,PBC_flag='none',seed_3D_flag='column'):
-    return segmentation(features,field,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance,PBC_flag=PBC_flag,seed_3D_flag='column')
+    return segmentation(features,field,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance,PBC_flag=PBC_flag,seed_3D_flag=seed_3D_flag)
 
 
 def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,vertical_coord='auto',PBC_flag='none',seed_3D_flag='column', seed_3D_size=5):    
@@ -52,11 +232,12 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                 flag determining the algorithm to use (currently watershedding implemented)
     max_distance: float
                   maximum distance from a marker allowed to be classified as belonging to that cell
-    PBC_flag:   string
-                options: 'none' (default), 'hdim_1', 'hdim_2', 'both'
-                flag indicating whether to use PBC treatment or not
-                note to self: should be expanded to account for singly periodic boundaries also
-                rather than just doubly periodic
+    PBC_flag : {'none', 'hdim_1', 'hdim_2', 'both'}
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
     seed_3D_flag: str('column', 'box')
         Seed 3D field at feature positions with either the full column (default)
          or a box of user-set size
@@ -170,67 +351,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
 
     # set markers at the positions of the features:
     markers = np.zeros(unmasked.shape).astype(np.int32)
-    if not is_3D_seg: #2D watershedding        
-        for index, row in features_in.iterrows():
-            markers[int(row['hdim_1']), int(row['hdim_2'])]=row['feature']
-
-    elif is_3D_seg: #3D watershedding
-        
-        # We need to generate seeds in 3D. 
-        # TODO: I think it would be easier to transpose the input to always be
-        # z, h1, h2. 
-        if (seed_3D_flag == 'column'):
-            for index, row in features_in.iterrows():
-                markers[level,int(row['hdim_1']), int(row['hdim_2'])]=row['feature']
-                    
-        elif (seed_3D_flag == 'box'):
-            z_len = data.shape[0]
-            h1_len = data.shape[1]
-            h2_len = data.shape[2]
-        
-            # Get the size of the seed box from the input parameter
-            try:
-                seed_z = seed_3D_size[0]
-                seed_h1 = seed_3D_size[1]
-                seed_h2 = seed_3D_size[2]
-            except TypeError:
-                # Not iterable, assume int. 
-                seed_z = seed_3D_size
-                seed_h1 = seed_3D_size
-                seed_h2 = seed_3D_size
-
-            # Can we use our testing function to generate 3D boxes (with PBC awareness)
-            # for a faster version of this?
-            for index, row in features_in.iterrows():
-                try: 
-                    row['vdim']
-                except KeyError:
-                    raise ValueError("For Box seeding, you must have a 3D input"
-                    "source.")
-                
-                # Because we don't support PBCs on the vertical axis,
-                # this is simple- just go in the seed_z/2 points around the 
-                # vdim of the feature, up to the limits of the array. 
-                z_seed_start = int(np.max([0, np.ceil(row['vdim']-seed_z/2)]))
-                z_seed_end = int(np.min([z_len, np.ceil(row['vdim']+seed_z/2)]))
-                
-                # For the horizontal dimensions, it's more complicated if we have
-                # PBCs. 
-                hdim_1_min = int(np.ceil(row['hdim_1'] - seed_h1/2))
-                hdim_1_max = int(np.ceil(row['hdim_1'] + seed_h1/2))
-                hdim_2_min = int(np.ceil(row['hdim_2'] - seed_h2/2))
-                hdim_2_max = int(np.ceil(row['hdim_2'] + seed_h2/2))
-
-                all_seed_boxes = tb_utils.get_pbc_coordinates(
-                    hdim_1_min, hdim_1_max, hdim_2_min, hdim_2_max,
-                    0, h1_len, 0, h2_len, PBC_flag= PBC_flag
-                )
-                for seed_box in all_seed_boxes:
-                    markers[z_seed_start:z_seed_end,
-                            seed_box[0]:seed_box[1], 
-                            seed_box[2]:seed_box[3]]=row['feature']
-                                            
-
+    markers = add_markers(features_in, markers, seed_3D_flag, seed_3D_size, level, PBC_flag)
     # set markers in cells not fulfilling threshold condition to zero:
     markers[~unmasked]=0
     #marker_vals = np.unique(markers)
@@ -405,16 +526,8 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
 
         wall_labels = np.array([])
 
-        # TODO: move indices around with specific z axis
         w_wall = np.unique(segmentation_mask_3[:,:,0])
         wall_labels = np.append(wall_labels,w_wall)
-
-        # TODO: add test case that tests buddy box
-        #e_wall = np.unique(segmentation_mask_3[:,:,-1])
-        #wall_labels = np.append(wall_labels,e_wall)
-
-        #n_wall = np.unique(segmentation_mask_3[:,-1,:])
-        #wall_labels = np.append(wall_labels,n_wall)
 
         s_wall = np.unique(segmentation_mask_3[:,0,:])
         wall_labels = np.append(wall_labels,s_wall)
@@ -425,6 +538,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         
         # Loop through all segmentation mask labels on the wall 
         for cur_idx in wall_labels:
+            print("we have buddies")
             
             vdim_indices = z_reg_inds[cur_idx]
             hdim1_indices = y_reg_inds[cur_idx]
@@ -618,7 +732,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         
             rgn_cube.units = 'kg kg-1'
         
-            print(rgn_cube)
+            #print(rgn_cube)
             #print(rgn_cube.vdim)
         
             #Update buddy_features feature positions to correspond to buddy box space
@@ -664,82 +778,9 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
 
             # set markers at the positions of the features:
             buddy_markers = np.zeros(unmasked_buddies.shape).astype(np.int32)
-    
-            if rgn_cube.ndim==2: #2D watershedding        
-                for index, row in buddy_features.iterrows():
-                    buddy_markers[int(row['hdim_1']), int(row['hdim_2'])]=row['feature']
-
-            elif rgn_cube.ndim==3: #3D watershedding
-        
-        
-                list_coord_names=[coord.name() for coord in rgn_cube.coords()]
-                #determine vertical axis:
-                print(list_coord_names)
-                if vertical_coord=='auto':
-                    list_vertical=['vdim','z','model_level_number','altitude','geopotential_height']
-                    for coord_name in list_vertical:
-                        if coord_name in list_coord_names:
-                            vertical_axis=coord_name
-                            print(vertical_axis)
-                            break
-                elif vertical_coord in list_coord_names:
-                    vertical_axis=vertical_coord
-                else:
-                    raise ValueError('Please specify vertical coordinate')
-                ndim_vertical=rgn_cube.coord_dims(vertical_axis)
-        
-                if len(ndim_vertical)>1:
-                    raise ValueError('please specify 1 dimensional vertical coordinate')
-                z_len = len(rgn_cube.coord('vdim').points)
-                y_len = len(rgn_cube.coord('hdim_1').points)
-                x_len = len(rgn_cube.coord('hdim_2').points)
-        
-        
-                for index, row in buddy_features.iterrows():
-                #creation of 5x5x5 point ranges for 3D marker seeding
-                #and PBC flags for cross-boundary seeding - nixing this idea for now, but described in PBC Segmentation notes
-            
-                    # TODO: fix point ranges here. 
-                    # TODO: why is this repeated?
-                    if(int(row['vdim']) >=2 and int(row['vdim']) <= z_len-3):
-                        z_list = np.arange(int(row['vdim']-2),int(row['vdim']+3))
-                    elif(int(row['vdim']) < 2):
-                        z_list = np.arange(0,5)
-                    else:
-                        z_list = np.arange(z_len-5,z_len)
-                
-                    if(int(row['hdim_1']) >=2 and int(row['hdim_1']) <= y_len-3):
-                        y_list = np.arange(int(row['hdim_1']-2),int(row['hdim_1']+3))
-                    elif(int(row['hdim_1']) < 2):
-                        y_list = np.arange(0,5)
-                        #PBC_y_chk = 1
-                    else:
-                        y_list = np.arange(y_len-5,y_len)
-                        #PBC_y_chk = 1
-                
-                    if(int(row['hdim_2']) >=2 and int(row['hdim_2']) <= x_len-3):
-                        x_list = np.arange(int(row['hdim_2']-2),int(row['hdim_2']+3))
-                    elif(int(row['hdim_2']) < 2):
-                        x_list = np.arange(0,5)
-                        #PBC_x_chk = 1
-                    else:
-                        x_list = np.arange(x_len-5,x_len)
-                        #PBC_x_chk = 1
-                
-                    #loop thru 5x5x5 z times y times x range
-                    for k in range(0,5):
-                        for j in range(0,5):
-                            for i in range(0,5):
-                        
-                                if ndim_vertical[0]==0:
-                                    buddy_markers[z_list[k],y_list[j],x_list[i]]=row['feature']
-                                elif ndim_vertical[0]==1:
-                                    buddy_markers[y_list[j],z_list[k],x_list[i]]=row['feature']
-                                elif ndim_vertical[0]==2:
-                                    buddy_markers[y_list[j],x_list[i],z_list[k]]=row['feature']
-                                    
-            else:
-                raise ValueError('Segmentations routine only possible with 2 or 3 spatial dimensions')
+            # Buddy boxes are always without PBCs
+            buddy_markers = add_markers(buddy_features, buddy_markers, seed_3D_flag, 
+                                        seed_3D_size, level, PBC_flag='none')
 
             # set markers in cells not fulfilling threshold condition to zero:
             print(np.unique(buddy_markers))
