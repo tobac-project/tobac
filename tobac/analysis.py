@@ -409,14 +409,68 @@ def nearestneighbordistance_histogram(
 
 
 # Treatment of 2D lat/lon coordinates to be added:
-# def calculate_areas_2Dlatlon(latitude_coord,longitude_coord):
-#     lat=latitude_coord.core_data()
-#     lon=longitude_coord.core_data()
-#     area=np.zeros(lat.shape)
-#     dx=np.zeros(lat.shape)
-#     dy=np.zeros(lat.shape)
+def calculate_areas_2Dlatlon(_2Dlat_coord, _2Dlon_coord):
+    """
+    Calculate an array of cell areas when given two 2D arrays of latitude and
+    longitude values
 
-#     return area
+    NOTE: This currently assuems that the lat/lon grid is orthogonal, which is
+    not strictly true! It's close enough for most cases, but should be updated
+    in future to use the cross product of the distances to the neighbouring
+    cells. This will require the use of a more advanced calculation. I would
+    advise using pyproj at some point in the future to solve this issue and
+    replace haversine distance.
+
+    Parameters
+    ----------
+    _2Dlat_coord : AuxCoord
+        Iris auxilliary coordinate containing a 2d grid of latitudes for each
+        point
+
+    _2Dlon_coord : AuxCoord
+        Iris auxilliary coordinate containing a 2d grid of longitudes for each
+        point
+
+
+    Returns
+    -------
+    area : ndarray
+        A numpy array approximating the area of each cell
+
+    """
+    hdist1 = (
+        haversine(
+            _2Dlat_coord.points[:-1],
+            _2Dlon_coord.points[:-1],
+            _2Dlat_coord.points[1:],
+            _2Dlon_coord.points[1:],
+        )
+        * 1000
+    )
+
+    dists1 = np.zeros(_2Dlat_coord.points.shape)
+    dists1[0] = hdist1[0]
+    dists1[-1] = hdist1[-1]
+    dists1[1:-1] = (hdist1[0:-1] + hdist1[1:]) * 0.5
+
+    hdist2 = (
+        haversine(
+            _2Dlat_coord.points[:, :-1],
+            _2Dlon_coord.points[:, :-1],
+            _2Dlat_coord.points[:, 1:],
+            _2Dlon_coord.points[:, 1:],
+        )
+        * 1000
+    )
+
+    dists2 = np.zeros(_2Dlat_coord.points.shape)
+    dists2[:, 0] = hdist2[:, 0]
+    dists2[:, -1] = hdist2[:, -1]
+    dists2[:, 1:-1] = (hdist2[:, 0:-1] + hdist2[:, 1:]) * 0.5
+
+    area = dists1 * dists2
+
+    return area
 
 
 def calculate_area(features, mask, method_area=None):
@@ -461,8 +515,9 @@ def calculate_area(features, mask, method_area=None):
                 mask.coord("longitude").guess_bounds()
             area = area_weights(mask, normalize=False)
         elif mask.coord("latitude").ndim == 2 and mask.coord("longitude").ndim == 2:
-            raise ValueError("2D latitude/longitude coordinates not supported yet")
-            # area=calculate_areas_2Dlatlon(mask.coord('latitude'),mask.coord('longitude'))
+            area = calculate_areas_2Dlatlon(
+                mask.coord("latitude"), mask.coord("longitude")
+            )
         else:
             raise ValueError("latitude/longitude coordinate shape not supported")
     else:
