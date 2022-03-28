@@ -468,7 +468,9 @@ def calculate_area(features, mask, method_area=None):
     else:
         raise ValueError("method undefined")
 
-    feature_areas = labeled_comprehension(area, mask.data, features["feature"], np.sum, area.dtype, np.nan)
+    feature_areas = labeled_comprehension(
+        area, mask.data, features["feature"], np.sum, area.dtype, np.nan
+    )
 
     features["area"] = feature_areas
 
