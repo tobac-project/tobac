@@ -141,7 +141,7 @@ def cell_statistics(
                 # remove all collapsed coordinates (x and y dim, scalar now) and keep only time as all these coordinates are useless
                 for coordinate in cube_collapsed.coords():
                     if not cube_collapsed.coord_dims(coordinate):
-                        if coordinate.name() is not "time":
+                        if coordinate.name() != "time":
                             cube_collapsed.remove_coord(coordinate)
                 logging.debug(str(cube_collapsed))
                 cubes_profile[aggregator.name()].append(cube_collapsed)

@@ -54,7 +54,9 @@ pip install tobac/
 
 Contributing
 ------------
-The current development branch is v2.0-dev.
+The current development branch for minor updates to tobac v1 is dev.
+
+Preliminary development of the future major update to tobac is v2.0-dev.
 
 For more details on contributing, please see https://github.com/climate-processes/tobac/blob/v2.0-dev/CONTRIBUTING.md
 

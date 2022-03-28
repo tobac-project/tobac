@@ -80,7 +80,7 @@ def linking_trackpy(
     # deep copy to preserve features field:
     features_linking = deepcopy(features)
 
-    if method_linking is "random":
+    if method_linking == "random":
         #     link features into trajectories:
         trajectories_unfiltered = tp.link(
             features_linking,
@@ -93,7 +93,7 @@ def linking_trackpy(
             neighbor_strategy="KDTree",
             link_strategy="auto",
         )
-    elif method_linking is "predict":
+    elif method_linking == "predict":
 
         pred = tp.predict.NearestVelocityPredict(span=1)
         trajectories_unfiltered = pred.link_df(
@@ -120,20 +120,28 @@ def linking_trackpy(
     # Reset particle numbers from the arbitray numbers at the end of the feature detection and linking to consecutive cell numbers
     # keep 'particle' for reference to the feature detection step.
     trajectories_unfiltered["cell"] = None
+    particle_num_to_cell_num = dict()
     for i_particle, particle in enumerate(
         pd.Series.unique(trajectories_unfiltered["particle"])
     ):
         cell = int(i_particle + cell_number_start)
-        trajectories_unfiltered.loc[
-            trajectories_unfiltered["particle"] == particle, "cell"
-        ] = cell
+        particle_num_to_cell_num[particle] = int(cell)
+
+    remap_particle_to_cell_vec = np.vectorize(
+        lambda particle_cell_map, input_particle: particle_cell_map[input_particle]
+    )
+    trajectories_unfiltered["cell"] = remap_particle_to_cell_vec(
+        particle_num_to_cell_num, trajectories_unfiltered["particle"]
+    )
+    trajectories_unfiltered["cell"] = trajectories_unfiltered["cell"].astype(int)
     trajectories_unfiltered.drop(columns=["particle"], inplace=True)
 
     trajectories_bycell = trajectories_unfiltered.groupby("cell")
+    stub_cell_nums = list()
     for cell, trajectories_cell in trajectories_bycell:
-        logging.debug("cell: " + str(cell))
-        logging.debug("feature: " + str(trajectories_cell["feature"].values))
-        logging.debug("trajectories_cell.shape[0]: " + str(trajectories_cell.shape[0]))
+        # logging.debug("cell: "+str(cell))
+        # logging.debug("feature: "+str(trajectories_cell['feature'].values))
+        # logging.debug("trajectories_cell.shape[0]: "+ str(trajectories_cell.shape[0]))
 
         if trajectories_cell.shape[0] < stubs:
             logging.debug(
@@ -247,21 +255,21 @@ def fill_gaps(
 
 def add_cell_time(t):
     """add cell time as time since the initiation of each cell
-    Input:
+
+    Parameters
+    ----------
     t:             pandas  DataFrame
                    trajectories with added coordinates
-    Output:
+
+    Returns
+    -------
     t:             pandas dataframe
                    trajectories with added cell time
     """
 
-    logging.debug("start adding time relative to cell initiation")
+    # logging.debug('start adding time relative to cell initiation')
     t_grouped = t.groupby("cell")
-    t["time_cell"] = np.nan
-    for cell, track in t_grouped:
-        track_0 = track.head(n=1)
-        for i, row in track.iterrows():
-            t.loc[i, "time_cell"] = row["time"] - track_0.loc[track_0.index[0], "time"]
-    # turn series into pandas timedelta DataSeries
+
+    t["time_cell"] = t["time"] - t.groupby("cell")["time"].transform("min")
     t["time_cell"] = pd.to_timedelta(t["time_cell"])
     return t
