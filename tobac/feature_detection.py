@@ -463,6 +463,8 @@ def feature_detection_threshold(data_i,i_time,
             wall_labels = np.unique(wall_labels)
 
             for label_ind in wall_labels:
+                #create list for skip labels for this wall label only
+                skip_list_thisind = []
                 # 0 isn't a real index
                 if label_ind == 0:
                     continue
@@ -500,9 +502,15 @@ def feature_detection_threshold(data_i,i_time,
                                     all_label_locs_h1[label_on_corner],
                                     all_label_locs_h2[label_on_corner]] = label_ind
                             skip_list = np.append(skip_list,label_on_corner)
+                            skip_list_thisind = np.append(skip_list_thisind,label_on_corner)
+
+                        #if it's labeled and has already been dealt with for this label
+                        elif((label_on_corner !=0) and (np.any(label_on_corner==skip_list)) and (np.any(label_on_corner==skip_list_thisind))):
+                            #print("skip_list_thisind label - has already been treated this index")
+                            continue
                         
-                        #if it's labeled and has already been dealt with
-                        elif((label_on_corner !=0) and (np.any(label_on_corner==skip_list))):
+                        #if it's labeled and has already been dealt with via a previous label
+                        elif((label_on_corner !=0) and (np.any(label_on_corner==skip_list)) and (~np.any(label_on_corner==skip_list_thisind))):
                             #find the updated label, and overwrite all of label_ind indices with updated label
                             labels_2_alt = labels_2[label_z,y_val_alt,x_val_alt]
                             labels_2[label_locs_v,
@@ -527,9 +535,14 @@ def feature_detection_threshold(data_i,i_time,
                                     all_label_locs_h2[label_alt]] = label_ind
                             #we have already dealt with this label.
                             skip_list = np.append(skip_list,label_alt)
+                            skip_list_thisind = np.append(skip_list_thisind,label_alt)
+
+                        #if it's labeled and has already been dealt with for this label
+                        elif((label_alt !=0) and (np.any(label_alt==skip_list)) and (np.any(label_alt==skip_list_thisind))):
+                            continue
                             
                         #if it's labeled and has already been dealt with
-                        elif((label_alt !=0) and (np.any(label_alt==skip_list))):
+                        elif((label_alt !=0) and (np.any(label_alt==skip_list)) and (~np.any(label_alt==skip_list_thisind))):
                             #find the updated label, and overwrite all of label_ind indices with updated label
                             labels_2_alt = labels_2[label_z,y_val_alt,label_x]
                             labels_2[label_locs_v,
@@ -552,9 +565,14 @@ def feature_detection_threshold(data_i,i_time,
                                     all_label_locs_h2[label_alt]] = label_ind
                             #we have already dealt with this label.
                             skip_list = np.append(skip_list,label_alt)
+                            skip_list_thisind = np.append(skip_list_thisind,label_alt)
+
+                        #if it's labeled and has already been dealt with for this label
+                        elif((label_alt !=0) and (np.any(label_alt==skip_list)) and (np.any(label_alt==skip_list_thisind))):
+                            continue
                             
                         #if it's labeled and has already been dealt with
-                        elif((label_alt !=0) and (np.any(label_alt==skip_list))):
+                        elif((label_alt !=0) and (np.any(label_alt==skip_list)) and (~np.any(label_alt==skip_list_thisind))):
                             #find the updated label, and overwrite all of label_ind indices with updated label
                             labels_2_alt = labels_2[label_z,label_y,x_val_alt]
                             labels_2[label_locs_v,
