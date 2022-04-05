@@ -272,7 +272,7 @@ def get_spacings(field_in, grid_spacing=None, time_spacing=None):
         km = 6371 * c
         dxy = np.round(km * 1000)
     else:
-        ValueError(
+        raise ValueError(
             "no information about grid spacing, need either input cube with projection_x_coord and projection_y_coord, latitude and longitude  or keyword argument grid_spacing"
         )
 
