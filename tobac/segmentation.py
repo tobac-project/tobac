@@ -27,7 +27,7 @@ def transfm_pbc_point(in_dim, dim_min, dim_max):
     else:
         return in_dim
 
-def add_markers(features, marker_arr, seed_3D_flag, seed_3D_size, level, PBC_flag):
+def add_markers(features, marker_arr, seed_3D_flag, seed_3D_size = 5, level = None, PBC_flag = 'none'):
     '''Adds markers for watershedding using the `features` dataframe
     to the marker_arr. 
 
@@ -129,11 +129,13 @@ def add_markers(features, marker_arr, seed_3D_flag, seed_3D_size, level, PBC_fla
             hdim_1_max = int(np.ceil(row['hdim_1'] + seed_h1/2))
             hdim_2_min = int(np.ceil(row['hdim_2'] - seed_h2/2))
             hdim_2_max = int(np.ceil(row['hdim_2'] + seed_h2/2))
-
+            
             all_seed_boxes = tb_utils.get_pbc_coordinates(
-                hdim_1_min, hdim_1_max, hdim_2_min, hdim_2_max,
-                0, h1_len, 0, h2_len, PBC_flag= PBC_flag
-            )
+                h1_min = 0, h1_max = h1_len, 
+                h2_min = 0, h2_max = h2_len,
+                h1_start_coord = hdim_1_min, h1_end_coord =  hdim_1_max, 
+                h2_start_coord = hdim_2_min, h2_end_coord =  hdim_2_max, 
+                PBC_flag= PBC_flag)
             for seed_box in all_seed_boxes:
                 # Need to see if there are any other points seeded 
                 # in this seed box first.
@@ -465,15 +467,11 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                                     continue
                                 else:
                                     markers_2[vdim_ind,hdim1_ind,hdim2_ind] = segmentation_mask[vdim_ind,hdim1_ind,hdim2_max]
-                                    #print(z_ind,y_ind,x_ind)
-                                    #print("seeded")
                             elif hdim2_ind == hdim2_max:
                                 if (segmentation_mask[vdim_ind,hdim1_ind,hdim2_min]<=0):
                                     continue
                                 else:
                                     markers_2[vdim_ind,hdim1_ind,hdim2_ind] = segmentation_mask[vdim_ind,hdim1_ind,hdim2_min]
-                                    #print(z_ind,y_ind,x_ind)
-                                    #print("seeded")
             
         # Deal with the opposite corner only
         if PBC_flag == 'both':

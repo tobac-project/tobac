@@ -926,11 +926,11 @@ def calc_distance_coords_pbc(coords_1, coords_2, min_h1, max_h1, min_h2, max_h2,
     min_h1: int
         Minimum point in hdim_1
     max_h1: int
-        Maximum point in hdim_1
+        Maximum point in hdim_1, exclusive. max_h1-min_h1 should be the size. 
     min_h2: int
         Minimum point in hdim_2
     max_h2: int
-        Maximum point in hdim_2
+        Maximum point in hdim_2, exclusive. max_h2-min_h2 should be the size. 
     PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
         Sets whether to use periodic boundaries, and if so in which directions.
         'none' means that we do not have periodic boundaries

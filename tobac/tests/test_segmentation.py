@@ -1,3 +1,4 @@
+from tracemalloc import start
 import pytest
 import tobac.testing as testing
 import tobac.segmentation as seg
@@ -635,4 +636,97 @@ def test_segmentation_timestep_3d_buddy_box(dset_size,blob_1_loc, blob_1_size, b
                                 tuple((-x for x in shift_domain)), axis=(0,1,2))
 
     assert np.all(out_seg_mask.core_data() == out_seg_reshifted)
+
+
+@pytest.mark.parametrize("dset_size, feat_1_loc, feat_2_loc,"
+                                            "shift_domain, seed_3D_size", 
+                         [((20,30,40), (8,0,0), (8, 3,3), (0,-8,-8), None), 
+                          ((20,30,40), (8,0,0), (8, 3,3), (0,-8,-8), None),
+                          ((20,30,40), (8,1,1),  (8, 28,38), (0,15,15), None),
+                          ((20,30,40), (8,0,0),  (8, 28,38), (0,-8,-8), None),
+                          ((20,30,40), (8,0,0),  (8, 28,38), (0,-8,-8), (5,5,5)),
+                          ]
+)
+# TODO: last test fails
+def test_add_markers_pbcs(dset_size,feat_1_loc, feat_2_loc, shift_domain, seed_3D_size):
+    '''Tests ```tobac.segmentation.add_markers```
+    to make sure that adding markers works and is consistent across PBCs
+    Parameters
+    ----------
+    dset_size: tuple(int, int, int) or (int, int)
+        Size of the domain (assumes z, hdim_1, hdim_2) or (hdim_1, hdim_2)
+    feat_1_loc: tuple, same length as dset_size
+        Location of the first blob
+    feat_2_loc: tuple, same length as dset_size
+        Location of the second blob
+    shift_domain: tuple, same length as dset_size
+        How many points to shift the domain by. 
+    seed_3D_size: None, int, or tuple
+        Seed size to pass to tobac. If None, passes in a column seed
+    '''
+
+    import numpy as np
+    import pandas as pd
+
+
+    if len(dset_size) == 2:
+        is_3D = False
+        start_h1_ax = 0
+    else:
+        is_3D = True
+        start_h1_ax = 1
+    
+    common_feat_opts = {
+        'PBC_flag': 'both',
+        'max_h1': dset_size[start_h1_ax],
+        'max_h2': dset_size[start_h1_ax + 1]
+    }
+
+
+    # Generate dummy feature dataset only on the first feature.
+    test_feature_ds_1 = testing.generate_single_feature(start_v=feat_1_loc[0],
+                                                      start_h1=feat_1_loc[1],
+                                                      start_h2=feat_1_loc[2], 
+                                                      feature_num = 1,
+                                                      **common_feat_opts)
+    test_feature_ds_2 = testing.generate_single_feature(start_v=feat_2_loc[0],
+                                                      start_h1=feat_2_loc[1],
+                                                      start_h2=feat_2_loc[2], 
+                                                      feature_num = 2,
+                                                      **common_feat_opts)
+    test_feature_ds = pd.concat([test_feature_ds_1, test_feature_ds_2])
+
+    common_marker_opts = dict()
+    common_marker_opts['PBC_flag'] = 'both'
+
+    if seed_3D_size is None:
+        common_marker_opts['seed_3D_flag'] = 'column'
+    else:
+        common_marker_opts['seed_3D_flag'] = 'box'
+        common_marker_opts['seed_3D_size'] = seed_3D_size
+
+    marker_arr = seg.add_markers(test_feature_ds, np.zeros(dset_size), **common_marker_opts)
+
+    # Now, shift the data over and re-run markers. 
+    test_feature_ds_1 = testing.generate_single_feature(start_v=feat_1_loc[0]+shift_domain[0],
+                                                      start_h1=feat_1_loc[1]+shift_domain[1],
+                                                      start_h2=feat_1_loc[2]+shift_domain[2], 
+                                                      feature_num = 1,
+                                                      **common_feat_opts)
+    test_feature_ds_2 = testing.generate_single_feature(start_v=feat_2_loc[0]+shift_domain[0],
+                                                      start_h1=feat_2_loc[1]+shift_domain[1],
+                                                      start_h2=feat_2_loc[2]+shift_domain[2], 
+                                                      feature_num = 2,
+                                                      **common_feat_opts)
+    test_feature_ds_shifted = pd.concat([test_feature_ds_1, test_feature_ds_2])
+    
+    marker_arr_shifted = seg.add_markers(test_feature_ds_shifted, np.zeros(dset_size), 
+                                         **common_marker_opts)
+
+
+    # Now, shift output back. 
+    marker_arr_reshifted = np.roll(marker_arr_shifted,
+                                tuple((-x for x in shift_domain)), axis=(0,1,2))
+
+    assert np.all(marker_arr == marker_arr_reshifted)
 
