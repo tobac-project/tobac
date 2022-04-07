@@ -21,7 +21,7 @@ setup(
         "julia.kukulies@gu.se",
         "peter.marinescu@colostate.edu",
     ],
-    license="GNU",
+    license="BSD-3-Clause License",
     packages=["tobac"],
     install_requires=[],
     zip_safe=False,
