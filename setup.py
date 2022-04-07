@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="tobac",
-    version="1.2",
+    version="1.3",
     description="Tracking and object-based analysis of clouds",
     url="http://github.com/climate-processes/tobac",
     author="Max Heikenfeld",
