@@ -5,7 +5,7 @@ import pytest
 import tobac.testing
 import tobac.tracking
 import copy
-from pandas.util.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal
 import numpy as np
 
 

@@ -367,7 +367,11 @@ def feature_detection_multithreshold_timestep(
     features_threshold:      pandas DataFrame
                              detected features for individual timestep
     """
-    from scipy.ndimage.filters import gaussian_filter
+    # Handle scipy depreciation gracefully
+    try:
+        from scipy.ndimage import gaussian_filter
+    except ImportError:
+        from scipy.ndimage.filters import gaussian_filter
 
     if min_num != 0:
         warnings.warn(
@@ -401,7 +405,7 @@ def feature_detection_multithreshold_timestep(
             idx_start=idx_start,
         )
         if any([x is not None for x in features_threshold_i]):
-            features_thresholds = features_thresholds.append(features_threshold_i)
+            features_thresholds = pd.concat([features_thresholds, features_threshold_i])
 
         # For multiple threshold, and features found both in the current and previous step, remove "parent" features from Dataframe
         if i_threshold > 0 and not features_thresholds.empty and regions_old:
