@@ -24,14 +24,16 @@ def plot_tracks_mask_field_loop(
     **kwargs
 ):
     mpl_backend = mpl.get_backend()
-    if mpl_backend != 'agg':
-        warnings.warn("When using tobac plotting functions that render a figure, you may need "
-                    "to set the Matplotlib backend to 'agg' by `matplotlib.use('agg').")
-    import matplotlib.pyplot as plt    
+    if mpl_backend != "agg":
+        warnings.warn(
+            "When using tobac plotting functions that render a figure, you may need "
+            "to set the Matplotlib backend to 'agg' by `matplotlib.use('agg')."
+        )
+    import matplotlib.pyplot as plt
     import cartopy.crs as ccrs
     import os
     from iris import Constraint
-    
+
     os.makedirs(plot_dir, exist_ok=True)
     time = mask.coord("time")
     if name is None:
@@ -101,7 +103,7 @@ def plot_tracks_mask_field(
     rasterized=True,
     linewidth_contour=1,
 ):
-    import matplotlib.pyplot as plt    
+    import matplotlib.pyplot as plt
 
     import cartopy
     from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
@@ -266,10 +268,12 @@ def animation_mask_field(
     track, features, field, mask, interval=500, figsize=(10, 10), **kwargs
 ):
     mpl_backend = mpl.get_backend()
-    if mpl_backend != 'agg':
-        warnings.warn("When using tobac plotting functions that render a figure, you may need "
-                    "to set the Matplotlib backend to 'agg' by `matplotlib.use('agg').")
-    import matplotlib.pyplot as plt    
+    if mpl_backend != "agg":
+        warnings.warn(
+            "When using tobac plotting functions that render a figure, you may need "
+            "to set the Matplotlib backend to 'agg' by `matplotlib.use('agg')."
+        )
+    import matplotlib.pyplot as plt
 
     import cartopy.crs as ccrs
     import matplotlib.pyplot as plt
@@ -323,10 +327,12 @@ def plot_mask_cell_track_follow(
     """
 
     mpl_backend = mpl.get_backend()
-    if mpl_backend != 'agg':
-        warnings.warn("When using tobac plotting functions that render a figure, you may need "
-                    "to set the Matplotlib backend to 'agg' by `matplotlib.use('agg').")
-    import matplotlib.pyplot as plt    
+    if mpl_backend != "agg":
+        warnings.warn(
+            "When using tobac plotting functions that render a figure, you may need "
+            "to set the Matplotlib backend to 'agg' by `matplotlib.use('agg')."
+        )
+    import matplotlib.pyplot as plt
 
     from iris import Constraint
     from numpy import unique
@@ -452,8 +458,7 @@ def plot_mask_cell_individual_follow(
     Output:
     """
 
-    import matplotlib.pyplot as plt    
-
+    import matplotlib.pyplot as plt
 
     import numpy as np
     from .utils import mask_cell_surface
@@ -647,10 +652,12 @@ def plot_mask_cell_track_static(
     Output:
     """
     mpl_backend = mpl.get_backend()
-    if mpl_backend != 'agg':
-        warnings.warn("When using tobac plotting functions that render a figure, you may need "
-                    "to set the Matplotlib backend to 'agg' by `matplotlib.use('agg').")
-    import matplotlib.pyplot as plt    
+    if mpl_backend != "agg":
+        warnings.warn(
+            "When using tobac plotting functions that render a figure, you may need "
+            "to set the Matplotlib backend to 'agg' by `matplotlib.use('agg')."
+        )
+    import matplotlib.pyplot as plt
 
     from iris import Constraint
     from numpy import unique
@@ -803,7 +810,7 @@ def plot_mask_cell_individual_static(
     Input:
     Output:
     """
-    import matplotlib.pyplot as plt    
+    import matplotlib.pyplot as plt
 
     import numpy as np
     from .utils import mask_features, mask_features_surface
@@ -1006,10 +1013,12 @@ def plot_mask_cell_track_2D3Dstatic(
     Output:
     """
     mpl_backend = mpl.get_backend()
-    if mpl_backend != 'agg':
-        warnings.warn("When using tobac plotting functions that render a figure, you may need "
-                    "to set the Matplotlib backend to 'agg' by `matplotlib.use('agg').")
-    import matplotlib.pyplot as plt    
+    if mpl_backend != "agg":
+        warnings.warn(
+            "When using tobac plotting functions that render a figure, you may need "
+            "to set the Matplotlib backend to 'agg' by `matplotlib.use('agg')."
+        )
+    import matplotlib.pyplot as plt
 
     from iris import Constraint
     from numpy import unique
@@ -1178,10 +1187,12 @@ def plot_mask_cell_track_3Dstatic(
     Output:
     """
     mpl_backend = mpl.get_backend()
-    if mpl_backend != 'agg':
-        warnings.warn("When using tobac plotting functions that render a figure, you may need "
-                    "to set the Matplotlib backend to 'agg' by `matplotlib.use('agg').")
-    import matplotlib.pyplot as plt    
+    if mpl_backend != "agg":
+        warnings.warn(
+            "When using tobac plotting functions that render a figure, you may need "
+            "to set the Matplotlib backend to 'agg' by `matplotlib.use('agg')."
+        )
+    import matplotlib.pyplot as plt
 
     from iris import Constraint
     from numpy import unique
@@ -1343,7 +1354,7 @@ def plot_mask_cell_individual_3Dstatic(
     Input:
     Output:
     """
-    import matplotlib.pyplot as plt    
+    import matplotlib.pyplot as plt
 
     import numpy as np
     from .utils import mask_features, mask_features_surface
@@ -1537,10 +1548,12 @@ def plot_mask_cell_track_static_timeseries(
     """
 
     mpl_backend = mpl.get_backend()
-    if mpl_backend != 'agg':
-        warnings.warn("When using tobac plotting functions that render a figure, you may need "
-                    "to set the Matplotlib backend to 'agg' by `matplotlib.use('agg').")
-    import matplotlib.pyplot as plt    
+    if mpl_backend != "agg":
+        warnings.warn(
+            "When using tobac plotting functions that render a figure, you may need "
+            "to set the Matplotlib backend to 'agg' by `matplotlib.use('agg')."
+        )
+    import matplotlib.pyplot as plt
 
     from iris import Constraint
     from numpy import unique
