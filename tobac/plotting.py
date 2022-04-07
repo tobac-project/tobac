@@ -1,6 +1,5 @@
 import matplotlib as mpl
-
-import matplotlib.pyplot as plt
+import warnings
 import logging
 from .analysis import lifetime_histogram
 from .analysis import histogram_cellwise, histogram_featurewise
@@ -24,10 +23,15 @@ def plot_tracks_mask_field_loop(
     margin_top=0.05,
     **kwargs
 ):
+    mpl_backend = mpl.get_backend()
+    if mpl_backend != 'agg':
+        warnings.warn("When using tobac plotting functions that render a figure, you may need "
+                    "to set the Matplotlib backend to 'agg' by `matplotlib.use('agg').")
+    import matplotlib.pyplot as plt    
     import cartopy.crs as ccrs
     import os
     from iris import Constraint
-
+    
     os.makedirs(plot_dir, exist_ok=True)
     time = mask.coord("time")
     if name is None:
@@ -97,6 +101,8 @@ def plot_tracks_mask_field(
     rasterized=True,
     linewidth_contour=1,
 ):
+    import matplotlib.pyplot as plt    
+
     import cartopy
     from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
     import iris.plot as iplt
@@ -259,6 +265,12 @@ def plot_tracks_mask_field(
 def animation_mask_field(
     track, features, field, mask, interval=500, figsize=(10, 10), **kwargs
 ):
+    mpl_backend = mpl.get_backend()
+    if mpl_backend != 'agg':
+        warnings.warn("When using tobac plotting functions that render a figure, you may need "
+                    "to set the Matplotlib backend to 'agg' by `matplotlib.use('agg').")
+    import matplotlib.pyplot as plt    
+
     import cartopy.crs as ccrs
     import matplotlib.pyplot as plt
     import matplotlib.animation
@@ -309,6 +321,13 @@ def plot_mask_cell_track_follow(
     Input:
     Output:
     """
+
+    mpl_backend = mpl.get_backend()
+    if mpl_backend != 'agg':
+        warnings.warn("When using tobac plotting functions that render a figure, you may need "
+                    "to set the Matplotlib backend to 'agg' by `matplotlib.use('agg').")
+    import matplotlib.pyplot as plt    
+
     from iris import Constraint
     from numpy import unique
     import os
@@ -432,6 +451,10 @@ def plot_mask_cell_individual_follow(
     Input:
     Output:
     """
+
+    import matplotlib.pyplot as plt    
+
+
     import numpy as np
     from .utils import mask_cell_surface
     from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -623,6 +646,12 @@ def plot_mask_cell_track_static(
     Input:
     Output:
     """
+    mpl_backend = mpl.get_backend()
+    if mpl_backend != 'agg':
+        warnings.warn("When using tobac plotting functions that render a figure, you may need "
+                    "to set the Matplotlib backend to 'agg' by `matplotlib.use('agg').")
+    import matplotlib.pyplot as plt    
+
     from iris import Constraint
     from numpy import unique
     import os
@@ -774,6 +803,7 @@ def plot_mask_cell_individual_static(
     Input:
     Output:
     """
+    import matplotlib.pyplot as plt    
 
     import numpy as np
     from .utils import mask_features, mask_features_surface
@@ -975,6 +1005,12 @@ def plot_mask_cell_track_2D3Dstatic(
     Input:
     Output:
     """
+    mpl_backend = mpl.get_backend()
+    if mpl_backend != 'agg':
+        warnings.warn("When using tobac plotting functions that render a figure, you may need "
+                    "to set the Matplotlib backend to 'agg' by `matplotlib.use('agg').")
+    import matplotlib.pyplot as plt    
+
     from iris import Constraint
     from numpy import unique
     import os
@@ -1141,6 +1177,12 @@ def plot_mask_cell_track_3Dstatic(
     Input:
     Output:
     """
+    mpl_backend = mpl.get_backend()
+    if mpl_backend != 'agg':
+        warnings.warn("When using tobac plotting functions that render a figure, you may need "
+                    "to set the Matplotlib backend to 'agg' by `matplotlib.use('agg').")
+    import matplotlib.pyplot as plt    
+
     from iris import Constraint
     from numpy import unique
     import os
@@ -1301,6 +1343,7 @@ def plot_mask_cell_individual_3Dstatic(
     Input:
     Output:
     """
+    import matplotlib.pyplot as plt    
 
     import numpy as np
     from .utils import mask_features, mask_features_surface
@@ -1492,6 +1535,13 @@ def plot_mask_cell_track_static_timeseries(
     Input:
     Output:
     """
+
+    mpl_backend = mpl.get_backend()
+    if mpl_backend != 'agg':
+        warnings.warn("When using tobac plotting functions that render a figure, you may need "
+                    "to set the Matplotlib backend to 'agg' by `matplotlib.use('agg').")
+    import matplotlib.pyplot as plt    
+
     from iris import Constraint
     from numpy import unique
     import os
