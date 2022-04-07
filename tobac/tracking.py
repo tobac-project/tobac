@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import warnings
 
+
 def linking_trackpy(
     features,
     field_in,
@@ -57,15 +58,22 @@ def linking_trackpy(
     # calculate search range based on timestep and grid spacing
     if d_max is not None:
         if v_max is not None:
-            raise ValueError("Multiple parameter inputs for v_max, d_max or d_min have been provided. Only use one of these parameters as they supercede each other leading to unexpected behaviour")
+            raise ValueError(
+                "Multiple parameter inputs for v_max, d_max or d_min have been provided. Only use one of these parameters as they supercede each other leading to unexpected behaviour"
+            )
         search_range = int(d_max / dxy)
 
     # calculate search range based on timestep and grid spacing
     if d_min is not None:
         if (v_max is not None) or (d_max is not None):
-            raise ValueError("Multiple parameter inputs for v_max, d_max or d_min have been provided. Only use one of these parameters as they supercede each other leading to unexpected behaviour")
+            raise ValueError(
+                "Multiple parameter inputs for v_max, d_max or d_min have been provided. Only use one of these parameters as they supercede each other leading to unexpected behaviour"
+            )
         search_range = int(d_min / dxy)
-        warnings.warn("d_min parameter will be deprecated in a future version of tobac. Please use d_max instead", FutureWarning)
+        warnings.warn(
+            "d_min parameter will be deprecated in a future version of tobac. Please use d_max instead",
+            FutureWarning,
+        )
 
     if time_cell_min:
         stubs = np.floor(time_cell_min / dt) + 1

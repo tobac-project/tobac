@@ -4,6 +4,7 @@ import pandas as pd
 from . import utils as tb_utils
 import warnings
 
+
 def feature_position(
     hdim1_indices,
     hdim2_indices,
@@ -205,8 +206,11 @@ def feature_detection_threshold(
     from skimage.morphology import binary_erosion
     from copy import deepcopy
 
-    if min_num !=0:
-        warnings.warn("min_num parameter has no effect and will be deprecated in a future version of tobac. Please use n_min_threshold instead", FutureWarning)
+    if min_num != 0:
+        warnings.warn(
+            "min_num parameter has no effect and will be deprecated in a future version of tobac. Please use n_min_threshold instead",
+            FutureWarning,
+        )
 
     # if looking for minima, set values above threshold to 0 and scale by data minimum:
     if target == "maximum":
@@ -365,8 +369,11 @@ def feature_detection_multithreshold_timestep(
     """
     from scipy.ndimage.filters import gaussian_filter
 
-    if min_num !=0:
-        warnings.warn("min_num parameter has no effect and will be deprecated in a future version of tobac. Please use n_min_threshold instead", FutureWarning)
+    if min_num != 0:
+        warnings.warn(
+            "min_num parameter has no effect and will be deprecated in a future version of tobac. Please use n_min_threshold instead",
+            FutureWarning,
+        )
 
     track_data = data_i.core_data()
 
@@ -453,8 +460,11 @@ def feature_detection_multithreshold(
     """
     from .utils import add_coordinates
 
-    if min_num !=0:
-        warnings.warn("min_num parameter has no effect and will be deprecated in a future version of tobac. Please use n_min_threshold instead", FutureWarning)
+    if min_num != 0:
+        warnings.warn(
+            "min_num parameter has no effect and will be deprecated in a future version of tobac. Please use n_min_threshold instead",
+            FutureWarning,
+        )
 
     logging.debug("start feature detection based on thresholds")
 
