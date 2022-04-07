@@ -36,7 +36,7 @@ def test_feature_detection_multithreshold_timestep():
     )
     test_data_iris = testing.make_dataset_from_arr(test_data, data_type="iris")
     fd_output = feature_detection.feature_detection_multithreshold_timestep(
-        test_data_iris, 0, threshold=test_threshs, min_num=test_min_num
+        test_data_iris, 0, threshold=test_threshs, n_min_threshold=test_min_num
     )
 
     # Make sure we have only one feature
