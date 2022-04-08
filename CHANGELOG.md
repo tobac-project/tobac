@@ -4,7 +4,7 @@ _**Version 1.3:**_
 
 **Enhancements**
 
-- Significant performance improvements for tracking #89
+- Significant performance improvements for tracking [#89](https://github.com/climate-processes/tobac/pull/89)
 - Significant performance improvements for feature detection and segmentation #90
 - Performance improvement for `calculate_area` #93
 - Added ability to set a user defined stub cell value instead of `np.nan`. Default value is `-1` and stub cell values are now integers instead of floats by default #74
