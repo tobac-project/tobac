@@ -1,4 +1,6 @@
 import logging
+import numpy as np
+
 
 def column_mask_from2D(mask_2D,cube,z_coord='model_level_number'):
     '''function to turn 2D watershedding mask into a 3D mask of selected columns
@@ -638,3 +640,329 @@ def get_spacings(field_in,grid_spacing=None,time_spacing=None):
         # use value of time_spacing for dt:
         dt=time_spacing
     return dxy,dt
+
+def get_label_props_in_dict(labels):
+    '''Function to get the label properties into a dictionary format.
+    
+    Parameters
+    ----------
+    labels:    2D or 3D array-like
+        comes from the `skimage.measure.label` function
+    
+    Returns
+    -------
+    dict
+        output from skimage.measure.regionprops in dictionary format, where they key is the label number
+    '''
+    import skimage.measure
+    
+    region_properties_raw = skimage.measure.regionprops(labels)
+    region_properties_dict = dict()
+    for region_prop in region_properties_raw:
+        region_properties_dict[region_prop.label] = region_prop
+    
+    return region_properties_dict
+
+def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
+    '''Function to get the x, y, and z indices (as well as point count) of all labeled regions.
+ 
+    Parameters
+    ----------
+    region_property_dict:    dict of region_property objects
+        This dict should come from the get_label_props_in_dict function.
+
+    Returns
+    -------
+    dict (key: label number, int)
+        The number of points in the label number
+    dict (key: label number, int)
+        The z indices in the label number. If a 2D property dict is passed, this value is not returned
+    dict (key: label number, int)
+        the y indices in the label number
+    dict (key: label number, int)
+        the x indices in the label number
+    
+    Raises
+    ------
+    ValueError
+        a ValueError is raised if there are no regions in the region property dict
+
+    '''
+    
+    import skimage.measure
+    import numpy as np
+
+    if len(region_property_dict) ==0:
+        raise ValueError("No regions!")
+
+
+    z_indices = dict()
+    y_indices = dict()
+    x_indices = dict()
+    curr_loc_indices = dict()
+    is_3D = False
+        
+    #loop through all skimage identified regions
+    for region_prop_key in region_property_dict:
+        region_prop = region_property_dict[region_prop_key]
+        index = region_prop.label
+        if len(region_prop.coords[0])>=3:
+            is_3D = True
+            curr_z_ixs, curr_y_ixs, curr_x_ixs = np.transpose(region_prop.coords)
+            z_indices[index] = curr_z_ixs
+        else:
+            curr_y_ixs, curr_x_ixs = np.transpose(region_prop.coords)
+            z_indices[index] = -1
+
+        y_indices[index] = curr_y_ixs
+        x_indices[index] = curr_x_ixs
+        curr_loc_indices[index] = len(curr_y_ixs)
+                        
+    #print("indices found")
+    if is_3D:
+        return [curr_loc_indices, z_indices, y_indices, x_indices]
+    else: 
+        return [curr_loc_indices, y_indices, x_indices]
+
+def adjust_pbc_point(in_dim, dim_min, dim_max):
+    '''Function to adjust a point to the other boundary for PBCs
+    
+    Parameters
+    ----------
+    in_dim : int
+        Input coordinate to adjust
+    dim_min : int
+        Minimum point for the dimension
+    dim_max : int
+        Maximum point for the dimension (inclusive)
+    
+    Returns
+    -------
+    int
+        The adjusted point on the opposite boundary
+    
+    Raises
+    ------
+    ValueError
+        If in_dim isn't on one of the boundary points
+    '''
+    if in_dim == dim_min:
+        return dim_max
+    elif in_dim == dim_max:
+        return dim_min
+    else:
+        raise ValueError("In adjust_pbc_point, in_dim isn't on a boundary.")
+
+
+def get_pbc_coordinates(h1_min, h1_max, h2_min, h2_max, 
+                        h1_start_coord, h1_end_coord, h2_start_coord, h2_end_coord,
+                        PBC_flag = 'none'):
+    '''Function to get the *actual* coordinate boxes of interest given a set of shifted 
+    coordinates with periodic boundaries. 
+    
+    For example, if you pass in [as h1_start_coord, h1_end_coord, h2_start_coord, h2_end_coord] 
+    (-3, 5, 2,6) with PBC_flag of 'both' or 'hdim_1', h1_max of 10, and h1_min of 0
+    this function will return: [(0,5,2,6), (7,10,2,6)].
+
+    If you pass in something outside the bounds of the array, this will truncate your
+    requested box. For example, if you pass in [as h1_start_coord, h1_end_coord, h2_start_coord, h2_end_coord] 
+    (-3, 5, 2,6) with PBC_flag of 'none' or 'hdim_2', this function will return:
+    [(0,5,2,6)], assuming h1_min is 0. 
+
+    For cases where PBC_flag is 'both' and we have a corner case, it is possible
+    to get overlapping boundaries. For example, if you pass in (-6, 5, -6, 5)
+
+    Parameters
+    ----------
+    h1_min: int
+        Minimum array value in hdim_1, typically 0.
+    h1_max: int
+        Maximum array value in hdim_1 (exclusive). h1_max - h1_min should be the size in h1.
+    h2_min: int
+        Minimum array value in hdim_2, typically 0.
+    h2_max: int
+        Maximum array value in hdim_2 (exclusive). h2_max - h2_min should be the size in h2. 
+    h1_start_coord: int
+        Start coordinate in hdim_1. Can be < h1_min if dealing with PBCs.
+    h1_end_coord: int
+        End coordinate in hdim_1. Can be >= h1_max if dealing with PBCs.
+    h2_start_coord: int
+        Start coordinate in hdim_2. Can be < h2_min if dealing with PBCs.
+    h2_end_coord: int
+        End coordinate in hdim_2. Can be >= h2_max if dealing with PBCs.
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
+
+    Returns
+    -------
+    list of tuples
+        A list of tuples containing (h1_start, h1_end, h2_start, h2_end) of each of the
+        boxes needed to encompass the coordinates.
+    '''
+
+    if PBC_flag not in ['none', 'hdim_1', 'hdim_2', 'both']:
+        raise ValueError("PBC_flag must be 'none', 'hdim_1', 'hdim_2', or 'both'")
+    
+
+    h1_start_coords = list()
+    h1_end_coords = list()
+    h2_start_coords = list()
+    h2_end_coords = list()
+
+
+    # In both of these cases, we just need to truncate the hdim_1 points. 
+    if PBC_flag in ['none', 'hdim_2']:
+        h1_start_coords.append(max(h1_min, h1_start_coord))
+        h1_end_coords.append(min(h1_max, h1_end_coord))
+    
+    
+    # In both of these cases, we only need to truncate the hdim_2 points.
+    if PBC_flag in ['none', 'hdim_1']:
+        h2_start_coords.append(max(h2_min, h2_start_coord))
+        h2_end_coords.append(min(h2_max, h2_end_coord))
+
+    # If the PBC flag is none, we can just return.
+    if PBC_flag == 'none':
+        return [(h1_start_coords[0], h1_end_coords[0], h2_start_coords[0], h2_end_coords[0])]
+
+    # We have at least one periodic boundary.         
+
+    # hdim_1 boundary is periodic. 
+    if PBC_flag in ['hdim_1', 'both']:
+        if (h1_end_coord - h1_start_coord) >= (h1_max - h1_min):
+            # In this case, we have selected the full h1 length of the domain,
+            # so we set the start and end coords to just that.
+            h1_start_coords.append(h1_min)
+            h1_end_coords.append(h1_max)
+
+        # We know we only have either h1_end_coord > h1_max or h1_start_coord < h1_min
+        # and not both. If both are true, the previous if statement should trigger.
+        elif h1_start_coord < h1_min:
+            # First set of h1 start coordinates
+            h1_start_coords.append(h1_min)
+            h1_end_coords.append(h1_end_coord)
+            # Second set of h1 start coordinates
+            pts_from_begin = h1_min - h1_start_coord
+            h1_start_coords.append(h1_max - pts_from_begin)
+            h1_end_coords.append(h1_max)
+
+        elif h1_end_coord > h1_max:
+            h1_start_coords.append(h1_start_coord)
+            h1_end_coords.append(h1_max)
+            pts_from_end = h1_end_coord - h1_max
+            h1_start_coords.append(h1_min)
+            h1_end_coords.append(h1_min + pts_from_end)
+
+        # We have no PBC-related issues, actually
+        else:
+            h1_start_coords.append(h1_start_coord)
+            h1_end_coords.append(h1_end_coord)
+    
+    if PBC_flag in ['hdim_2', 'both']:
+        if (h2_end_coord - h2_start_coord) >= (h2_max - h2_min):
+            # In this case, we have selected the full h2 length of the domain,
+            # so we set the start and end coords to just that.
+            h2_start_coords.append(h2_min)
+            h2_end_coords.append(h2_max)
+
+        # We know we only have either h1_end_coord > h1_max or h1_start_coord < h1_min
+        # and not both. If both are true, the previous if statement should trigger.
+        elif h2_start_coord < h2_min:
+            # First set of h1 start coordinates
+            h2_start_coords.append(h2_min)
+            h2_end_coords.append(h2_end_coord)
+            # Second set of h1 start coordinates
+            pts_from_begin = h2_min - h2_start_coord
+            h2_start_coords.append(h2_max - pts_from_begin)
+            h2_end_coords.append(h2_max)
+
+        elif h2_end_coord > h2_max:
+            h2_start_coords.append(h2_start_coord)
+            h2_end_coords.append(h2_max)
+            pts_from_end = h2_end_coord - h2_max
+            h2_start_coords.append(h2_min)
+            h2_end_coords.append(h2_min + pts_from_end)
+
+        # We have no PBC-related issues, actually
+        else:
+            h2_start_coords.append(h2_start_coord)
+            h2_end_coords.append(h2_end_coord)
+
+    out_coords = list()
+    for h1_start_coord_single, h1_end_coord_single in zip(h1_start_coords, h1_end_coords):
+        for h2_start_coord_single, h2_end_coord_single in zip(h2_start_coords, h2_end_coords):
+            out_coords.append((h1_start_coord_single, h1_end_coord_single, h2_start_coord_single, h2_end_coord_single))
+    return out_coords
+
+def njit_if_available(func, **kwargs):
+    '''Decorator to wrap a function with numba.njit if available.
+    If numba isn't available, it just returns the function. 
+    '''
+    try:
+        from numba import njit
+        return njit(func, kwargs)
+    except ModuleNotFoundError:
+        return func
+
+
+@njit_if_available
+def calc_distance_coords_pbc(coords_1, coords_2, min_h1, max_h1, min_h2, max_h2,
+                             PBC_flag):
+    '''Function to calculate the distance between cartesian
+    coordinate set 1 and coordinate set 2. Note that we assume both
+    coordinates are within their min/max already. 
+
+    Parameters
+    ----------
+    coords_1: 2D or 3D array-like
+        Set of coordinates passed in from trackpy of either (vdim, hdim_1, hdim_2)
+        coordinates or (hdim_1, hdim_2) coordinates.
+    coords_2: 2D or 3D array-like
+        Similar to coords_1, but for the second pair of coordinates
+    min_h1: int
+        Minimum point in hdim_1
+    max_h1: int
+        Maximum point in hdim_1, exclusive. max_h1-min_h1 should be the size. 
+    min_h2: int
+        Minimum point in hdim_2
+    max_h2: int
+        Maximum point in hdim_2, exclusive. max_h2-min_h2 should be the size. 
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
+    
+    Returns
+    -------
+    float
+        Distance between coords_1 and coords_2 in cartesian space.
+
+    '''
+    
+    is_3D = len(coords_1)== 3
+    size_h1 = max_h1 - min_h1
+    size_h2 = max_h2 - min_h2
+
+    if not is_3D:
+        # Let's make the accounting easier.
+        coords_1 = np.array((0, coords_1[0], coords_1[1]))
+        coords_2 = np.array((0, coords_2[0], coords_2[1]))
+
+    if PBC_flag in ['hdim_1', 'both']:
+        mod_h1 = size_h1
+    else:
+        mod_h1 = 0
+    if PBC_flag in ['hdim_2', 'both']:
+        mod_h2 = size_h2
+    else:
+        mod_h2 = 0
+    max_dims = np.array((0, mod_h1, mod_h2))
+    deltas = np.abs(coords_1 - coords_2)
+    deltas = np.where(deltas > 0.5 * max_dims, deltas - max_dims, deltas)
+    return np.sqrt(np.sum(deltas**2))

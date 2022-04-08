@@ -243,43 +243,43 @@ def test_generate_single_feature():
     
     # Testing a simple 3D case
     expected_df = pd.DataFrame.from_dict([
-        {'hdim_1': 1, 'hdim_2': 1, 'vdim': 1, 'frame': 0, 'time': datetime.datetime(2022, 1, 1,0,0)}
+        {'hdim_1': 1, 'hdim_2': 1, 'vdim': 1, 'frame': 0, 'feature': 1, 'time': datetime.datetime(2022, 1, 1,0,0)}
     ])
 
-    assert_frame_equal(generate_single_feature(1, 1, start_v = 1, frame_start = 0).sort_index(axis=1), expected_df.sort_index(axis=1))
+    assert_frame_equal(generate_single_feature(1, 1, start_v = 1, frame_start = 0, max_h1 = 1000, max_h2 = 1000).sort_index(axis=1), expected_df.sort_index(axis=1))
 
     # Testing a simple 2D case
     expected_df = pd.DataFrame.from_dict([
-        {'hdim_1': 1, 'hdim_2': 1, 'frame': 0, 'time': datetime.datetime(2022, 1, 1,0,0)}
+        {'hdim_1': 1, 'hdim_2': 1, 'frame': 0, 'feature': 1, 'time': datetime.datetime(2022, 1, 1,0,0)}
     ])
-    assert_frame_equal(generate_single_feature(1, 1, frame_start = 0).sort_index(axis=1), expected_df.sort_index(axis=1))
+    assert_frame_equal(generate_single_feature(1, 1, frame_start = 0, max_h1 = 1000, max_h2 = 1000).sort_index(axis=1), expected_df.sort_index(axis=1))
 
     # Testing a simple 2D case with movement
     expected_df = pd.DataFrame.from_dict([
-        {'hdim_1': 1, 'hdim_2': 1, 'frame': 0, 'time': datetime.datetime(2022, 1, 1,0,0)},
-        {'hdim_1': 2, 'hdim_2': 2, 'frame': 1, 'time': datetime.datetime(2022, 1, 1,0,5)},
-        {'hdim_1': 3, 'hdim_2': 3, 'frame': 2, 'time': datetime.datetime(2022, 1, 1,0,10)},
-        {'hdim_1': 4, 'hdim_2': 4, 'frame': 3, 'time': datetime.datetime(2022, 1, 1,0,15)},
+        {'hdim_1': 1, 'hdim_2': 1, 'frame': 0, 'feature': 1, 'time': datetime.datetime(2022, 1, 1,0,0)},
+        {'hdim_1': 2, 'hdim_2': 2, 'frame': 1, 'feature': 2, 'time': datetime.datetime(2022, 1, 1,0,5)},
+        {'hdim_1': 3, 'hdim_2': 3, 'frame': 2, 'feature': 3, 'time': datetime.datetime(2022, 1, 1,0,10)},
+        {'hdim_1': 4, 'hdim_2': 4, 'frame': 3, 'feature': 4, 'time': datetime.datetime(2022, 1, 1,0,15)},
     ])
     assert_frame_equal(generate_single_feature(1, 1, frame_start = 0, num_frames=4,
-                       spd_h1 = 1, spd_h2 = 1).sort_index(axis=1), expected_df.sort_index(axis=1))
+                       spd_h1 = 1, spd_h2 = 1, max_h1 = 1000, max_h2 = 1000).sort_index(axis=1), expected_df.sort_index(axis=1))
     
     # Testing a simple 3D case with movement
     expected_df = pd.DataFrame.from_dict([
-        {'hdim_1': 1, 'hdim_2': 1, 'vdim': 1, 'frame': 0, 'time': datetime.datetime(2022, 1, 1,0,0)},
-        {'hdim_1': 2, 'hdim_2': 2, 'vdim': 2, 'frame': 1, 'time': datetime.datetime(2022, 1, 1,0,5)},
-        {'hdim_1': 3, 'hdim_2': 3, 'vdim': 3, 'frame': 2, 'time': datetime.datetime(2022, 1, 1,0,10)},
-        {'hdim_1': 4, 'hdim_2': 4, 'vdim': 4, 'frame': 3, 'time': datetime.datetime(2022, 1, 1,0,15)},
+        {'hdim_1': 1, 'hdim_2': 1, 'vdim': 1, 'frame': 0, 'feature': 1, 'time': datetime.datetime(2022, 1, 1,0,0)},
+        {'hdim_1': 2, 'hdim_2': 2, 'vdim': 2, 'frame': 1, 'feature': 2, 'time': datetime.datetime(2022, 1, 1,0,5)},
+        {'hdim_1': 3, 'hdim_2': 3, 'vdim': 3, 'frame': 2, 'feature': 3, 'time': datetime.datetime(2022, 1, 1,0,10)},
+        {'hdim_1': 4, 'hdim_2': 4, 'vdim': 4, 'frame': 3, 'feature': 4, 'time': datetime.datetime(2022, 1, 1,0,15)},
     ])
     assert_frame_equal(generate_single_feature(1, 1, start_v = 1, frame_start = 0, num_frames=4,
-                       spd_h1 = 1, spd_h2 = 1, spd_v = 1).sort_index(axis=1), expected_df.sort_index(axis=1))
+                       spd_h1 = 1, spd_h2 = 1, spd_v = 1, max_h1 = 1000, max_h2 = 1000).sort_index(axis=1), expected_df.sort_index(axis=1))
 
     # Testing a simple 3D case with movement that passes the hdim_1 boundary
     expected_df = pd.DataFrame.from_dict([
-        {'hdim_1': 1, 'hdim_2': 1, 'vdim': 1, 'frame': 0, 'time': datetime.datetime(2022, 1, 1, 0, 0)},
-        {'hdim_1': 5, 'hdim_2': 2, 'vdim': 2, 'frame': 1, 'time': datetime.datetime(2022, 1, 1, 0, 5)},
-        {'hdim_1': 9, 'hdim_2': 3, 'vdim': 3, 'frame': 2, 'time': datetime.datetime(2022, 1, 1, 0, 10)},
-        {'hdim_1': 3, 'hdim_2': 4, 'vdim': 4, 'frame': 3, 'time': datetime.datetime(2022, 1, 1, 0, 15)},
+        {'hdim_1': 1, 'hdim_2': 1, 'vdim': 1, 'frame': 0, 'feature': 1, 'time': datetime.datetime(2022, 1, 1, 0, 0)},
+        {'hdim_1': 5, 'hdim_2': 2, 'vdim': 2, 'frame': 1, 'feature': 2, 'time': datetime.datetime(2022, 1, 1, 0, 5)},
+        {'hdim_1': 9, 'hdim_2': 3, 'vdim': 3, 'frame': 2, 'feature': 3, 'time': datetime.datetime(2022, 1, 1, 0, 10)},
+        {'hdim_1': 3, 'hdim_2': 4, 'vdim': 4, 'frame': 3, 'feature': 4, 'time': datetime.datetime(2022, 1, 1, 0, 15)},
     ])
     assert_frame_equal(generate_single_feature(1, 1, start_v = 1, 
                         min_h1 = 0, max_h1 = 10, min_h2 = 0, max_h2 = 10,
@@ -288,10 +288,10 @@ def test_generate_single_feature():
 
     # Testing a simple 3D case with movement that passes the hdim_1 boundary
     expected_df = pd.DataFrame.from_dict([
-        {'hdim_1': 1, 'hdim_2': 1, 'vdim': 1, 'frame': 0, 'time': datetime.datetime(2022, 1, 1,0,0)},
-        {'hdim_1': 5, 'hdim_2': 2, 'vdim': 2, 'frame': 1, 'time': datetime.datetime(2022, 1, 1,0,5)},
-        {'hdim_1': 9, 'hdim_2': 3, 'vdim': 3, 'frame': 2, 'time': datetime.datetime(2022, 1, 1,0,10)},
-        {'hdim_1': 3, 'hdim_2': 4, 'vdim': 4, 'frame': 3, 'time': datetime.datetime(2022, 1, 1,0,15)},
+        {'hdim_1': 1, 'hdim_2': 1, 'vdim': 1, 'frame': 0, 'feature': 1, 'time': datetime.datetime(2022, 1, 1,0,0)},
+        {'hdim_1': 5, 'hdim_2': 2, 'vdim': 2, 'frame': 1, 'feature': 2, 'time': datetime.datetime(2022, 1, 1,0,5)},
+        {'hdim_1': 9, 'hdim_2': 3, 'vdim': 3, 'frame': 2, 'feature': 3, 'time': datetime.datetime(2022, 1, 1,0,10)},
+        {'hdim_1': 3, 'hdim_2': 4, 'vdim': 4, 'frame': 3, 'feature': 4, 'time': datetime.datetime(2022, 1, 1,0,15)},
     ])
     assert_frame_equal(generate_single_feature(1, 1, start_v = 1, 
                         min_h1 = 0, max_h1 = 10, min_h2 = 0, max_h2 = 10,
@@ -300,10 +300,10 @@ def test_generate_single_feature():
 
     # Testing a simple 3D case with movement that passes the hdim_2 boundary
     expected_df = pd.DataFrame.from_dict([
-        {'hdim_1': 1, 'hdim_2': 1, 'vdim': 1, 'frame': 0, 'time': datetime.datetime(2022, 1, 1,0,0)},
-        {'hdim_1': 2, 'hdim_2': 5, 'vdim': 2, 'frame': 1, 'time': datetime.datetime(2022, 1, 1,0,5)},
-        {'hdim_1': 3, 'hdim_2': 9, 'vdim': 3, 'frame': 2, 'time': datetime.datetime(2022, 1, 1,0,10)},
-        {'hdim_1': 4, 'hdim_2': 3, 'vdim': 4, 'frame': 3, 'time': datetime.datetime(2022, 1, 1,0,15)},
+        {'hdim_1': 1, 'hdim_2': 1, 'vdim': 1, 'frame': 0, 'feature': 1, 'time': datetime.datetime(2022, 1, 1,0,0)},
+        {'hdim_1': 2, 'hdim_2': 5, 'vdim': 2, 'frame': 1, 'feature': 2, 'time': datetime.datetime(2022, 1, 1,0,5)},
+        {'hdim_1': 3, 'hdim_2': 9, 'vdim': 3, 'frame': 2, 'feature': 3, 'time': datetime.datetime(2022, 1, 1,0,10)},
+        {'hdim_1': 4, 'hdim_2': 3, 'vdim': 4, 'frame': 3, 'feature': 4, 'time': datetime.datetime(2022, 1, 1,0,15)},
     ])
     assert_frame_equal(generate_single_feature(1, 1, start_v = 1, 
                         min_h1 = 0, max_h1 = 10, min_h2 = 0, max_h2 = 10,
@@ -312,12 +312,23 @@ def test_generate_single_feature():
 
     # Testing a simple 3D case with movement that passes the hdim_1 and hdim_2 boundaries
     expected_df = pd.DataFrame.from_dict([
-        {'hdim_1': 1, 'hdim_2': 1, 'vdim': 1, 'frame': 0, 'time': datetime.datetime(2022, 1, 1,0,0)},
-        {'hdim_1': 6, 'hdim_2': 5, 'vdim': 2, 'frame': 1, 'time': datetime.datetime(2022, 1, 1,0,5)},
-        {'hdim_1': 1, 'hdim_2': 9, 'vdim': 3, 'frame': 2, 'time': datetime.datetime(2022, 1, 1,0,10)},
-        {'hdim_1': 6, 'hdim_2': 3, 'vdim': 4, 'frame': 3, 'time': datetime.datetime(2022, 1, 1,0,15)},
+        {'hdim_1': 1, 'hdim_2': 1, 'vdim': 1, 'frame': 0, 'feature': 1, 'time': datetime.datetime(2022, 1, 1,0,0)},
+        {'hdim_1': 6, 'hdim_2': 5, 'vdim': 2, 'frame': 1, 'feature': 2, 'time': datetime.datetime(2022, 1, 1,0,5)},
+        {'hdim_1': 1, 'hdim_2': 9, 'vdim': 3, 'frame': 2, 'feature': 3, 'time': datetime.datetime(2022, 1, 1,0,10)},
+        {'hdim_1': 6, 'hdim_2': 3, 'vdim': 4, 'frame': 3, 'feature': 4, 'time': datetime.datetime(2022, 1, 1,0,15)},
     ])
     assert_frame_equal(generate_single_feature(1, 1, start_v = 1, 
                         min_h1 = 0, max_h1 = 10, min_h2 = 0, max_h2 = 10,
                         frame_start = 0, num_frames=4,
                         spd_h1 = 5, spd_h2 = 4, spd_v = 1, PBC_flag='both').sort_index(axis=1), expected_df.sort_index(axis=1))
+
+@pytest.mark.parametrize("in_pt,in_sz,axis_size,out_pts", 
+                         [(3, 0,(0,5), (3,3)), 
+                          (3, 3,(0,5), (2,5)),
+                          ]
+)
+def test_get_start_end_of_feat_nopbc(in_pt, in_sz, axis_size, out_pts):
+    '''Tests ```tobac.testing.get_start_end_of_feat```
+
+    '''
+    assert tbtest.get_start_end_of_feat(in_pt, in_sz, axis_size[0], axis_size[1]) == out_pts

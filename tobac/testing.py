@@ -7,7 +7,7 @@ import pandas as pd
 def make_simple_sample_data_2D(data_type='iris'):
     """function creating a simple dataset to use in tests for tobac. 
     The grid has a grid spacing of 1km in both horizontal directions and 100 grid cells in x direction and 500 in y direction.
-    Time resolution is 1 minute and the total length of the dataset is 100 minutes around a abritraty date (2000-01-01 12:00). 
+    Time resolution is 1 minute and the total length of the dataset is 100 minutes around a arbitrary date (2000-01-01 12:00). 
     The longitude and latitude coordinates are added as 2D aux coordinates and arbitrary, but in realisitic range.
     The data contains a single blob travelling on a linear trajectory through the dataset for part of the time.
     Parameters
@@ -359,8 +359,16 @@ def make_sample_data_3D_3blobs(data_type='iris',invert_xy=False):
     return sample_data
 
 
-def make_dataset_from_arr(in_arr, data_type = 'xarray'):
-    '''Makes a dataset (xarray or iris) for feature detection/segmentation from
+def make_dataset_from_arr(
+    in_arr,
+    data_type="xarray",
+    time_dim_num=None,
+    z_dim_num=None,
+    z_dim_name = 'altitude',
+    y_dim_num=0,
+    x_dim_num=1,
+):
+    """Makes a dataset (xarray or iris) for feature detection/segmentation from
     a raw numpy/dask/etc. array.
 
     Parameters
@@ -369,20 +377,43 @@ def make_dataset_from_arr(in_arr, data_type = 'xarray'):
         The input array to convert to iris/xarray
     data_type: str('xarray' or 'iris')
         Type of the dataset to return
-    
+    time_dim_num: int or None
+        What axis is the time dimension on, None for a single timestep
+    z_dim_num: int or None
+        What axis is the z dimension on, None for a 2D array
+    z_dim_name: str
+        What the z dimension name is named
+    y_dim_num: int
+        What axis is the y dimension on, typically 0 for a 2D array
+    x_dim_num: int
+        What axis is the x dimension on, typically 1 for a 2D array
+
     Returns
     -------
     Iris or xarray dataset with everything we need for feature detection/tracking.
 
-    '''
+    """
     import xarray as xr
-    
-    output_arr = xr.DataArray(in_arr)
+    import iris
 
-    if data_type == 'xarray':    
+    if time_dim_num is not None:
+        raise NotImplementedError("Time dimension not yet implemented in this function")
+
+    is_3D = z_dim_num is not None
+    output_arr = xr.DataArray(in_arr)
+    if is_3D:
+        z_max = in_arr.shape[z_dim_num]
+
+    if data_type == "xarray":
         return output_arr
-    elif data_type == 'iris':
-        return output_arr.to_iris()
+    elif data_type == "iris":
+        out_arr_iris = output_arr.to_iris()
+        if is_3D:
+            out_arr_iris.add_dim_coord(
+                iris.coords.DimCoord(np.arange(0, z_max), standard_name=z_dim_name),
+                z_dim_num,
+            )
+        return out_arr_iris
     else:
         raise ValueError("data_type must be 'xarray' or 'iris'")
 
@@ -445,8 +476,8 @@ def make_feature_blob(in_arr, h1_loc, h2_loc, v_loc = None,
         start_loc = 1
         v_min = 0
         v_max = in_arr.shape[start_loc]
-        start_v = round(max(v_min, v_loc - v_size/2))
-        end_v = round(min(v_max-1, v_loc + v_size/2))
+        start_v = int(np.ceil(max(v_min, v_loc - v_size / 2)))
+        end_v = int(np.ceil(min(v_max - 1, v_loc + v_size / 2)))
         if v_size > v_max - v_min:
             raise ValueError("v_size larger than domain size")
 
@@ -463,12 +494,12 @@ def make_feature_blob(in_arr, h1_loc, h2_loc, v_loc = None,
         raise ValueError("Horizontal size larger than domain size")
 
     # let's get start/end x/y/z
-    start_h1 = round(h1_loc - h1_size/2)
-    end_h1 = round(h1_loc + h1_size/2)
+    start_h1 = int(np.ceil(h1_loc - h1_size / 2))
+    end_h1 = int(np.ceil(h1_loc + h1_size / 2))
 
-    start_h2 = round(h2_loc - h2_size/2)
-    end_h2 = round(h2_loc + h2_size/2)
-
+    start_h2 = int(np.ceil(h2_loc - h2_size / 2))
+    end_h2 = int(np.ceil(h2_loc + h2_size / 2))
+    
     # get the coordinate sets
     coords_to_fill = get_pbc_coordinates(h1_min, h1_max, h2_min, h2_max,
                                          start_h1, end_h1, start_h2, end_h2, PBC_flag=PBC_flag)
@@ -735,10 +766,10 @@ def get_pbc_coordinates(h1_min, h1_max, h2_min, h2_max,
 
 def generate_single_feature(start_h1, start_h2, start_v = None,
                             spd_h1 = 1, spd_h2 = 1, spd_v = 1, 
-                            min_h1 = 0, max_h1 = 1000, min_h2 = 0, max_h2 = 1000,
+                            min_h1 = 0, max_h1 = None, min_h2 = 0, max_h2 = None,
                             num_frames = 1, dt = datetime.timedelta(minutes=5),
                             start_date = datetime.datetime(2022,1,1,0),
-                            PBC_flag = 'none', frame_start = 1):
+                            PBC_flag = 'none', frame_start = 1, feature_num=1,):
     '''Function to generate a dummy feature dataframe to test the tracking functionality
 
     Parameters
@@ -780,7 +811,13 @@ def generate_single_feature(start_h1, start_h2, start_v = None,
         'both' means that we are periodic along both horizontal dimensions
     frame_start: int
         Number to start the frame at
+    feature_num: int
+        What number to start the feature at
     '''
+
+    if max_h1 is None or max_h2 is None:
+        raise ValueError('Max coords must be specified.')
+
 
     out_list_of_dicts = list()
     curr_h1 = start_h1
@@ -799,7 +836,7 @@ def generate_single_feature(start_h1, start_h2, start_v = None,
             curr_dict['vdim'] = curr_v
             curr_v += spd_v
         curr_dict['time'] = curr_dt
-
+        curr_dict["feature"] = feature_num + i
 
         curr_h1 += spd_h1
         curr_h2 += spd_h2
@@ -808,3 +845,44 @@ def generate_single_feature(start_h1, start_h2, start_v = None,
 
 
     return pd.DataFrame.from_dict(out_list_of_dicts)
+
+def get_start_end_of_feat(center_point, size, axis_min, axis_max, is_pbc = False):
+    '''Gets the start and ending points for a feature given a size and PBC
+    conditions
+
+    Parameters
+    ----------
+    center_point: float
+        The center point of the feature
+    size: float
+        The size of the feature in this dimension
+    axis_min: int
+        Minimum point on the axis (usually 0)
+    axis_max: int
+        Maximum point on the axis (exclusive). This is 1 after
+        the last real point on the axis, such that axis_max - axis_min
+        is the size of the axis
+    is_pbc: bool
+        True if we should give wrap around points, false if we shouldn't.
+
+    Returns
+    -------
+    tuple (start_point, end_point)
+    Note that if is_pbc is True, start_point can be less than axis_min and
+    end_point can be greater than or equal to axis_max. This is designed to be used with
+    ```get_pbc_coordinates```
+    '''
+    import numpy as np
+
+    min_pt = int(np.ceil(center_point - size / 2))
+    max_pt = int(np.ceil(center_point + size / 2))\
+
+    # adjust points for boundaries, if needed.
+    if min_pt < axis_min and not is_pbc:
+        min_pt = axis_min
+    if max_pt > axis_max and not is_pbc:
+        max_pt = axis_max
+    
+    return (min_pt, max_pt)
+
+

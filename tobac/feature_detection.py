@@ -2,6 +2,7 @@
 import numpy as np
 import pandas as pd
 import logging
+from . import utils as tb_utils
 
 def get_label_props_in_dict(labels):
     '''Function to get the label properties into a dictionary format.
@@ -24,68 +25,6 @@ def get_label_props_in_dict(labels):
         region_properties_dict[region_prop.label] = region_prop
     
     return region_properties_dict
-
-
-
-def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
-    '''Function to get the x, y, and z indices (as well as point count) of all labeled regions.
- 
-    Parameters
-    ----------
-    region_property_dict:    dict of region_property objects
-        This dict should come from the get_label_props_in_dict function.
-
-    Returns
-    -------
-    dict (key: label number, int)
-        The number of points in the label number
-    dict (key: label number, int)
-        The z indices in the label number. If a 2D property dict is passed, this value is not returned
-    dict (key: label number, int)
-        the y indices in the label number
-    dict (key: label number, int)
-        the x indices in the label number
-    
-    Raises
-    ------
-    ValueError
-        a ValueError is raised if there are no regions in the region property dict
-
-    '''
-    
-    import skimage.measure
-
-    if len(region_property_dict) ==0:
-        raise ValueError("No regions!")
-
-
-    z_indices = dict()
-    y_indices = dict()
-    x_indices = dict()
-    curr_loc_indices = dict()
-    is_3D = False
-        
-    #loop through all skimage identified regions
-    for region_prop_key in region_property_dict:
-        region_prop = region_property_dict[region_prop_key]
-        index = region_prop.label
-        if len(region_prop.coords[0])>=3:
-            is_3D = True
-            curr_z_ixs, curr_y_ixs, curr_x_ixs = np.transpose(region_prop.coords)
-            z_indices[index] = curr_z_ixs
-        else:
-            curr_y_ixs, curr_x_ixs = np.transpose(region_prop.coords)
-            z_indices[index] = -1
-
-        y_indices[index] = curr_y_ixs
-        x_indices[index] = curr_x_ixs
-        curr_loc_indices[index] = len(curr_y_ixs)
-                        
-    #print("indices found")
-    if is_3D:
-        return [curr_loc_indices, z_indices, y_indices, x_indices]
-    else: 
-        return [curr_loc_indices, y_indices, x_indices]
 
 
 def adjust_pbc_point(in_dim, dim_min, dim_max):
@@ -495,7 +434,7 @@ def feature_detection_threshold(data_i,i_time,
         if num_labels > 0:
             all_label_props = get_label_props_in_dict(labels)
             [all_labels_max_size, all_label_locs_v, all_label_locs_h1, all_label_locs_h2
-                ] = get_indices_of_labels_from_reg_prop_dict(all_label_props)
+                ] = tb_utils.get_indices_of_labels_from_reg_prop_dict(all_label_props)
 
             #find the points along the boundaries
             
@@ -523,6 +462,8 @@ def feature_detection_threshold(data_i,i_time,
             wall_labels = np.unique(wall_labels)
 
             for label_ind in wall_labels:
+                #create list for skip labels for this wall label only
+                skip_list_thisind = []
                 # 0 isn't a real index
                 if label_ind == 0:
                     continue
@@ -560,9 +501,15 @@ def feature_detection_threshold(data_i,i_time,
                                     all_label_locs_h1[label_on_corner],
                                     all_label_locs_h2[label_on_corner]] = label_ind
                             skip_list = np.append(skip_list,label_on_corner)
+                            skip_list_thisind = np.append(skip_list_thisind,label_on_corner)
+
+                        #if it's labeled and has already been dealt with for this label
+                        elif((label_on_corner !=0) and (np.any(label_on_corner==skip_list)) and (np.any(label_on_corner==skip_list_thisind))):
+                            #print("skip_list_thisind label - has already been treated this index")
+                            continue
                         
-                        #if it's labeled and has already been dealt with
-                        elif((label_on_corner !=0) and (np.any(label_on_corner==skip_list))):
+                        #if it's labeled and has already been dealt with via a previous label
+                        elif((label_on_corner !=0) and (np.any(label_on_corner==skip_list)) and (~np.any(label_on_corner==skip_list_thisind))):
                             #find the updated label, and overwrite all of label_ind indices with updated label
                             labels_2_alt = labels_2[label_z,y_val_alt,x_val_alt]
                             labels_2[label_locs_v,
@@ -587,9 +534,14 @@ def feature_detection_threshold(data_i,i_time,
                                     all_label_locs_h2[label_alt]] = label_ind
                             #we have already dealt with this label.
                             skip_list = np.append(skip_list,label_alt)
+                            skip_list_thisind = np.append(skip_list_thisind,label_alt)
+
+                        #if it's labeled and has already been dealt with for this label
+                        elif((label_alt !=0) and (np.any(label_alt==skip_list)) and (np.any(label_alt==skip_list_thisind))):
+                            continue
                             
                         #if it's labeled and has already been dealt with
-                        elif((label_alt !=0) and (np.any(label_alt==skip_list))):
+                        elif((label_alt !=0) and (np.any(label_alt==skip_list)) and (~np.any(label_alt==skip_list_thisind))):
                             #find the updated label, and overwrite all of label_ind indices with updated label
                             labels_2_alt = labels_2[label_z,y_val_alt,label_x]
                             labels_2[label_locs_v,
@@ -612,9 +564,14 @@ def feature_detection_threshold(data_i,i_time,
                                     all_label_locs_h2[label_alt]] = label_ind
                             #we have already dealt with this label.
                             skip_list = np.append(skip_list,label_alt)
+                            skip_list_thisind = np.append(skip_list_thisind,label_alt)
+
+                        #if it's labeled and has already been dealt with for this label
+                        elif((label_alt !=0) and (np.any(label_alt==skip_list)) and (np.any(label_alt==skip_list_thisind))):
+                            continue
                             
                         #if it's labeled and has already been dealt with
-                        elif((label_alt !=0) and (np.any(label_alt==skip_list))):
+                        elif((label_alt !=0) and (np.any(label_alt==skip_list)) and (~np.any(label_alt==skip_list_thisind))):
                             #find the updated label, and overwrite all of label_ind indices with updated label
                             labels_2_alt = labels_2[label_z,label_y,x_val_alt]
                             labels_2[label_locs_v,
@@ -639,7 +596,7 @@ def feature_detection_threshold(data_i,i_time,
     # we need to get label properties again after we handle PBCs. 
     label_props = get_label_props_in_dict(labels)
     if len(label_props)>0:
-        [total_indices_all, vdim_indyces_all, hdim1_indices_all, hdim2_indices_all] = get_indices_of_labels_from_reg_prop_dict(label_props)
+        [total_indices_all, vdim_indyces_all, hdim1_indices_all, hdim2_indices_all] = tb_utils.get_indices_of_labels_from_reg_prop_dict(label_props)
     
 
     #values, count = np.unique(labels[:,:].ravel(), return_counts=True)
