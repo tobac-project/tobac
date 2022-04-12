@@ -259,8 +259,6 @@ def get_spacings(field_in, grid_spacing=None, time_spacing=None):
         # get min and max values of lats and lons
         lat1 = np.min(field_in.coord("latitude").points)
         lat2 = np.max(field_in.coord("latitude").points)
-        lon1 = np.min(field_in.coord("longitude").points)
-        lon2 = np.max(field_in.coord("longitude").points)
 
         # convert decimal degrees to radians
         lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
