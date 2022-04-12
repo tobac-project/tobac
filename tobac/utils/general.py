@@ -265,15 +265,20 @@ def get_spacings(field_in, grid_spacing=None, time_spacing=None):
         # convert decimal degrees to radians
         lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
 
-        # for data that is structured lats x lons 
-        lat_axis = 0
-        lon_axis = 1
-        # check if the data is structured in lons x lats
-        if test.coords()[1].name() != 'latitude':
-            lat_axis = 1
-            lon_axis = 0
-        dlat = np.diff(test.coord("latitude").points, axis= lat_axis ).mean()
-        dlon = np.diff(test.coord("longitude").points, axis = lon_axis).mean()
+        # for 1D lats and lons  
+        lat_axis = -1
+        lon_axis = -1
+        # for 2D lats and lons 
+        if field_in.coord('latitude').points.ndim > 1:
+        # check if the data is structured in lons x lats or lats x lons
+            if field_in.coords()[1].name() != 'latitude':
+                lat_axis = -1
+                lon_axis = -2
+            else:
+                lat_axis = -2
+                lon_axis = -1
+        dlat = np.diff(field_in.coord("latitude").points, axis= lat_axis ).mean()
+        dlon = np.diff(field_in.coord("longitude").points, axis = lon_axis).mean()
         # haversine formula 
         dlat, dlon =  map(radians, [dlon, dlat])
         a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
