@@ -262,18 +262,21 @@ def get_spacings(field_in, grid_spacing=None, time_spacing=None):
         # convert decimal degrees to radians
         lat1, lat2 = map(radians, [lat1, lat2])
 
-        # for 1D lats and lons :
-        lat_axis = -1
-        lon_axis = -1
-        # for 2D lats and lons, check order 
-        if field_in.coord('latitude').points.ndim == 2:
-            if field_in.coords()[1].name() != 'latitude':
-                lat_axis = -1
-                lon_axis = -2
+        # loop through coords to check dimension order 
+        for i, coord in enumerate(coord_names):
+            if coord == 'latitude' and field_in.coord(coord).ndim == 2:
+                lat_axis = i 
+            elif coord == 'longitude' and field_in.coord(coord).ndim == 2:
+                lon_axis = i 
             else:
-                lat_axis = -2
-                lon_axis = -1
-
+                # for 1D lats and lons  
+                lat_axis, lon_axis = -1, -1 
+                
+        # re-write to corresponding axis in 2D coords (needed if dimensions like time and )
+        if lon_axis > lat_axis:
+            lat_axis, lon_axis  = -2,  -1 
+        elif lon_axis < lat_axis:
+            lat_axis, lon_axis = -1 , -2
         dlat = np.diff(field_in.coord("latitude").points, axis= lat_axis ).mean()
         dlon = np.diff(field_in.coord("longitude").points, axis = lon_axis).mean()
         # haversine formula 
