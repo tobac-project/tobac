@@ -272,7 +272,7 @@ def get_spacings(field_in, grid_spacing=None, time_spacing=None):
                 # for 1D lats and lons  
                 lat_axis, lon_axis = -1, -1 
                 
-        # re-write to corresponding axis in 2D coords (needed if dimensions like time and )
+        # re-write to corresponding axis in 2D coords (needed if other dimensions precede lats and lons)
         if lon_axis > lat_axis:
             lat_axis, lon_axis  = -2,  -1 
         elif lon_axis < lat_axis:
