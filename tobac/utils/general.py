@@ -259,22 +259,21 @@ def get_spacings(field_in, grid_spacing=None, time_spacing=None):
         # get min and max values of lats and lons
         lat1 = np.min(field_in.coord("latitude").points)
         lat2 = np.max(field_in.coord("latitude").points)
-
         # convert decimal degrees to radians
-        lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+        lat1, lat2 = map(radians, [lat1, lat2])
 
-        # for 1D lats and lons  
+        # for 1D lats and lons :
         lat_axis = -1
         lon_axis = -1
-        # for 2D lats and lons 
-        if field_in.coord('latitude').points.ndim > 1:
-        # check if the data is structured in lons x lats or lats x lons
+        # for 2D lats and lons, check order 
+        if field_in.coord('latitude').points.ndim == 2:
             if field_in.coords()[1].name() != 'latitude':
                 lat_axis = -1
                 lon_axis = -2
             else:
                 lat_axis = -2
                 lon_axis = -1
+
         dlat = np.diff(field_in.coord("latitude").points, axis= lat_axis ).mean()
         dlon = np.diff(field_in.coord("longitude").points, axis = lon_axis).mean()
         # haversine formula 
