@@ -264,9 +264,18 @@ def get_spacings(field_in, grid_spacing=None, time_spacing=None):
 
         # convert decimal degrees to radians
         lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
-        # haversine formula, note that value is divided by nr of grid cells along lat and lon
-        dlon = (lon2 - lon1) / np.shape(field_in.data)[1]
-        dlat = (lat2 - lat1) / np.shape(field_in.data)[2]
+
+        # for data that is structured lats x lons 
+        lat_axis = 0
+        lon_axis = 1
+        # check if the data is structured in lons x lats
+        if test.coords()[1].name() != 'latitude':
+            lat_axis = 1
+            lon_axis = 0
+        dlat = np.diff(test.coord("latitude").points, axis= lat_axis ).mean()
+        dlon = np.diff(test.coord("longitude").points, axis = lon_axis).mean()
+        # haversine formula 
+        dlat, dlon =  map(radians, [dlon, dlat])
         a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
         c = 2 * asin(sqrt(a))
         km = 6371 * c
