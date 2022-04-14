@@ -259,14 +259,28 @@ def get_spacings(field_in, grid_spacing=None, time_spacing=None):
         # get min and max values of lats and lons
         lat1 = np.min(field_in.coord("latitude").points)
         lat2 = np.max(field_in.coord("latitude").points)
-        lon1 = np.min(field_in.coord("longitude").points)
-        lon2 = np.max(field_in.coord("longitude").points)
-
         # convert decimal degrees to radians
-        lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
-        # haversine formula, note that value is divided by nr of grid cells along lat and lon
-        dlon = (lon2 - lon1) / np.shape(field_in.data)[1]
-        dlat = (lat2 - lat1) / np.shape(field_in.data)[2]
+        lat1, lat2 = map(radians, [lat1, lat2])
+
+        # loop through coords to check dimension order 
+        for i, coord in enumerate(coord_names):
+            if coord == 'latitude' and field_in.coord(coord).ndim == 2:
+                lat_axis = i 
+            elif coord == 'longitude' and field_in.coord(coord).ndim == 2:
+                lon_axis = i 
+            else:
+                # for 1D lats and lons  
+                lat_axis, lon_axis = -1, -1 
+                
+        # re-write to corresponding axis in 2D coords (needed if other dimensions precede lats and lons)
+        if lon_axis > lat_axis:
+            lat_axis, lon_axis  = -2,  -1 
+        elif lon_axis < lat_axis:
+            lat_axis, lon_axis = -1 , -2
+        dlat = np.diff(field_in.coord("latitude").points, axis= lat_axis ).mean()
+        dlon = np.diff(field_in.coord("longitude").points, axis = lon_axis).mean()
+        # haversine formula 
+        dlat, dlon =  map(radians, [dlon, dlat])
         a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
         c = 2 * asin(sqrt(a))
         km = 6371 * c
