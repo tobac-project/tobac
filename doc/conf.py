@@ -17,7 +17,7 @@ def setup(app):
    app.add_css_file("theme_overrides.css")
 
 autodoc_mock_imports = ['numpy', 'scipy', 'scikit-image', 'pandas', 'pytables', 'matplotlib', 'iris',
-                        'cf-units', 'xarray', 'cartopy', 'trackpy']
+                        'cf-units', 'xarray', 'cartopy', 'trackpy', 'numba']
 
 sys.path.insert(0, os.path.abspath("../"))
 
