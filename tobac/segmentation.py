@@ -420,10 +420,10 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         
         markers_2 = np.zeros(data_segmentation.shape).astype(np.int32)
         
-        #new, shorter PBC marker seeding approach
-        #loop thru LB points
-        #then check if fillable region (labels_unseeded > 0)
-        #then check if point on other side of boundary is > 0 in segmentation_mask
+        # PBC marker seeding approach
+        # loop thru LB points, then check if fillable region (labels_unseeded > 0) and seed
+        # then check if point on other side of boundary is > 0 in segmentation_mask and 
+        # adjust where needed
         '''
         "First pass" at seeding features across the boundaries. This first pass will bring in
         eligible (meaning values that are higher than threshold) but not previously watershedded 
@@ -508,14 +508,18 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                     
         # Secondary seeding complete, now blending periodic boundaries
         # keep segmentation mask fields for now so we can save these all later
-        # for demos of changes
+        # for demos of changes, otherwise, could add deletion for memory efficiency, e.g.
+        
+        #del segmentation_mask
+        #del segmentation_mask_2
+        #gc.collect()
                 
         #update mask coord regions
 
         '''
-        Now, start the second round of watershedding- the "buddy box" approach
-        buddies contains features of interest and any neighbors that across the boundary or in 
-        physical contact with that label
+        Now, start the second round of watershedding- the "buddy box" approach.
+        'buddies' array contains features of interest and any neighbors that are across the boundary or 
+        otherwise have lateral and/or diagonal physical contact with that label
         '''
         # TODO: this can cause a crash if there are no segmentation regions        
         reg_props_dict = tb_utils.get_label_props_in_dict(segmentation_mask_3)
@@ -670,7 +674,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                     buddy_x2 = np.append(buddy_x2,x2)
                     
             # Buddy Box!
-            # Indentify mins and maxes of buddy box continuous points range
+            # Indentify mins and maxes of Buddy Box continuous points range
             # so that box of correct size can be constructred
             bbox_zstart = int(np.min(buddy_z2))
             bbox_ystart = int(np.min(buddy_y2))
@@ -745,13 +749,13 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
             buddies_out.rename('buddies_mask')
             buddies_out.units=1
 
-            #Create dask array from input data:
+            # Create dask array from input data:
             #data=rgn_cube.core_data()
             buddy_data = buddy_rgn
 
-            #All of the below is, I think, the same overarching segmentation procedure as in the original
-            #segmentation approach until the line which states
-            # "#transform seg_mask_4 data back to original mask after PBC first-pass ("segmentation_mask_3")"
+            # All of the below is the same overarching segmentation procedure as in the original
+            # segmentation approach until the line which states
+            # "#transform segmentation_mask_4 data back to original mask after PBC first-pass ("segmentation_mask_3")"
             # It's just performed on the buddy box and its data rather than our full domain
 
             #Set level at which to create "Seed" for each feature in the case of 3D watershedding:
@@ -809,7 +813,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
             segmentation_mask_4[~unmasked_buddies] = -1
             
             
-            #transform seg_mask_4 data back to original mask after PBC first-pass ("segmentation_mask_3")
+            #transform segmentation_mask_4 data back to mask created after PBC first-pass ("segmentation_mask_3")
             #print(np.unique(test_mask3.data))
         
             #loop through buddy box inds and analogous seg mask inds
