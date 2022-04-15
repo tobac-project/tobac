@@ -399,11 +399,10 @@ def feature_detection_threshold(data_i,i_time,
     # only include values greater than threshold
     # erode selected regions by n pixels 
     if n_erosion_threshold>0:
-        #  is this right? the documentation is unclear
-        #if is_3D:
-        #    selem=np.ones((n_erosion_threshold,n_erosion_threshold, n_erosion_threshold))
-        #else:
-        selem=np.ones((n_erosion_threshold,n_erosion_threshold))
+        if is_3D:
+            selem=np.ones((n_erosion_threshold,n_erosion_threshold, n_erosion_threshold))
+        else:
+            selem=np.ones((n_erosion_threshold,n_erosion_threshold))
         mask=binary_erosion(mask,selem).astype(bool)
         # detect individual regions, label  and count the number of pixels included:
     labels, num_labels = label(mask, background=0, return_num = True)
