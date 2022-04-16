@@ -492,7 +492,6 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                         markers_2[vdim_ind, hdim1_ind, hdim2_ind] = segmentation_mask[vdim_ind,hdim1_opposite_corner,hdim2_opposite_corner]
 
         markers_2[~unmasked]=0
-        
         if method=='watershed':
             segmentation_mask_2 = watershed(data_segmentation,markers_2.astype(np.int32), mask=unmasked)
         else:                
@@ -685,7 +684,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
     
             # Creation of actual Buddy Box space for transposition
             # of data in domain and re-seeding with Buddy feature markers
-            buddy_rgn = np.zeros((bbox_zsize, bbox_ysize, bbox_xsize))
+            buddy_rgn = np.empty((bbox_zsize, bbox_ysize, bbox_xsize), dtype=bool)
             ind_ctr = 0
         
             #need to loop thru ALL z,y,x inds in buddy box
@@ -708,15 +707,9 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                         else:
                             x_a1 = x
 
-                        buddy_rgn[z-bbox_zstart,y-bbox_ystart,x-bbox_xstart] = field_in.data[z_a1,y_a1,x_a1]
+                        buddy_rgn[z-bbox_zstart,y-bbox_ystart,x-bbox_xstart] = unmasked[z_a1,y_a1,x_a1]
                     
-            
-            #construction of iris cube corresponding to buddy box and its data
-            #for marker seeding and watershedding of buddy box
                     
-            #print(rgn_cube)
-            #print(rgn_cube.vdim)
-        
             #Update buddy_features feature positions to correspond to buddy box space
             #rather than domain space or continuous/contiguous point space
             for buddy_looper in range(0,len(buddy_features)):
@@ -724,19 +717,11 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                 buddy_features.hdim_1.values[buddy_looper] = buddy_features.hdim_1.values[buddy_looper] - bbox_ystart
                 buddy_features.hdim_2.values[buddy_looper] = buddy_features.hdim_2.values[buddy_looper] - bbox_xstart
             
-            # Create dask array from input data:
-            #data=rgn_cube.core_data()
-            buddy_data = buddy_rgn
 
             # All of the below is the same overarching segmentation procedure as in the original
             # segmentation approach until the line which states
             # "#transform segmentation_mask_4 data back to original mask after PBC first-pass ("segmentation_mask_3")"
             # It's just performed on the buddy box and its data rather than our full domain
-
-            #Set level at which to create "Seed" for each feature in the case of 3D watershedding:
-            # If none, use all levels (later reduced to the ones fulfilling the theshold conditions)
-            if level==None:
-                level=slice(None)
 
             # transform max_distance in metres to distance in pixels:
             if max_distance is not None:
@@ -744,15 +729,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                 #note - this doesn't consider vertical distance in pixels
 
             # mask data outside region above/below threshold and invert data if tracking maxima:
-            if target == 'maximum':
-                unmasked_buddies=buddy_data>threshold
-                buddy_segmentation=-1*buddy_data
-            elif target == 'minimum':
-                unmasked_buddies=buddy_data<threshold
-                buddy_segmentation=buddy_data
-            else:
-                raise ValueError('unknown type of target')
-
+            unmasked_buddies = buddy_rgn
             # set markers at the positions of the features:
             buddy_markers = np.zeros(unmasked_buddies.shape).astype(np.int32)
             # Buddy boxes are always without PBCs
@@ -760,18 +737,16 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                                         seed_3D_size, level, PBC_flag='none')
 
             # set markers in cells not fulfilling threshold condition to zero:
-            print(np.unique(buddy_markers))
             buddy_markers[~unmasked_buddies]=0
     
             marker_vals = np.unique(buddy_markers)
   
             # Turn into np arrays (not necessary for markers) as dask arrays don't yet seem to work for watershedding algorithm
-            buddy_segmentation=np.array(buddy_segmentation)
             unmasked_buddies=np.array(unmasked_buddies)
 
             # perform segmentation:
             if method=='watershed':
-                segmentation_mask_4 = watershed(np.array(buddy_segmentation),buddy_markers.astype(np.int32), mask=unmasked_buddies)
+                segmentation_mask_4 = watershed(np.array(unmasked_buddies),buddy_markers.astype(np.int32), mask=unmasked_buddies)
                 
             else:                
                 raise ValueError('unknown method, must be watershed')
@@ -784,7 +759,6 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
     
             #mask all segmentation_mask points below threshold as -1
             #to differentiate from those unmasked points NOT filled by watershedding
-            print(np.unique(segmentation_mask_4))
             segmentation_mask_4[~unmasked_buddies] = -1
             
             
