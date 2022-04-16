@@ -1,7 +1,7 @@
-
 import numpy as np
 import pandas as pd
 import logging
+import warnings
 from . import utils as tb_utils
 
 def get_label_props_in_dict(labels):
@@ -930,7 +930,7 @@ def filter_min_distance(features, dxy = None,dz = None, min_distance = None,
     y_coordinate_name: str
         The name of the y coordinate to calculate distance based on in meters.
         This is typically `projection_y_coordinate`
-    z_coordinate_name: str
+    z_coordinate_name: str or None
         The name of the z coordinate to calculate distance based on in meters.
         This is typically `altitude`
     
@@ -945,6 +945,11 @@ def filter_min_distance(features, dxy = None,dz = None, min_distance = None,
     #if we are 3D, the vertical dimension is in features. if we are 2D, there
     #is no vertical dimension in features. 
     is_3D = 'vdim' in features
+    
+    # Check and if both dz is specified and altitude is available, warn that we will use dz.
+    if is_3D and (dz is not None and z_coordinate_name in features):
+        warnings.warn("Both "+z_coordinate_name+" and dz available to filter_min_distance; using constant dz. "
+                      "Set dz to none if you want to use altitude or set `z_coordinate_name` to None to use constant dz.")
 
     #create list of tuples with all combinations of features at the timestep:
     indeces=combinations(features.index.values,2)
@@ -961,14 +966,18 @@ def filter_min_distance(features, dxy = None,dz = None, min_distance = None,
                             features.loc[index_2, x_coordinate_name])**2 + 
                             (features.loc[index_1, y_coordinate_name]- 
                             features.loc[index_2, y_coordinate_name])**2)
-            if dz is not None:
-                z_sqdst = (dz * (features.loc[index_1,'vdim']-features.loc[index_2,'vdim']))**2
-            else:
-                z_sqdst = (features.loc[index_1,z_coordinate_name]-
-                           features.loc[index_2,z_coordinate_name])**2
+            if is_3D:
+                if dz is not None:
+                    z_sqdst = (dz * (features.loc[index_1,'vdim']-features.loc[index_2,'vdim']))**2
+                else:
+                    z_sqdst = (features.loc[index_1,z_coordinate_name]-
+                            features.loc[index_2,z_coordinate_name])**2
             
             #distance=dxy*np.sqrt((features.loc[index_1,'hdim_1']-features.loc[index_2,'hdim_1'])**2+(features.loc[index_1,'hdim_2']-features.loc[index_2,'hdim_2'])**2)
-            distance=np.sqrt(xy_sqdst + z_sqdst)
+            if is_3D:
+                distance=np.sqrt(xy_sqdst + z_sqdst)
+            else:
+                distance = xy_sqdst
             
             if distance <= min_distance:
                 #print(distance, min_distance, index_1, index_2, features.size)
