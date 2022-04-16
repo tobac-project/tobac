@@ -824,7 +824,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
 
     return segmentation_out,features_out
 
-def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,vertical_coord='auto',PBC_flag='none',seed_3D_flag='column'):
+def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,method='watershed',max_distance=None,vertical_coord='auto',PBC_flag='none',seed_3D_flag='column', seed_3D_size = 5):
     """
     Function using watershedding or random walker to determine cloud volumes associated with tracked updrafts
     
@@ -847,11 +847,21 @@ def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,m
     max_distance: float
                   Maximum distance from a marker allowed to be classified as belonging to that cell
                   
-    PBC_flag:     string
-                  string flag of 'none', 'hdim_1', 'hdim_2', or 'both' indicating which lateral boundaries are periodic
-                  
-    seed_3D_flag: string
-                  string flag of 'column' (default) or 'box' which determines the method of seeding feature positions for 3D watershedding
+    PBC_flag : {'none', 'hdim_1', 'hdim_2', 'both'}
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
+    seed_3D_flag: str('column', 'box')
+        Seed 3D field at feature positions with either the full column (default)
+         or a box of user-set size
+    seed_3D_size: int or tuple (dimensions equal to dimensions of `field`)
+        This sets the size of the seed box when `seed_3D_flag` is 'box'. If it's an 
+        integer, the seed box is identical in all dimensions. If it's a tuple, it specifies the 
+        seed area for each dimension separately. Note: we recommend the use
+        of odd numbers for this. If you give an even number, your seed box will be 
+        biased and not centered around the feature. 
     
     Output:
     segmentation_out: iris.cube.Cube
@@ -874,39 +884,17 @@ def segmentation(features,field,dxy,threshold=3e-3,target='maximum',level=None,m
                          
     #loop over individual input timesteps for segmentation:
     #OR do segmentation on single timestep
-    #print(field)
     field_time=field.slices_over('time')
-    #print(field_time)
-    #print(enumerate(field_time))
     time_len = len(field.coord('time').points[:])
-    print(time_len)
     
     for i,field_i in enumerate(field_time):
         time_i=field_i.coord('time').units.num2date(field_i.coord('time').points[0])
         features_i=features.loc[features['time']==time_i]
-        #print(time_i)
-        #print(field_i)
-        #print(features_i)
         segmentation_out_i,features_out_i=segmentation_timestep(field_i,features_i,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance,vertical_coord=vertical_coord,PBC_flag=PBC_flag,seed_3D_flag=seed_3D_flag)                 
         segmentation_out_list.append(segmentation_out_i)
         features_out_list.append(features_out_i)
         logging.debug('Finished segmentation for '+time_i.strftime('%Y-%m-%d_%H:%M:%S'))
     
-    #if time_len > 1:
-    
-        
-            
-    #else:
-    #    time_i=field.coord('time').units.num2date(field.coord('time').points[0])
-    #    features_i=features.loc[features['time']==time_i]
-    #    print(time_i)
-    #    print(field)
-    #    print(features_i)
-    #    segmentation_out_i,features_out_i=segmentation_timestep(field,features_i,dxy,threshold=threshold,target=target,level=level,method=method,max_distance=max_distance,vertical_coord=vertical_coord,PBC_flag=PBC_flag)                 
-    #    segmentation_out_list.append(segmentation_out_i)
-    #    features_out_list.append(features_out_i)
-    #    logging.debug('Finished segmentation for '+time_i.strftime('%Y-%m-%d_%H:%M:%S'))
-
     #Merge output from individual timesteps:
     segmentation_out=segmentation_out_list.merge_cube()
     features_out=pd.concat(features_out_list)
