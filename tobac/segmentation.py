@@ -536,11 +536,9 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
 
         wall_labels = np.unique(wall_labels)
         wall_labels = wall_labels[(wall_labels) > 0].astype(int)
-        #print(wall_labels)
         
         # Loop through all segmentation mask labels on the wall 
         for cur_idx in wall_labels:
-            print("we have buddies")
             
             vdim_indices = z_reg_inds[cur_idx]
             hdim1_indices = y_reg_inds[cur_idx]
@@ -647,10 +645,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                 #edit value in buddy_features dataframe 
                 buddy_features.hdim_1.values[buddy_looper] = transfm_pbc_point(float(buddy_feat.hdim_1), hdim1_min, hdim1_max)
                 buddy_features.hdim_2.values[buddy_looper] = transfm_pbc_point(float(buddy_feat.hdim_2), hdim2_min, hdim2_max)
-            
-                #print(int(buddy_feat.vdim),yf2,xf2)
-                #display(buddy_features)
-                
+                            
                 #again, this may be redundant as I don't think we use buddy_zf/yf/xf after this
                 #in favor of iterrows thru the updated buddy_features
                 buddy_zf = np.append(buddy_zf,int(buddy_feat.vdim))
@@ -687,7 +682,6 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
             bbox_ysize = bbox_yend - bbox_ystart
             bbox_xsize = bbox_xend - bbox_xstart
         
-            #print(bbox_zsize,bbox_ysize,bbox_xsize)
     
             # Creation of actual Buddy Box space for transposition
             # of data in domain and re-seeding with Buddy feature markers
@@ -719,21 +713,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
             
             #construction of iris cube corresponding to buddy box and its data
             #for marker seeding and watershedding of buddy box
-            rgn_cube = iris.cube.Cube(data=buddy_rgn)
-        
-            coord_system=None
-            # TODO: clean this up
-            h2_coord=iris.coords.DimCoord(np.arange(bbox_xsize), long_name='hdim_2', units='1', bounds=None, attributes=None, coord_system=coord_system)
-            h1_coord=iris.coords.DimCoord(np.arange(bbox_ysize), long_name='hdim_1', units='1', bounds=None, attributes=None, coord_system=coord_system)
-            v_coord=iris.coords.DimCoord(np.arange(bbox_zsize), long_name='vdim', units='1', bounds=None, attributes=None, coord_system=coord_system)
-        
-            rgn_cube.add_dim_coord(h2_coord,2)
-            rgn_cube.add_dim_coord(h1_coord,1)
-            rgn_cube.add_dim_coord(v_coord,0)
-            #rgn_cube.add_dim_coord(itime,0)
-        
-            rgn_cube.units = 'kg kg-1'
-        
+                    
             #print(rgn_cube)
             #print(rgn_cube.vdim)
         
@@ -744,11 +724,6 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
                 buddy_features.hdim_1.values[buddy_looper] = buddy_features.hdim_1.values[buddy_looper] - bbox_ystart
                 buddy_features.hdim_2.values[buddy_looper] = buddy_features.hdim_2.values[buddy_looper] - bbox_xstart
             
-            # Create cube of the same dimensions and coordinates as Buddy Box to store updated mask:        
-            buddies_out=1*rgn_cube
-            buddies_out.rename('buddies_mask')
-            buddies_out.units=1
-
             # Create dask array from input data:
             #data=rgn_cube.core_data()
             buddy_data = buddy_rgn
