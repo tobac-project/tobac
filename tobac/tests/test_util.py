@@ -274,3 +274,12 @@ def test_get_pbc_coordinates():
     assert (lists_equal_without_order(tb_utils.get_pbc_coordinates(0, 10, 0, 10, 5, 12, 7, 15, 'both'), [(5, 10, 7, 10), (5, 10, 0, 5), (0, 2, 0, 5), (0, 2, 7, 10)]))
     # min in hdim_1, max in hdim_2
     assert (lists_equal_without_order(tb_utils.get_pbc_coordinates(0, 10, 0, 10, -3, 3, 7, 15, 'both'), [(0, 3, 7, 10), (0, 3, 0, 5), (7, 10, 0, 5), (7, 10, 7, 10)]))
+
+
+
+def test_add_coordinates_2D():
+    '''
+    Tests ```utils.add_coordinates``` for a 2D case with
+    both 1D and 2D coordinates
+    '''
+    pass

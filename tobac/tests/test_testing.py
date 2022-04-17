@@ -332,3 +332,35 @@ def test_get_start_end_of_feat_nopbc(in_pt, in_sz, axis_size, out_pts):
 
     '''
     assert tbtest.get_start_end_of_feat(in_pt, in_sz, axis_size[0], axis_size[1]) == out_pts
+
+
+'''
+I acknowledge that this is a little confusing for the expected outputs, especially for the 3D.
+'''
+@pytest.mark.parametrize("min_max_coords, lengths, expected_outs", 
+                         [((0,3), (4,),[0,1,2,3]), 
+                          ((0,3, 0,3), (4,4),[[[0,]*4, [1]*4,[2]*4,[3]*4],[[0,1,2,3]]*4,]), 
+                          ((0,1, 0,1, 0, 1), (2,2,2),[[[[0]*2]*2, [[1]*2]*2,],
+                                             [[[0,0],[1,1]],[[0,0],[1,1]]],
+                                             [[[0,1],[0,1]],[[0,1],[0,1]]]]
+                                             ), 
+                          ]
+)
+def test_generate_grid_coords(min_max_coords, lengths, expected_outs):
+    '''Tests ```tobac.testing.generate_grid_coords```
+    Parameters
+    ----------
+    min_max_coords: array-like, either length 2, length 4, or length 6.
+        The minimum and maximum values in each dimension as:
+        (min_dim1, max_dim1, min_dim2, max_dim2, min_dim3, max_dim3) to use
+        all 3 dimensions. You can omit any dimensions that you aren't using.
+    lengths: array-like, either length 1, 2, or 3.
+        The lengths of values in each dimension. Length must equal 1/2 the length
+        of min_max_coords.
+    expected_outs: array-like, either 1D, 2D, or 3D
+        The expected output
+    '''
+    import numpy as np
+    out_grid = tbtest.generate_grid_coords(min_max_coords, lengths)
+    assert np.all(np.isclose(out_grid, np.array(expected_outs)))
+

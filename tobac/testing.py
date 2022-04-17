@@ -886,3 +886,39 @@ def get_start_end_of_feat(center_point, size, axis_min, axis_max, is_pbc = False
     return (min_pt, max_pt)
 
 
+def generate_grid_coords(min_max_coords, lengths):
+    '''Generates a grid of coordinates, such as fake lat/lons for testing.
+
+    Parameters
+    ----------
+    min_max_coords: array-like, either length 2, length 4, or length 6.
+        The minimum and maximum values in each dimension as:
+        (min_dim1, max_dim1, min_dim2, max_dim2, min_dim3, max_dim3) to use
+        all 3 dimensions. You can omit any dimensions that you aren't using.
+    lengths: array-like, either length 1, 2, or 3.
+        The lengths of values in each dimension. Length must equal 1/2 the length
+        of min_max_coords.
+
+    Returns
+    -------
+    1, 2, or 3 array-likes
+        array-like of grid coordinates in the number of dimensions requested
+        and with the number of arrays specified (meshed coordinates)
+    
+    '''
+    import numpy as np
+    if len(min_max_coords) != len(lengths)*2:
+        raise ValueError("The length of min_max_coords must be exactly 2 times"
+                         " the length of lengths.")
+
+    if len(lengths) == 1:
+        return np.mgrid[min_max_coords[0]:min_max_coords[1]:complex(imag=lengths[0])]
+
+    if len(lengths) == 2:
+        return np.mgrid[min_max_coords[0]:min_max_coords[1]:complex(imag=lengths[0]),
+                        min_max_coords[2]:min_max_coords[3]:complex(imag=lengths[1])]
+    
+    if len(lengths) == 3:
+        return np.mgrid[min_max_coords[0]:min_max_coords[1]:complex(imag=lengths[0]),
+                        min_max_coords[2]:min_max_coords[3]:complex(imag=lengths[1]),
+                        min_max_coords[4]:min_max_coords[5]:complex(imag=lengths[2])]

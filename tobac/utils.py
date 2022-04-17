@@ -901,6 +901,13 @@ def get_pbc_coordinates(h1_min, h1_max, h2_min, h2_max,
 def njit_if_available(func, **kwargs):
     '''Decorator to wrap a function with numba.njit if available.
     If numba isn't available, it just returns the function. 
+
+    Parameters
+    ----------
+    func: function object
+        Function to wrap with njit
+    kwargs:
+        Keyword arguments to pass to numba njit
     '''
     try:
         from numba import njit
