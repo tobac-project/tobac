@@ -321,6 +321,56 @@ def test_add_coordinates_2D(feature_loc, min_max_coords, lengths, expected_coord
     
     feats_with_coords = tb_utils.add_coordinates(feat_interp, data_xr.to_iris())
 
+    print(feats_with_coords.iloc[0]['longitude'])
+    assert feats_with_coords.iloc[0]['longitude'] == expected_coord_interp[0]
+    if ndims == 2:
+        assert feats_with_coords.iloc[0]['latitude'] == expected_coord_interp[1]
+
+@pytest.mark.parametrize("feature_loc, min_max_coords, lengths, expected_coord_interp", 
+                         [((0,0,0), (0,1,0,1),(2,2), (0,0)), 
+                          ((0,0,0), (0,1),(2,), (0,)), 
+                          ]
+)
+def test_add_coordinates_3D(feature_loc, min_max_coords, lengths, expected_coord_interp):
+    '''
+    Tests ```utils.add_coordinates_3D``` for a 3D case with
+    1D, 2D, and 3D coordinates 
+    '''
+    import xarray as xr
+    import numpy as np
+    import datetime
+
+    feat_interp = tbtest.generate_single_feature(feature_loc[1], feature_loc[2], 
+                                                 start_v = feature_loc[0],
+                                                 max_h1 = 9999, max_h2 = 9999)
+    grid_coords = tbtest.generate_grid_coords(min_max_coords, lengths)
+
+    ndims = len(lengths)
+    dim_names = ['time','longitude', 'latitude']
+    dim_names = dim_names[:ndims]
+
+    # Note that this is arbitrary. 
+    base_time = datetime.datetime(2022,1,1)
+
+    
+    coord_dict = {'time': [base_time]}
+    if ndims == 1:
+        # force at least a 2D array for data
+        lengths = lengths*2
+        dim_names = ['time', 'longitude', 'latitude']
+        coord_dict['longitude'] = grid_coords
+        coord_dict['latitude'] = grid_coords
+
+    elif ndims == 2:
+        dim_names = ['time','x', 'y']
+        coord_dict['longitude'] = (('x','y'),grid_coords[0])
+        coord_dict['latitude'] = (('x','y'),grid_coords[1])
+
+    data_xr = xr.DataArray(np.empty((1,)+lengths), 
+        coords = coord_dict, dims = dim_names)
+    
+    feats_with_coords = tb_utils.add_coordinates(feat_interp, data_xr.to_iris())
+
     assert feats_with_coords.iloc[0]['longitude'] == expected_coord_interp[0]
     if ndims == 2:
         assert feats_with_coords.iloc[0]['latitude'] == expected_coord_interp[1]

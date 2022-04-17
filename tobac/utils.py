@@ -541,37 +541,37 @@ def add_coordinates_3D(t,variable_cube):
                 f=interp2d(dimvec_2,dimvec_3,variable_cube.coord(coord).points)
                 coordinate_points=[f(a,b) for a,b in zip(t['hdim_1'],t['hdim_2'])]
 
-        # interpolate 3D coordinates:            
-        # mainly workaround for wrf latitude and longitude (to be fixed in future)
-        
+        # interpolate 3D coordinates:        
         elif variable_cube.coord(coord).ndim==3:
 
             if variable_cube.coord_dims(coord)==(ndim_time,hdim_1,hdim_2):
                 f=interp2d(dimvec_2,dimvec_1,variable_cube[0,:,:].coord(coord).points)
                 coordinate_points=[f(a,b) for a,b in zip(t['hdim_2'],t['hdim_1'])]
             
-            if variable_cube.coord_dims(coord)==(ndim_time,hdim_2,hdim_1):
+            elif variable_cube.coord_dims(coord)==(ndim_time,hdim_2,hdim_1):
                 f=interp2d(dimvec_1,dimvec_2,variable_cube[0,:,:].coord(coord).points)
                 coordinate_points=[f(a,b) for a,b in zip(t['hdim_1'],t['hdim_2'])]
 
         
-            if variable_cube.coord_dims(coord)==(hdim_1,ndim_time,hdim_2):
+            elif variable_cube.coord_dims(coord)==(hdim_1,ndim_time,hdim_2):
                 f=interp2d(dimvec_2,dimvec_1,variable_cube[:,0,:].coord(coord).points)
                 coordinate_points=[f(a,b) for a,b in zip(t['hdim_2'],t['hdim_1'])]
 
-            if variable_cube.coord_dims(coord)==(hdim_1,hdim_2,ndim_time):
+            elif variable_cube.coord_dims(coord)==(hdim_1,hdim_2,ndim_time):
                 f=interp2d(dimvec_2,dimvec_1,variable_cube[:,:,0].coord(coord).points)
                 coordinate_points=[f(a,b) for a,b in zip(t['hdim_2'],t['hdim1'])]
 
                     
-            if variable_cube.coord_dims(coord)==(hdim_2,ndim_time,hdim_1):
+            elif variable_cube.coord_dims(coord)==(hdim_2,ndim_time,hdim_1):
                 f=interp2d(dimvec_1,dimvec_2,variable_cube[:,0,:].coord(coord).points)
                 coordinate_points=[f(a,b) for a,b in zip(t['hdim_1'],t['hdim_2'])]
 
-            if variable_cube.coord_dims(coord)==(hdim_2,hdim_1,ndim_time):
+            elif variable_cube.coord_dims(coord)==(hdim_2,hdim_1,ndim_time):
                 f=interp2d(dimvec_1,dimvec_2,variable_cube[:,:,0].coord(coord).points)
                 coordinate_points=[f(a,b) for a,b in zip(t['hdim_1'],t['hdim_2'])]
-
+            
+            else:
+                raise ValueError("Unable to interpolate 3D coordinate")
         # write resulting array or list into DataFrame:
         t[coord]=coordinate_points
 
