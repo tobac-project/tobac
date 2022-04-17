@@ -8,5 +8,5 @@
 * [ ] Have all tests passed in your local clone? 
 * [ ] If you have introduced a new functionality, have you added an example notebook?
 * [ ] Have you kept your pull request small and limited so that it is easy to review? 
-* [ ] Have any dependent changes been merged in downstream modules of this branch? 
+* [ ] Have the newest changes from this branch been merged? 
 
