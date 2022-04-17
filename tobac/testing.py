@@ -399,20 +399,35 @@ def make_dataset_from_arr(
     if time_dim_num is not None:
         raise NotImplementedError("Time dimension not yet implemented in this function")
 
+    has_time = time_dim_num is not None
+
     is_3D = z_dim_num is not None
     output_arr = xr.DataArray(in_arr)
     if is_3D:
         z_max = in_arr.shape[z_dim_num]
 
+    if has_time:
+        time_min = datetime.datetime(2022,1,1)
+        time_num = in_arr.shape[time_dim_num]
+        time_max = datetime.timedelta(minutes=5) * time_num
+
     if data_type == "xarray":
         return output_arr
     elif data_type == "iris":
         out_arr_iris = output_arr.to_iris()
+
         if is_3D:
             out_arr_iris.add_dim_coord(
                 iris.coords.DimCoord(np.arange(0, z_max), standard_name=z_dim_name),
                 z_dim_num,
             )
+        if has_time:
+            out_arr_iris = output_arr.to_iris()
+            if is_3D:
+                out_arr_iris.add_dim_coord(
+                    iris.coords.DimCoord(np.linspace(time_min, time_max, time_num), 
+                    standard_name='time'),
+                    time_dim_num,)   
         return out_arr_iris
     else:
         raise ValueError("data_type must be 'xarray' or 'iris'")
@@ -769,7 +784,7 @@ def generate_single_feature(start_h1, start_h2, start_v = None,
                             min_h1 = 0, max_h1 = None, min_h2 = 0, max_h2 = None,
                             num_frames = 1, dt = datetime.timedelta(minutes=5),
                             start_date = datetime.datetime(2022,1,1,0),
-                            PBC_flag = 'none', frame_start = 1, feature_num=1,):
+                            PBC_flag = 'none', frame_start = 0, feature_num=1,):
     '''Function to generate a dummy feature dataframe to test the tracking functionality
 
     Parameters

@@ -410,7 +410,7 @@ def add_coordinates(t,variable_cube):
 
         # interpolate 3D coordinates:            
         # mainly workaround for wrf latitude and longitude (to be fixed in future)
-        
+        # TODO: investigate, is this necessary?
         elif variable_cube.coord(coord).ndim==3:
 
             if variable_cube.coord_dims(coord)==(ndim_time,hdim_1,hdim_2):

@@ -363,4 +363,3 @@ def test_generate_grid_coords(min_max_coords, lengths, expected_outs):
     import numpy as np
     out_grid = tbtest.generate_grid_coords(min_max_coords, lengths)
     assert np.all(np.isclose(out_grid, np.array(expected_outs)))
-
