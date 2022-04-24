@@ -1,4 +1,4 @@
-name: Codecov Docker
+name: Codecov CI
 
 on: [push, pull_request]
 
@@ -27,8 +27,7 @@ jobs:
 
     - name: Generate Report
       run: |
-        mamba install coverage
-        coverage run -m pytest
+        python -m coverage run -m pytest
     - name: Upload Coverage to Codecov
       uses: codecov/codecov-action@v2
   
