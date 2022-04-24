@@ -9,10 +9,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Build the Docker image and upload coverage
-      uses: actions/checkout@v2
-      uses: codecov/codecov-action@v2
-      with: 
-       - token: ${{ secrets.CODECOV_TOKEN }}
-       - fail_ci_if_error: true
-      run: docker build . --file tobac/tests/Dockerfile-coverage -e CI=true
+      - uses: actions/checkout@v2
+      - uses: codecov/codecov-action@v2
+        with: 
+        - token: ${{ secrets.CODECOV_TOKEN }}
+        - fail_ci_if_error: true
+        name: Build the Docker image and upload coverage
+        run: docker build . --file tobac/tests/Dockerfile-coverage -e CI=true
