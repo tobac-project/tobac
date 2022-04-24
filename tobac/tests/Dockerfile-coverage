@@ -3,16 +3,13 @@ ARG MAMBA_DOCKERFILE_ACTIVATE=1
 
 RUN micromamba install -y -n base -c conda-forge numpy \
     scipy scikit-image pandas pytables matplotlib iris \
-    cf-units xarray cartopy trackpy numba pytest pip coverage
+    cf-units xarray cartopy trackpy numba pytest pip \
+    pytest-cov coverage
 
 COPY . ./
 
 RUN pip install .
 
-RUN pytest
-
-RUN curl -Os https://uploader.codecov.io/latest/linux/codecov &&\
-    chmod +x codecov &&\
-    ./codecov
-
+RUN coverage run -m pytest --cov-report=xml &&\
+    mv coverage.xml shared
 
