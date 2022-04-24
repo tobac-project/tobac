@@ -14,5 +14,5 @@ jobs:
     - name: Build the Docker image and upload coverage
       with: 
         token: ${{ secrets.CODECOV_TOKEN }}
-      fail_ci_if_error: true
-      run: docker build . --file tobac/tests/Dockerfile-coverage
+        fail_ci_if_error: true
+        run: docker build . --file tobac/tests/Dockerfile-coverage -e CI=true
