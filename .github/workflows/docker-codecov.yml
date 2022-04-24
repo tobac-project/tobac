@@ -11,4 +11,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Build the Docker image and upload coverage
-        run: docker build . --file tobac/tests/Dockerfile-coverage -e CI=true
+        env: 
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        run: docker build . --file tobac/tests/Dockerfile-coverage
