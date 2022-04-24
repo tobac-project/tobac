@@ -21,13 +21,10 @@ jobs:
         show-channel-urls: true
         use-only-tar-bz2: true
     
-    - name: Install dependencies
+    - name: Install dependencies and generate report
       shell: bash -l {0}
-      run: mamba install --quiet --yes --file conda-requirements.txt coverage pytest-cov
-
-    - name: Generate Report
-      run: |
-        python -m coverage run -m pytest
+      run: mamba install --quiet --yes --file conda-requirements.txt coverage pytest-cov &&
+           python -m coverage run -m pytest
     - name: Upload Coverage to Codecov
       uses: codecov/codecov-action@v2
   
