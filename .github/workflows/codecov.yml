@@ -10,16 +10,25 @@ jobs:
       PYTHON: '3.9'
     steps:
     - uses: actions/checkout@v2
-    - name: Install Conda environment from environment.yml
-      uses: mamba-org/provision-with-micromamba@main
+    # Similar to MetPy install-conda action
+    - name: Set up conda
+      uses: conda-incubator/setup-miniconda@v2
       with:
-        environment-file: conda-requirements.txt
-        environment-name: codecov-requirements
+        miniforge-version: latest
+        miniforge-variant: mambaforge
+        channel-priority: strict
+        channels: conda-forge
+        show-channel-urls: true
+        use-only-tar-bz2: true
+    
+    - name: Install dependencies
+      shell: bash -l {0}
+      run: mamba install --quiet --yes --file conda-requirements.txt coverage pytest-cov
 
     - name: Generate Report
       run: |
         mamba install coverage
-        coverage run -m unittest
+        coverage run -m pytest
     - name: Upload Coverage to Codecov
       uses: codecov/codecov-action@v2
   
