@@ -12,7 +12,7 @@ jobs:
     - uses: actions/checkout@v2
     - uses: codecov/codecov-action@v2
     - name: Build the Docker image and upload coverage
-      with: 
-        token: ${{ secrets.CODECOV_TOKEN }}
-        fail_ci_if_error: true
-        run: docker build . --file tobac/tests/Dockerfile-coverage -e CI=true
+    - with: 
+      - token: ${{ secrets.CODECOV_TOKEN }}
+      - fail_ci_if_error: true
+    - run: docker build . --file tobac/tests/Dockerfile-coverage -e CI=true
