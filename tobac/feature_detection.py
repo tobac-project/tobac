@@ -797,7 +797,9 @@ def feature_detection_multithreshold(field_in,
                                      n_min_threshold=0,
                                      min_distance=0,
                                      feature_number_start=1,
-                                     PBC_flag='none'
+                                     PBC_flag='none',
+                                     vertical_coord = 'auto',
+                                     vertical_axis = None,
                                      ):
     '''Function to perform feature detection based on contiguous regions above/below a threshold
     
@@ -813,11 +815,11 @@ def feature_detection_multithreshold(field_in,
         ```y_coordinate_name``` are available in `features`. If you specify a 
         value here, this function assumes that it is the x/y spacing between points
         even if ```x_coordinate_name``` and ```y_coordinate_name``` are specified. 
-    dz: float 
+    dz: float or None.
         Constant vertical grid spacing (m), optional. If not specified 
-        and the input is 3D, this function requires that `altitude` is available
-        in the `features` input. If you specify a value here, this function assumes
-        that it is the constant z spacing between points, even if ```z_coordinate_name```
+        and the input is 3D, this function requires that vertical_coord is available
+        in the `field_in` input. If you specify a value here, this function assumes
+        that it is the constant z spacing between points, even if ```vertical_coord```
         is specified. 
     target:        str ('minimum' or 'maximum')
                    flag to determine if tracking is targetting minima or maxima in the data
@@ -837,6 +839,13 @@ def feature_detection_multithreshold(field_in,
         'hdim_1' means that we are periodic along hdim1
         'hdim_2' means that we are periodic along hdim2
         'both' means that we are periodic along both horizontal dimensions
+    vertical_coord: str
+        Name or axis number of the vertical coordinate. If 'auto', tries to auto-detect.
+        It looks for the coordinate or the dimension name corresponding
+        to the string. 
+    vertical_axis: int or None.
+        The vertical axis number of the data. If None, uses vertical_coord
+        to determine axis. 
 
     Returns
     -------
@@ -846,7 +855,8 @@ def feature_detection_multithreshold(field_in,
     from .utils import add_coordinates, add_coordinates_3D
 
     logging.debug('start feature detection based on thresholds')
-    
+    if vertical_coord != 1 and vertical_coord != 'auto':
+        raise NotImplementedError("Vertical coordinate must be first non-time coord.")
     # create empty list to store features for all timesteps
     list_features_timesteps=[]
 
@@ -877,7 +887,10 @@ def feature_detection_multithreshold(field_in,
             #Loop over DataFrame to remove features that are closer than distance_min to each other:
             if (min_distance > 0):
                 features_thresholds=filter_min_distance(features_thresholds,dxy=dxy, dz=dz,
-                                                        min_distance = min_distance)
+                                                        min_distance = min_distance, 
+                                                        vertical_coord = vertical_coord,
+                                                        vertical_axis = vertical_axis
+                                                        )
         list_features_timesteps.append(features_thresholds)
         
         logging.debug('Finished feature detection for ' + time_i.strftime('%Y-%m-%d_%H:%M:%S'))
@@ -891,7 +904,7 @@ def feature_detection_multithreshold(field_in,
     #    features_filtered = features.drop(features[features['num'] < min_num].index)
     #    features_filtered.drop(columns=['idx','num','threshold_value'],inplace=True)
         if 'vdim' in features:
-            features=add_coordinates_3D(features,field_in)
+            features=add_coordinates_3D(features,field_in, vertical_coord=vertical_coord)
         else:            
             features=add_coordinates(features,field_in)
     else:
@@ -901,10 +914,15 @@ def feature_detection_multithreshold(field_in,
     return features
 
 def filter_min_distance(features, dxy = None,dz = None, min_distance = None,
-                           x_coordinate_name = "projection_x_coordinate",
-                           y_coordinate_name = "projection_y_coordinate",
-                           z_coordinate_name = "altitude"):
-    '''Function to remove features that are too close together
+                           x_coordinate_name = None,
+                           y_coordinate_name = None,
+                           z_coordinate_name = None,
+                           PBC_flag = 'none'):
+    '''Function to remove features that are too close together.
+    If two features are closer than `min_distance`, it keeps the 
+    larger feature.
+
+    TODO: does this function work with minima?
     
     Parameters
     ----------
@@ -932,19 +950,36 @@ def filter_min_distance(features, dxy = None,dz = None, min_distance = None,
         This is typically `projection_y_coordinate`
     z_coordinate_name: str or None
         The name of the z coordinate to calculate distance based on in meters.
-        This is typically `altitude`
-    
+        This is typically `altitude`. If `auto`, tries to auto-detect.
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
+
     Returns
     -------
     pandas DataFrame 
-                   features
+        features after filtering
     '''
     from itertools import combinations
     remove_list_distance=[]
 
+    if PBC_flag != 'none':
+        raise NotImplementedError("We haven't yet implemented PBCs into this.")
+
     #if we are 3D, the vertical dimension is in features. if we are 2D, there
     #is no vertical dimension in features. 
     is_3D = 'vdim' in features
+
+    # Check if both dxy and their coordinate names are specified.
+    # If they are, warn that we will use dxy.
+    if dxy is not None and (x_coordinate_name in features and y_coordinate_name in features):
+        warnings.warn("Both "+x_coordinate_name+"/"+y_coordinate_name+" and dxy "
+                     "set. Using constant dxy. Set dxy to None if you want to use the "
+                     "interpolated coordinates, or set `x_coordinate_name` and "
+                     "`y_coordinate_name` to None to use a constant dxy.")
     
     # Check and if both dz is specified and altitude is available, warn that we will use dz.
     if is_3D and (dz is not None and z_coordinate_name in features):
@@ -956,7 +991,6 @@ def filter_min_distance(features, dxy = None,dz = None, min_distance = None,
     #Loop over combinations to remove features that are closer together than min_distance and keep larger one (either higher threshold or larger area)
     for index_1, index_2 in indeces:
         if index_1 is not index_2:
-            #features.loc[index_1,'hdim_1']
             if dxy is not None:
                 xy_sqdst = ((dxy*(features.loc[index_1,'hdim_1']-features.loc[index_2,'hdim_1']))**2+
                             (dxy*(features.loc[index_1,'hdim_2']-features.loc[index_2,'hdim_2']))**2)
@@ -977,8 +1011,8 @@ def filter_min_distance(features, dxy = None,dz = None, min_distance = None,
             if is_3D:
                 distance=np.sqrt(xy_sqdst + z_sqdst)
             else:
-                distance = xy_sqdst
-            
+                distance = np.sqrt(xy_sqdst)
+            print(distance, min_distance, distance <=min_distance)
             if distance <= min_distance:
                 #print(distance, min_distance, index_1, index_2, features.size)
 #                        logging.debug('distance<= min_distance: ' + str(distance))
@@ -993,6 +1027,7 @@ def filter_min_distance(features, dxy = None,dz = None, min_distance = None,
                         remove_list_distance.append(index_1)
                     elif features.loc[index_1,'num']==features.loc[index_2,'num']:
                         remove_list_distance.append(index_2)
+    print(remove_list_distance)
     features=features[~features.index.isin(remove_list_distance)]
     return features
 

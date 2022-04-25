@@ -647,7 +647,6 @@ def test_segmentation_timestep_3d_buddy_box(dset_size,blob_1_loc, blob_1_size, b
                           ((20,30,40), (8,0,0),  (8, 28,38), (0,-8,-8), (5,5,5)),
                           ]
 )
-# TODO: last test fails
 def test_add_markers_pbcs(dset_size,feat_1_loc, feat_2_loc, shift_domain, seed_3D_size):
     '''Tests ```tobac.segmentation.add_markers```
     to make sure that adding markers works and is consistent across PBCs
@@ -730,3 +729,46 @@ def test_add_markers_pbcs(dset_size,feat_1_loc, feat_2_loc, shift_domain, seed_3
 
     assert np.all(marker_arr == marker_arr_reshifted)
 
+
+@pytest.mark.parametrize("PBC_flag", 
+                         [('none'), 
+                          ('hdim_1'),
+                          ('hdim_2'),
+                          ('both'),
+                          ]
+)
+def test_empty_segmentation(PBC_flag):
+    '''Tests ```tobac.segmentation.segmentation_timestep``` with an 
+    empty/zeroed out array
+    
+    '''
+    import numpy as np
+    h1_size = 100
+    h2_size = 100
+    v_size = 5
+    test_dxy = 1000
+    test_feature = testing.generate_single_feature(start_v=1,
+                                                    start_h1=1,
+                                                    start_h2=1, 
+                                                    max_h1 = h1_size,
+                                                    max_h2 = h2_size,
+                                                    feature_num = 1,
+                                                    PBC_flag=PBC_flag)
+
+    seg_arr = np.zeros((v_size, h1_size, h2_size))
+    seg_opts = {
+        'dxy': test_dxy,
+        'threshold': 1.5,
+        'PBC_flag': PBC_flag,
+    }
+    test_data_iris = testing.make_dataset_from_arr(
+        seg_arr, data_type="iris", z_dim_num=0, y_dim_num=1, x_dim_num=2
+    )
+
+    out_seg_mask, out_df = seg.segmentation_timestep(
+        field_in=test_data_iris,
+        features_in=test_feature,
+        **seg_opts
+    )
+
+    assert np.all(out_seg_mask.core_data() == -1)

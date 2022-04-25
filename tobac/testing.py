@@ -784,7 +784,8 @@ def generate_single_feature(start_h1, start_h2, start_v = None,
                             min_h1 = 0, max_h1 = None, min_h2 = 0, max_h2 = None,
                             num_frames = 1, dt = datetime.timedelta(minutes=5),
                             start_date = datetime.datetime(2022,1,1,0),
-                            PBC_flag = 'none', frame_start = 0, feature_num=1,):
+                            PBC_flag = 'none', frame_start = 0, feature_num=1, 
+                            feature_size = None, threshold_val = None):
     '''Function to generate a dummy feature dataframe to test the tracking functionality
 
     Parameters
@@ -828,6 +829,11 @@ def generate_single_feature(start_h1, start_h2, start_v = None,
         Number to start the frame at
     feature_num: int
         What number to start the feature at
+    feature_size: int or None
+        'num' column in output; feature size
+        If None, doesn't set this column
+    threshold_val: float or None
+        Threshold value of this feature
     '''
 
     if max_h1 is None or max_h2 is None:
@@ -852,7 +858,10 @@ def generate_single_feature(start_h1, start_h2, start_v = None,
             curr_v += spd_v
         curr_dict['time'] = curr_dt
         curr_dict["feature"] = feature_num + i
-
+        if feature_size is not None:
+            curr_dict['num'] = feature_size
+        if threshold_val is not None:
+            curr_dict['threshold_value'] = threshold_val
         curr_h1 += spd_h1
         curr_h2 += spd_h2
         curr_dt += dt

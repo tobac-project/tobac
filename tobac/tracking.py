@@ -1,4 +1,5 @@
 import logging
+from operator import is_
 import numpy as np
 import pandas as pd
 import math
@@ -6,13 +7,14 @@ from . import utils as tb_utils
 
 
 
-def linking_trackpy(features,field_in,dt,dxy,
+def linking_trackpy(features,field_in,dt,dxy, dz = None,
                        v_max=None,d_max=None,d_min=None,subnetwork_size=None,
                        memory=0,stubs=1,time_cell_min=None,              
                        order=1,extrapolate=0, 
                        method_linking='random',
                        adaptive_step=None,adaptive_stop=None,
                        cell_number_start=1,
+                       vertical_coord = 'auto',
                        min_h1 = None, max_h1 = None, 
                        min_h2 = None, max_h2 = None,
                        PBC_flag = 'none'
@@ -28,13 +30,20 @@ def linking_trackpy(features,field_in,dt,dxy,
     dt:           float
                   time resolution of tracked features
     dxy:          float
-                  grid spacing of input data
+                  Horizontal grid spacing of input data
+    dz: float
+        Constant vertical grid spacing of input data. If None,
+        uses `vertical_dim` to get vertical location. 
     memory        int
                   number of output timesteps features allowed to vanish for to be still considered tracked
     subnetwork_size int
                     maximim size of subnetwork for linking  
     method_linking:   str('predict' or 'random')
                       flag choosing method used for trajectory linking
+    vertical_coord: str
+        Name of the vertical coordinate in meters. If 'auto', tries to auto-detect.
+        It looks for the coordinate or the dimension name corresponding
+        to the string. To use `dz`, set this to `None`.        
     min_h1: int
         Minimum hdim_1 value, required when PBC_flag is 'hdim_1' or 'both'
     max_h1: int
@@ -59,8 +68,23 @@ def linking_trackpy(features,field_in,dt,dxy,
     #    from trackpy import link_df
     import trackpy as tp
     from copy import deepcopy
-#    from trackpy import filter_stubs
-#    from .utils import add_coordinates
+
+    # Check if we are 3D. 
+    if 'vdim' in features:
+        is_3D = True
+        if dz is not None and vertical_coord is not None:
+            raise ValueError("dz and vertical_coord both set, vertical"
+                             " spacing is ambiguous. Set one to None.")
+        if dz is None and vertical_coord is None:
+            raise ValueError("Neither dz nor vertical_coord are set. One"
+            " must be set.")
+        if vertical_coord is not None:
+            found_vertical_coord = tb_utils.find_dataframe_vertical_coord(
+                variable_dataframe=features,
+                vertical_coord=vertical_coord
+            )
+    else:
+        is_3D = False
 
     # make sure that we have min and max for h1 and h2 if we are PBC
     if PBC_flag in ['hdim_1', 'both'] and (min_h1 is None or max_h1 is None):
@@ -72,15 +96,15 @@ def linking_trackpy(features,field_in,dt,dxy,
 
     # calculate search range based on timestep and grid spacing
     if v_max is not None:
-        search_range=int(dt*v_max/dxy)
+        search_range = dt*v_max/dxy
     
     # calculate search range based on timestep and grid spacing
     if d_max is not None:
-        search_range=int(d_max/dxy)
+        search_range=d_max/dxy
     
     # calculate search range based on timestep and grid spacing
     if d_min is not None:
-        search_range=max(search_range,int(d_min/dxy))
+        search_range=max(search_range,d_min/dxy)
 
     if time_cell_min:
         stubs=np.floor(time_cell_min/dt)+1
@@ -97,12 +121,18 @@ def linking_trackpy(features,field_in,dt,dxy,
     # deep copy to preserve features field:
     features_linking=deepcopy(features)
     # check if we are 3D or not
-    
-    if 'vdim' in features_linking:
-        is_3D = True
-        pos_columns_tp = ['vdim','hdim_1','hdim_2']
+    if is_3D:
+        # If we are 3D, we need to convert the vertical 
+        # coordinates so that 1 unit is equal to dxy.
+
+        if dz is not None:
+            features_linking['vdim_adj'] = features_linking['vdim']*dz/dxy
+        else:
+            vertical_coord = found_vertical_coord
+            features_linking['vdim_adj'] = (features_linking[found_vertical_coord]/dxy)
+
+        pos_columns_tp = ['vdim_adj','hdim_1','hdim_2']
     else:
-        is_3D = False
         pos_columns_tp = ['hdim_1', 'hdim_2']
     
     # Check if we have PBCs. 
@@ -149,6 +179,10 @@ def linking_trackpy(features,field_in,dt,dxy,
         # Filter trajectories to exclude short trajectories that are likely to be spurious
 #    trajectories_filtered = filter_stubs(trajectories_unfiltered,threshold=stubs)
 #    trajectories_filtered=trajectories_filtered.reset_index(drop=True)
+
+    # clean up our temporary filters
+    if is_3D:
+        trajectories_unfiltered = trajectories_unfiltered.drop('vdim_adj', axis=1)
 
     # Reset particle numbers from the arbitray numbers at the end of the feature detection and linking to consecutive cell numbers
     # keep 'particle' for reference to the feature detection step.

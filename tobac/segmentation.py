@@ -271,23 +271,7 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         is_3D_seg = False
     elif field_in.ndim == 3:
         is_3D_seg = True
-        # Find which coordinate is the z coordinate
-        list_coord_names=[coord.name() for coord in field_in.coords()]
-        #determine vertical axis:
-        if vertical_coord=='auto':
-            list_vertical=['z','model_level_number','altitude','geopotential_height']
-            # TODO: there surely must be a better way to handle this
-            vertical_axis = None
-            for coord_name in list_vertical:
-                if coord_name in list_coord_names:
-                    vertical_axis=coord_name
-                    break
-            if vertical_axis is None:
-                raise ValueError('Please specify vertical coordinate')
-        elif vertical_coord in list_coord_names:
-            vertical_axis=vertical_coord
-        else:
-            raise ValueError('Please specify vertical coordinate')
+        vertical_axis = tb_utils.find_vertical_axis_from_coord(field_in, vertical_coord=vertical_coord)
         ndim_vertical=field_in.coord_dims(vertical_axis)
         if len(ndim_vertical)>1:
             raise ValueError('please specify 1 dimensional vertical coordinate')
@@ -305,6 +289,8 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         elif vertical_coord_axis == 2:
             hdim_1_axis = 0
             hdim_2_axis = 1
+        else:
+            raise ValueError("Segmentation routine can't find vertical coordinate.")
     else:
         raise ValueError('Segmentation routine only possible with 2 or 3 spatial dimensions')
 
@@ -521,10 +507,10 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
         'buddies' array contains features of interest and any neighbors that are across the boundary or 
         otherwise have lateral and/or diagonal physical contact with that label
         '''
-        # TODO: this can cause a crash if there are no segmentation regions        
         reg_props_dict = tb_utils.get_label_props_in_dict(segmentation_mask_3)
-
-        curr_reg_inds, z_reg_inds, y_reg_inds, x_reg_inds= tb_utils.get_indices_of_labels_from_reg_prop_dict(reg_props_dict)
+        
+        if len(reg_props_dict) != 0:
+            curr_reg_inds, z_reg_inds, y_reg_inds, x_reg_inds= tb_utils.get_indices_of_labels_from_reg_prop_dict(reg_props_dict)
 
         wall_labels = np.array([])
 
