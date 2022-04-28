@@ -344,7 +344,9 @@ def feature_detection_threshold(data_i,i_time,
                                 n_min_threshold=0,
                                 min_distance=0,
                                 idx_start=0,
-                                PBC_flag='none'):
+                                PBC_flag='none',
+                                vertical_coord = 'auto',
+                                vertical_axis = None,):
     '''function to find features based on individual threshold value
 
     Parameters
@@ -707,7 +709,9 @@ def feature_detection_multithreshold_timestep(data_i,i_time,
                                               n_min_threshold=0,
                                               min_distance=0,
                                               feature_number_start=1,
-                                              PBC_flag='none'
+                                              PBC_flag='none',
+                                              vertical_coord = 'auto',
+                                              vertical_axis = None,
                                               ):
     '''function to find features in each timestep based on iteratively finding regions above/below a set of thresholds
     
@@ -771,7 +775,9 @@ def feature_detection_multithreshold_timestep(data_i,i_time,
                                                         n_min_threshold=n_min_threshold,
                                                         min_distance=min_distance,
                                                         idx_start=idx_start,
-                                                        PBC_flag = PBC_flag
+                                                        PBC_flag = PBC_flag,
+                                                        vertical_coord = vertical_coord,
+                                                        vertical_axis = vertical_axis,
                                                         )
         if any([x is not None for x in features_threshold_i]):
             features_thresholds=features_thresholds.append(features_threshold_i)
@@ -855,7 +861,7 @@ def feature_detection_multithreshold(field_in,
     from .utils import add_coordinates, add_coordinates_3D
 
     logging.debug('start feature detection based on thresholds')
-    if vertical_coord != 1 and vertical_coord != 'auto':
+    if vertical_coord != 1 and vertical_coord != 'auto' and vertical_coord != 'altitude' and vertical_coord != 'z':
         raise NotImplementedError("Vertical coordinate must be first non-time coord.")
     # create empty list to store features for all timesteps
     list_features_timesteps=[]
@@ -880,6 +886,8 @@ def feature_detection_multithreshold(field_in,
                                                             min_distance=min_distance,
                                                             feature_number_start=feature_number_start,
                                                             PBC_flag=PBC_flag,
+                                                            vertical_coord = vertical_coord,
+                                                            vertical_axis = vertical_axis,
                                                            )
         #check if list of features is not empty, then merge features from different threshold values 
         #into one DataFrame and append to list for individual timesteps:
