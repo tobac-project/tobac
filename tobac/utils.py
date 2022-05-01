@@ -1006,18 +1006,21 @@ def find_vertical_axis_from_coord(variable_cube, vertical_coord='auto'):
     '''
 
     list_coord_names=[coord.name() for coord in variable_cube.coords()]
+
     if vertical_coord=='auto':
         list_vertical=['z','model_level_number','altitude','geopotential_height']
         # find the intersection
         all_vertical_axes = list(set(list_coord_names) & set(list_vertical))
-        if len(all_vertical_axes) == 1:
+        if len(all_vertical_axes) >= 1:
             return all_vertical_axes[0]
         else:
-            raise ValueError('Please specify vertical coordinate')
+            raise ValueError('Cube lacks suitable automatic vertical coordinate (z, model_level_number, altitude, or geopotential_height)')
     elif vertical_coord in list_coord_names:
         return vertical_coord
     else:
-        raise ValueError('Please specify vertical coordinate')
+        raise ValueError('Please specify vertical coordinate found in cube')
+
+
 
 
 def find_dataframe_vertical_coord(variable_dataframe, vertical_coord='auto'):
