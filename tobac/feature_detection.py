@@ -4,80 +4,6 @@ import logging
 import warnings
 from . import utils as tb_utils
 
-def get_label_props_in_dict(labels):
-    '''Function to get the label properties into a dictionary format.
-    
-    Parameters
-    ----------
-    labels:    2D or 3D array-like
-        comes from the `skimage.measure.label` function
-    
-    Returns
-    -------
-    dict
-        output from skimage.measure.regionprops in dictionary format, where they key is the label number
-    '''
-    import skimage.measure
-    
-    region_properties_raw = skimage.measure.regionprops(labels)
-    region_properties_dict = dict()
-    for region_prop in region_properties_raw:
-        region_properties_dict[region_prop.label] = region_prop
-    
-    return region_properties_dict
-
-
-def adjust_pbc_point(in_dim, dim_min, dim_max):
-    '''Function to adjust a point to the other boundary for PBCs
-    
-    Parameters
-    ----------
-    in_dim : int
-        Input coordinate to adjust
-    dim_min : int
-        Minimum point for the dimension
-    dim_max : int
-        Maximum point for the dimension (inclusive)
-    
-    Returns
-    -------
-    int
-        The adjusted point on the opposite boundary
-    
-    Raises
-    ------
-    ValueError
-        If in_dim isn't on one of the boundary points
-    '''
-    if in_dim == dim_min:
-        return dim_max
-    elif in_dim == dim_max:
-        return dim_min
-    else:
-        raise ValueError("In adjust_pbc_point, in_dim isn't on a boundary.")
-
-def get_label_props_in_dict(labels):
-    '''Function to get the label properties into a dictionary format.
-    
-    Parameters
-    ----------
-    labels:    2D or 3D array-like
-        comes from the `skimage.measure.label` function
-    
-    Returns
-    -------
-    dict
-        output from skimage.measure.regionprops in dictionary format, where they key is the label number
-    '''
-    import skimage.measure
-    
-    region_properties_raw = skimage.measure.regionprops(labels)
-    region_properties_dict = dict()
-    for region_prop in region_properties_raw:
-        region_properties_dict[region_prop.label] = region_prop
-    
-    return region_properties_dict
-
 
 def feature_position(hdim1_indices, hdim2_indeces,
                      vdim_indyces = None,
@@ -442,7 +368,7 @@ def feature_detection_threshold(data_i,i_time,
         wall_labels = np.array([])
         
         if num_labels > 0:
-            all_label_props = get_label_props_in_dict(labels)
+            all_label_props = tb_utils.get_label_props_in_dict(labels)
             [all_labels_max_size, all_label_locs_v, all_label_locs_h1, all_label_locs_h2
                 ] = tb_utils.get_indices_of_labels_from_reg_prop_dict(all_label_props)
 
@@ -497,8 +423,8 @@ def feature_detection_threshold(data_i,i_time,
                     if PBC_flag == 'both' and (np.any(label_y == [y_min,y_max]) and np.any(label_x == [x_min,x_max])):
                         
                         #adjust x and y points to the other side
-                        y_val_alt = adjust_pbc_point(label_y, y_min, y_max)
-                        x_val_alt = adjust_pbc_point(label_x, x_min, x_max)
+                        y_val_alt = tb_utils.adjust_pbc_point(label_y, y_min, y_max)
+                        x_val_alt = tb_utils.adjust_pbc_point(label_x, x_min, x_max)
                         
                         label_on_corner = labels[label_z,y_val_alt,x_val_alt]
                         
@@ -530,7 +456,7 @@ def feature_detection_threshold(data_i,i_time,
                     
                     # on the hdim1 boundary and periodic on hdim1
                     if (PBC_flag == 'hdim_1' or PBC_flag == 'both') and np.any(label_y == [y_min,y_max]):                        
-                        y_val_alt = adjust_pbc_point(label_y, y_min, y_max)
+                        y_val_alt = tb_utils.adjust_pbc_point(label_y, y_min, y_max)
 
                         #get the label value on the opposite side
                         label_alt = labels[label_z,y_val_alt,label_x]
@@ -561,7 +487,7 @@ def feature_detection_threshold(data_i,i_time,
                             break
                    
                     if (PBC_flag == 'hdim_2' or PBC_flag == 'both') and np.any(label_x == [x_min,x_max]):                        
-                        x_val_alt = adjust_pbc_point(label_x, x_min, x_max)
+                        x_val_alt = tb_utils.adjust_pbc_point(label_x, x_min, x_max)
 
                         #get the label value on the opposite side
                         label_alt = labels[label_z,label_y,x_val_alt]
@@ -604,7 +530,7 @@ def feature_detection_threshold(data_i,i_time,
         #num_labels = num_labels - len(skip_list)
     # END PBC treatment
     # we need to get label properties again after we handle PBCs. 
-    label_props = get_label_props_in_dict(labels)
+    label_props = tb_utils.get_label_props_in_dict(labels)
     if len(label_props)>0:
         [total_indices_all, vdim_indyces_all, hdim1_indices_all, hdim2_indices_all] = tb_utils.get_indices_of_labels_from_reg_prop_dict(label_props)
     
