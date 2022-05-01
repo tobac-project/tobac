@@ -345,7 +345,6 @@ def feature_detection_threshold(data_i,i_time,
                                 min_distance=0,
                                 idx_start=0,
                                 PBC_flag='none',
-                                vertical_coord = 'auto',
                                 vertical_axis = None,):
     '''function to find features based on individual threshold value
 
@@ -377,7 +376,9 @@ def feature_detection_threshold(data_i,i_time,
         'hdim_1' - periodic in hdim1 ONLY
         'hdim_2' - periodic in hdim2 ONLY
         'both' - DOUBLY periodic
-    
+    vertical_axis: int
+        The vertical axis number of the data.
+
     Returns
     -------
     pandas DataFrame 
@@ -710,7 +711,6 @@ def feature_detection_multithreshold_timestep(data_i,i_time,
                                               min_distance=0,
                                               feature_number_start=1,
                                               PBC_flag='none',
-                                              vertical_coord = 'auto',
                                               vertical_axis = None,
                                               ):
     '''function to find features in each timestep based on iteratively finding regions above/below a set of thresholds
@@ -745,6 +745,8 @@ def feature_detection_multithreshold_timestep(data_i,i_time,
         'hdim_1' means that we are periodic along hdim1
         'hdim_2' means that we are periodic along hdim2
         'both' means that we are periodic along both horizontal dimensions
+    vertical_axis: int
+        The vertical axis number of the data.
 
     Returns
     -------
@@ -776,7 +778,6 @@ def feature_detection_multithreshold_timestep(data_i,i_time,
                                                         min_distance=min_distance,
                                                         idx_start=idx_start,
                                                         PBC_flag = PBC_flag,
-                                                        vertical_coord = vertical_coord,
                                                         vertical_axis = vertical_axis,
                                                         )
         if any([x is not None for x in features_threshold_i]):
@@ -861,13 +862,42 @@ def feature_detection_multithreshold(field_in,
     from .utils import add_coordinates, add_coordinates_3D
 
     logging.debug('start feature detection based on thresholds')
-    if vertical_coord != 1 and vertical_coord != 'auto' and vertical_coord != 'altitude' and vertical_coord != 'z':
+
+    if 'time' not in [coord.name() for coord in field_in.coords()]:
+        raise ValueError("input to feature detection step must include a dimension named 'time'")
+
+    # Check whether we need to run 2D or 3D feature detection
+    if field_in.ndim == 3:
+        logging.debug("Running 2D feature detection")
+        is_3D = False
+    elif field_in.ndim == 4:
+        logging.debug("Running 3D feature detection")
+        is_3D = True
+    else:
+        raise ValueError("Feature detection only works with 2D or 3D data")
+
+    if is_3D:
+        # We need to determine the time axis so that we can determine the 
+        # vertical axis in each timestep if vertical_axis is not none.
+        if vertical_axis is not None:
+            ndim_time=field_in.coord_dims('time')[0]
+            # We only need to adjust the axis number if the time axis 
+            # is a lower axis number than the specified vertical coordinate.
+            if ndim_time < vertical_axis:
+                vertical_axis = vertical_axis - 1
+        else:
+            # We need to determine vertical axis
+            vertical_axis = tb_utils.find_vertical_axis_from_coord(field_in, vertical_coord=vertical_coord)
+
+
+    if is_3D and vertical_axis != 1:
         raise NotImplementedError("Vertical coordinate must be first non-time coord.")
     # create empty list to store features for all timesteps
     list_features_timesteps=[]
 
     # loop over timesteps for feature identification:
     data_time=field_in.slices_over('time')
+
     
     # if single threshold is put in as a single value, turn it into a list
     if type(threshold) in [int,float]:
@@ -886,7 +916,6 @@ def feature_detection_multithreshold(field_in,
                                                             min_distance=min_distance,
                                                             feature_number_start=feature_number_start,
                                                             PBC_flag=PBC_flag,
-                                                            vertical_coord = vertical_coord,
                                                             vertical_axis = vertical_axis,
                                                            )
         #check if list of features is not empty, then merge features from different threshold values 
@@ -896,8 +925,7 @@ def feature_detection_multithreshold(field_in,
             if (min_distance > 0):
                 features_thresholds=filter_min_distance(features_thresholds,dxy=dxy, dz=dz,
                                                         min_distance = min_distance, 
-                                                        vertical_coord = vertical_coord,
-                                                        vertical_axis = vertical_axis
+                                                        z_coordinate_name = vertical_coord,
                                                         )
         list_features_timesteps.append(features_thresholds)
         
