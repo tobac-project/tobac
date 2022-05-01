@@ -1,3 +1,4 @@
+from operator import is_
 import numpy as np
 import pandas as pd
 import logging
@@ -884,7 +885,8 @@ def filter_min_distance(features, dxy = None,dz = None, min_distance = None,
                            x_coordinate_name = None,
                            y_coordinate_name = None,
                            z_coordinate_name = None,
-                           PBC_flag = 'none'):
+                           PBC_flag = 'none',
+                           max_h1 = 0, max_h2 = 0,):
     '''Function to remove features that are too close together.
     If two features are closer than `min_distance`, it keeps the 
     larger feature.
@@ -924,6 +926,10 @@ def filter_min_distance(features, dxy = None,dz = None, min_distance = None,
         'hdim_1' means that we are periodic along hdim1
         'hdim_2' means that we are periodic along hdim2
         'both' means that we are periodic along both horizontal dimensions
+    max_h1: int
+        Maximum coordinate in the hdim_1 dimension if PBC_flag is not 'none'
+    max_h2: int
+        Maximum coordinate in the hdim_2 dimension if PBC_flag is not 'none'
 
     Returns
     -------
@@ -939,6 +945,9 @@ def filter_min_distance(features, dxy = None,dz = None, min_distance = None,
     #if we are 3D, the vertical dimension is in features. if we are 2D, there
     #is no vertical dimension in features. 
     is_3D = 'vdim' in features
+
+    if is_3D and dz is None:
+        z_coordinate_name = tb_utils.find_dataframe_vertical_coord(features, z_coordinate_name)
 
     # Check if both dxy and their coordinate names are specified.
     # If they are, warn that we will use dxy.
@@ -958,27 +967,28 @@ def filter_min_distance(features, dxy = None,dz = None, min_distance = None,
     #Loop over combinations to remove features that are closer together than min_distance and keep larger one (either higher threshold or larger area)
     for index_1, index_2 in indeces:
         if index_1 is not index_2:
-            if dxy is not None:
-                xy_sqdst = ((dxy*(features.loc[index_1,'hdim_1']-features.loc[index_2,'hdim_1']))**2+
-                            (dxy*(features.loc[index_1,'hdim_2']-features.loc[index_2,'hdim_2']))**2)
-            else:
-                # calculate xy distance based on x/y coordinates in meters.
-                xy_sqdst = ((features.loc[index_1, x_coordinate_name]-
-                            features.loc[index_2, x_coordinate_name])**2 + 
-                            (features.loc[index_1, y_coordinate_name]- 
-                            features.loc[index_2, y_coordinate_name])**2)
             if is_3D:
                 if dz is not None:
-                    z_sqdst = (dz * (features.loc[index_1,'vdim']-features.loc[index_2,'vdim']))**2
+                    z_coord_1 = dz * features.loc[index_1,'vdim']
+                    z_coord_2 = dz * features.loc[index_2,'vdim']
                 else:
-                    z_sqdst = (features.loc[index_1,z_coordinate_name]-
-                            features.loc[index_2,z_coordinate_name])**2
-            
-            #distance=dxy*np.sqrt((features.loc[index_1,'hdim_1']-features.loc[index_2,'hdim_1'])**2+(features.loc[index_1,'hdim_2']-features.loc[index_2,'hdim_2'])**2)
-            if is_3D:
-                distance=np.sqrt(xy_sqdst + z_sqdst)
+                    z_coord_1 = features.loc[index_1,z_coordinate_name]
+                    z_coord_2 = features.loc[index_2,z_coordinate_name]
+
+                coord_1 = (z_coord_1, dxy*features.loc[index_1,'hdim_1'], 
+                           dxy*features.loc[index_1,'hdim_2'])
+                coord_2 = (z_coord_2, dxy*features.loc[index_2,'hdim_1'], 
+                           dxy*features.loc[index_2,'hdim_2'])
             else:
-                distance = np.sqrt(xy_sqdst)
+                coord_1 = (dxy*features.loc[index_1,'hdim_1'], dxy*features.loc[index_1,'hdim_2'])
+                coord_2 = (dxy*features.loc[index_2,'hdim_1'], dxy*features.loc[index_2,'hdim_2'])
+
+            distance = tb_utils.calc_distance_coords_pbc(
+                coords_1 = np.array(coord_1),
+                coords_2 = np.array(coord_2),
+                min_h1 = 0, max_h1 = max_h1, min_h2 = 0, max_h2 = max_h2, PBC_flag=PBC_flag
+            )
+            
             if distance <= min_distance:
                 #print(distance, min_distance, index_1, index_2, features.size)
 #                        logging.debug('distance<= min_distance: ' + str(distance))
