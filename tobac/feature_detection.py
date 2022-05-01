@@ -393,6 +393,13 @@ def feature_detection_threshold(data_i,i_time,
     # If we are given a 3D data array, we should do 3D feature detection.
     is_3D = len(data_i.shape)==3
 
+    # We need to transpose the input data 
+    if is_3D:
+        if vertical_axis == 1:
+            data_i = np.transpose(data_i, axes=(1,0,2))
+        elif vertical_axis == 2:
+            data_i = np.transpose(data_i, axes=(2,0,1))
+
     # if looking for minima, set values above threshold to 0 and scale by data minimum:
     if target == 'maximum':
         mask=(data_i >= threshold)
@@ -887,11 +894,10 @@ def feature_detection_multithreshold(field_in,
                 vertical_axis = vertical_axis - 1
         else:
             # We need to determine vertical axis
-            vertical_axis = tb_utils.find_vertical_axis_from_coord(field_in, vertical_coord=vertical_coord)
+            vertical_axis = tb_utils.find_vertical_axis_from_coord(field_in, 
+                                    vertical_coord=vertical_coord)
 
 
-    if is_3D and vertical_axis != 1:
-        raise NotImplementedError("Vertical coordinate must be first non-time coord.")
     # create empty list to store features for all timesteps
     list_features_timesteps=[]
 
@@ -902,7 +908,6 @@ def feature_detection_multithreshold(field_in,
     # if single threshold is put in as a single value, turn it into a list
     if type(threshold) in [int,float]:
         threshold=[threshold]    
-    
     for i_time,data_i in enumerate(data_time):
         time_i=data_i.coord('time').units.num2date(data_i.coord('time').points[0])
         features_thresholds=feature_detection_multithreshold_timestep(data_i,i_time,
@@ -945,7 +950,7 @@ def feature_detection_multithreshold(field_in,
             features=add_coordinates(features,field_in)
     else:
         features=None
-        logging.info('No features detected')
+        logging.debug('No features detected')
     logging.debug('feature detection completed')
     return features
 
@@ -1048,7 +1053,6 @@ def filter_min_distance(features, dxy = None,dz = None, min_distance = None,
                 distance=np.sqrt(xy_sqdst + z_sqdst)
             else:
                 distance = np.sqrt(xy_sqdst)
-            print(distance, min_distance, distance <=min_distance)
             if distance <= min_distance:
                 #print(distance, min_distance, index_1, index_2, features.size)
 #                        logging.debug('distance<= min_distance: ' + str(distance))
@@ -1063,7 +1067,6 @@ def filter_min_distance(features, dxy = None,dz = None, min_distance = None,
                         remove_list_distance.append(index_1)
                     elif features.loc[index_1,'num']==features.loc[index_2,'num']:
                         remove_list_distance.append(index_2)
-    print(remove_list_distance)
     features=features[~features.index.isin(remove_list_distance)]
     return features
 

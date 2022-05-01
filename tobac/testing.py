@@ -396,9 +396,6 @@ def make_dataset_from_arr(
     import xarray as xr
     import iris
 
-    if time_dim_num is not None:
-        raise NotImplementedError("Time dimension not yet implemented in this function")
-
     has_time = time_dim_num is not None
 
     is_3D = z_dim_num is not None
@@ -409,7 +406,6 @@ def make_dataset_from_arr(
     if has_time:
         time_min = datetime.datetime(2022,1,1)
         time_num = in_arr.shape[time_dim_num]
-        time_max = datetime.timedelta(minutes=5) * time_num
 
     if data_type == "xarray":
         return output_arr
@@ -422,12 +418,12 @@ def make_dataset_from_arr(
                 z_dim_num,
             )
         if has_time:
-            out_arr_iris = output_arr.to_iris()
             if is_3D:
                 out_arr_iris.add_dim_coord(
-                    iris.coords.DimCoord(np.linspace(time_min, time_max, time_num), 
-                    standard_name='time'),
-                    time_dim_num,)   
+                    iris.coords.DimCoord(pd.date_range(start=time_min, periods=time_num).values.astype('datetime64[s]').astype(int), 
+                    standard_name='time', units='seconds since epoch'),
+                    time_dim_num,
+                   )
         return out_arr_iris
     else:
         raise ValueError("data_type must be 'xarray' or 'iris'")
