@@ -831,8 +831,8 @@ def segmentation_timestep(field_in,features_in,dxy,threshold=3e-3,target='maximu
     ncells=np.zeros(len(features_out))
     for i,(index,row) in enumerate(features_out.iterrows()):
         if row['feature'] in counts.keys():
-            ncells[i]=counts[row['feature']]
-            features_out.ncells.values[i]=ncells[i]
+            ncells=counts[row['feature']]
+    features_out['ncells']=ncells
 
     return segmentation_out,features_out
 
