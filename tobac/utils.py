@@ -1,17 +1,20 @@
 import logging
+import numpy as np
 
 
 def column_mask_from2D(mask_2D, cube, z_coord="model_level_number"):
     """function to turn 2D watershedding mask into a 3D mask of selected columns
-    Input:
+    Parameters
+    ----------
     cube:              iris.cube.Cube
                        data cube
     mask_2D:           iris.cube.Cube
                        2D cube containing mask (int id for tacked volumes 0 everywhere else)
     z_coord:           str
                        name of the vertical coordinate in the cube
-    Output:
-    mask_2D:           iris.cube.Cube
+    Returns
+    -------
+    iris.cube.Cube
                        3D cube containing columns of 2D mask (int id for tacked volumes 0 everywhere else)
     """
     from copy import deepcopy
@@ -29,15 +32,19 @@ def column_mask_from2D(mask_2D, cube, z_coord="model_level_number"):
 
 def mask_cube_cell(variable_cube, mask, cell, track):
     """Mask cube for tracked volume of an individual cell
-    Input:
+
+    Parameters
+    ----------
     variable_cube:     iris.cube.Cube
                        unmasked data cube
     mask:              iris.cube.Cube
                        cube containing mask (int id for tacked volumes 0 everywhere else)
     cell:          int
                        interger id of cell to create masked cube for
-    Output:
-    variable_cube_out: iris.cube.Cube
+
+    Returns
+    -------
+    iris.cube.Cube
                        Masked cube with data for respective cell
     """
     from copy import deepcopy
@@ -50,12 +57,16 @@ def mask_cube_cell(variable_cube, mask, cell, track):
 
 def mask_cube_all(variable_cube, mask):
     """Mask cube for untracked volume
-    Input:
+
+    Parameters
+    ----------
     variable_cube:     iris.cube.Cube
                        unmasked data cube
     mask:              iris.cube.Cube
                        cube containing mask (int id for tacked volumes 0 everywhere else)
-    Output:
+
+    Returns
+    -------
     variable_cube_out: iris.cube.Cube
                        Masked cube for untracked volume
     """
@@ -71,12 +82,16 @@ def mask_cube_all(variable_cube, mask):
 
 def mask_cube_untracked(variable_cube, mask):
     """Mask cube for untracked volume
-    Input:
+
+    Parameters
+    ----------
     variable_cube:     iris.cube.Cube
                        unmasked data cube
     mask:              iris.cube.Cube
                        cube containing mask (int id for tacked volumes 0 everywhere else)
-    Output:
+
+    Returns
+    -------
     variable_cube_out: iris.cube.Cube
                        Masked cube for untracked volume
     """
@@ -92,13 +107,17 @@ def mask_cube_untracked(variable_cube, mask):
 
 def mask_cube(cube_in, mask):
     """Mask cube where mask is larger than zero
-    Input:
+
+    Parameters
+    ----------
     cube_in:           iris.cube.Cube
                        unmasked data cube
     mask:              numpy.ndarray or dask.array
                        mask to use for masking, >0 where cube is supposed to be masked
-    Output:
-    cube_out:          iris.cube.Cube
+
+    Returns
+    -------
+    iris.cube.Cube
                        Masked cube
     """
     from dask.array import ma
@@ -111,11 +130,15 @@ def mask_cube(cube_in, mask):
 
 def mask_cell(mask, cell, track, masked=False):
     """create mask for specific cell
-    Input:
+
+    Parameters
+    ----------
     mask:              iris.cube.Cube
                        cube containing mask (int id for tacked volumes 0 everywhere else)
-    Output:
-    variable_cube_out: numpy.ndarray
+
+    Returns
+    -------
+    numpy.ndarray
                        Masked cube for untracked volume
     """
     feature_ids = track.loc[track["cell"] == cell, "feature"].values
@@ -125,11 +148,15 @@ def mask_cell(mask, cell, track, masked=False):
 
 def mask_cell_surface(mask, cell, track, masked=False, z_coord="model_level_number"):
     """Create surface projection of mask for individual cell
-    Input:
+
+    Parameters
+    ----------
     mask:              iris.cube.Cube
                        cube containing mask (int id for tacked volumes 0 everywhere else)
-    Output:
-    variable_cube_out: iris.cube.Cube
+
+    Returns
+    -------
+    iris.cube.Cube
                        Masked cube for untracked volume
     """
     feature_ids = track.loc[track["cell"] == cell, "feature"].values
@@ -141,11 +168,15 @@ def mask_cell_surface(mask, cell, track, masked=False, z_coord="model_level_numb
 
 def mask_cell_columns(mask, cell, track, masked=False, z_coord="model_level_number"):
     """Create mask with entire columns for individual cell
-    Input:
+
+    Parameters
+    ----------
     mask:              iris.cube.Cube
                        cube containing mask (int id for tacked volumes 0 everywhere else)
-    Output:
-    variable_cube_out: iris.cube.Cube
+
+    Returns
+    -------
+    iris.cube.Cube
                        Masked cube for untracked volume
     """
     feature_ids = track.loc[track["cell"] == cell].loc["feature"]
@@ -155,15 +186,19 @@ def mask_cell_columns(mask, cell, track, masked=False, z_coord="model_level_numb
 
 def mask_cube_features(variable_cube, mask, feature_ids):
     """Mask cube for tracked volume of an individual cell
-    Input:
+
+    Parameters
+    ----------
     variable_cube:     iris.cube.Cube
                        unmasked data cube
     mask:              iris.cube.Cube
                        cube containing mask (int id for tacked volumes 0 everywhere else)
     cell:          int
                        interger id of cell to create masked cube for
-    Output:
-    variable_cube_out: iris.cube.Cube
+
+    Returns
+    -------
+    iris.cube.Cube
                        Masked cube with data for respective cell
     """
     from dask.array import ma, isin
@@ -178,11 +213,15 @@ def mask_cube_features(variable_cube, mask, feature_ids):
 
 def mask_features(mask, feature_ids, masked=False):
     """create mask for specific features
-    Input:
+
+    Parameters
+    ----------
     mask:              iris.cube.Cube
                        cube containing mask (int id for tacked volumes 0 everywhere else)
-    Output:
-    variable_cube_out: numpy.ndarray
+
+    Returns
+    -------
+    numpy.ndarray
                        Masked cube for untracked volume
     """
     from dask.array import ma, isin
@@ -200,11 +239,15 @@ def mask_features_surface(
     mask, feature_ids, masked=False, z_coord="model_level_number"
 ):
     """create surface mask for individual features
-    Input:
+
+    Parameters
+    ----------
     mask:              iris.cube.Cube
                        cube containing mask (int id for tacked volumes 0 everywhere else)
-    Output:
-    variable_cube_out: iris.cube.Cube
+
+    Returns
+    -------
+    iris.cube.Cube
                        Masked cube for untracked volume
     """
     from iris.analysis import MAX
@@ -223,10 +266,14 @@ def mask_features_surface(
 
 def mask_all_surface(mask, masked=False, z_coord="model_level_number"):
     """create surface mask for individual features
-    Input:
+
+    Parameters
+    ----------
     mask:              iris.cube.Cube
                        cube containing mask (int id for tacked volumes 0 everywhere else)
-    Output:
+
+    Returns
+    -------
     mask_i_surface:    iris.cube.Cube (2D)
                        Mask with 1 below features and 0 everywhere else
     """
@@ -308,15 +355,23 @@ def mask_all_surface(mask, masked=False, z_coord="model_level_number"):
 def add_coordinates(t, variable_cube):
     import numpy as np
 
-    """ Function adding coordinates from the tracking cube to the trajectories: time, longitude&latitude, x&y dimensions
-    Input:
+    """Function adding coordinates from the tracking cube to the trajectories
+        for the 2D case: time, longitude&latitude, x&y dimensions
+    
+    Parameters
+    ----------
     t:             pandas DataFrame
                    trajectories/features
     variable_cube: iris.cube.Cube 
-                   Cube containing the dimensions 'time','longitude','latitude','x_projection_coordinate','y_projection_coordinate', usually cube that the tracking is performed on
-    Output:
-    t:             pandas DataFrame 
-                   trajectories with added coordinated
+        Cube (usually the one you are tracking on) at least conaining the dimension of 'time'. 
+        Typically, 'longitude','latitude','x_projection_coordinate','y_projection_coordinate', 
+        are the coordinates that we expect, although this function
+        will happily interpolate along any dimension coordinates you give. 
+    
+    Returns
+    -------
+    pandas DataFrame 
+                   trajectories with added coordinates
     """
     from scipy.interpolate import interp2d, interp1d
 
@@ -393,7 +448,7 @@ def add_coordinates(t, variable_cube):
 
         # interpolate 3D coordinates:
         # mainly workaround for wrf latitude and longitude (to be fixed in future)
-
+        # TODO: investigate, is this necessary?
         elif variable_cube.coord(coord).ndim == 3:
 
             if variable_cube.coord_dims(coord) == (ndim_time, hdim_1, hdim_2):
@@ -439,10 +494,178 @@ def add_coordinates(t, variable_cube):
     return t
 
 
+def add_coordinates_3D(
+    t, variable_cube, vertical_coord="auto", assume_coords_fixed_in_time=True
+):
+    import numpy as np
+
+    """Function adding coordinates from the tracking cube to the trajectories
+        for the 3D case: time, longitude&latitude, x&y dimensions, and altitude
+    
+    Parameters
+    ----------
+    t:             pandas DataFrame
+                   trajectories/features
+    variable_cube: iris.cube.Cube 
+        Cube (usually the one you are tracking on) at least conaining the dimension of 'time'. 
+        Typically, 'longitude','latitude','x_projection_coordinate','y_projection_coordinate', 
+        and 'altitude' (if 3D) are the coordinates that we expect, although this function
+        will happily interpolate along any dimension coordinates you give. 
+    vertical_coord: str or int
+        Name or axis number of the vertical coordinate. If 'auto', tries to auto-detect.
+        If it is a string, it looks for the coordinate or the dimension name corresponding
+        to the string. If it is an int, it assumes that it is the vertical axis.
+        Note that if you only have a 2D or 3D coordinate for altitude, you must 
+        pass in an int.
+    assume_coords_fixed_in_time: bool
+        If true, it assumes that the coordinates are fixed in time, even if the
+        coordinates say they vary in time. This is, by default, True, to preserve
+        legacy functionality. If False, it assumes that if a coordinate says
+        it varies in time, it takes the coordinate at its word.
+    
+    Returns
+    -------
+    pandas DataFrame 
+                   trajectories with added coordinates
+    """
+    from scipy.interpolate import interp2d, interp1d, interpn
+
+    logging.debug("start adding coordinates from cube")
+
+    # pull time as datetime object and timestr from input data and add it to DataFrame:
+    t["time"] = None
+    t["timestr"] = None
+
+    logging.debug("adding time coordinate")
+
+    time_in = variable_cube.coord("time")
+    time_in_datetime = time_in.units.num2date(time_in.points)
+
+    t["time"] = time_in_datetime[t["frame"]]
+    t["timestr"] = [
+        x.strftime("%Y-%m-%d %H:%M:%S") for x in time_in_datetime[t["frame"]]
+    ]
+
+    # Get list of all coordinates in input cube except for time (already treated):
+    coord_names = [coord.name() for coord in variable_cube.coords()]
+    coord_names.remove("time")
+
+    logging.debug("time coordinate added")
+
+    # chose right dimension for horizontal and vertical axes based on time dimension:
+    ndim_time = variable_cube.coord_dims("time")[0]
+
+    # TODO: move this to a function, this is duplicated from segmentation.
+    if type(vertical_coord) is int:
+        ndim_vertical = vertical_coord
+        vertical_axis = None
+    else:
+        vertical_axis = find_vertical_axis_from_coord(
+            variable_cube, vertical_coord=vertical_coord
+        )
+
+    if vertical_axis is not None:
+        ndim_vertical = variable_cube.coord_dims(vertical_axis)
+        if len(ndim_vertical) > 1:
+            raise ValueError(
+                "Vertical coordinate detected as multidimensional. Please pass in "
+                "axis number of vertical data."
+            )
+        else:
+            ndim_vertical = ndim_vertical[0]
+
+    # We need to figure out the axis number of hdim_1 and hdim_2.
+    ndim_hdim_1 = None
+    ndim_hdim_2 = None
+    for i in range(len(variable_cube.shape)):
+        if i != ndim_time and i != ndim_vertical:
+            if ndim_hdim_1 is None:
+                ndim_hdim_1 = i
+            else:
+                ndim_hdim_2 = i
+
+    if ndim_hdim_1 is None or ndim_hdim_2 is None:
+        raise ValueError("Could not find hdim coordinates.")
+
+    # create vectors to use to interpolate from pixels to coordinates
+    dimvec_1 = np.arange(variable_cube.shape[ndim_vertical])
+    dimvec_2 = np.arange(variable_cube.shape[ndim_hdim_1])
+    dimvec_3 = np.arange(variable_cube.shape[ndim_hdim_2])
+    dimvec_time = np.arange(variable_cube.shape[ndim_time])
+
+    coord_to_ax = {
+        ndim_vertical: (dimvec_1, "vdim"),
+        ndim_time: (dimvec_time, "time"),
+        ndim_hdim_1: (dimvec_2, "hdim_1"),
+        ndim_hdim_2: (dimvec_3, "hdim_2"),
+    }
+
+    # loop over coordinates in input data:
+    for coord in coord_names:
+        logging.debug("adding coord: " + coord)
+        # interpolate 1D coordinates:
+        var_coord = variable_cube.coord(coord)
+        if var_coord.ndim == 1:
+            curr_dim = coord_to_ax[variable_cube.coord_dims(coord)[0]]
+            f = interp1d(curr_dim[0], var_coord.points, fill_value="extrapolate")
+            coordinate_points = f(t[curr_dim[1]])
+
+        # interpolate 2D coordinates
+        elif var_coord.ndim == 2:
+            first_dim = coord_to_ax[variable_cube.coord_dims(coord)[1]]
+            second_dim = coord_to_ax[variable_cube.coord_dims(coord)[0]]
+            f = interp2d(first_dim[0], second_dim[0], var_coord.points)
+            coordinate_points = [
+                f(a, b) for a, b in zip(t[first_dim[1]], t[second_dim[1]])
+            ]
+
+        # Deal with the special case where the coordinate is 3D but
+        # one of the dimensions is time and we assume the coordinates
+        # don't vary in time.
+        elif (
+            var_coord.ndim == 3
+            and ndim_time in variable_cube.coord_dims(coord)
+            and assume_coords_fixed_in_time
+        ):
+            time_pos = variable_cube.coord_dims(coord).index(ndim_time)
+            hdim1_pos = 0 if time_pos != 0 else 1
+            hdim2_pos = 1 if time_pos == 2 else 2
+            first_dim = coord_to_ax[variable_cube.coord_dims(coord)[hdim2_pos]]
+            second_dim = coord_to_ax[variable_cube.coord_dims(coord)[hdim1_pos]]
+            f = interp2d(first_dim[0], second_dim[0], var_coord.points)
+            coordinate_points = [
+                f(a, b) for a, b in zip(t[first_dim[1]], t[second_dim[1]])
+            ]
+
+        # interpolate 3D coordinates:
+        elif var_coord.ndim == 3:
+            curr_coord_dims = variable_cube.coord_dims(coord)
+            first_dim = coord_to_ax[variable_cube.coord_dims(coord)[0]]
+            second_dim = coord_to_ax[variable_cube.coord_dims(coord)[1]]
+            third_dim = coord_to_ax[variable_cube.coord_dims(coord)[2]]
+            coordinate_points = interpn(
+                [first_dim[0], second_dim[0], third_dim[0]],
+                var_coord.points,
+                [
+                    [a, b, c]
+                    for a, b, c in zip(
+                        t[first_dim[1]], t[second_dim[1]], t[third_dim[1]]
+                    )
+                ],
+            )
+            # coordinate_points=[f(a,b) for a,b in zip(t[first_dim[1]],t[second_dim[1]])]
+
+        # write resulting array or list into DataFrame:
+        t[coord] = coordinate_points
+
+        logging.debug("added coord: " + coord)
+    return t
+
+
 def get_bounding_box(x, buffer=1):
     from numpy import delete, arange, diff, nonzero, array
 
-    """ Calculates the bounding box of a ndarray
+    """Calculates the bounding box of a ndarray
     https://stackoverflow.com/questions/31400769/bounding-box-of-numpy-array
     """
     mask = x == 0
@@ -516,7 +739,7 @@ def get_label_props_in_dict(labels):
 
     Parameters
     ----------
-    labels:    2D array-like
+    labels:    2D or 3D array-like
         comes from the `skimage.measure.label` function
 
     Returns
@@ -527,16 +750,15 @@ def get_label_props_in_dict(labels):
     import skimage.measure
 
     region_properties_raw = skimage.measure.regionprops(labels)
-    region_properties_dict = {
-        region_prop.label: region_prop for region_prop in region_properties_raw
-    }
+    region_properties_dict = dict()
+    for region_prop in region_properties_raw:
+        region_properties_dict[region_prop.label] = region_prop
 
     return region_properties_dict
 
 
 def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
-    """Function to get the x and y indices (as well as point count) of
-    all labeled regions.
+    """Function to get the x, y, and z indices (as well as point count) of all labeled regions.
 
     Parameters
     ----------
@@ -548,6 +770,8 @@ def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
     dict (key: label number, int)
         The number of points in the label number
     dict (key: label number, int)
+        The z indices in the label number. If a 2D property dict is passed, this value is not returned
+    dict (key: label number, int)
         the y indices in the label number
     dict (key: label number, int)
         the x indices in the label number
@@ -558,23 +782,384 @@ def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
         a ValueError is raised if there are no regions in the region property dict
 
     """
+
+    import skimage.measure
     import numpy as np
 
     if len(region_property_dict) == 0:
         raise ValueError("No regions!")
 
+    z_indices = dict()
     y_indices = dict()
     x_indices = dict()
     curr_loc_indices = dict()
+    is_3D = False
 
     # loop through all skimage identified regions
     for region_prop_key in region_property_dict:
         region_prop = region_property_dict[region_prop_key]
         index = region_prop.label
-        curr_y_ixs, curr_x_ixs = np.transpose(region_prop.coords)
+        if len(region_prop.coords[0]) >= 3:
+            is_3D = True
+            curr_z_ixs, curr_y_ixs, curr_x_ixs = np.transpose(region_prop.coords)
+            z_indices[index] = curr_z_ixs
+        else:
+            curr_y_ixs, curr_x_ixs = np.transpose(region_prop.coords)
+            z_indices[index] = -1
 
         y_indices[index] = curr_y_ixs
         x_indices[index] = curr_x_ixs
         curr_loc_indices[index] = len(curr_y_ixs)
 
-    return (curr_loc_indices, y_indices, x_indices)
+    # print("indices found")
+    if is_3D:
+        return [curr_loc_indices, z_indices, y_indices, x_indices]
+    else:
+        return [curr_loc_indices, y_indices, x_indices]
+
+
+def adjust_pbc_point(in_dim, dim_min, dim_max):
+    """Function to adjust a point to the other boundary for PBCs
+
+    Parameters
+    ----------
+    in_dim : int
+        Input coordinate to adjust
+    dim_min : int
+        Minimum point for the dimension
+    dim_max : int
+        Maximum point for the dimension (inclusive)
+
+    Returns
+    -------
+    int
+        The adjusted point on the opposite boundary
+
+    Raises
+    ------
+    ValueError
+        If in_dim isn't on one of the boundary points
+    """
+    if in_dim == dim_min:
+        return dim_max
+    elif in_dim == dim_max:
+        return dim_min
+    else:
+        raise ValueError("In adjust_pbc_point, in_dim isn't on a boundary.")
+
+
+def get_pbc_coordinates(
+    h1_min,
+    h1_max,
+    h2_min,
+    h2_max,
+    h1_start_coord,
+    h1_end_coord,
+    h2_start_coord,
+    h2_end_coord,
+    PBC_flag="none",
+):
+    """Function to get the *actual* coordinate boxes of interest given a set of shifted
+    coordinates with periodic boundaries.
+
+    For example, if you pass in [as h1_start_coord, h1_end_coord, h2_start_coord, h2_end_coord]
+    (-3, 5, 2,6) with PBC_flag of 'both' or 'hdim_1', h1_max of 10, and h1_min of 0
+    this function will return: [(0,5,2,6), (7,10,2,6)].
+
+    If you pass in something outside the bounds of the array, this will truncate your
+    requested box. For example, if you pass in [as h1_start_coord, h1_end_coord, h2_start_coord, h2_end_coord]
+    (-3, 5, 2,6) with PBC_flag of 'none' or 'hdim_2', this function will return:
+    [(0,5,2,6)], assuming h1_min is 0.
+
+    For cases where PBC_flag is 'both' and we have a corner case, it is possible
+    to get overlapping boundaries. For example, if you pass in (-6, 5, -6, 5)
+
+    Parameters
+    ----------
+    h1_min: int
+        Minimum array value in hdim_1, typically 0.
+    h1_max: int
+        Maximum array value in hdim_1 (exclusive). h1_max - h1_min should be the size in h1.
+    h2_min: int
+        Minimum array value in hdim_2, typically 0.
+    h2_max: int
+        Maximum array value in hdim_2 (exclusive). h2_max - h2_min should be the size in h2.
+    h1_start_coord: int
+        Start coordinate in hdim_1. Can be < h1_min if dealing with PBCs.
+    h1_end_coord: int
+        End coordinate in hdim_1. Can be >= h1_max if dealing with PBCs.
+    h2_start_coord: int
+        Start coordinate in hdim_2. Can be < h2_min if dealing with PBCs.
+    h2_end_coord: int
+        End coordinate in hdim_2. Can be >= h2_max if dealing with PBCs.
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
+
+    Returns
+    -------
+    list of tuples
+        A list of tuples containing (h1_start, h1_end, h2_start, h2_end) of each of the
+        boxes needed to encompass the coordinates.
+    """
+
+    if PBC_flag not in ["none", "hdim_1", "hdim_2", "both"]:
+        raise ValueError("PBC_flag must be 'none', 'hdim_1', 'hdim_2', or 'both'")
+
+    h1_start_coords = list()
+    h1_end_coords = list()
+    h2_start_coords = list()
+    h2_end_coords = list()
+
+    # In both of these cases, we just need to truncate the hdim_1 points.
+    if PBC_flag in ["none", "hdim_2"]:
+        h1_start_coords.append(max(h1_min, h1_start_coord))
+        h1_end_coords.append(min(h1_max, h1_end_coord))
+
+    # In both of these cases, we only need to truncate the hdim_2 points.
+    if PBC_flag in ["none", "hdim_1"]:
+        h2_start_coords.append(max(h2_min, h2_start_coord))
+        h2_end_coords.append(min(h2_max, h2_end_coord))
+
+    # If the PBC flag is none, we can just return.
+    if PBC_flag == "none":
+        return [
+            (h1_start_coords[0], h1_end_coords[0], h2_start_coords[0], h2_end_coords[0])
+        ]
+
+    # We have at least one periodic boundary.
+
+    # hdim_1 boundary is periodic.
+    if PBC_flag in ["hdim_1", "both"]:
+        if (h1_end_coord - h1_start_coord) >= (h1_max - h1_min):
+            # In this case, we have selected the full h1 length of the domain,
+            # so we set the start and end coords to just that.
+            h1_start_coords.append(h1_min)
+            h1_end_coords.append(h1_max)
+
+        # We know we only have either h1_end_coord > h1_max or h1_start_coord < h1_min
+        # and not both. If both are true, the previous if statement should trigger.
+        elif h1_start_coord < h1_min:
+            # First set of h1 start coordinates
+            h1_start_coords.append(h1_min)
+            h1_end_coords.append(h1_end_coord)
+            # Second set of h1 start coordinates
+            pts_from_begin = h1_min - h1_start_coord
+            h1_start_coords.append(h1_max - pts_from_begin)
+            h1_end_coords.append(h1_max)
+
+        elif h1_end_coord > h1_max:
+            h1_start_coords.append(h1_start_coord)
+            h1_end_coords.append(h1_max)
+            pts_from_end = h1_end_coord - h1_max
+            h1_start_coords.append(h1_min)
+            h1_end_coords.append(h1_min + pts_from_end)
+
+        # We have no PBC-related issues, actually
+        else:
+            h1_start_coords.append(h1_start_coord)
+            h1_end_coords.append(h1_end_coord)
+
+    if PBC_flag in ["hdim_2", "both"]:
+        if (h2_end_coord - h2_start_coord) >= (h2_max - h2_min):
+            # In this case, we have selected the full h2 length of the domain,
+            # so we set the start and end coords to just that.
+            h2_start_coords.append(h2_min)
+            h2_end_coords.append(h2_max)
+
+        # We know we only have either h1_end_coord > h1_max or h1_start_coord < h1_min
+        # and not both. If both are true, the previous if statement should trigger.
+        elif h2_start_coord < h2_min:
+            # First set of h1 start coordinates
+            h2_start_coords.append(h2_min)
+            h2_end_coords.append(h2_end_coord)
+            # Second set of h1 start coordinates
+            pts_from_begin = h2_min - h2_start_coord
+            h2_start_coords.append(h2_max - pts_from_begin)
+            h2_end_coords.append(h2_max)
+
+        elif h2_end_coord > h2_max:
+            h2_start_coords.append(h2_start_coord)
+            h2_end_coords.append(h2_max)
+            pts_from_end = h2_end_coord - h2_max
+            h2_start_coords.append(h2_min)
+            h2_end_coords.append(h2_min + pts_from_end)
+
+        # We have no PBC-related issues, actually
+        else:
+            h2_start_coords.append(h2_start_coord)
+            h2_end_coords.append(h2_end_coord)
+
+    out_coords = list()
+    for h1_start_coord_single, h1_end_coord_single in zip(
+        h1_start_coords, h1_end_coords
+    ):
+        for h2_start_coord_single, h2_end_coord_single in zip(
+            h2_start_coords, h2_end_coords
+        ):
+            out_coords.append(
+                (
+                    h1_start_coord_single,
+                    h1_end_coord_single,
+                    h2_start_coord_single,
+                    h2_end_coord_single,
+                )
+            )
+    return out_coords
+
+
+def njit_if_available(func, **kwargs):
+    """Decorator to wrap a function with numba.njit if available.
+    If numba isn't available, it just returns the function.
+
+    Parameters
+    ----------
+    func: function object
+        Function to wrap with njit
+    kwargs:
+        Keyword arguments to pass to numba njit
+    """
+    try:
+        from numba import njit
+
+        return njit(func, kwargs)
+    except ModuleNotFoundError:
+        return func
+
+
+@njit_if_available
+def calc_distance_coords_pbc(
+    coords_1, coords_2, min_h1, max_h1, min_h2, max_h2, PBC_flag
+):
+    """Function to calculate the distance between cartesian
+    coordinate set 1 and coordinate set 2. Note that we assume both
+    coordinates are within their min/max already.
+
+    Parameters
+    ----------
+    coords_1: 2D or 3D array-like
+        Set of coordinates passed in from trackpy of either (vdim, hdim_1, hdim_2)
+        coordinates or (hdim_1, hdim_2) coordinates.
+    coords_2: 2D or 3D array-like
+        Similar to coords_1, but for the second pair of coordinates
+    min_h1: int
+        Minimum point in hdim_1
+    max_h1: int
+        Maximum point in hdim_1, exclusive. max_h1-min_h1 should be the size.
+    min_h2: int
+        Minimum point in hdim_2
+    max_h2: int
+        Maximum point in hdim_2, exclusive. max_h2-min_h2 should be the size.
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
+
+    Returns
+    -------
+    float
+        Distance between coords_1 and coords_2 in cartesian space.
+
+    """
+
+    is_3D = len(coords_1) == 3
+    size_h1 = max_h1 - min_h1
+    size_h2 = max_h2 - min_h2
+
+    if not is_3D:
+        # Let's make the accounting easier.
+        coords_1 = np.array((0, coords_1[0], coords_1[1]))
+        coords_2 = np.array((0, coords_2[0], coords_2[1]))
+
+    if PBC_flag in ["hdim_1", "both"]:
+        mod_h1 = size_h1
+    else:
+        mod_h1 = 0
+    if PBC_flag in ["hdim_2", "both"]:
+        mod_h2 = size_h2
+    else:
+        mod_h2 = 0
+    max_dims = np.array((0, mod_h1, mod_h2))
+    deltas = np.abs(coords_1 - coords_2)
+    deltas = np.where(deltas > 0.5 * max_dims, deltas - max_dims, deltas)
+    return np.sqrt(np.sum(deltas**2))
+
+
+def find_vertical_axis_from_coord(variable_cube, vertical_coord="auto"):
+    """Function to find the vertical coordinate in the iris cube
+
+    Parameters
+    ----------
+    variable_cube: iris.cube
+        Input variable cube, containing a vertical coordinate.
+    vertical_coord: str
+        Vertical coordinate name. If `auto`, this function tries to auto-detect.
+
+    Returns
+    -------
+    str
+        the vertical coordinate name
+
+    Raises
+    ------
+    ValueError
+        Raised if the vertical coordinate isn't found in the cube.
+    """
+
+    list_coord_names = [coord.name() for coord in variable_cube.coords()]
+
+    if vertical_coord == "auto":
+        list_vertical = ["z", "model_level_number", "altitude", "geopotential_height"]
+        # find the intersection
+        all_vertical_axes = list(set(list_coord_names) & set(list_vertical))
+        if len(all_vertical_axes) >= 1:
+            return all_vertical_axes[0]
+        else:
+            raise ValueError(
+                "Cube lacks suitable automatic vertical coordinate (z, model_level_number, altitude, or geopotential_height)"
+            )
+    elif vertical_coord in list_coord_names:
+        return vertical_coord
+    else:
+        raise ValueError("Please specify vertical coordinate found in cube")
+
+
+def find_dataframe_vertical_coord(variable_dataframe, vertical_coord="auto"):
+    """Function to find the vertical coordinate in the iris cube
+
+    Parameters
+    ----------
+    variable_dataframe: pandas.DataFrame
+        Input variable cube, containing a vertical coordinate.
+    vertical_coord: str
+        Vertical coordinate name. If `auto`, this function tries to auto-detect.
+
+    Returns
+    -------
+    str
+        the vertical coordinate name
+
+    Raises
+    ------
+    ValueError
+        Raised if the vertical coordinate isn't found in the cube.
+    """
+
+    if vertical_coord == "auto":
+        list_vertical = ["z", "model_level_number", "altitude", "geopotential_height"]
+        all_vertical_axes = list(set(variable_dataframe.columns) & set(list_vertical))
+        if len(all_vertical_axes) == 1:
+            return all_vertical_axes[0]
+        else:
+            raise ValueError("Please specify vertical coordinate")
+
+    else:
+        if vertical_coord in variable_dataframe.columns:
+            return vertical_coord
+        else:
+            raise ValueError("Please specify vertical coordinate")

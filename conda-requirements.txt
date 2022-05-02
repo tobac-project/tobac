@@ -2,6 +2,7 @@
 numpy
 scipy
 scikit-image
+scikit-learn
 pandas
 pytables
 matplotlib
