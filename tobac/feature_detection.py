@@ -741,6 +741,7 @@ def feature_detection_multithreshold(field_in,
                                      PBC_flag='none',
                                      vertical_coord = 'auto',
                                      vertical_axis = None,
+                                     detect_subset = None,
                                      ):
     '''Function to perform feature detection based on contiguous regions above/below a threshold
     
@@ -787,6 +788,15 @@ def feature_detection_multithreshold(field_in,
     vertical_axis: int or None.
         The vertical axis number of the data. If None, uses vertical_coord
         to determine axis. 
+    detect_subset: dict-like or None
+        Whether to run feature detection on only a subset of the data.
+        If this is not None, it will subset the grid that we run feature detection
+        on to the range specified for each axis specified. The format of this dict is:
+        {axis-number: (start, end)}, where axis-number is the number of the axis to subset,
+        start is inclusive, and end is exclusive.
+        For example, if your data are oriented as (time, z, y, x) and you want to
+        only detect on values between z levels 10 and 29, you would set:
+        {1: (10, 30)}. 
 
     Returns
     -------
@@ -810,11 +820,20 @@ def feature_detection_multithreshold(field_in,
     else:
         raise ValueError("Feature detection only works with 2D or 3D data")
 
+    ndim_time=field_in.coord_dims('time')[0]
+
+    if detect_subset is not None:
+        raise NotImplementedError("Subsetting feature detection not yet supported.")
+
+
+    if detect_subset is not None and ndim_time in detect_subset:
+        raise NotImplementedError("Cannot subset on time")
+
+
     if is_3D:
         # We need to determine the time axis so that we can determine the 
         # vertical axis in each timestep if vertical_axis is not none.
         if vertical_axis is not None:
-            ndim_time=field_in.coord_dims('time')[0]
             # We only need to adjust the axis number if the time axis 
             # is a lower axis number than the specified vertical coordinate.
             if ndim_time < vertical_axis:
@@ -837,6 +856,7 @@ def feature_detection_multithreshold(field_in,
         threshold=[threshold]    
     for i_time,data_i in enumerate(data_time):
         time_i=data_i.coord('time').units.num2date(data_i.coord('time').points[0])
+        
         features_thresholds=feature_detection_multithreshold_timestep(data_i,i_time,
                                                             threshold=threshold,
                                                             sigma_threshold=sigma_threshold,
