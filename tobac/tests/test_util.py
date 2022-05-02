@@ -8,7 +8,7 @@ from collections import Counter
 
 def lists_equal_without_order(a, b):
     """
-    This will make sure the inner list contain the same, 
+    This will make sure the inner list contain the same,
     but doesn't account for duplicate groups.
     from: https://stackoverflow.com/questions/31501909/assert-list-of-list-equality-without-order-in-python/31502000
     """
@@ -20,42 +20,40 @@ def lists_equal_without_order(a, b):
 
 
 def test_get_label_props_in_dict():
-    '''Testing ```tobac.feature_detection.get_label_props_in_dict``` for both 2D and 3D cases.
-    '''
+    """Testing ```tobac.feature_detection.get_label_props_in_dict``` for both 2D and 3D cases."""
     import skimage.measure as skim
-    test_3D_data = tobac.testing.make_sample_data_3D_3blobs(data_type='xarray')
-    test_2D_data = tobac.testing.make_sample_data_2D_3blobs(data_type='xarray')
 
+    test_3D_data = tobac.testing.make_sample_data_3D_3blobs(data_type="xarray")
+    test_2D_data = tobac.testing.make_sample_data_2D_3blobs(data_type="xarray")
 
     # make sure it works for 3D data
     labels_3D = skim.label(test_3D_data.values[0])
-    
+
     output_3D = tb_utils.get_label_props_in_dict(labels_3D)
-    
-    #make sure it is a dict
+
+    # make sure it is a dict
     assert type(output_3D) is dict
-    #make sure we get at least one output, there should be at least one label.
+    # make sure we get at least one output, there should be at least one label.
     assert len(output_3D) > 0
 
     # make sure it works for 2D data
     labels_2D = skim.label(test_2D_data.values[0])
-    
+
     output_2D = tb_utils.get_label_props_in_dict(labels_2D)
-    
-    #make sure it is a dict
+
+    # make sure it is a dict
     assert type(output_2D) is dict
-    #make sure we get at least one output, there should be at least one label.
+    # make sure we get at least one output, there should be at least one label.
     assert len(output_2D) > 0
 
 
 def test_get_indices_of_labels_from_reg_prop_dict():
-    '''Testing ```tobac.feature_detection.get_indices_of_labels_from_reg_prop_dict``` for 2D and 3D cases.
-    '''
+    """Testing ```tobac.feature_detection.get_indices_of_labels_from_reg_prop_dict``` for 2D and 3D cases."""
     import skimage.measure as skim
     import numpy as np
-    test_3D_data = tobac.testing.make_sample_data_3D_3blobs(data_type='xarray')
-    test_2D_data = tobac.testing.make_sample_data_2D_3blobs(data_type='xarray')
 
+    test_3D_data = tobac.testing.make_sample_data_3D_3blobs(data_type="xarray")
+    test_2D_data = tobac.testing.make_sample_data_2D_3blobs(data_type="xarray")
 
     # make sure it works for 3D data
     labels_3D = skim.label(test_3D_data.values[0])
@@ -66,123 +64,165 @@ def test_get_indices_of_labels_from_reg_prop_dict():
     labels_2D = skim.label(test_2D_data.values[0])
     nx_2D = test_2D_data.values[0].shape[1]
     ny_2D = test_2D_data.values[0].shape[0]
-    
+
     region_props_3D = tb_utils.get_label_props_in_dict(labels_3D)
     region_props_2D = tb_utils.get_label_props_in_dict(labels_2D)
 
-    #get_indices_of_labels_from_reg_prop_dict 
-    
-    [curr_loc_indices, z_indices, y_indices, x_indices] = tb_utils.get_indices_of_labels_from_reg_prop_dict(region_props_3D)
+    # get_indices_of_labels_from_reg_prop_dict
+
+    [
+        curr_loc_indices,
+        z_indices,
+        y_indices,
+        x_indices,
+    ] = tb_utils.get_indices_of_labels_from_reg_prop_dict(region_props_3D)
 
     for index_key in curr_loc_indices:
         # there should be at least one value in each.
         assert curr_loc_indices[index_key] > 0
-        
-        assert np.all(z_indices[index_key] >= 0) and np.all(z_indices[index_key] < nz_3D)
-        assert np.all(x_indices[index_key] >= 0) and np.all(x_indices[index_key] < nx_3D)
-        assert np.all(y_indices[index_key] >= 0) and np.all(y_indices[index_key] < ny_3D)
-    
-    [curr_loc_indices, y_indices, x_indices] = tb_utils.get_indices_of_labels_from_reg_prop_dict(region_props_2D)
+
+        assert np.all(z_indices[index_key] >= 0) and np.all(
+            z_indices[index_key] < nz_3D
+        )
+        assert np.all(x_indices[index_key] >= 0) and np.all(
+            x_indices[index_key] < nx_3D
+        )
+        assert np.all(y_indices[index_key] >= 0) and np.all(
+            y_indices[index_key] < ny_3D
+        )
+
+    [
+        curr_loc_indices,
+        y_indices,
+        x_indices,
+    ] = tb_utils.get_indices_of_labels_from_reg_prop_dict(region_props_2D)
 
     for index_key in curr_loc_indices:
         # there should be at least one value in each.
         assert curr_loc_indices[index_key] > 0
-        
-        assert np.all(x_indices[index_key] >= 0) and np.all(x_indices[index_key] < nx_2D)
-        assert np.all(y_indices[index_key] >= 0) and np.all(y_indices[index_key] < ny_2D)
-    
+
+        assert np.all(x_indices[index_key] >= 0) and np.all(
+            x_indices[index_key] < nx_2D
+        )
+        assert np.all(y_indices[index_key] >= 0) and np.all(
+            y_indices[index_key] < ny_2D
+        )
 
 
 def test_calc_distance_coords_pbc():
-    '''Tests ```tobac.utils.calc_distance_coords_pbc```
+    """Tests ```tobac.utils.calc_distance_coords_pbc```
     Currently tests:
-    two points in normal space 
+    two points in normal space
     Periodicity along hdim_1, hdim_2, and corners
-    '''
+    """
     import numpy as np
 
     # Test first two points in normal space with varying PBC conditions
-    for PBC_condition in ['none', 'hdim_1', 'hdim_2', 'both']:
-        assert (tb_utils.calc_distance_coords_pbc(np.array((0,0,0)), np.array((0,0,0)), 0, 10, 0, 10, PBC_condition)
-                == pytest.approx(0))
-        assert (tb_utils.calc_distance_coords_pbc(np.array((0,0,0)), np.array((0,0,1)), 0, 10, 0, 10, PBC_condition)
-                == pytest.approx(1))
-        assert (tb_utils.calc_distance_coords_pbc(np.array((0,0)), np.array((0,1)), 0, 10, 0, 10, PBC_condition)
-                == pytest.approx(1))
-        assert (tb_utils.calc_distance_coords_pbc(np.array((0,0,0)), np.array((3,3,1)), 0, 10, 0, 10, PBC_condition)
-                == pytest.approx(4.3588989, rel=1e-3))
+    for PBC_condition in ["none", "hdim_1", "hdim_2", "both"]:
+        assert tb_utils.calc_distance_coords_pbc(
+            np.array((0, 0, 0)), np.array((0, 0, 0)), 0, 10, 0, 10, PBC_condition
+        ) == pytest.approx(0)
+        assert tb_utils.calc_distance_coords_pbc(
+            np.array((0, 0, 0)), np.array((0, 0, 1)), 0, 10, 0, 10, PBC_condition
+        ) == pytest.approx(1)
+        assert tb_utils.calc_distance_coords_pbc(
+            np.array((0, 0)), np.array((0, 1)), 0, 10, 0, 10, PBC_condition
+        ) == pytest.approx(1)
+        assert tb_utils.calc_distance_coords_pbc(
+            np.array((0, 0, 0)), np.array((3, 3, 1)), 0, 10, 0, 10, PBC_condition
+        ) == pytest.approx(4.3588989, rel=1e-3)
 
     # Now test two points that will be closer along the hdim_1 boundary for cases without PBCs
-    for PBC_condition in ['hdim_1', 'both']:
-        assert (tb_utils.calc_distance_coords_pbc(np.array((0,0,0)), np.array((0,9,0)), 0, 10, 0, 10, PBC_condition)
-                == pytest.approx(1))
-        assert (tb_utils.calc_distance_coords_pbc(np.array((0,9,0)), np.array((0,0,0)), 0, 10, 0, 10, PBC_condition)
-                == pytest.approx(1))
-        assert (tb_utils.calc_distance_coords_pbc(np.array((8,0)), np.array((0,0)), 0, 10, 0, 10, PBC_condition)
-                == pytest.approx(2))
-        assert (tb_utils.calc_distance_coords_pbc(np.array((4,0,4)), np.array((3,7,3)), 0, 10, 0, 10, PBC_condition)
-                == pytest.approx(3.3166247))
-        assert (tb_utils.calc_distance_coords_pbc(np.array((4,0,4)), np.array((3,7,3)), 0, 10, 0, 10, PBC_condition)
-                == pytest.approx(3.3166247))
-
-
+    for PBC_condition in ["hdim_1", "both"]:
+        assert tb_utils.calc_distance_coords_pbc(
+            np.array((0, 0, 0)), np.array((0, 9, 0)), 0, 10, 0, 10, PBC_condition
+        ) == pytest.approx(1)
+        assert tb_utils.calc_distance_coords_pbc(
+            np.array((0, 9, 0)), np.array((0, 0, 0)), 0, 10, 0, 10, PBC_condition
+        ) == pytest.approx(1)
+        assert tb_utils.calc_distance_coords_pbc(
+            np.array((8, 0)), np.array((0, 0)), 0, 10, 0, 10, PBC_condition
+        ) == pytest.approx(2)
+        assert tb_utils.calc_distance_coords_pbc(
+            np.array((4, 0, 4)), np.array((3, 7, 3)), 0, 10, 0, 10, PBC_condition
+        ) == pytest.approx(3.3166247)
+        assert tb_utils.calc_distance_coords_pbc(
+            np.array((4, 0, 4)), np.array((3, 7, 3)), 0, 10, 0, 10, PBC_condition
+        ) == pytest.approx(3.3166247)
 
     # Test the same points, except without PBCs
-    for PBC_condition in ['none', 'hdim_2']:
-        assert (tb_utils.calc_distance_coords_pbc(np.array((0,0,0)), np.array((0,9,0)), 0, 10, 0, 10, PBC_condition)
-                == pytest.approx(9))
-        assert (tb_utils.calc_distance_coords_pbc(np.array((0,9,0)), np.array((0,0,0)), 0, 10, 0, 10, PBC_condition)
-                == pytest.approx(9))
-        assert (tb_utils.calc_distance_coords_pbc(np.array((8,0)), np.array((0,0)), 0, 10, 0, 10, PBC_condition)
-                == pytest.approx(8))
+    for PBC_condition in ["none", "hdim_2"]:
+        assert tb_utils.calc_distance_coords_pbc(
+            np.array((0, 0, 0)), np.array((0, 9, 0)), 0, 10, 0, 10, PBC_condition
+        ) == pytest.approx(9)
+        assert tb_utils.calc_distance_coords_pbc(
+            np.array((0, 9, 0)), np.array((0, 0, 0)), 0, 10, 0, 10, PBC_condition
+        ) == pytest.approx(9)
+        assert tb_utils.calc_distance_coords_pbc(
+            np.array((8, 0)), np.array((0, 0)), 0, 10, 0, 10, PBC_condition
+        ) == pytest.approx(8)
 
     # Now test two points that will be closer along the hdim_2 boundary for cases without PBCs
-    for PBC_condition in ['hdim_2', 'both']:
-        assert (tb_utils.calc_distance_coords_pbc(np.array((0,0,0)), np.array((0,0,9)), 0, 10, 0, 10, PBC_condition)
-                == pytest.approx(1))
-        assert (tb_utils.calc_distance_coords_pbc(np.array((0,0,9)), np.array((0,0,0)), 0, 10, 0, 10, PBC_condition)
-                == pytest.approx(1))
-        assert (tb_utils.calc_distance_coords_pbc(np.array((0,8)), np.array((0,0)), 0, 10, 0, 10, PBC_condition)
-                == pytest.approx(2))
+    for PBC_condition in ["hdim_2", "both"]:
+        assert tb_utils.calc_distance_coords_pbc(
+            np.array((0, 0, 0)), np.array((0, 0, 9)), 0, 10, 0, 10, PBC_condition
+        ) == pytest.approx(1)
+        assert tb_utils.calc_distance_coords_pbc(
+            np.array((0, 0, 9)), np.array((0, 0, 0)), 0, 10, 0, 10, PBC_condition
+        ) == pytest.approx(1)
+        assert tb_utils.calc_distance_coords_pbc(
+            np.array((0, 8)), np.array((0, 0)), 0, 10, 0, 10, PBC_condition
+        ) == pytest.approx(2)
 
     # Test the same points, except without PBCs
-    for PBC_condition in ['none', 'hdim_1']:
-        assert (tb_utils.calc_distance_coords_pbc(np.array((0,0,0)), np.array((0,0,9)), 0, 10, 0, 10, PBC_condition)
-                == pytest.approx(9))
-        assert (tb_utils.calc_distance_coords_pbc(np.array((0,0,9)), np.array((0,0,0)), 0, 10, 0, 10, PBC_condition)
-                == pytest.approx(9))
-        assert (tb_utils.calc_distance_coords_pbc(np.array((0,8)), np.array((0,0)), 0, 10, 0, 10, PBC_condition)
-                == pytest.approx(8))
+    for PBC_condition in ["none", "hdim_1"]:
+        assert tb_utils.calc_distance_coords_pbc(
+            np.array((0, 0, 0)), np.array((0, 0, 9)), 0, 10, 0, 10, PBC_condition
+        ) == pytest.approx(9)
+        assert tb_utils.calc_distance_coords_pbc(
+            np.array((0, 0, 9)), np.array((0, 0, 0)), 0, 10, 0, 10, PBC_condition
+        ) == pytest.approx(9)
+        assert tb_utils.calc_distance_coords_pbc(
+            np.array((0, 8)), np.array((0, 0)), 0, 10, 0, 10, PBC_condition
+        ) == pytest.approx(8)
 
     # Test points that will be closer for the both
-    PBC_condition = 'both'
-    assert (tb_utils.calc_distance_coords_pbc(np.array((0,9,9)), np.array((0,0,0)), 0, 10, 0, 10, PBC_condition)
-        == pytest.approx(1.4142135, rel=1e-3))
-    assert (tb_utils.calc_distance_coords_pbc(np.array((0,0,9)), np.array((0,9,0)), 0, 10, 0, 10, PBC_condition)
-        == pytest.approx(1.4142135, rel=1e-3))
+    PBC_condition = "both"
+    assert tb_utils.calc_distance_coords_pbc(
+        np.array((0, 9, 9)), np.array((0, 0, 0)), 0, 10, 0, 10, PBC_condition
+    ) == pytest.approx(1.4142135, rel=1e-3)
+    assert tb_utils.calc_distance_coords_pbc(
+        np.array((0, 0, 9)), np.array((0, 9, 0)), 0, 10, 0, 10, PBC_condition
+    ) == pytest.approx(1.4142135, rel=1e-3)
 
     # Test the corner points for no PBCs
-    PBC_condition = 'none'
-    assert (tb_utils.calc_distance_coords_pbc(np.array((0,9,9)), np.array((0,0,0)), 0, 10, 0, 10, PBC_condition)
-        == pytest.approx(12.727922, rel=1e-3))
-    assert (tb_utils.calc_distance_coords_pbc(np.array((0,0,9)), np.array((0,9,0)), 0, 10, 0, 10, PBC_condition)
-        == pytest.approx(12.727922, rel=1e-3))
-    
+    PBC_condition = "none"
+    assert tb_utils.calc_distance_coords_pbc(
+        np.array((0, 9, 9)), np.array((0, 0, 0)), 0, 10, 0, 10, PBC_condition
+    ) == pytest.approx(12.727922, rel=1e-3)
+    assert tb_utils.calc_distance_coords_pbc(
+        np.array((0, 0, 9)), np.array((0, 9, 0)), 0, 10, 0, 10, PBC_condition
+    ) == pytest.approx(12.727922, rel=1e-3)
+
     # Test the corner points for hdim_1 and hdim_2
-    for PBC_condition in ['hdim_1', 'hdim_2']:
-        assert (tb_utils.calc_distance_coords_pbc(np.array((0,9,9)), np.array((0,0,0)), 0, 10, 0, 10, PBC_condition)
-            == pytest.approx(9.055385))
-        assert (tb_utils.calc_distance_coords_pbc(np.array((0,0,9)), np.array((0,9,0)), 0, 10, 0, 10, PBC_condition)
-            == pytest.approx(9.055385))
+    for PBC_condition in ["hdim_1", "hdim_2"]:
+        assert tb_utils.calc_distance_coords_pbc(
+            np.array((0, 9, 9)), np.array((0, 0, 0)), 0, 10, 0, 10, PBC_condition
+        ) == pytest.approx(9.055385)
+        assert tb_utils.calc_distance_coords_pbc(
+            np.array((0, 0, 9)), np.array((0, 9, 0)), 0, 10, 0, 10, PBC_condition
+        ) == pytest.approx(9.055385)
 
 
-@pytest.mark.parametrize("loc_1, loc_2, bounds, PBC_flag, expected_dist", 
-                         [((0,0,0), (0,0,9), (0, 10, 0, 10), 'both', 1), 
-                          ]
+@pytest.mark.parametrize(
+    "loc_1, loc_2, bounds, PBC_flag, expected_dist",
+    [
+        ((0, 0, 0), (0, 0, 9), (0, 10, 0, 10), "both", 1),
+    ],
 )
 def test_calc_distance_coords_pbc_param(loc_1, loc_2, bounds, PBC_flag, expected_dist):
-    '''Tests ```tobac.utils.calc_distance_coords_pbc``` in a parameterized way
-    
+    """Tests ```tobac.utils.calc_distance_coords_pbc``` in a parameterized way
+
     Parameters
     ----------
     loc_1: tuple
@@ -199,241 +239,340 @@ def test_calc_distance_coords_pbc_param(loc_1, loc_2, bounds, PBC_flag, expected
         'both' means that we are periodic along both horizontal dimensions
     expected_dist: float
         Expected distance between the two points
-    '''
+    """
     import numpy as np
 
-    assert (tb_utils.calc_distance_coords_pbc(np.array(loc_1), np.array(loc_2), bounds[0], bounds[1], 
-            bounds[2], bounds[3], PBC_flag)== pytest.approx(expected_dist))
+    assert tb_utils.calc_distance_coords_pbc(
+        np.array(loc_1),
+        np.array(loc_2),
+        bounds[0],
+        bounds[1],
+        bounds[2],
+        bounds[3],
+        PBC_flag,
+    ) == pytest.approx(expected_dist)
 
 
 def test_get_pbc_coordinates():
-    '''Tests tobac.util.get_pbc_coordinates. 
+    """Tests tobac.util.get_pbc_coordinates.
     Currently runs the following tests:
     For an invalid PBC_flag, we raise an error
-    For PBC_flag of 'none', we truncate the box and give a valid box. 
+    For PBC_flag of 'none', we truncate the box and give a valid box.
 
-    '''
+    """
 
     with pytest.raises(ValueError):
-        tb_utils.get_pbc_coordinates(0, 10, 0, 10, 1, 4, 1, 4, 'c')
+        tb_utils.get_pbc_coordinates(0, 10, 0, 10, 1, 4, 1, 4, "c")
 
     # Test PBC_flag of none
 
-    assert (tb_utils.get_pbc_coordinates(0, 10, 0, 10, 1, 4, 1, 4, 'none') == [(1, 4, 1, 4),])
-    assert (tb_utils.get_pbc_coordinates(0, 10, 0, 10, -1, 4, 1, 4, 'none') == [(0, 4, 1, 4),])
-    assert (tb_utils.get_pbc_coordinates(0, 10, 0, 10, 1, 12, 1, 4, 'none') == [(1, 10, 1, 4),])
-    assert (tb_utils.get_pbc_coordinates(0, 10, 0, 10, 1, 12, -1, 4, 'none') == [(1, 10, 0, 4),])
+    assert tb_utils.get_pbc_coordinates(0, 10, 0, 10, 1, 4, 1, 4, "none") == [
+        (1, 4, 1, 4),
+    ]
+    assert tb_utils.get_pbc_coordinates(0, 10, 0, 10, -1, 4, 1, 4, "none") == [
+        (0, 4, 1, 4),
+    ]
+    assert tb_utils.get_pbc_coordinates(0, 10, 0, 10, 1, 12, 1, 4, "none") == [
+        (1, 10, 1, 4),
+    ]
+    assert tb_utils.get_pbc_coordinates(0, 10, 0, 10, 1, 12, -1, 4, "none") == [
+        (1, 10, 0, 4),
+    ]
 
-    # Test PBC_flag with hdim_1 
+    # Test PBC_flag with hdim_1
     # Simple case, no PBC overlapping
-    assert (tb_utils.get_pbc_coordinates(0, 10, 0, 10, 1, 4, 1, 4, 'hdim_1') == [(1, 4, 1, 4),])
+    assert tb_utils.get_pbc_coordinates(0, 10, 0, 10, 1, 4, 1, 4, "hdim_1") == [
+        (1, 4, 1, 4),
+    ]
     # PBC going on the min side
-    assert (tb_utils.get_pbc_coordinates(0, 10, 0, 10, -1, 4, 1, 4, 'hdim_1') == [(0, 4, 1, 4), (9, 10, 1, 4)])
+    assert tb_utils.get_pbc_coordinates(0, 10, 0, 10, -1, 4, 1, 4, "hdim_1") == [
+        (0, 4, 1, 4),
+        (9, 10, 1, 4),
+    ]
     # PBC going on the min side; should be truncated in hdim_2.
-    assert (tb_utils.get_pbc_coordinates(0, 10, 0, 10, -1, 4, -1, 4, 'hdim_1') == [(0, 4, 0, 4), (9, 10, 0, 4)])
+    assert tb_utils.get_pbc_coordinates(0, 10, 0, 10, -1, 4, -1, 4, "hdim_1") == [
+        (0, 4, 0, 4),
+        (9, 10, 0, 4),
+    ]
     # PBC going on the max side only
-    assert (tb_utils.get_pbc_coordinates(0, 10, 0, 10, 4, 12, 1, 4, 'hdim_1') == [(4, 10, 1, 4), (0, 2, 1, 4)])
+    assert tb_utils.get_pbc_coordinates(0, 10, 0, 10, 4, 12, 1, 4, "hdim_1") == [
+        (4, 10, 1, 4),
+        (0, 2, 1, 4),
+    ]
     # PBC overlapping
-    assert (tb_utils.get_pbc_coordinates(0, 10, 0, 10, -4, 12, 1, 4, 'hdim_1') == [(0, 10, 1, 4),])
+    assert tb_utils.get_pbc_coordinates(0, 10, 0, 10, -4, 12, 1, 4, "hdim_1") == [
+        (0, 10, 1, 4),
+    ]
 
     # Test PBC_flag with hdim_2
     # Simple case, no PBC overlapping
-    assert (tb_utils.get_pbc_coordinates(0, 10, 0, 10, 1, 4, 1, 4, 'hdim_2') == [(1, 4, 1, 4),])
+    assert tb_utils.get_pbc_coordinates(0, 10, 0, 10, 1, 4, 1, 4, "hdim_2") == [
+        (1, 4, 1, 4),
+    ]
     # PBC going on the min side
-    assert (tb_utils.get_pbc_coordinates(0, 10, 0, 10, 1, 4, -1, 4, 'hdim_2') == [(1, 4, 0, 4), (1, 4, 9, 10)])
+    assert tb_utils.get_pbc_coordinates(0, 10, 0, 10, 1, 4, -1, 4, "hdim_2") == [
+        (1, 4, 0, 4),
+        (1, 4, 9, 10),
+    ]
     # PBC going on the min side with truncation in hdim_1
-    assert (tb_utils.get_pbc_coordinates(0, 10, 0, 10, -4, 4, -1, 4, 'hdim_2') == [(0, 4, 0, 4), (0, 4, 9, 10)])
-    # PBC going on the max side 
-    assert (tb_utils.get_pbc_coordinates(0, 10, 0, 10, 1, 4, 4, 12, 'hdim_2') == [(1, 4, 4, 10), (1, 4, 0, 2)])
+    assert tb_utils.get_pbc_coordinates(0, 10, 0, 10, -4, 4, -1, 4, "hdim_2") == [
+        (0, 4, 0, 4),
+        (0, 4, 9, 10),
+    ]
+    # PBC going on the max side
+    assert tb_utils.get_pbc_coordinates(0, 10, 0, 10, 1, 4, 4, 12, "hdim_2") == [
+        (1, 4, 4, 10),
+        (1, 4, 0, 2),
+    ]
     # PBC overlapping
-    assert (tb_utils.get_pbc_coordinates(0, 10, 0, 10, 1, 4, -4, 12, 'hdim_2') == [(1, 4, 0, 10),])
+    assert tb_utils.get_pbc_coordinates(0, 10, 0, 10, 1, 4, -4, 12, "hdim_2") == [
+        (1, 4, 0, 10),
+    ]
 
     # Test PBC_flag with both
     # Simple case, no PBC overlapping
-    assert (tb_utils.get_pbc_coordinates(0, 10, 0, 10, 1, 4, 1, 4, 'both') == [(1, 4, 1, 4),])
+    assert tb_utils.get_pbc_coordinates(0, 10, 0, 10, 1, 4, 1, 4, "both") == [
+        (1, 4, 1, 4),
+    ]
     # hdim_1 only testing
     # PBC on the min side of hdim_1 only
-    assert (tb_utils.get_pbc_coordinates(0, 10, 0, 10, -1, 4, 1, 4, 'both') == [(0, 4, 1, 4), (9, 10, 1, 4)])
+    assert tb_utils.get_pbc_coordinates(0, 10, 0, 10, -1, 4, 1, 4, "both") == [
+        (0, 4, 1, 4),
+        (9, 10, 1, 4),
+    ]
     # PBC on the max side of hdim_1 only
-    assert (tb_utils.get_pbc_coordinates(0, 10, 0, 10, 4, 12, 1, 4, 'both') == [(4, 10, 1, 4), (0, 2, 1, 4)])
+    assert tb_utils.get_pbc_coordinates(0, 10, 0, 10, 4, 12, 1, 4, "both") == [
+        (4, 10, 1, 4),
+        (0, 2, 1, 4),
+    ]
     # PBC overlapping on max side of hdim_1 only
-    assert (tb_utils.get_pbc_coordinates(0, 10, 0, 10, -4, 12, 1, 4, 'both') == [(0, 10, 1, 4),])
+    assert tb_utils.get_pbc_coordinates(0, 10, 0, 10, -4, 12, 1, 4, "both") == [
+        (0, 10, 1, 4),
+    ]
     # hdim_2 only testing
     # PBC on the min side of hdim_2 only
-    assert (tb_utils.get_pbc_coordinates(0, 10, 0, 10, 1, 4, -1, 4, 'both') == [(1, 4, 0, 4), (1, 4, 9, 10)])
+    assert tb_utils.get_pbc_coordinates(0, 10, 0, 10, 1, 4, -1, 4, "both") == [
+        (1, 4, 0, 4),
+        (1, 4, 9, 10),
+    ]
     # PBC on the max side of hdim_2 only
-    assert (tb_utils.get_pbc_coordinates(0, 10, 0, 10, 1, 4, 4, 12, 'both') == [(1, 4, 4, 10), (1, 4, 0, 2)])
+    assert tb_utils.get_pbc_coordinates(0, 10, 0, 10, 1, 4, 4, 12, "both") == [
+        (1, 4, 4, 10),
+        (1, 4, 0, 2),
+    ]
     #  PBC overlapping on max side of hdim_2 only
-    assert (tb_utils.get_pbc_coordinates(0, 10, 0, 10, 1, 4, -4, 12, 'both') == [(1, 4, 0, 10),])
+    assert tb_utils.get_pbc_coordinates(0, 10, 0, 10, 1, 4, -4, 12, "both") == [
+        (1, 4, 0, 10),
+    ]
     # hdim_1 and hdim_2 testing simultaneous
-    # both larger than the actual domain 
-    assert (tb_utils.get_pbc_coordinates(0, 10, 0, 10, -1, 12, -4, 14, 'both') == [(0, 10, 0, 10),])
-    # min in hdim_1 and hdim_2 
-    assert (lists_equal_without_order(tb_utils.get_pbc_coordinates(0, 10, 0, 10, -3, 3, -4, 2, 'both'), [(0, 3, 0, 2), (0, 3, 6, 10), (7, 10, 6, 10), (7, 10, 0, 2)]))
+    # both larger than the actual domain
+    assert tb_utils.get_pbc_coordinates(0, 10, 0, 10, -1, 12, -4, 14, "both") == [
+        (0, 10, 0, 10),
+    ]
+    # min in hdim_1 and hdim_2
+    assert lists_equal_without_order(
+        tb_utils.get_pbc_coordinates(0, 10, 0, 10, -3, 3, -4, 2, "both"),
+        [(0, 3, 0, 2), (0, 3, 6, 10), (7, 10, 6, 10), (7, 10, 0, 2)],
+    )
     # max in hdim_1, min in hdim_2
-    assert (lists_equal_without_order(tb_utils.get_pbc_coordinates(0, 10, 0, 10, 5, 12, -4, 2, 'both'), [(5, 10, 0, 2), (5, 10, 6, 10), (0, 2, 6, 10), (0, 2, 0, 2)]))
+    assert lists_equal_without_order(
+        tb_utils.get_pbc_coordinates(0, 10, 0, 10, 5, 12, -4, 2, "both"),
+        [(5, 10, 0, 2), (5, 10, 6, 10), (0, 2, 6, 10), (0, 2, 0, 2)],
+    )
     # max in hdim_1 and hdim_2
-    assert (lists_equal_without_order(tb_utils.get_pbc_coordinates(0, 10, 0, 10, 5, 12, 7, 15, 'both'), [(5, 10, 7, 10), (5, 10, 0, 5), (0, 2, 0, 5), (0, 2, 7, 10)]))
+    assert lists_equal_without_order(
+        tb_utils.get_pbc_coordinates(0, 10, 0, 10, 5, 12, 7, 15, "both"),
+        [(5, 10, 7, 10), (5, 10, 0, 5), (0, 2, 0, 5), (0, 2, 7, 10)],
+    )
     # min in hdim_1, max in hdim_2
-    assert (lists_equal_without_order(tb_utils.get_pbc_coordinates(0, 10, 0, 10, -3, 3, 7, 15, 'both'), [(0, 3, 7, 10), (0, 3, 0, 5), (7, 10, 0, 5), (7, 10, 7, 10)]))
+    assert lists_equal_without_order(
+        tb_utils.get_pbc_coordinates(0, 10, 0, 10, -3, 3, 7, 15, "both"),
+        [(0, 3, 7, 10), (0, 3, 0, 5), (7, 10, 0, 5), (7, 10, 7, 10)],
+    )
 
 
-@pytest.mark.parametrize("feature_loc, min_max_coords, lengths, expected_coord_interp", 
-                         [((0,0), (0,1,0,1),(2,2), (0,0)), 
-                          ((0,0), (0,1),(2,), (0,)), 
-                          ]
+@pytest.mark.parametrize(
+    "feature_loc, min_max_coords, lengths, expected_coord_interp",
+    [
+        ((0, 0), (0, 1, 0, 1), (2, 2), (0, 0)),
+        ((0, 0), (0, 1), (2,), (0,)),
+    ],
 )
-def test_add_coordinates_2D(feature_loc, min_max_coords, lengths, expected_coord_interp):
-    '''
+def test_add_coordinates_2D(
+    feature_loc, min_max_coords, lengths, expected_coord_interp
+):
+    """
     Tests ```utils.add_coordinates``` for a 2D case with
-    both 1D and 2D coordinates 
-    '''
+    both 1D and 2D coordinates
+    """
     import xarray as xr
     import numpy as np
     import datetime
 
-    feat_interp = tbtest.generate_single_feature(feature_loc[0], feature_loc[1], 
-                                                 max_h1 = 9999, max_h2 = 9999)
+    feat_interp = tbtest.generate_single_feature(
+        feature_loc[0], feature_loc[1], max_h1=9999, max_h2=9999
+    )
     grid_coords = tbtest.generate_grid_coords(min_max_coords, lengths)
 
     ndims = len(lengths)
-    dim_names = ['time','longitude', 'latitude']
+    dim_names = ["time", "longitude", "latitude"]
     dim_names = dim_names[:ndims]
 
-    # Note that this is arbitrary. 
-    base_time = datetime.datetime(2022,1,1)
+    # Note that this is arbitrary.
+    base_time = datetime.datetime(2022, 1, 1)
 
-    
-    coord_dict = {'time': [base_time]}
+    coord_dict = {"time": [base_time]}
     if ndims == 1:
         # force at least a 2D array for data
-        lengths = lengths*2
-        dim_names = ['time', 'longitude', 'latitude']
-        coord_dict['longitude'] = grid_coords
-        coord_dict['latitude'] = grid_coords
+        lengths = lengths * 2
+        dim_names = ["time", "longitude", "latitude"]
+        coord_dict["longitude"] = grid_coords
+        coord_dict["latitude"] = grid_coords
 
     elif ndims == 2:
-        dim_names = ['time','x', 'y']
-        coord_dict['longitude'] = (('x','y'),grid_coords[0])
-        coord_dict['latitude'] = (('x','y'),grid_coords[1])
+        dim_names = ["time", "x", "y"]
+        coord_dict["longitude"] = (("x", "y"), grid_coords[0])
+        coord_dict["latitude"] = (("x", "y"), grid_coords[1])
 
-    data_xr = xr.DataArray(np.empty((1,)+lengths), 
-        coords = coord_dict, dims = dim_names)
-    
+    data_xr = xr.DataArray(np.empty((1,) + lengths), coords=coord_dict, dims=dim_names)
+
     feats_with_coords = tb_utils.add_coordinates(feat_interp, data_xr.to_iris())
 
-    print(feats_with_coords.iloc[0]['longitude'])
-    assert feats_with_coords.iloc[0]['longitude'] == expected_coord_interp[0]
+    print(feats_with_coords.iloc[0]["longitude"])
+    assert feats_with_coords.iloc[0]["longitude"] == expected_coord_interp[0]
     if ndims == 2:
-        assert feats_with_coords.iloc[0]['latitude'] == expected_coord_interp[1]
+        assert feats_with_coords.iloc[0]["latitude"] == expected_coord_interp[1]
 
-@pytest.mark.parametrize("feature_loc, delta_feat, min_max_coords, lengths, expected_coord_interp", 
-                         [((0,0,0), None, (0,1,0,1),(2,2), (0,0)), 
-                          ((0,0,0), (1,1,1), (0,1,0,1),(2,2), (0,0)), 
-                          ((0.5,0.5,0.5), None, (0,3,3,6),(2,2), (1.5,4.5)), 
-                          ((0,0,0), None, (0,1),(2,), (0,)), 
-                          ((0,0,0), None, (0,1,0,1,0,1),(2,2,2), (0,0,0)), 
-                          ]
+
+@pytest.mark.parametrize(
+    "feature_loc, delta_feat, min_max_coords, lengths, expected_coord_interp",
+    [
+        ((0, 0, 0), None, (0, 1, 0, 1), (2, 2), (0, 0)),
+        ((0, 0, 0), (1, 1, 1), (0, 1, 0, 1), (2, 2), (0, 0)),
+        ((0.5, 0.5, 0.5), None, (0, 3, 3, 6), (2, 2), (1.5, 4.5)),
+        ((0, 0, 0), None, (0, 1), (2,), (0,)),
+        ((0, 0, 0), None, (0, 1, 0, 1, 0, 1), (2, 2, 2), (0, 0, 0)),
+    ],
 )
-def test_add_coordinates_3D(feature_loc, delta_feat, min_max_coords, lengths, expected_coord_interp):
-    '''
+def test_add_coordinates_3D(
+    feature_loc, delta_feat, min_max_coords, lengths, expected_coord_interp
+):
+    """
     Tests ```utils.add_coordinates_3D``` for a 3D case with
-    1D, 2D, and 3D coordinates 
-    '''
+    1D, 2D, and 3D coordinates
+    """
     import xarray as xr
     import numpy as np
     import datetime
     import pandas as pd
 
-    feat_interp = tbtest.generate_single_feature(feature_loc[1], feature_loc[2], 
-                                                 start_v = feature_loc[0],
-                                                 max_h1 = 9999, max_h2 = 9999)
+    feat_interp = tbtest.generate_single_feature(
+        feature_loc[1], feature_loc[2], start_v=feature_loc[0], max_h1=9999, max_h2=9999
+    )
     if delta_feat is not None:
-        feat_interp_2 = tbtest.generate_single_feature(feature_loc[1]+delta_feat[1], feature_loc[2]+delta_feat[2], 
-                                                 start_v = feature_loc[0]+delta_feat[0],
-                                                 max_h1 = 9999, max_h2 = 9999, feature_num=2)
+        feat_interp_2 = tbtest.generate_single_feature(
+            feature_loc[1] + delta_feat[1],
+            feature_loc[2] + delta_feat[2],
+            start_v=feature_loc[0] + delta_feat[0],
+            max_h1=9999,
+            max_h2=9999,
+            feature_num=2,
+        )
         feat_interp = pd.concat([feat_interp, feat_interp_2], ignore_index=True)
 
     grid_coords = tbtest.generate_grid_coords(min_max_coords, lengths)
 
     ndims = len(lengths)
-    dim_names = ['time','longitude', 'latitude']
+    dim_names = ["time", "longitude", "latitude"]
     dim_names = dim_names[:ndims]
 
-    # Note that this is arbitrary. 
-    base_time = datetime.datetime(2022,1,1)
+    # Note that this is arbitrary.
+    base_time = datetime.datetime(2022, 1, 1)
 
-    
-    coord_dict = {'time': [base_time]}
+    coord_dict = {"time": [base_time]}
     if ndims == 1:
         # force at least a 3D array for data
-        lengths = lengths*3
-        dim_names = ['time', 'longitude', 'latitude', 'z']
-        coord_dict['longitude'] = grid_coords
+        lengths = lengths * 3
+        dim_names = ["time", "longitude", "latitude", "z"]
+        coord_dict["longitude"] = grid_coords
         # we only test lon, so it doesn't really matter here what these are.
-        coord_dict['latitude'] = grid_coords
-        coord_dict['z'] = grid_coords
+        coord_dict["latitude"] = grid_coords
+        coord_dict["z"] = grid_coords
 
     elif ndims == 2:
         lengths = lengths + (lengths[0],)
-        dim_names = ['time','x', 'y', 'z']
-        coord_dict['longitude'] = (('x','y'),grid_coords[0])
-        coord_dict['latitude'] = (('x','y'),grid_coords[1])
+        dim_names = ["time", "x", "y", "z"]
+        coord_dict["longitude"] = (("x", "y"), grid_coords[0])
+        coord_dict["latitude"] = (("x", "y"), grid_coords[1])
         # We only test lon and lat, so it doesn't matter what this is.
-        coord_dict['z'] = np.linspace(0,1,lengths[0])
+        coord_dict["z"] = np.linspace(0, 1, lengths[0])
 
     elif ndims == 3:
-        dim_names = ['time','x', 'y', 'z']
-        coord_dict['longitude'] = (('x','y', 'z'),grid_coords[0])
-        coord_dict['latitude'] = (('x','y', 'z'),grid_coords[1])
-        coord_dict['altitude'] = (('x','y', 'z'),grid_coords[2])
+        dim_names = ["time", "x", "y", "z"]
+        coord_dict["longitude"] = (("x", "y", "z"), grid_coords[0])
+        coord_dict["latitude"] = (("x", "y", "z"), grid_coords[1])
+        coord_dict["altitude"] = (("x", "y", "z"), grid_coords[2])
 
-    data_xr = xr.DataArray(np.empty((1,)+lengths), 
-        coords = coord_dict, dims = dim_names)
-    
-    if ndims <=2:
+    data_xr = xr.DataArray(np.empty((1,) + lengths), coords=coord_dict, dims=dim_names)
+
+    if ndims <= 2:
         feats_with_coords = tb_utils.add_coordinates_3D(feat_interp, data_xr.to_iris())
     else:
-        feats_with_coords = tb_utils.add_coordinates_3D(feat_interp, data_xr.to_iris(), vertical_coord = 2)
-    
-    assert np.isclose(feats_with_coords.iloc[0]['longitude'], expected_coord_interp[0])
-    if ndims >= 2:
-        assert np.isclose(feats_with_coords.iloc[0]['latitude'], expected_coord_interp[1])
-    
-    if ndims >= 3:
-        assert np.isclose(feats_with_coords.iloc[0]['altitude'], expected_coord_interp[2])
+        feats_with_coords = tb_utils.add_coordinates_3D(
+            feat_interp, data_xr.to_iris(), vertical_coord=2
+        )
 
-@pytest.mark.parametrize("vertical_coord_names, vertical_coord_pass_in, expect_raise", 
-                        [(['z'], 'auto', False), 
-                        (['pudding'], 'auto', True),
-                        (['pudding'], 'pudding', False),
-                        (['z', 'model_level_number'], 'pudding', True),
-                        (['z', 'model_level_number'], 'auto', True),
-                        (['z', 'model_level_number'], 'z', False),
-                         ]
+    assert np.isclose(feats_with_coords.iloc[0]["longitude"], expected_coord_interp[0])
+    if ndims >= 2:
+        assert np.isclose(
+            feats_with_coords.iloc[0]["latitude"], expected_coord_interp[1]
+        )
+
+    if ndims >= 3:
+        assert np.isclose(
+            feats_with_coords.iloc[0]["altitude"], expected_coord_interp[2]
+        )
+
+
+@pytest.mark.parametrize(
+    "vertical_coord_names, vertical_coord_pass_in, expect_raise",
+    [
+        (["z"], "auto", False),
+        (["pudding"], "auto", True),
+        (["pudding"], "pudding", False),
+        (["z", "model_level_number"], "pudding", True),
+        (["z", "model_level_number"], "auto", True),
+        (["z", "model_level_number"], "z", False),
+    ],
 )
-def test_find_dataframe_vertical_coord(vertical_coord_names, vertical_coord_pass_in,
-                                       expect_raise):
-    '''Tests ```tobac.utils.find_dataframe_vertical_coord```
+def test_find_dataframe_vertical_coord(
+    vertical_coord_names, vertical_coord_pass_in, expect_raise
+):
+    """Tests ```tobac.utils.find_dataframe_vertical_coord```
 
     Parameters
     ----------
     vertical_coord_names: array-like
         Names of vertical coordinates to add
     vertical_coord_pass_in: str
-        Value to pass into `vertical_coord` 
+        Value to pass into `vertical_coord`
     expect_raise: bool
         True if we expect a ValueError to be raised, False otherwise
-    '''
+    """
 
-    test_feat = tbtest.generate_single_feature(0,0,max_h1=100, max_h2=100)
+    test_feat = tbtest.generate_single_feature(0, 0, max_h1=100, max_h2=100)
     for vertical_name in vertical_coord_names:
         test_feat[vertical_name] = 0.0
-    
+
     if expect_raise:
         with pytest.raises(ValueError):
-            tb_utils.find_dataframe_vertical_coord(test_feat, 
-                vertical_coord=vertical_coord_pass_in)
+            tb_utils.find_dataframe_vertical_coord(
+                test_feat, vertical_coord=vertical_coord_pass_in
+            )
     else:
-        assert tb_utils.find_dataframe_vertical_coord(test_feat, 
-            vertical_coord=vertical_coord_pass_in) == vertical_coord_names[0]
+        assert (
+            tb_utils.find_dataframe_vertical_coord(
+                test_feat, vertical_coord=vertical_coord_pass_in
+            )
+            == vertical_coord_names[0]
+        )

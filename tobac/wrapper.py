@@ -3,79 +3,92 @@ import logging
 
 
 def tracking_wrapper(
-             field_in_features,
-             field_in_segmentation,
-             time_spacing=None,
-             grid_spacing=None,
-             parameters_features=None,
-             parameters_tracking=None,
-             parameters_segmentation=None,
-             ):
-    
+    field_in_features,
+    field_in_segmentation,
+    time_spacing=None,
+    grid_spacing=None,
+    parameters_features=None,
+    parameters_tracking=None,
+    parameters_segmentation=None,
+):
+
     from .feature_detection import feature_detection_multithreshold
     from .tracking import linking_trackpy
     from .segmentation import segmentation_3D, segmentation_2D
     from .utils import get_spacings
 
-    logger = logging.getLogger('trackpy')
+    logger = logging.getLogger("trackpy")
     logger.propagate = False
     logger.setLevel(logging.WARNING)
-    
+
     ### Prepare Tracking
 
-    dxy,dt=get_spacings(field_in_features,grid_spacing=grid_spacing,time_spacing=time_spacing)
-    
+    dxy, dt = get_spacings(
+        field_in_features, grid_spacing=grid_spacing, time_spacing=time_spacing
+    )
+
     ### Start Tracking
     # Feature detection:
-    
-    method_detection=parameters_features.pop('method_detection',None)
-    if method_detection  in ["threshold","threshold_multi"]:
-        features=feature_detection_multithreshold(field_in_features,**parameters_features)
-    else:
-        raise ValueError('method_detection unknown, has to be either threshold_multi or threshold')
-        
-    method_segmentation=parameters_features.pop('method_segmentation',None)
 
-    if method_segmentation  == 'watershedding':
-        if field_in_segmentation.ndim==4:
-            segmentation_mask,features_segmentation=segmentation_3D(features,field_in_segmentation,**parameters_segmentation)
-        if field_in_segmentation.ndim==3:
-            segmentation_mask,features_segmentation=segmentation_2D(features,field_in_segmentation,**parameters_segmentation)
-        
+    method_detection = parameters_features.pop("method_detection", None)
+    if method_detection in ["threshold", "threshold_multi"]:
+        features = feature_detection_multithreshold(
+            field_in_features, **parameters_features
+        )
+    else:
+        raise ValueError(
+            "method_detection unknown, has to be either threshold_multi or threshold"
+        )
+
+    method_segmentation = parameters_features.pop("method_segmentation", None)
+
+    if method_segmentation == "watershedding":
+        if field_in_segmentation.ndim == 4:
+            segmentation_mask, features_segmentation = segmentation_3D(
+                features, field_in_segmentation, **parameters_segmentation
+            )
+        if field_in_segmentation.ndim == 3:
+            segmentation_mask, features_segmentation = segmentation_2D(
+                features, field_in_segmentation, **parameters_segmentation
+            )
 
     # Link the features in the individual frames to trajectories:
-    method_linking=parameters_features.pop('method_linking',None)
+    method_linking = parameters_features.pop("method_linking", None)
 
-    if method_linking == 'trackpy':
-        trajectories=linking_trackpy(features,**parameters_tracking)
-        logging.debug('Finished tracking')
+    if method_linking == "trackpy":
+        trajectories = linking_trackpy(features, **parameters_tracking)
+        logging.debug("Finished tracking")
     else:
-        raise ValueError('method_linking unknown, has to be trackpy')
+        raise ValueError("method_linking unknown, has to be trackpy")
 
-    return features,segmentation_mask,trajectories
-
-
+    return features, segmentation_mask, trajectories
 
 
-def maketrack(field_in,
-              grid_spacing=None,time_spacing=None,
-              target='maximum',              
-              v_max=None,d_max=None,
-              memory=0,stubs=5,              
-              order=1,extrapolate=0,              
-              method_detection="threshold",
-              position_threshold='center',
-              sigma_threshold=0.5,
-              n_erosion_threshold=0,
-              threshold=1, min_num=0,
-              min_distance=0,              
-              method_linking="random",            
-              cell_number_start=1,              
-              subnetwork_size=None,
-              adaptive_stop=None,
-              adaptive_step=None, 
-              return_intermediate=False,
-              ):
+def maketrack(
+    field_in,
+    grid_spacing=None,
+    time_spacing=None,
+    target="maximum",
+    v_max=None,
+    d_max=None,
+    memory=0,
+    stubs=5,
+    order=1,
+    extrapolate=0,
+    method_detection="threshold",
+    position_threshold="center",
+    sigma_threshold=0.5,
+    n_erosion_threshold=0,
+    threshold=1,
+    min_num=0,
+    min_distance=0,
+    method_linking="random",
+    cell_number_start=1,
+    subnetwork_size=None,
+    adaptive_stop=None,
+    adaptive_step=None,
+    return_intermediate=False,
+):
     from .feature_detection import feature_detection_multithreshold
     from .tracking import linking_trackpy
 
@@ -134,74 +147,86 @@ def maketrack(field_in,
     
     """
     from copy import deepcopy
-    
-    logger = logging.getLogger('trackpy')
+
+    logger = logging.getLogger("trackpy")
     logger.propagate = False
     logger.setLevel(logging.WARNING)
-    
+
     ### Prepare Tracking
 
     # set horizontal grid spacing of input data
     # If cartesian x and y corrdinates are present, use these to determine dxy (vertical grid spacing used to transfer pixel distances to real distances):
-    coord_names=[coord.name() for coord in  field_in.coords()]
-    
-    if (('projection_x_coordinate' in coord_names and 'projection_y_coordinate' in coord_names) and  (grid_spacing is None)):
-        x_coord=deepcopy(field_in.coord('projection_x_coordinate'))
-        x_coord.convert_units('metre')
-        dx=np.diff(field_in.coord('projection_y_coordinate')[0:2].points)[0]
-        y_coord=deepcopy(field_in.coord('projection_y_coordinate'))
-        y_coord.convert_units('metre')
-        dy=np.diff(field_in.coord('projection_y_coordinate')[0:2].points)[0]
-        dxy=0.5*(dx+dy)
+    coord_names = [coord.name() for coord in field_in.coords()]
+
+    if (
+        "projection_x_coordinate" in coord_names
+        and "projection_y_coordinate" in coord_names
+    ) and (grid_spacing is None):
+        x_coord = deepcopy(field_in.coord("projection_x_coordinate"))
+        x_coord.convert_units("metre")
+        dx = np.diff(field_in.coord("projection_y_coordinate")[0:2].points)[0]
+        y_coord = deepcopy(field_in.coord("projection_y_coordinate"))
+        y_coord.convert_units("metre")
+        dy = np.diff(field_in.coord("projection_y_coordinate")[0:2].points)[0]
+        dxy = 0.5 * (dx + dy)
     elif grid_spacing is not None:
-        dxy=grid_spacing
+        dxy = grid_spacing
     else:
-        ValueError('no information about grid spacing, need either input cube with projection_x_coord and projection_y_coord or keyword argument grid_spacing')
-    
+        ValueError(
+            "no information about grid spacing, need either input cube with projection_x_coord and projection_y_coord or keyword argument grid_spacing"
+        )
+
     # set horizontal grid spacing of input data
-    if (time_spacing is None):    
+    if time_spacing is None:
         # get time resolution of input data from first to steps of input cube:
-        time_coord=field_in.coord('time')
-        dt=(time_coord.units.num2date(time_coord.points[1])-time_coord.units.num2date(time_coord.points[0])).seconds
-    elif (time_spacing is not None):
+        time_coord = field_in.coord("time")
+        dt = (
+            time_coord.units.num2date(time_coord.points[1])
+            - time_coord.units.num2date(time_coord.points[0])
+        ).seconds
+    elif time_spacing is not None:
         # use value of time_spacing for dt:
-        dt=time_spacing
+        dt = time_spacing
 
     ### Start Tracking
     # Feature detection:
-    if method_detection in ["threshold","threshold_multi"]:
-        features=feature_detection_multithreshold(field_in=field_in,
-                                                  threshold=threshold,
-                                                  dxy=dxy,
-                                                  target=target,
-                                                  position_threshold=position_threshold,
-                                                  sigma_threshold=sigma_threshold,
-                                                  n_erosion_threshold=n_erosion_threshold)
-        features_filtered = features.drop(features[features['num'] < min_num].index)
+    if method_detection in ["threshold", "threshold_multi"]:
+        features = feature_detection_multithreshold(
+            field_in=field_in,
+            threshold=threshold,
+            dxy=dxy,
+            target=target,
+            position_threshold=position_threshold,
+            sigma_threshold=sigma_threshold,
+            n_erosion_threshold=n_erosion_threshold,
+        )
+        features_filtered = features.drop(features[features["num"] < min_num].index)
 
     else:
-        raise ValueError('method_detection unknown, has to be either threshold_multi or threshold')
-        
+        raise ValueError(
+            "method_detection unknown, has to be either threshold_multi or threshold"
+        )
+
     # Link the features in the individual frames to trajectories:
 
-    trajectories=linking_trackpy(features=features_filtered,
-                                 field_in=field_in,
-                                 dxy=dxy,
-                                 dt=dt,
-                                 memory=memory,
-                                 subnetwork_size=subnetwork_size,
-                                 adaptive_stop=adaptive_stop,
-                                 adaptive_step=adaptive_step,
-                                 v_max=v_max,
-                                 d_max=d_max,
-                                 stubs=stubs,              
-                                 order=order,extrapolate=extrapolate, 
-                                 method_linking=method_linking,
-                                 cell_number_start=1
-                                 )
+    trajectories = linking_trackpy(
+        features=features_filtered,
+        field_in=field_in,
+        dxy=dxy,
+        dt=dt,
+        memory=memory,
+        subnetwork_size=subnetwork_size,
+        adaptive_stop=adaptive_stop,
+        adaptive_step=adaptive_step,
+        v_max=v_max,
+        d_max=d_max,
+        stubs=stubs,
+        order=order,
+        extrapolate=extrapolate,
+        method_linking=method_linking,
+        cell_number_start=1,
+    )
 
-    logging.debug('Finished tracking')
+    logging.debug("Finished tracking")
 
-    return trajectories,features
-
-
+    return trajectories, features
