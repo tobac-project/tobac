@@ -24,6 +24,7 @@ def segmentation_3D(
         max_distance=max_distance,
     )
 
+
 def segmentation_2D(
     features,
     field,

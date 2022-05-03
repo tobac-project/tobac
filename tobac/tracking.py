@@ -140,10 +140,9 @@ def linking_trackpy(
     if PBC_flag in ["hdim_2", "both"] and (min_h2 is None or max_h2 is None):
         raise ValueError("For PBC tracking, must set min and max coordinates.")
 
-
     if time_cell_min:
         stubs = np.floor(time_cell_min / dt) + 1
-    
+
     logging.debug("stubs: " + str(stubs))
 
     logging.debug("start linking features into trajectories")
@@ -253,7 +252,8 @@ def linking_trackpy(
                 + "  is a stub ("
                 + str(trajectories_cell.shape[0])
                 + "), setting cell number to "
-                + str(cell_number_unassigned))
+                + str(cell_number_unassigned)
+            )
             stub_cell_nums.append(cell)
 
     trajectories_unfiltered.loc[

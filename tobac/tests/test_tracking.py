@@ -305,7 +305,7 @@ def test_3D_tracking_min_dist_z(
         "dxy": dxy,
         "v_max": v_max,
         "method_linking": "predict",
-        "cell_number_unassigned": -1
+        "cell_number_unassigned": -1,
     }
     if use_dz:
         common_params["dz"] = actual_dz
