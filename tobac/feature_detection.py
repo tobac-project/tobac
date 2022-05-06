@@ -2,6 +2,7 @@ import logging
 import numpy as np
 import pandas as pd
 from . import utils as tb_utils
+import warnings
 
 
 def feature_position(
@@ -205,6 +206,12 @@ def feature_detection_threshold(
     from skimage.morphology import binary_erosion
     from copy import deepcopy
 
+    if min_num != 0:
+        warnings.warn(
+            "min_num parameter has no effect and will be deprecated in a future version of tobac. Please use n_min_threshold instead",
+            FutureWarning,
+        )
+
     # if looking for minima, set values above threshold to 0 and scale by data minimum:
     if target == "maximum":
         mask = 1 * (data_i >= threshold)
@@ -360,7 +367,17 @@ def feature_detection_multithreshold_timestep(
     features_threshold:      pandas DataFrame
                              detected features for individual timestep
     """
-    from scipy.ndimage.filters import gaussian_filter
+    # Handle scipy depreciation gracefully
+    try:
+        from scipy.ndimage import gaussian_filter
+    except ImportError:
+        from scipy.ndimage.filters import gaussian_filter
+
+    if min_num != 0:
+        warnings.warn(
+            "min_num parameter has no effect and will be deprecated in a future version of tobac. Please use n_min_threshold instead",
+            FutureWarning,
+        )
 
     track_data = data_i.core_data()
 
@@ -388,7 +405,7 @@ def feature_detection_multithreshold_timestep(
             idx_start=idx_start,
         )
         if any([x is not None for x in features_threshold_i]):
-            features_thresholds = features_thresholds.append(features_threshold_i)
+            features_thresholds = pd.concat([features_thresholds, features_threshold_i])
 
         # For multiple threshold, and features found both in the current and previous step, remove "parent" features from Dataframe
         if i_threshold > 0 and not features_thresholds.empty and regions_old:
@@ -446,6 +463,12 @@ def feature_detection_multithreshold(
                    detected features
     """
     from .utils import add_coordinates
+
+    if min_num != 0:
+        warnings.warn(
+            "min_num parameter has no effect and will be deprecated in a future version of tobac. Please use n_min_threshold instead",
+            FutureWarning,
+        )
 
     logging.debug("start feature detection based on thresholds")
 

@@ -59,7 +59,6 @@ def test_tracking_coord_order():
     parameters_features = {}
     parameters_features["position_threshold"] = "weighted_diff"
     parameters_features["sigma_threshold"] = 0.5
-    parameters_features["min_num"] = 3
     parameters_features["min_distance"] = 0
     parameters_features["sigma_threshold"] = 1
     parameters_features["threshold"] = [3, 5, 10]  # m/s
@@ -115,7 +114,6 @@ def test_tracking_coord_order():
     parameters_linking["time_cell_min"] = 5 * 60
     parameters_linking["method_linking"] = "predict"
     parameters_linking["v_max"] = 100
-    parameters_linking["d_min"] = 2000
 
     Track = linking_trackpy(Features, sample_data, dt=dt, dxy=dxy, **parameters_linking)
     Track_inv = linking_trackpy(
@@ -133,7 +131,6 @@ def test_tracking_3D():
     parameters_features = {}
     parameters_features["position_threshold"] = "weighted_diff"
     parameters_features["sigma_threshold"] = 0.5
-    parameters_features["min_num"] = 3
     parameters_features["min_distance"] = 0
     parameters_features["sigma_threshold"] = 1
     parameters_features["threshold"] = [3, 5, 10]  # m/s
@@ -188,7 +185,6 @@ def test_tracking_3D():
     parameters_linking["time_cell_min"] = 5 * 60
     parameters_linking["method_linking"] = "predict"
     parameters_linking["v_max"] = 100
-    parameters_linking["d_min"] = 2000
 
     Track = linking_trackpy(Features, sample_data, dt=dt, dxy=dxy, **parameters_linking)
     Track_inv = linking_trackpy(

@@ -7,7 +7,7 @@ from tobac.testing import generate_single_feature
 import tobac.testing as tbtest
 from collections import Counter
 import pandas as pd
-from pandas.util.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal
 import datetime
 
 
