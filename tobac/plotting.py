@@ -1730,8 +1730,38 @@ def plot_mask_cell_track_static_timeseries(
         plt.clf()
 
 
-def map_tracks(track, axis_extent=None, figsize=(10, 10), axes=None):
+def map_tracks(track, axis_extent=None, figsize=None, axes=None, untracked_cell_value = -1):
+    '''Maps the tracks of all tracked cells
+
+    Parameters
+    ----------
+    track: pandas dataframe
+        Tracks from tobac
+    axis_extent: array-like, length 4
+        Extent of the map, as required by `cartopy`
+    figsize: depreciated
+        Depreciated parameter
+    axes: Matplotlib axes or geoaxes from cartopy
+        Axes to plot the tracks onto
+    untracked_cell_value: int or np.nan
+        Untracked cell value from tobac.
+    
+    Returns
+    -------
+    Returns `axes` with the tracks plotted onto it. 
+
+    Raises
+    ------
+    Raises a `ValueError` if `axes` is not passed in.
+
+    '''
+    if figsize is not None:
+        warnings.warn('figsize is depreciated as this function does not create its own figure.', DeprecationWarning)
+    if axes is None:
+        raise ValueError('axes needed to plot tracks onto. Pass in an axis to axes to resolve this error.')
     for cell in track["cell"].dropna().unique():
+        if cell == untracked_cell_value:
+            continue
         track_i = track[track["cell"] == cell]
         axes.plot(track_i["longitude"], track_i["latitude"], "-")
         if axis_extent:
