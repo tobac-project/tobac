@@ -1730,8 +1730,10 @@ def plot_mask_cell_track_static_timeseries(
         plt.clf()
 
 
-def map_tracks(track, axis_extent=None, figsize=None, axes=None, untracked_cell_value = -1):
-    '''Maps the tracks of all tracked cells
+def map_tracks(
+    track, axis_extent=None, figsize=None, axes=None, untracked_cell_value=-1
+):
+    """Maps the tracks of all tracked cells
 
     Parameters
     ----------
@@ -1745,20 +1747,25 @@ def map_tracks(track, axis_extent=None, figsize=None, axes=None, untracked_cell_
         Axes to plot the tracks onto
     untracked_cell_value: int or np.nan
         Untracked cell value from tobac.
-    
+
     Returns
     -------
-    Returns `axes` with the tracks plotted onto it. 
+    Returns `axes` with the tracks plotted onto it.
 
     Raises
     ------
     Raises a `ValueError` if `axes` is not passed in.
 
-    '''
+    """
     if figsize is not None:
-        warnings.warn('figsize is depreciated as this function does not create its own figure.', DeprecationWarning)
+        warnings.warn(
+            "figsize is depreciated as this function does not create its own figure.",
+            DeprecationWarning,
+        )
     if axes is None:
-        raise ValueError('axes needed to plot tracks onto. Pass in an axis to axes to resolve this error.')
+        raise ValueError(
+            "axes needed to plot tracks onto. Pass in an axis to axes to resolve this error."
+        )
     for cell in track["cell"].dropna().unique():
         if cell == untracked_cell_value:
             continue
