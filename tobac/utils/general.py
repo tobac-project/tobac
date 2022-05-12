@@ -7,7 +7,7 @@ from .convert import xarray_to_iris, iris_to_xarray
 
 
 @xarray_to_iris
-def add_coordinates(t, variable_cube):
+def add_coordinates(t, variable_cube, coord_interp_kind):
     """Add coordinates from the tracking cube to the trajectories.
 
     Coordinates: time, longitude&latitude, x&y dimensions.
@@ -19,6 +19,9 @@ def add_coordinates(t, variable_cube):
 
     variable_cube : iris.cube.Cube
         Input data used for the tracking to transfer coodinate information to resulting DataFrame
+
+    coord_interp_kind: str
+        The kind of interpolation for coordinates.
 
     Returns
     -------
@@ -73,11 +76,21 @@ def add_coordinates(t, variable_cube):
         logging.debug("adding coord: " + coord)
         # interpolate 2D coordinates:
         if variable_cube.coord(coord).ndim == 1:
+            # check the interpolation method is valid
+            if coord_interp_kind not in ["linear", "nearest", "nearest-up",
+                                         "zero", "slinear", "quadratic",
+                                         "cubic", "previous", "next"]:
+                raise ValueError(
+                    "coord_interp_kind must be linear, nearest, nearest-up, \
+                     zero, slinear, quadratic, \
+                     cubic, previous, or next for 1D coord"
+                )
 
             if variable_cube.coord_dims(coord) == (hdim_1,):
                 f = interp1d(
                     dimvec_1,
                     variable_cube.coord(coord).points,
+                    kind=coord_interp_kind,
                     fill_value="extrapolate",
                 )
                 coordinate_points = f(t["hdim_1"])
@@ -86,59 +99,76 @@ def add_coordinates(t, variable_cube):
                 f = interp1d(
                     dimvec_2,
                     variable_cube.coord(coord).points,
+                    kind=coord_interp_kind,
                     fill_value="extrapolate",
                 )
                 coordinate_points = f(t["hdim_2"])
 
         # interpolate 2D coordinates:
         elif variable_cube.coord(coord).ndim == 2:
+            # check the interpolation method is valid
+            if coord_interp_kind not in ["linear", "cubic", "quintic"]:
+                raise ValueError(
+                    "coord_interp_kind must be linear, cubic, or quintic for 2D coord"
+                )
 
             if variable_cube.coord_dims(coord) == (hdim_1, hdim_2):
-                f = interp2d(dimvec_2, dimvec_1, variable_cube.coord(coord).points)
+                f = interp2d(dimvec_2, dimvec_1, variable_cube.coord(coord).points, kind=coord_interp_kind)
                 coordinate_points = [f(a, b) for a, b in zip(t["hdim_2"], t["hdim_1"])]
 
             if variable_cube.coord_dims(coord) == (hdim_2, hdim_1):
-                f = interp2d(dimvec_1, dimvec_2, variable_cube.coord(coord).points)
+                f = interp2d(dimvec_1, dimvec_2, variable_cube.coord(coord).points, kind=coord_interp_kind)
                 coordinate_points = [f(a, b) for a, b in zip(t["hdim_1"], t["hdim_2"])]
 
         # interpolate 3D coordinates:
         # mainly workaround for wrf latitude and longitude (to be fixed in future)
 
         elif variable_cube.coord(coord).ndim == 3:
+            # check the interpolation method is valid
+            if coord_interp_kind not in ["linear", "cubic", "quintic"]:
+                raise ValueError(
+                    "coord_interp_kind must be linear, cubic, or quintic for 3D coord"
+                )
 
             if variable_cube.coord_dims(coord) == (ndim_time, hdim_1, hdim_2):
                 f = interp2d(
-                    dimvec_2, dimvec_1, variable_cube[0, :, :].coord(coord).points
+                    dimvec_2, dimvec_1, variable_cube[0, :, :].coord(coord).points,
+                    kind=coord_interp_kind
                 )
                 coordinate_points = [f(a, b) for a, b in zip(t["hdim_2"], t["hdim_1"])]
 
             if variable_cube.coord_dims(coord) == (ndim_time, hdim_2, hdim_1):
                 f = interp2d(
-                    dimvec_1, dimvec_2, variable_cube[0, :, :].coord(coord).points
+                    dimvec_1, dimvec_2, variable_cube[0, :, :].coord(coord).points,
+                    kind=coord_interp_kind
                 )
                 coordinate_points = [f(a, b) for a, b in zip(t["hdim_1"], t["hdim_2"])]
 
             if variable_cube.coord_dims(coord) == (hdim_1, ndim_time, hdim_2):
                 f = interp2d(
-                    dimvec_2, dimvec_1, variable_cube[:, 0, :].coord(coord).points
+                    dimvec_2, dimvec_1, variable_cube[:, 0, :].coord(coord).points,
+                    kind=coord_interp_kind
                 )
                 coordinate_points = [f(a, b) for a, b in zip(t["hdim_2"], t["hdim_1"])]
 
             if variable_cube.coord_dims(coord) == (hdim_1, hdim_2, ndim_time):
                 f = interp2d(
-                    dimvec_2, dimvec_1, variable_cube[:, :, 0].coord(coord).points
+                    dimvec_2, dimvec_1, variable_cube[:, :, 0].coord(coord).points,
+                    kind=coord_interp_kind
                 )
                 coordinate_points = [f(a, b) for a, b in zip(t["hdim_2"], t["hdim1"])]
 
             if variable_cube.coord_dims(coord) == (hdim_2, ndim_time, hdim_1):
                 f = interp2d(
-                    dimvec_1, dimvec_2, variable_cube[:, 0, :].coord(coord).points
+                    dimvec_1, dimvec_2, variable_cube[:, 0, :].coord(coord).points,
+                    kind=coord_interp_kind
                 )
                 coordinate_points = [f(a, b) for a, b in zip(t["hdim_1"], t["hdim_2"])]
 
             if variable_cube.coord_dims(coord) == (hdim_2, hdim_1, ndim_time):
                 f = interp2d(
-                    dimvec_1, dimvec_2, variable_cube[:, :, 0].coord(coord).points
+                    dimvec_1, dimvec_2, variable_cube[:, :, 0].coord(coord).points,
+                    kind=coord_interp_kind
                 )
                 coordinate_points = [f(a, b) for a, b in zip(t["hdim_1"], t["hdim_2"])]
 
