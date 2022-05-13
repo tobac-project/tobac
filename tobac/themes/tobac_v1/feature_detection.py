@@ -65,7 +65,7 @@ def feature_detection_multithreshold(
         feature. Default is 'center'.
 
     coord_interp_kind : str, optional
-        The kind of interpolation as a string. Default is 'linear'.
+        The kind of interpolation for coordinates. Default is 'linear'.
         For 1d interp, {'linear', 'nearest', 'nearest-up', 'zero',
                         'slinear', 'quadratic', 'cubic',
                         'previous', 'next'}.
