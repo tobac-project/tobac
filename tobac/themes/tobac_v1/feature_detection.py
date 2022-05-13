@@ -30,6 +30,7 @@ def feature_detection_multithreshold(
     min_num=0,
     target="maximum",
     position_threshold="center",
+    coord_interp_kind='linear',
     sigma_threshold=0.5,
     n_erosion_threshold=0,
     n_min_threshold=0,
@@ -62,6 +63,13 @@ def feature_detection_multithreshold(
                           'weighted_abs'}, optional
         Flag choosing method used for the position of the tracked
         feature. Default is 'center'.
+
+    coord_interp_kind : str, optional
+        The kind of interpolation for coordinates. Default is 'linear'.
+        For 1d interp, {'linear', 'nearest', 'nearest-up', 'zero',
+                        'slinear', 'quadratic', 'cubic',
+                        'previous', 'next'}.
+        For 2d interp, {'linear', 'cubic', 'quintic'}.
 
     sigma_threshold: float, optional
         Standard deviation for intial filtering step. Default is 0.5.
@@ -146,7 +154,7 @@ def feature_detection_multithreshold(
         features["feature"] = features.index + feature_number_start
         #    features_filtered = features.drop(features[features['num'] < min_num].index)
         #    features_filtered.drop(columns=['idx','num','threshold_value'],inplace=True)
-        features = add_coordinates(features, field_iris)
+        features = add_coordinates(features, field_iris, coord_interp_kind)
         # convert pandas DataFrame to xarray
         list_coords = [key for key in field_in.coords.keys()]
         print(features)
