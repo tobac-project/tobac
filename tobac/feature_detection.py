@@ -496,6 +496,14 @@ def feature_detection_multithreshold(
     if type(threshold) in [int, float]:
         threshold = [threshold]
 
+    # if wavelength_filtering is given, check that value cannot be larger than distances along x and y
+    if wavelength_filtering is not None:
+        distance_x = field_in.shape[1] * (dxy/ 1000)
+        distance_y = field_in.shape[2] * (dxy/ 1000)
+        distance = min(distance_x, distance_y)
+        if wavelength_filtering[0] > distance or wavelength_filtering[1] > distance:
+            raise ValueError("The given wavelengths cannot be larger than the total distance in km along the axes of the domain.")
+
     for i_time, data_i in enumerate(data_time):
         time_i = data_i.coord("time").units.num2date(data_i.coord("time").points[0])
         features_thresholds = feature_detection_multithreshold_timestep(
