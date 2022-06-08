@@ -26,7 +26,7 @@ def test_spectral_filtering():
     assert wavelengths[1, 0] == (dxy / 1000) * random_data.shape[-2] * 2
     assert wavelengths[0, 1] == (dxy / 1000) * random_data.shape[-1] * 2
 
-    # filtered/ smoothed field
+    # check that filtered/ smoothed field exhibits smaller range of values 
     assert (filtered_data.max() - filtered_data.min()) < (
         random_data.max() - random_data.min()
     )
