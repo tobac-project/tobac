@@ -3,7 +3,9 @@ import tobac.feature_detection as feat_detect
 import pytest
 
 
-def test_feature_detection_multithreshold_timestep():
+
+@pytest.mark.parametrize("test_threshs, dxy, wavelength_filtering", [([1.5], -1, None), ([1.5], 10000, (100,500)) ], )
+def test_feature_detection_multithreshold_timestep(test_threshs, dxy, wavelength_filtering):
     """
     Tests ```tobac.feature_detection.feature_detection_multithreshold_timestep
     """
@@ -20,9 +22,6 @@ def test_feature_detection_multithreshold_timestep():
     test_hdim_1_sz = 5
     test_hdim_2_sz = 5
     test_amp = 2
-    test_threshs = [
-        1.5,
-    ]
     test_min_num = 2
 
     test_data = np.zeros(test_dset_size)
@@ -36,7 +35,7 @@ def test_feature_detection_multithreshold_timestep():
     )
     test_data_iris = testing.make_dataset_from_arr(test_data, data_type="iris")
     fd_output = feature_detection.feature_detection_multithreshold_timestep(
-        test_data_iris, 0, threshold=test_threshs, n_min_threshold=test_min_num
+        test_data_iris, 0, threshold=test_threshs, n_min_threshold=test_min_num,dxy = dxy, wavelength_filtering =wavelength_filtering
     )
 
     # Make sure we have only one feature
@@ -44,3 +43,19 @@ def test_feature_detection_multithreshold_timestep():
     # Make sure that the location of the feature is correct
     assert fd_output.iloc[0]["hdim_1"] == pytest.approx(test_hdim_1_pt)
     assert fd_output.iloc[0]["hdim_2"] == pytest.approx(test_hdim_2_pt)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
