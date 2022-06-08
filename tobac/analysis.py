@@ -1,3 +1,31 @@
+"""Provide tools to analyse and visualize the tracked objects.          
+This module provides a set of routines that enables performing analyses
+and deriving statistics for individual clouds, such as the time series
+of integrated properties and vertical profiles. It also provides
+routines to calculate summary statistics of the entire populatin of
+tracked clouds in the cloud field like histograms of cloud areas/volumes
+or cloud mass and a detailed cell lifetime analysis. These analysis
+routines are all built in a modular manner. Thus, users can reuse the
+most basic methods for interacting with the data structure of the
+package in their own analysis procedures in Python. This includes
+functions perfomring simple tasks like looping over all identified
+objects or cloud trajectories and masking arrays for the analysis of
+individual cloud objects. Plotting routines include both visualizations
+for individual convective cells and their properties. [1]_
+
+References
+----------
+.. [1] Heikenfeld, M., Marinescu, P. J., Christensen, M., Watson-Parris,
+   D., Senf, F., van den Heever, S. C., and Stier, P.: tobac v1.0:
+   towards a flexible framework for tracking and analysis of clouds in
+   diverse datasets, Geosci. Model Dev. Discuss.,
+   https://doi.org/10.5194/gmd-2019-105 , in review, 2019, 10.
+   
+Notes
+-----
+unsure about page numer in the reference
+"""
+
 import pandas as pd
 import numpy as np
 import logging
@@ -19,6 +47,49 @@ def cell_statistics_all(
     dimensions=["x", "y"],
     **kwargs
 ):
+    """
+    Parameters
+    ----------
+    input_cubes : iris.cube.Cube
+    
+    track : dask.dataframe.DataFrame
+    
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tracked volumes 0 everywhere
+        else).
+        
+    aggregators : list 
+    	list of iris.analysis.Aggregator instances
+    
+    output_path : str, optional
+        Default is './'.
+        
+    cell_selection : optional
+        Default is None.
+        
+    output_name : str, optional
+        Default is 'Profiles'.
+        
+    width : int, optional
+        Default is 10000.
+        
+    z_coord : str, optional
+        Name of the vertical coordinate in the cube. Default is
+        'model_level_number'.
+        
+    dimensions : list of str, optional
+        Default is ['x', 'y'].
+        
+    **kwargs
+    
+    Returns
+    -------
+    None
+    
+    Notes
+    -----
+    Not sure what this function does
+    """
     if cell_selection is None:
         cell_selection = np.unique(track["cell"])
     for cell in cell_selection:
@@ -50,6 +121,50 @@ def cell_statistics(
     dimensions=["x", "y"],
     **kwargs
 ):
+    """
+    Parameters
+    ----------
+    input_cubes : iris.cube.Cube
+    
+    track : dask.dataframe.DataFrame
+    
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tracked volumes 0 everywhere
+        else).
+         
+    aggregators list 
+    	list of iris.analysis.Aggregator instances
+    
+    cell : int
+        Integer id of cell to create masked cube for output.
+        
+    output_path : str, optional
+        Default is './'.
+        
+    output_name : str, optional
+        Default is 'Profiles'.
+        
+    width : int, optional
+        Default is 10000.
+        
+    z_coord : str, optional
+        Name of the vertical coordinate in the cube. Default is
+        'model_level_number'.
+          
+    dimensions : list of str, optional
+        Default is ['x', 'y'].
+        
+    **kwargs
+    
+    Returns
+    -------
+    None
+    
+    Notes
+    -----
+    Not sure what this function does
+    """
+    
     from iris.cube import Cube, CubeList
     from iris.coords import AuxCoord
     from iris import Constraint, save
@@ -180,7 +295,36 @@ def cog_cell(
     Mask=None,
     savedir=None,
 ):
-
+    """
+    Parameters
+    ----------
+    cell : int
+        Integer id of cell to create masked cube for output.
+        
+    Tracks : optional
+        Default is None.
+        
+    M_total : subset of cube, optional
+        Default is None.
+        
+    M_liquid : subset of cube, optional
+        Default is None.
+         
+    M_frozen : subset of cube, optional
+        Default is None.
+        
+    savedir : str
+        Default is None.
+          
+    Returns
+    -------
+    None
+    
+    Notes
+    -----
+    Not sure what this function does
+    """
+    
     from iris import Constraint
 
     logging.debug("Start calculating COG for " + str(cell))
@@ -227,6 +371,46 @@ def cog_cell(
 def lifetime_histogram(
     Track, bin_edges=np.arange(0, 200, 20), density=False, return_values=False
 ):
+    """Compute the lifetime histogram of linked features.
+    
+    Parameters
+    ----------
+    Track : pandas.DataFrame
+    	Dataframe of linked features, containing the columns 'cell' 
+    	and 'time_cell'.
+    
+    bin_edges : int or ndarray, optional
+        If bin_edges is an int, it defines the number of equal-width 
+        bins in the given range. If bins is a ndarray, it defines a 
+        monotonically increasing array of bin edges, including the 
+        rightmost edge. Default is np.arange(0, 200, 20).
+        
+    density : bool, optional
+    	If False, the result will contain the number of samples in 
+    	each bin. If True, the result is the value of the probability 
+    	density function at the bin, normalized such that the integral 
+    	over the range is 1. Default is False.
+        
+    return_values : bool, optional
+    	Bool determining wether the lifetimes of the features are 
+    	returned from this function. Default is False.
+        
+    Returns
+    -------
+    hist : ndarray
+    	The values of the histogram.
+    
+    bin_edges : ndarray
+    	The edges of the histogram.
+    
+    bin_centers : ndarray
+    	The centers of the histogram intervalls.
+    
+    minutes, optional : ndarray
+    	Numpy.array of the lifetime of each feature in minutes.
+    	
+    """
+    
     Track_cell = Track.groupby("cell")
     minutes = (Track_cell["time_cell"].max() / pd.Timedelta(minutes=1)).values
     hist, bin_edges = np.histogram(minutes, bin_edges, density=density)
@@ -238,13 +422,27 @@ def lifetime_histogram(
 
 
 def haversine(lat1, lon1, lat2, lon2):
-    """Computes the Haversine distance in kilometres between two points (based on implementation CIS https://github.com/cedadev/cis)
-    :param lat1: first point or points as array, each as array of latitude in degrees
-    :param lon1: first point or points as array, each as array of longitude in degrees
-    :param lat2: second point or points as array, each as array of latitude in degrees
-    :param lon2: second point or points as array, each as array of longitude in degrees
-    :return: distance between the two points in kilometres
+    """Computes the Haversine distance in kilometers.
+    
+    Calculates the Haversine distance between two points
+    (based on implementation CIS https://github.com/cedadev/cis).
+    
+    Parameters
+    ----------
+    lat1, lon1 : array of latitude, longitude
+        First point or points as array in degrees.
+        
+    lat2, lon2 : array of latitude, longitude
+        Second point or points as array in degrees.
+        
+    Returns
+    -------
+    arclen * RADIUS_EARTH : array
+        Array of Distance(s) between the two points(-arrays) in 
+        kilometers.
+        
     """
+    
     RADIUS_EARTH = 6378.0
     lat1 = np.radians(lat1)
     lat2 = np.radians(lat2)
@@ -261,10 +459,31 @@ def haversine(lat1, lon1, lat2, lon2):
 
 
 def calculate_distance(feature_1, feature_2, method_distance=None):
-    """Computes distance between two features based on either lat/lon coordinates or x/y coordinates
-    :param feature_1: first feature or points as array, each as array of latitude, longitude in degrees
-    :param feature_2: second feature or points as array, each as array of latitude, longitude in degrees
-    :return: distance between the two features in metres
+    """Compute the distance between two features. It is based on 
+    either lat/lon coordinates or x/y coordinates.
+    
+    Parameters
+    ----------
+    feature_1, feature_2 : pandas.DataFrame or pandas.Series
+    	Dataframes containing multiple features or pandas.Series 
+    	of one feature. Need to contain either projection_x_coordinate
+    	and projection_y_coordinate or latitude and longitude 
+    	coordinates.
+         
+    method_distance : {None, 'xy', 'latlon'}, optional
+    	Method of distance calculation. 'xy' uses the length of the 
+    	vector between the two features, 'latlon' uses the haversine 
+    	distance. None checks wether the required coordinates are 
+    	present and starts with 'xy'. Default is None.
+        
+    Returns
+    -------
+    distance : float or pandas.Series
+        Float with the distance between the two features in meters if
+         the input are two pandas.Series containing one feature, 
+         pandas.Series of the distancesif one of the inputs contains 
+         multiple features.
+        
     """
     if method_distance is None:
         if (
@@ -312,6 +531,34 @@ def calculate_distance(feature_1, feature_2, method_distance=None):
 
 
 def calculate_velocity_individual(feature_old, feature_new, method_distance=None):
+    """Calculate the mean velocity of a feature between two timeframes.
+    
+    Parameters
+    ----------
+    feature_old : pandas.Series
+    	pandas.Series of a feature at a certain timeframe. Needs to 
+    	contain a 'time' column and either projection_x_coordinate 
+    	and projection_y_coordinate or latitude and longitude coordinates.
+    	
+    feature_new : pandas.Series
+    	pandas.Series of the same feature at a later timeframe. Needs 
+    	to contain a 'time' column and either projection_x_coordinate 
+    	and projection_y_coordinate or latitude and longitude coordinates.
+    	
+    method_distance : {None, 'xy', 'latlon'}, optional
+        Method of distance calculation, used to calculate the velocit. 
+        'xy' uses the length of the vector between the two features, 
+        'latlon' uses the haversine distance. None checks wether the 
+        required coordinates are present and starts with 'xy'. 
+        Default is None.
+        
+    Returns
+    -------
+    velocity : float
+    	Value of the approximate velocity.
+    
+    """
+    
     distance = calculate_distance(
         feature_old, feature_new, method_distance=method_distance
     )
@@ -321,6 +568,34 @@ def calculate_velocity_individual(feature_old, feature_new, method_distance=None
 
 
 def calculate_velocity(track, method_distance=None):
+    """Calculate the velocities of a set of linked features.
+    
+    Parameters
+    ----------
+    track : pandas.DataFrame
+    	Dataframe of linked features, containing the columns 'cell',
+    	 'time' and either 'projection_x_coordinate' and 
+    	 'projection_y_coordinate' or 'latitude' and 'longitude'.
+    
+    method_distance : {None, 'xy', 'latlon'}, optional
+        Method of distance calculation, used to calculate the 
+        velocity. 'xy' uses the length of the vector between the
+        two features, 'latlon' uses the haversine distance. None 
+        checks wether the required coordinates are present and 
+        starts with 'xy'. Default is None.
+        
+    Returns
+    -------
+    track  : pandas.DataFrame
+    	DataFrame from the input, with an additional column 'v', 
+    	contain the value of the velocity for every feature at 
+    	every possible timestep
+    
+    Notes
+    -----
+    needs short summary, description and type of track
+    """
+    
     for cell_i, track_i in track.groupby("cell"):
         index = track_i.index.values
         for i, index_i in enumerate(index[:-1]):
@@ -340,6 +615,52 @@ def velocity_histogram(
     method_distance=None,
     return_values=False,
 ):
+    """Create an velocity histogram of the features. If the DataFrame 
+    does not contain a velocity column, the velocities are calculated.
+    
+    Parameters
+    ----------
+    track: pandas.DataFrame
+    	DataFrame of the linked features, containing the columns 'cell',
+    	 'time' and either 'projection_x_coordinate' and 
+    	 'projection_y_coordinate' or 'latitude' and 'longitude'.
+    
+    bin_edges : int or ndarray, optional
+        If bin_edges is an int, it defines the number of equal-width 
+        bins in the given range. If bins is a ndarray, it defines a 
+        monotonically increasing array of bin edges, including the 
+        rightmost edge. Default is np.arange(0, 30000, 500).
+        
+    density : bool, optional
+    	If False, the result will contain the number of samples in 
+    	each bin. If True, the result is the value of the probability 
+    	density function at the bin, normalized such that the integral 
+    	over the range is 1. Default is False.
+        
+    methods_distance : {None, 'xy', 'latlon'}, optional
+        Method of distance calculation, used to calculate the velocity. 
+        'xy' uses the length of the vector between the two features, 
+        'latlon' uses the haversine distance. None checks wether the 
+        required coordinates are present and starts with 'xy'. 
+        Default is None.
+        
+    return_values : bool, optional
+    	Bool determining wether the velocities of the features are 
+    	returned from this function. Default is False.
+        
+    Returns
+    -------
+    hist : ndarray
+    	The values of the histogram.
+    
+    bin_edges : ndarray
+    	The edges of the histogram.
+    
+    velocities , optional : ndarray
+    	Numpy array with the velocities of each feature.
+    
+    """
+    
     if "v" not in track.columns:
         logging.info("calculate velocities")
         track = calculate_velocity(track)
@@ -354,6 +675,30 @@ def velocity_histogram(
 
 
 def calculate_nearestneighbordistance(features, method_distance=None):
+    """Calculate the distance between a feature and the nearest other
+    feature in the same timeframe.
+    
+    Parameters
+    ----------
+    features : pandas.DataFrame
+    	DataFrame of the features whose nearest neighbor distance is to
+    	be calculated. Needs to contain either projection_x_coordinate 
+    	and projection_y_coordinate or latitude and longitude coordinates.
+    
+    method_distance : {None, 'xy', 'latlon'}, optional
+    	Method of distance calculation. 'xy' uses the length of the vector
+    	between the two features, 'latlon' uses the haversine distance. 
+    	None checks wether the required coordinates are present and starts 
+    	with 'xy'. Default is None.
+        
+    Returns
+    -------
+    features : pandas.DataFrame
+    	DataFrame of the features with a new column 'min_distance', 
+    	containing the calculated minimal distance to other features.
+    
+    """
+    
     from itertools import combinations
 
     features["min_distance"] = np.nan
@@ -393,6 +738,49 @@ def nearestneighbordistance_histogram(
     method_distance=None,
     return_values=False,
 ):
+    """Create an nearest neighbor distance histogram of the features. 
+    If the DataFrame does not contain a 'min_distance' column, the 
+    distances are calculated.
+    
+    ----------
+    features
+    
+    bin_edges : int or ndarray, optional
+        If bin_edges is an int, it defines the number of equal-width 
+        bins in the given range. If bins is a ndarray, it defines a 
+        monotonically increasing array of bin edges, including the 
+        rightmost edge. Default is np.arange(0, 30000, 500).
+        
+    density : bool, optional
+    	If False, the result will contain the number of samples in 
+    	each bin. If True, the result is the value of the probability 
+    	density function at the bin, normalized such that the integral 
+    	over the range is 1. Default is False.
+        
+    method_distance : {None, 'xy', 'latlon'}, optional
+    	Method of distance calculation. 'xy' uses the length of the 
+    	vector between the two features, 'latlon' uses the haversine
+    	distance. None checks wether the required coordinates are 
+    	present and starts with 'xy'. Default is None.
+    	
+    return_values : bool, optional
+    	Bool determining wether the nearest neighbor distance of the
+    	features are returned from this function. Default is False.
+        
+    Returns
+    -------
+    hist : ndarray
+    	The values of the histogram.
+    
+    bin_edges : ndarray
+    	The edges of the histogram.
+    
+    distances, optional : ndarray
+    	A numpy array with the nearest neighbor distances of each 
+    	feature.
+    
+    """
+    
     if "min_distance" not in features.columns:
         logging.debug("calculate nearest neighbor distances")
         features = calculate_nearestneighbordistance(
@@ -410,34 +798,34 @@ def nearestneighbordistance_histogram(
 
 # Treatment of 2D lat/lon coordinates to be added:
 def calculate_areas_2Dlatlon(_2Dlat_coord, _2Dlon_coord):
-    """
-    Calculate an array of cell areas when given two 2D arrays of latitude and
-    longitude values
+    """Calculate an array of cell areas when given two 2D arrays 
+    of latitude and longitude values
 
-    NOTE: This currently assuems that the lat/lon grid is orthogonal, which is
-    not strictly true! It's close enough for most cases, but should be updated
-    in future to use the cross product of the distances to the neighbouring
-    cells. This will require the use of a more advanced calculation. I would
-    advise using pyproj at some point in the future to solve this issue and
-    replace haversine distance.
+    NOTE: This currently assuems that the lat/lon grid is orthogonal,
+    which is not strictly true! It's close enough for most cases, but
+    should be updated in future to use the cross product of the 
+    distances to the neighbouring cells. This will require the use
+    of a more advanced calculation. I would advise using pyproj 
+    at some point in the future to solve this issue and replace 
+    haversine distance.
 
     Parameters
     ----------
     _2Dlat_coord : AuxCoord
-        Iris auxilliary coordinate containing a 2d grid of latitudes for each
-        point
+        Iris auxilliary coordinate containing a 2d grid of latitudes 
+        for each point.
 
     _2Dlon_coord : AuxCoord
-        Iris auxilliary coordinate containing a 2d grid of longitudes for each
-        point
-
+        Iris auxilliary coordinate containing a 2d grid of longitudes 
+        for each point.
 
     Returns
     -------
     area : ndarray
-        A numpy array approximating the area of each cell
+        A numpy array approximating the area of each cell.
 
     """
+    
     hdist1 = (
         haversine(
             _2Dlat_coord.points[:-1],
@@ -474,6 +862,48 @@ def calculate_areas_2Dlatlon(_2Dlat_coord, _2Dlon_coord):
 
 
 def calculate_area(features, mask, method_area=None):
+    """Calculate the area of the segments for each feature.
+    
+    Parameters
+    ----------
+    features : pandas.DataFrame
+    	DataFrame of the features whose area is to be calculated.
+    	
+    mask : iris.cube.Cube
+    	Cube containing mask (int for tracked volumes 0 everywhere
+    	else). Needs to contain either projection_x_coordinate and 
+    	projection_y_coordinate or latitude and longitude 
+    	coordinates.
+        
+    method_area : {None, 'xy', 'latlon'}, optional
+   	Flag determining how the area is calculated. 'xy' uses the 
+    	areas of the individual pixels, 'latlon' uses the 
+    	area_weights method of iris.analysis.cartography, None 
+    	checks wether the required coordinates are present and 
+    	starts with 'xy'. Default is None.
+        
+    Returns
+    -------
+    features : pandas.DataFrame
+    	DataFrame of the features with a new column 'area', 
+    	containing the calculated areas.
+    
+    Raises
+    ------
+    ValueError
+        If neither latitude/longitude nor
+        projection_x_coordinate/projection_y_coordinate are 
+        present in mask_coords.
+        
+        If latitude/longitude coordinates are 2D.
+        
+        If latitude/longitude shapes are not supported.
+        
+        If method is undefined, i.e. method is neither None, 
+        'xy' nor 'latlon'.
+        
+    """
+    
     from tobac.utils import mask_features_surface, mask_features
     from iris import Constraint
     from iris.analysis.cartography import area_weights
@@ -541,6 +971,61 @@ def area_histogram(
     return_values=False,
     representative_area=False,
 ):
+    """Create an area histogram of the features. If the DataFrame 
+    does not contain an area column, the areas are calculated.
+    
+    Parameters
+    ----------
+    features : pandas.DataFrame
+    	DataFrame of the features.
+    
+    mask : iris.cube.Cube
+    	Cube containing mask (int for tracked volumes 0 
+    	everywhere else). Needs to contain either 
+    	projection_x_coordinate and projection_y_coordinate or 
+    	latitude and longitude coordinates. The output of a 
+    	segmentation should be used here.
+        
+    bin_edges : int or ndarray, optional
+        If bin_edges is an int, it defines the number of 
+        equal-width bins in the given range. If bins is a ndarray, 
+        it defines a monotonically increasing array of bin edges,
+        including the rightmost edge. 
+        Default is np.arange(0, 30000, 500).
+        
+    density : bool, optional
+    	If False, the result will contain the number of samples 
+    	in each bin. If True, the result is the value of the 
+    	probability density function at the bin, normalized such
+    	that the integral over the range is 1. Default is False.
+    
+    return_values : bool, optional
+    	Bool determining wether the areas of the features are 
+    	returned from this function. Default is False.
+        
+    representive_area: bool, optional
+        If False, no weights will associated to the values. 
+        If True, the weights for each area will be the areas
+        itself, i.e. each bin count will have the value of
+        the sum of all areas within the edges of the bin. 
+        Default is False.
+        
+    Returns
+    -------
+    hist : ndarray
+    	The values of the histogram.
+    
+    bin_edges : ndarray
+    	The edges of the histogram.
+    
+    bin_centers : ndarray
+    	The centers of the histogram intervalls.
+    
+    areas : ndarray, optional
+        A numpy array approximating the area of each feature.
+        
+    """
+    
     if "area" not in features.columns:
         logging.info("calculate area")
         features = calculate_area(features, mask, method_area)
@@ -563,6 +1048,56 @@ def area_histogram(
 def histogram_cellwise(
     Track, variable=None, bin_edges=None, quantity="max", density=False
 ):
+    """Create a histogram of the maximum, minimum or mean of 
+    a variable for the cells of a track. Essentially a wrapper 
+    of the numpy.histogram() method.
+    
+    Parameters
+    ----------
+    Track : pandas.DataFrame
+        The track containing the variable to create the histogram
+        from.
+    
+    variable : string, optional
+    	Column of the DataFrame with the variable on which the 
+    	histogram is to be based on. Default is None.
+        
+    bin_edges : int or ndarray, optional
+    	If bin_edges is an int, it defines the number of 
+    	equal-width bins in the given range. If bins is a ndarray,
+    	it defines a monotonically increasing array of bin edges, 
+    	including the rightmost edge.
+        
+    quantity : {'max', 'min', 'mean'}, optional
+    	Flag determining wether to use maximum, minimum or mean 
+    	of a variable from all timeframes the cell covers. 
+    	Default is 'max'.
+        
+    density : bool, optional
+    	If False, the result will contain the number of samples 
+    	in each bin. If True, the result is the value of the 
+    	probability density function at the bin, normalized such
+    	that the integral over the range is 1. 
+    	Default is False.
+        
+    Returns
+    -------
+    hist : ndarray
+    	The values of the histogram
+    
+    bin_edges : ndarray
+    	The edges of the histogram
+    
+    bin_centers : ndarray
+    	The centers of the histogram intervalls
+    
+    Raises
+    ------
+    ValueError
+        If quantity is not 'max', 'min' or 'mean'.
+        
+    """
+    
     Track_cell = Track.groupby("cell")
     if quantity == "max":
         variable_cell = Track_cell[variable].max().values
@@ -579,6 +1114,46 @@ def histogram_cellwise(
 
 
 def histogram_featurewise(Track, variable=None, bin_edges=None, density=False):
+    """Create a histogram of a variable from the features of a 
+    track. Essentially a wrapper of the numpy.histogram() 
+    method.
+    
+    Parameters
+    ----------
+    Track : pandas.DataFrame
+        The track containing the variable to create the 
+        histogram from.
+    
+    variable : string, optional
+    	Column of the DataFrame with the variable on which the
+    	histogram is to be based on. Default is None.
+        
+    bin_edges : int or ndarray, optional
+    	If bin_edges is an int, it defines the number of 
+    	equal-width bins in the given range. If bins is 
+    	a sequence, it defines a monotonically increasing 
+    	array of bin edges, including the rightmost edge.
+        
+    density : bool, optional
+    	If False, the result will contain the number of 
+    	samples in each bin. If True, the result is the
+    	value of the probability density function at the 
+    	bin, normalized such that the integral over the 
+    	range is 1. Default is False.
+        
+    Returns
+    -------
+    hist : ndarray
+    	The values of the histogram
+    
+    bin_edges : ndarray
+    	The edges of the histogram
+    
+    bin_centers : ndarray
+    	The centers of the histogram intervalls
+    
+    """
+    
     hist, bin_edges = np.histogram(Track[variable].values, bin_edges, density=density)
     bin_centers = bin_edges[:-1] + 0.5 * np.diff(bin_edges)
 
@@ -588,6 +1163,36 @@ def histogram_featurewise(Track, variable=None, bin_edges=None, density=False):
 def calculate_overlap(
     track_1, track_2, min_sum_inv_distance=None, min_mean_inv_distance=None
 ):
+    """Count the number of time frames in which the 
+    individual cells of two tracks are present together 
+    and calculate their mean and summed inverse distance.
+
+    Parameters
+    ----------
+    track_1, track_2 : pandas.DataFrame
+    	The tracks conaining the cells to analyze.
+    
+    min_sum_inv_distance : float, optional
+    	Minimum of the inverse net distance for two 
+    	cells to be counted as overlapping.
+        Default is None.
+        
+    min_mean_inv_distance : float, optional
+    	Minimum of the inverse mean distance for two cells
+    	to be counted as overlapping. Default is None.
+        
+    Returns
+    -------
+    overlap : pandas.DataFrame
+    	DataFrame containing the columns cell_1 and cell_2 
+    	with the index of the cells from the tracks, 
+    	n_overlap with the number of frames both cells are
+    	present in, mean_inv_distance with the mean inverse 
+    	distance and sum_inv_distance with the summed 
+    	inverse distance of the cells.
+    	
+    """
+    
     cells_1 = track_1["cell"].unique()
     #    n_cells_1_tot=len(cells_1)
     cells_2 = track_2["cell"].unique()
