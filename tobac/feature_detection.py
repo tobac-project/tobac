@@ -5,6 +5,7 @@ from . import utils as tb_utils
 from tobac.utils import spectral_filtering
 import warnings
 
+
 def feature_position(
     hdim1_indices,
     hdim2_indices,
@@ -336,8 +337,8 @@ def feature_detection_multithreshold_timestep(
     n_min_threshold=0,
     min_distance=0,
     feature_number_start=1,
-    dxy = -1,
-    wavelength_filtering= None
+    dxy=-1,
+    wavelength_filtering=None,
 ):
     """
     function to find features in each timestep based on iteratively finding regions above/below a set of thresholds
@@ -367,7 +368,7 @@ def feature_detection_multithreshold_timestep(
                           feature number to start with
     wavelength_filtering: tuple, optional
             minimum and maximum wavelengths in km, if spectral filtering of input field is desired
-      
+
 
     Output:
     features_threshold:      pandas DataFrame
@@ -393,8 +394,9 @@ def feature_detection_multithreshold_timestep(
 
     # spectrally filter the input data, if desired
     if wavelength_filtering is not None:
-        track_data = spectral_filtering(dxy, track_data, wavelength_filtering[0], wavelength_filtering[1])
-
+        track_data = spectral_filtering(
+            dxy, track_data, wavelength_filtering[0], wavelength_filtering[1]
+        )
 
     # create empty lists to store regions and features for individual timestep
     features_thresholds = pd.DataFrame()
@@ -448,7 +450,7 @@ def feature_detection_multithreshold(
     n_min_threshold=0,
     min_distance=0,
     feature_number_start=1,
-    wavelength_filtering = None
+    wavelength_filtering=None,
 ):
     """Function to perform feature detection based on contiguous regions above/below a threshold
     Input:
@@ -499,11 +501,13 @@ def feature_detection_multithreshold(
 
     # if wavelength_filtering is given, check that value cannot be larger than distances along x and y
     if wavelength_filtering is not None:
-        distance_x = field_in.shape[1] * (dxy/ 1000)
-        distance_y = field_in.shape[2] * (dxy/ 1000)
+        distance_x = field_in.shape[1] * (dxy / 1000)
+        distance_y = field_in.shape[2] * (dxy / 1000)
         distance = min(distance_x, distance_y)
         if wavelength_filtering[0] > distance or wavelength_filtering[1] > distance:
-            raise ValueError("The given wavelengths cannot be larger than the total distance in km along the axes of the domain.")
+            raise ValueError(
+                "The given wavelengths cannot be larger than the total distance in km along the axes of the domain."
+            )
 
     for i_time, data_i in enumerate(data_time):
         time_i = data_i.coord("time").units.num2date(data_i.coord("time").points[0])
@@ -519,8 +523,8 @@ def feature_detection_multithreshold(
             n_min_threshold=n_min_threshold,
             min_distance=min_distance,
             feature_number_start=feature_number_start,
-            dxy= dxy,
-            wavelength_filtering = wavelength_filtering
+            dxy=dxy,
+            wavelength_filtering=wavelength_filtering,
         )
         # check if list of features is not empty, then merge features from different threshold values
         # into one DataFrame and append to list for individual timesteps:

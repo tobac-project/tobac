@@ -580,8 +580,9 @@ def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
     return (curr_loc_indices, y_indices, x_indices)
 
 
-
-def spectral_filtering(dxy, field_in, lambda_min, lambda_max, return_transfer_function=False):
+def spectral_filtering(
+    dxy, field_in, lambda_min, lambda_max, return_transfer_function=False
+):
     """
     This function creates and applies a 2D transfer function that can be used as a bandpass filter to remove
     certain wavelengths of an atmospheric input field (e.g. vorticity, IVT, etc).
@@ -651,7 +652,7 @@ def spectral_filtering(dxy, field_in, lambda_min, lambda_max, return_transfer_fu
 
     # 2-dimensional discrete cosine transformation to convert data to spectral space
     spectral = fft.dctn(field_in.data)
-    # multiplication of spectral coefficients with transfer function  
+    # multiplication of spectral coefficients with transfer function
     filtered = spectral * transfer_function
     # inverse discrete cosine transformation to go back from spectral to original space
     filtered_field = fft.idctn(filtered)
@@ -660,11 +661,3 @@ def spectral_filtering(dxy, field_in, lambda_min, lambda_max, return_transfer_fu
         return (lambda_mn, transfer_function), filtered_field
     else:
         return filtered_field
-
-
-
-
-
-
-
-
