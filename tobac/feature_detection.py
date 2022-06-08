@@ -2,8 +2,8 @@ import logging
 import numpy as np
 import pandas as pd
 from . import utils as tb_utils
+from tobac.utils import spectral_filtering
 import warnings
-
 
 def feature_position(
     hdim1_indices,
@@ -336,6 +336,7 @@ def feature_detection_multithreshold_timestep(
     n_min_threshold=0,
     min_distance=0,
     feature_number_start=1,
+    wavelength_filtering= None
 ):
     """
     function to find features in each timestep based on iteratively finding regions above/below a set of thresholds
@@ -363,6 +364,10 @@ def feature_detection_multithreshold_timestep(
                    minimum distance between detected features (m)
     feature_number_start: int
                           feature number to start with
+    wavelength_filtering: tuple, optional
+            minimum and maximum wavelengths in km, if spectral filtering of input field is desired
+      
+
     Output:
     features_threshold:      pandas DataFrame
                              detected features for individual timestep
@@ -384,6 +389,12 @@ def feature_detection_multithreshold_timestep(
     track_data = gaussian_filter(
         track_data, sigma=sigma_threshold
     )  # smooth data slightly to create rounded, continuous field
+
+    # spectrally filter the input data, if desired
+    if wavelength_filtering is not None:
+        track_data = spectral_filtering(dxy, track_data, wavelength_filtering[0], wavelength_filtering[1])
+
+
     # create empty lists to store regions and features for individual timestep
     features_thresholds = pd.DataFrame()
     for i_threshold, threshold_i in enumerate(threshold):
@@ -436,6 +447,7 @@ def feature_detection_multithreshold(
     n_min_threshold=0,
     min_distance=0,
     feature_number_start=1,
+    wavelength_filtering = None
 ):
     """Function to perform feature detection based on contiguous regions above/below a threshold
     Input:
@@ -458,6 +470,8 @@ def feature_detection_multithreshold(
                      minimum number of identified features
     min_distance:  float
                    minimum distance between detected features (m)
+    wavelength_filtering: tuple, optional
+            minimum and maximum wavelengths in km, if spectral filtering of input field is desired
     Output:
     features:      pandas DataFrame
                    detected features
@@ -496,6 +510,7 @@ def feature_detection_multithreshold(
             n_min_threshold=n_min_threshold,
             min_distance=min_distance,
             feature_number_start=feature_number_start,
+            wavelenth_filtering = wavelength_filtering
         )
         # check if list of features is not empty, then merge features from different threshold values
         # into one DataFrame and append to list for individual timesteps:
