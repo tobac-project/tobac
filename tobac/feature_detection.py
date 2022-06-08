@@ -336,6 +336,7 @@ def feature_detection_multithreshold_timestep(
     n_min_threshold=0,
     min_distance=0,
     feature_number_start=1,
+    dxy = -1,
     wavelength_filtering= None
 ):
     """
@@ -518,7 +519,8 @@ def feature_detection_multithreshold(
             n_min_threshold=n_min_threshold,
             min_distance=min_distance,
             feature_number_start=feature_number_start,
-            wavelenth_filtering = wavelength_filtering
+            dxy= dxy,
+            wavelength_filtering = wavelength_filtering
         )
         # check if list of features is not empty, then merge features from different threshold values
         # into one DataFrame and append to list for individual timesteps:
