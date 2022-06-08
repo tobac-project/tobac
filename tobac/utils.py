@@ -630,7 +630,7 @@ def spectral_filtering(
     # if domain is squared:
     if Ni == Nj:
         wavenumber = np.sqrt(m**2 + n**2)
-        lambda_mn = (2 * Ni * (dx)) / wavenumber
+        lambda_mn = (2 * Ni * (dxy)) / wavenumber
     else:
         # if domain is a rectangle:
         # alpha is the normalized wavenumber in wavenumber space

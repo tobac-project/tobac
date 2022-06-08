@@ -22,6 +22,7 @@ def test_spectral_filtering():
     # first element in wavelengths-space is inf because normalized wavelengths are 0 here
     assert wavelengths[0, 0] == np.inf
     # the first elements should correspond to twice the distance of the corresponding axis (in km)
+    # this is because the maximum spatial scale is half a wavelength through the domain 
     assert wavelengths[1, 0] == (dxy / 1000) * random_data.shape[-2] * 2
     assert wavelengths[0, 1] == (dxy / 1000) * random_data.shape[-1] * 2
 
