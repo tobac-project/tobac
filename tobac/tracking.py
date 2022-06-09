@@ -46,7 +46,7 @@ def linking_trackpy(
 ):
 
     """Perform Linking of features in trajectories.
-    
+
     The linking determines which of the features detected in a specific
     timestep is identical to an existing feature in the previous
     timestep. For each existing feature, the movement within a time step
@@ -64,26 +64,26 @@ def linking_trackpy(
     data. The algorithm creates a continuous track for the cloud that
     most directly follows the direction of travel of the preceding or
     following cell path. [5]_
-    
+
     Parameters
     ----------
     features : xarray.Dataset
         Detected features to be linked.
-        
+
     field_in : xarray.DataArray
         Input field to perform the watershedding on (2D or 3D for one
         specific point in time).
-        
+
     dt : float
         Time resolution of tracked features.
-        
+
     dxy : float
         Grid spacing of the input data.
-        
+
     d_max : float, optional
         Maximum search range
         Default is None.
-        
+
     d_min : float, optional
         Variations in the shape of the regions used to determine the
         positions of the features can lead to quasi-instantaneous shifts
@@ -92,59 +92,59 @@ def linking_trackpy(
         jeopardising the tracking procedure. To prevent this, tobac uses
         an additional minimum radius of the search range. [5]_
         Default is None.
-        
+
     subnetwork_size : int, optional
         Maximum size of subnetwork for linking. Default is None.
-        
+
     v_max : float, optional
         Speed at which features are allowed to move. Default is None.
-        
+
     memory : int, optional
         Number of output timesteps features allowed to vanish for to
         be still considered tracked. Default is 0.
         .. warning :: This parameter should be used with caution, as it
                      can lead to erroneous trajectory linking,
                      espacially for data with low time resolution. [5]_
-                     
+
     stubs : int, optional
         Minimum number of timesteps of a tracked cell to be reported
         Default is 1
-        
+
     time_cell_min : float, optional
         Minimum length in time of tracked cell to be reported in minutes
         Default is None.
-        
+
     order : int, optional
         Order of polynomial used to extrapolate trajectory into gaps and
         ond start and end point.
         Default is 1.
-        
+
     extrapolate : int, optional
         Number or timesteps to extrapolate trajectories.
         Default is 0.
-        
+
     method_linking : {'random', 'predict'}, optional
         Flag choosing method used for trajectory linking.
         Default is 'random'.
-        
+
     adaptive_step : float, optional
         Reduce search range by multiplying it by this factor.
-        
+
     adaptive_stop : float, optional
         If not None, when encountering an oversize subnet, retry by progressively
         reducing search_range until the subnet is solvable. If search_range
         becomes <= adaptive_stop, give up and raise a SubnetOversizeException.
         Default is None
-        
+
     cell_number_start : int, optional
         Cell number for first tracked cell.
         Default is 1
-        
+
     cell_number_unassigned: int
-        Number to set the unassigned/non-tracked cells to. Note that if you set this 
+        Number to set the unassigned/non-tracked cells to. Note that if you set this
         to `np.nan`, the data type of 'cell' will change to float.
-        Default is -1 
-        
+        Default is -1
+
     Returns
     -------
     trajectories_final : xarray.Dataset
@@ -156,7 +156,7 @@ def linking_trackpy(
     ValueError
         If method_linking is neither 'random' nor 'predict'.
     """
-    
+
     #    from trackpy import link_df
     import trackpy as tp
     from copy import deepcopy
@@ -332,7 +332,7 @@ def fill_gaps(
         Trajectories from trackpy with with filled gaps and potentially
         extrapolated.
     """
-    
+
     from scipy.interpolate import InterpolatedUnivariateSpline
 
     logging.debug("start filling gaps")

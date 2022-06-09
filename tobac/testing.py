@@ -30,7 +30,7 @@ def make_simple_sample_data_2D(data_type="iris"):
     -------
     sample_data : iris.cube.Cube or xarray.DataArray
     """
-    
+
     from iris.cube import Cube
     from iris.coords import DimCoord, AuxCoord
 
@@ -104,18 +104,18 @@ def make_sample_data_2D_3blobs(data_type="iris"):
     coordinates and arbitrary, but in realisitic range.
     The data contains three individual blobs travelling on a linear
     trajectory through the dataset for part of the time.
-    
+
     Parameters
     ----------
     data_type : {'iris', 'xarray'}, optional
-	Choose type of the dataset that will be produced.
-	Default is 'iris'
+        Choose type of the dataset that will be produced.
+        Default is 'iris'
 
     Returns
     -------
     sample_data : iris.cube.Cube or xarray.DataArray
     """
-    
+
     from iris.cube import Cube
     from iris.coords import DimCoord, AuxCoord
 
@@ -225,7 +225,7 @@ def make_sample_data_2D_3blobs_inv(data_type="iris"):
     -------
     sample_data : iris.cube.Cube or xarray.DataArray
     """
-    
+
     from iris.cube import Cube
     from iris.coords import DimCoord, AuxCoord
 
@@ -345,7 +345,7 @@ def make_sample_data_3D_3blobs(data_type="iris", invert_xy=False):
     -------
     sample_data : iris.cube.Cube or xarray.DataArray
     """
-    
+
     from iris.cube import Cube
     from iris.coords import DimCoord, AuxCoord
 
@@ -487,23 +487,23 @@ def make_dataset_from_arr(
     ----------
     in_arr: array-like
         The input array to convert to iris/xarray
-        
+
     data_type: str('xarray' or 'iris'), optional
         Type of the dataset to return
         Default is 'xarray'
-        
+
     time_dim_num: int or None, optional
         What axis is the time dimension on, None for a single timestep
         Default is None
-        
+
     z_dim_num: int or None, optional
         What axis is the z dimension on, None for a 2D array
         Default is None
-        
+
     y_dim_num: int, optional
         What axis is the y dimension on, typically 0 for a 2D array
         Default is 0
-        
+
     x_dim_num: int, optional
         What axis is the x dimension on, typically 1 for a 2D array
         Deafult is 1
@@ -513,7 +513,7 @@ def make_dataset_from_arr(
     Iris or xarray dataset with everything we need for feature detection/tracking.
 
     """
-    
+
     import xarray as xr
     import iris
 
@@ -550,43 +550,43 @@ def make_feature_blob(
     shape="rectangle",
     amplitude=1,
 ):
-    """Function to make a defined "blob" in location (zloc, yloc, xloc) with 
+    """Function to make a defined "blob" in location (zloc, yloc, xloc) with
     user-specified shape and amplitude. Note that this function will
     round the size and locations to the nearest point within the array.
-    
+
     Parameters
     ----------
     in_arr: array-like
         input array to add the "blob" to
-        
+
     h1_loc: float
         Center hdim_1 location of the blob, required
-        
+
     h2_loc: float
         Center hdim_2 location of the blob, required
-        
+
     v_loc: float, optional
         Center vdim location of the blob, optional. If this is None, we assume that the
         dataset is 2D.
         Default is None
-        
+
     h1_size: float, optional
         Size of the bubble in array coordinates in hdim_1
         Default is 1
-        
+
     h2_size: float, optional
         Size of the bubble in array coordinates in hdim_2
         Default is 1
-        
+
     v_size: float, optional
         Size of the bubble in array coordinates in vdim
         Default is 1
-        
+
     shape: str('rectangle'), optional
         The shape of the blob that is added. For now, this is just rectangle
         'rectangle' adds a rectangular/rectangular prism bubble with constant amplitude `amplitude`.
         Default is "rectangle"
-        
+
     amplitude: float, optional
         Maximum amplitude of the blob
         Default is 1
@@ -596,7 +596,7 @@ def make_feature_blob(
     array-like
         An array with the same type as `in_arr` that has the blob added.
     """
-    
+
     import xarray as xr
 
     # Check if z location is there and set our 3D-ness based on this.
@@ -650,27 +650,27 @@ def set_arr_2D_3D(
     ----------
     in_arr: array-like
         Array of values to set
-        
+
     value: int, float, or array-like of size (end_v-start_v, end_h1-start_h1, end_h2-start_h2)
         The value to assign to in_arr. This will work to assign an array, but the array
         must have the same dimensions as the size specified in the function.
-        
+
     start_h1: int
         Start index to set for hdim_1
-        
+
     end_h1: int
         End index to set for hdim_1 (exclusive, so it acts like [start_h1:end_h1])
-        
+
     start_h2: int
         Start index to set for hdim_2
-        
+
     end_h2: int
         End index to set for hdim_2
-        
+
     start_v: int, optional
         Start index to set for vdim
         Default is None
-        
+
     end_v: int, optional
         End index to set for vdim
         Default is None
@@ -680,7 +680,7 @@ def set_arr_2D_3D(
     array-like
         in_arr with the new values set.
     """
-    
+
     if start_v is not None and end_v is not None:
         in_arr[start_v:end_v, start_h1:end_h1, start_h2:end_h2] = value
     else:
@@ -712,61 +712,61 @@ def generate_single_feature(
     ----------
     start_h1: float
         Starting point of the feature in hdim_1 space
-        
+
     start_h2: float
         Starting point of the feature in hdim_2 space
-        
+
     start_v: float, optional
         Starting point of the feature in vdim space (if 3D). For 2D, set to None.
         Default is None
-        
+
     spd_h1: float, optional
         Speed (per frame) of the feature in hdim_1
         Default is 1
-        
+
     spd_h2: float, optional
         Speed (per frame) of the feature in hdim_2
         Default is 1
-        
+
     spd_v: float, optional
         Speed (per frame) of the feature in vdim
         Default is 1
-        
+
     min_h1: int, optional
         Minimum value of hdim_1 allowed. If PBC_flag is not 'none', then
         this will be used to know when to wrap around periodic boundaries.
         If PBC_flag is 'none', features will disappear if they are above/below
         these bounds.
         Default is 0
-        
+
     max_h1: int, optional
         Similar to min_h1, but the max value of hdim_1 allowed.
         Default is 1000
-        
+
     min_h2: int, optional
         Similar to min_h1, but the minimum value of hdim_2 allowed.
         Default is 0
-        
+
     max_h2: int, optional
         Similar to min_h1, but the maximum value of hdim_2 allowed.
         Default is 1000
-        
+
     num_frames: int, optional
         Number of frames to generate
         Default is 1
-        
+
     dt: datetime.timedelta, optional
         Difference in time between each frame
         Default is datetime.timedelta(minutes=5)
-        
+
     start_date: datetime.datetime, optional
         Start datetime
         Default is datetime.datetime(2022, 1, 1, 0)
-        
+
     frame_start: int, optional
         Number to start the frame at
         Default is 1
-        
+
     feature_num: int, optional
         What number to start the feature at
         Default is 1

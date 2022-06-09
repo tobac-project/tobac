@@ -45,13 +45,13 @@ def segmentation_3D(
     max_distance=None,
 ):
     """Wraper for the segmentation()-function.
-    
+
     Notes
     ----------
-    
+
     Obsolete?
     """
-    
+
     return segmentation(
         features,
         field,
@@ -75,10 +75,10 @@ def segmentation_2D(
     max_distance=None,
 ):
     """Wraper for the segmentation()-function.
-    
+
     Notes
     ----------
-    
+
     Obsolete?
     """
     return segmentation(
@@ -104,7 +104,7 @@ def segmentation_timestep(
     max_distance=None,
     vertical_coord="auto",
 ):
-    """Perform watershedding for an individual time step of the data. Works 
+    """Perform watershedding for an individual time step of the data. Works
     for both 2D and 3D data
 
     Parameters
@@ -142,7 +142,7 @@ def segmentation_timestep(
 
     vertical_coord : str, optional
         Vertical coordinate in 3D input data. If 'auto', input is checked for
-        one of {'z', 'model_level_number', 'altitude','geopotential_height'} 
+        one of {'z', 'model_level_number', 'altitude','geopotential_height'}
         as a likely coordinate name
 
     Returns
@@ -170,7 +170,7 @@ def segmentation_timestep(
         If method is not 'watershed'.
 
     """
-    
+
     # The location of watershed within skimage submodules changes with v0.19, but I've kept both for backward compatibility for now
     try:
         from skimage.segmentation import watershed
@@ -410,10 +410,10 @@ def segmentation(
 
 def watershedding_3D(track, field_in, **kwargs):
     """Wraper for the segmentation()-function.
-    
+
     Notes
     ----------
-    
+
     Obsolete?
     """
     kwargs.pop("method", None)
@@ -422,10 +422,10 @@ def watershedding_3D(track, field_in, **kwargs):
 
 def watershedding_2D(track, field_in, **kwargs):
     """Wraper for the segmentation()-function.
-    
+
     Notes
     ----------
-    
+
     Obsolete?
     """
     kwargs.pop("method", None)

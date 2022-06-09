@@ -36,31 +36,31 @@ def feature_position(
     target=None,
 ):
     """Determine feature position with regard to the horizontal
-    dimensions in pixels from the identified region above 
+    dimensions in pixels from the identified region above
     threshold values
-    
+
     Parameters
     ----------
     hdim1_indices : list
-        indices of pixels in region along first horizontal 
+        indices of pixels in region along first horizontal
         dimension
 
     hdim2_indices : list
-        indices of pixels in region along second horizontal 
+        indices of pixels in region along second horizontal
         dimension
 
     region_small : 2D array-like
-        A true/false array containing True where the threshold 
-        is met and false where the threshold isn't met. This 
-        array should be the the size specified by region_bbox, 
-        and can be a subset of the overall input array 
+        A true/false array containing True where the threshold
+        is met and false where the threshold isn't met. This
+        array should be the the size specified by region_bbox,
+        and can be a subset of the overall input array
         (i.e., ```track_data```).
 
     region_bbox : list or tuple with length of 4
-        The coordinates that region_small occupies within the 
-        total track_data array. This is in the order that the 
-        coordinates come from the ```get_label_props_in_dict``` 
-        function. For 2D data, this should be: (hdim1 start, 
+        The coordinates that region_small occupies within the
+        total track_data array. This is in the order that the
+        coordinates come from the ```get_label_props_in_dict```
+        function. For 2D data, this should be: (hdim1 start,
         hdim 2 start, hdim 1 end, hdim 2 end).
 
     track_data : 2D array-like
@@ -70,18 +70,18 @@ def feature_position(
         The threshold value that we are testing against
 
     position_threshold : {'center', 'extreme', 'weighted_diff', '
-    			  weighted abs'}
+                          weighted abs'}
         How to select the single point position from our data.
-        'center' picks the geometrical centre of the region, 
-        and is typically not recommended. 'extreme' picks the 
+        'center' picks the geometrical centre of the region,
+        and is typically not recommended. 'extreme' picks the
         maximum or minimum value inside the region (max/min set by
-         ```target```) 'weighted_diff' picks the centre of the 
+         ```target```) 'weighted_diff' picks the centre of the
          region weighted by the distance from the threshold value
-        'weighted_abs' picks the centre of the region weighted by 
+        'weighted_abs' picks the centre of the region weighted by
         the absolute values of the field
 
     target : {'maximum', 'minimum'}
-        Used only when position_threshold is set to 'extreme', 
+        Used only when position_threshold is set to 'extreme',
         this sets whether it is looking for maxima or minima.
 
     Returns
@@ -134,58 +134,58 @@ def feature_position(
 
 
 def test_overlap(region_inner, region_outer):
-    """Test for overlap between two regions 
+    """Test for overlap between two regions
     (probably scope for further speedup here)
-    
+
     Parameters
     ----------
     region_1 : list
-        list of 2-element tuples defining the indices of 
+        list of 2-element tuples defining the indices of
         all cell in the region
-                   
+
     region_2 : list
-        list of 2-element tuples defining the indices of 
+        list of 2-element tuples defining the indices of
         all cell in the region
 
     Returns
     ----------
     overlap : bool
-        True if there are any shared points between the two 
+        True if there are any shared points between the two
         regions
     """
-    
+
     overlap = frozenset(region_outer).isdisjoint(region_inner)
     return not overlap
 
 
 def remove_parents(features_thresholds, regions_i, regions_old):
     """Remove parents of newly detected feature regions.
-    
-    Remove features where its regions surround newly 
+
+    Remove features where its regions surround newly
     detected feature regions.
-    
+
     Parameters
     ----------
     features_thresholds : pandas.DataFrame
         Dataframe containing detected features.
-        
+
     regions_i : dict
-        Dictionary containing the regions above/below 
-        threshold for the newly detected feature 
+        Dictionary containing the regions above/below
+        threshold for the newly detected feature
         (feature ids as keys).
-        
+
     regions_old : dict
-        Dictionary containing the regions above/below 
-        threshold from previous threshold 
+        Dictionary containing the regions above/below
+        threshold from previous threshold
         (feature ids as keys).
-        
+
     Returns
     -------
     features_thresholds : pandas.DataFrame
-        Dataframe containing detected features excluding those 
+        Dataframe containing detected features excluding those
         that are superseded by newly detected ones.
     """
-    
+
     try:
         all_curr_pts = np.concatenate([vals for idx, vals in regions_i.items()])
         all_old_pts = np.concatenate([vals for idx, vals in regions_old.items()])
@@ -226,54 +226,54 @@ def feature_detection_threshold(
     idx_start=0,
 ):
     """Find features based on individual threshold value.
-    
+
     Parameters
     ----------
     data_i : iris.cube.Cube
         2D field to perform the feature detection (single timestep) on.
-        
+
     i_time : int
         Number of the current timestep.
-        
+
     threshold : float, optional
         Threshold value used to select target regions to track. Default
                 is None.
-                
+
     target : {'maximum', 'minimum'}, optional
         Flag to determine if tracking is targetting minima or maxima
         in the data. Default is 'maximum'.
-        
+
     position_threshold : {'center', 'extreme', 'weighted_diff',
                           'weighted_abs'}, optional
         Flag choosing method used for the position of the tracked
         feature. Default is 'center'.
-        
+
     sigma_threshold: float, optional
         Standard deviation for intial filtering step. Default is 0.5.
-        
+
     n_erosion_threshold: int, optional
         Number of pixel by which to erode the identified features.
         Default is 0.
-        
+
     n_min_threshold : int, optional
         Minimum number of identified features. Default is 0.
-        
+
     min_distance : float, optional
         Minimum distance between detected features. Default is 0.
-        
+
     idx_start : int, optional
         Feature id to start with. Default is 0.
-        
+
     Returns
     -------
     features_threshold : pandas DataFrame
         Detected features for individual threshold.
-        
+
     regions : dict
         Dictionary containing the regions above/below threshold used
         for each feature (feature ids as keys).
     """
-    
+
     from skimage.measure import label
     from skimage.morphology import binary_erosion
     from copy import deepcopy
@@ -410,46 +410,46 @@ def feature_detection_multithreshold_timestep(
     feature_number_start=1,
 ):
     """Find features in each timestep.
-    
+
     Based on iteratively finding regions above/below a set of
     thresholds. Smoothing the input data with the Gaussian filter makes
     output more reliable. [2]_
-    
+
     Parameters
     ----------
-    
+
     data_i : iris.cube.Cube
         2D field to perform the feature detection (single timestep) on.
-        
+
     threshold : float, optional
         Threshold value used to select target regions to track. Default
         is None.
-        
+
     min_num : int, optional
         Default is 0.
-        
+
     target : {'maximum', 'minimum'}, optinal
         Flag to determine if tracking is targetting minima or maxima
         in the data. Default is 'maximum'.
-        
+
     position_threshold : {'center', 'extreme', 'weighted_diff',
                           'weighted_abs'}, optional
         Flag choosing method used for the position of the tracked
         feature. Default is 'center'.
-        
+
     sigma_threshold: float, optional
         Standard deviation for intial filtering step. Default is 0.5.
-        
+
     n_erosion_threshold: int, optional
         Number of pixel by which to erode the identified features.
         Default is 0.
-        
+
     n_min_threshold : int, optional
         Minimum number of identified features. Default is 0.
-        
+
     min_distance : float, optional
         Minimum distance between detected features. Default is 0.
-        
+
     feature_number_start : int, optional
         Feature id to start with. Default is 1.
 
@@ -529,60 +529,60 @@ def feature_detection_multithreshold(
     feature_number_start=1,
 ):
     """Perform feature detection based on contiguous regions.
-    
+
     The regions are above/below a threshold.
-    
+
     Parameters
     ----------
     field_in : iris.cube.Cube
         2D field to perform the tracking on (needs to have coordinate
         'time' along one of its dimensions),
-        
+
     dxy : float
         Grid spacing of the input data (in meter).
-        
+
     thresholds : list of floats, optional
         Threshold values used to select target regions to track.
         Default is None.
-        
+
     target : {'maximum', 'minimum'}, optional
-        Flag to determine if tracking is targetting minima or maxima in 
+        Flag to determine if tracking is targetting minima or maxima in
         the data. Default is 'maximum'.
-        
+
     position_threshold : {'center', 'extreme', 'weighted_diff',
                           'weighted_abs'}, optional
         Flag choosing method used for the position of the tracked
         feature. Default is 'center'.
-        
+
     coord_interp_kind : str, optional
         The kind of interpolation for coordinates. Default is 'linear'.
         For 1d interp, {'linear', 'nearest', 'nearest-up', 'zero',
                         'slinear', 'quadratic', 'cubic',
                         'previous', 'next'}.
         For 2d interp, {'linear', 'cubic', 'quintic'}.
-        
+
     sigma_threshold: float, optional
         Standard deviation for intial filtering step. Default is 0.5.
-        
+
     n_erosion_threshold: int, optional
         Number of pixel by which to erode the identified features.
         Default is 0.
-        
+
     n_min_threshold : int, optional
         Minimum number of identified features. Default is 0.
-        
+
     min_distance : float, optional
         Minimum distance between detected features. Default is 0.
-        
+
     feature_number_start : int, optional
         Feature id to start with. Default is 1.
-        
+
     Returns
     -------
     features : pandas.DataFrame
         Detected features.
     """
-    
+
     from .utils import add_coordinates
 
     if min_num != 0:
@@ -650,25 +650,25 @@ def feature_detection_multithreshold(
 
 def filter_min_distance(features, dxy, min_distance):
     """Perform feature detection based on contiguous regions.
-    
+
     Regions are above/below a threshold.
-    
+
     Parameters
     ----------
     features : pandas.DataFrame
-    
+
     dxy : float
         Grid spacing of the input data.
-        
+
     min_distance : float, optional
         Minimum distance between detected features.
-        
+
     Returns
     -------
     features : pandas.DataFrame
         Detected features.
     """
-    
+
     from itertools import combinations
 
     remove_list_distance = []
