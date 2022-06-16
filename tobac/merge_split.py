@@ -18,7 +18,7 @@ def compress_all(nc_grids, min_dims=2):
 
 
 def standardize_track_dataset(TrackedFeatures, Mask, Projection):
-    """ Combine a feature mask with the feature data table into a common dataset.
+    """Combine a feature mask with the feature data table into a common dataset.
     Also renames th
 
     returned by tobac.themes.tobac_v1.segmentation
@@ -34,7 +34,7 @@ def standardize_track_dataset(TrackedFeatures, Mask, Projection):
 
     TODO: Add metadata attributes to
 
-     """
+    """
     feature_standard_names = {
         # new variable name, and long description for the NetCDF attribute
         "frame": (
@@ -141,20 +141,20 @@ def merge_split(TRACK, distance=25000, frame_len=5):
     function to  postprocess tobac track data for merge/split cells
     Input:
         TRACK:    xarray dataset of tobac Track information
-        
+
         distance:    float, optional distance threshold prior to adding a pair of points
                             into the minimum spanning tree. Default is 25000 meters.
-        
+
         frame_len: float, optional threshold for the spanning length within which two points
                           can be separated. Default is five (5) frames.
 
 
     Output:
-        d:    xarray dataset of 
+        d:    xarray dataset of
                         feature position along 1st horizontal dimension
         hdim2_index:    float
                         feature position along 2nd horizontal dimension
-                        
+
     Example:
         d = merge_split(Track)
        ds = standardize_track_dataset(Track, refl_mask, data['ProjectionCoordinateSystem'])
@@ -162,7 +162,7 @@ def merge_split(TRACK, distance=25000, frame_len=5):
         both_ds = xr.merge([ds, d],compat ='override')
         both_ds = compress_all(both_ds)
         both_ds.to_netcdf(os.path.join(savedir,'Track_features_merges.nc'))
-    
+
     """
     track_groups = TRACK.groupby("cell")
     cell_ids = {cid: len(v) for cid, v in track_groups.groups.items()}
