@@ -94,7 +94,7 @@ def linking_trackpy(
             tp.linking.Linker.MAX_SUB_NET_SIZE = subnetwork_size
         else:
             tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE = subnetwork_size
-            
+
     # deep copy to preserve features field:
     features_linking = deepcopy(features)
 
