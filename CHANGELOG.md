@@ -10,6 +10,9 @@ _**Version 1.3.1:**_
 
 - Fixed a bug with `map_tracks` that had it plot untracked cells caused by the switch to `-1` for untracked cells [#130](https://github.com/tobac-project/tobac/pull/130)
 
+**Repository enhancements**
+
+- New pull request template for the repository, including a checklist to be completed for each pull request [#120](https://github.com/tobac-project/tobac/pull/120)
 
 _**Version 1.3:**_
 
