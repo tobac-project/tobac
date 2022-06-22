@@ -1,5 +1,16 @@
 ### Tobac Changelog
 
+_**Version 1.3.1:**_
+
+**Enhancements**
+
+- Added auto-downloading of files in the example notebooks if data isn't already present [#113](https://github.com/tobac-project/tobac/pull/113)
+
+**Bug fixes**
+
+- Fixed a bug with `map_tracks` that had it plot untracked cells caused by the switch to `-1` for untracked cells [#130](https://github.com/tobac-project/tobac/pull/130)
+
+
 _**Version 1.3:**_
 
 **Enhancements**
