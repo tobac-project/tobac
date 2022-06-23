@@ -7,7 +7,7 @@ the underlying physical processes.
 The implementations are structured in a way that allows for the future
 addition of more complex tracking methods recording a more complex
 network of relationships between cloud objects at different points in
-time. [5]_
+time. 
 
 References
 ----------
