@@ -3,7 +3,7 @@
 The individual features and associated area/volumes identified in
 each timestep have to be linked into cloud trajectories to analyse
 the time evolution of cloud properties for a better understanding of
-the underlying pyhsical processes. [5]_
+the underlying physical processes. 
 The implementations are structured in a way that allows for the future
 addition of more complex tracking methods recording a more complex
 network of relationships between cloud objects at different points in
