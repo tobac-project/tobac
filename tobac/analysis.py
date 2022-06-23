@@ -8,7 +8,7 @@ or cloud mass and a detailed cell lifetime analysis. These analysis
 routines are all built in a modular manner. Thus, users can reuse the
 most basic methods for interacting with the data structure of the
 package in their own analysis procedures in Python. This includes
-functions perfomring simple tasks like looping over all identified
+functions performing simple tasks like looping over all identified
 objects or cloud trajectories and masking arrays for the analysis of
 individual cloud objects. Plotting routines include both visualizations
 for individual convective cells and their properties. [1]_
