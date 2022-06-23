@@ -2,7 +2,7 @@
 This module provides a set of routines that enables performing analyses
 and deriving statistics for individual clouds, such as the time series
 of integrated properties and vertical profiles. It also provides
-routines to calculate summary statistics of the entire populatin of
+routines to calculate summary statistics of the entire population of
 tracked clouds in the cloud field like histograms of cloud areas/volumes
 or cloud mass and a detailed cell lifetime analysis. These analysis
 routines are all built in a modular manner. Thus, users can reuse the
