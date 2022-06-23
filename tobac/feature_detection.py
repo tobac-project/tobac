@@ -135,7 +135,6 @@ def feature_position(
 
 def test_overlap(region_inner, region_outer):
     """Test for overlap between two regions
-    (probably scope for further speedup here)
 
     Parameters
     ----------
