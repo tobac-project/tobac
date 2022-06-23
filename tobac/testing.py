@@ -506,7 +506,7 @@ def make_dataset_from_arr(
 
     x_dim_num: int, optional
         What axis is the x dimension on, typically 1 for a 2D array
-        Deafult is 1
+        Default is 1
 
     Returns
     -------
