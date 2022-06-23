@@ -55,7 +55,7 @@ def linking_trackpy(
     candidate features by restricting the search to a circular search
     region centered around the predicted position of the feature in the
     next time step. For newly initialized trajectories, where no
-    velocity from previous timesteps is available, the algorithm resort
+    velocity from previous time steps is available, the algorithm resorts
     to the average velocity of the nearest tracked objects. v_max and
     d_min are given as physical quantities and then converted into
     pixel-based values used in trackpy. This allows for cloud tracking
