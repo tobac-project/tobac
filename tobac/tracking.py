@@ -11,11 +11,12 @@ time.
 
 References
 ----------
-.. [5] Heikenfeld, M., Marinescu, P. J., Christensen, M., Watson-Parris,
-   D., Senf, F., van den Heever, S. C., and Stier, P.: tobac v1.0:
-   towards a flexible framework for tracking and analysis of clouds in
-   diverse datasets, Geosci. Model Dev. Discuss.,
-   https://doi.org/10.5194/gmd-2019-105 , in review, 2019, 9f.
+.. Heikenfeld, M., Marinescu, P. J., Christensen, M.,
+   Watson-Parris, D., Senf, F., van den Heever, S. C.
+   & Stier, P. (2019). tobac 1.2: towards a flexible 
+   framework for tracking and analysis of clouds in 
+   diverse datasets. Geoscientific Model Development,
+   12(11), 4551-4570.
 """
 
 import logging
@@ -63,7 +64,7 @@ def linking_trackpy(
     independent of the temporal and spatial resolution of the input
     data. The algorithm creates a continuous track for the cloud that
     most directly follows the direction of travel of the preceding or
-    following cell path. 
+    following cell path.
 
     Parameters
     ----------

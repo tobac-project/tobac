@@ -24,11 +24,12 @@ visialization.
 
 References
 ----------
-.. [4] Heikenfeld, M., Marinescu, P. J., Christensen, M., Watson-Parris,
-   D., Senf, F., van den Heever, S. C., and Stier, P.: tobac v1.0:
-   towards a flexible framework for tracking and analysis of clouds in
-   diverse datasets, Geosci. Model Dev. Discuss.,
-   https://doi.org/10.5194/gmd-2019-105 , in review, 2019, 7ff.
+.. Heikenfeld, M., Marinescu, P. J., Christensen, M.,
+   Watson-Parris, D., Senf, F., van den Heever, S. C.
+   & Stier, P. (2019). tobac 1.2: towards a flexible 
+   framework for tracking and analysis of clouds in 
+   diverse datasets. Geoscientific Model Development,
+   12(11), 4551-4570.
 """
 
 import logging

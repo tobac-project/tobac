@@ -1,8 +1,7 @@
 """Provide feature detection.
 
-This module can work with any two-dimensional field 
-either present or derived from the input data. To 
-identify the features, contiguous regions above or 
+This module can work with any two-dimensional field.
+To identify the features, contiguous regions above or 
 below a threshold are determined and labelled individually.
 To describe the specific location of the feature at a 
 specific point in time, different spatial properties 
@@ -10,12 +9,12 @@ are used to describe the identified region. [2]_
 
 References
 ----------
-.. [2] Heikenfeld, M., Marinescu, P. J., Christensen, M., 
-   Watson-Parris, D., Senf, F., van den Heever, S. C., 
-   and Stier, P.: tobac v1.0: towards a flexible framework 
-   for tracking and analysis of clouds in diverse datasets, 
-   Geosci. Model Dev. Discuss.,
-   https://doi.org/10.5194/gmd-2019-105 , in review, 2019, 6f.
+.. Heikenfeld, M., Marinescu, P. J., Christensen, M.,
+   Watson-Parris, D., Senf, F., van den Heever, S. C.
+   & Stier, P. (2019). tobac 1.2: towards a flexible 
+   framework for tracking and analysis of clouds in 
+   diverse datasets. Geoscientific Model Development,
+   12(11), 4551-4570.
 """
 
 import logging

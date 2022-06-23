@@ -15,11 +15,12 @@ for individual convective cells and their properties. [1]_
 
 References
 ----------
-.. [1] Heikenfeld, M., Marinescu, P. J., Christensen, M., Watson-Parris,
-   D., Senf, F., van den Heever, S. C., and Stier, P.: tobac v1.0:
-   towards a flexible framework for tracking and analysis of clouds in
-   diverse datasets, Geosci. Model Dev. Discuss.,
-   https://doi.org/10.5194/gmd-2019-105 , in review, 2019, 10.
+.. Heikenfeld, M., Marinescu, P. J., Christensen, M.,
+   Watson-Parris, D., Senf, F., van den Heever, S. C.
+   & Stier, P. (2019). tobac 1.2: towards a flexible 
+   framework for tracking and analysis of clouds in 
+   diverse datasets. Geoscientific Model Development,
+   12(11), 4551-4570.
    
 Notes
 -----
@@ -589,10 +590,6 @@ def calculate_velocity(track, method_distance=None):
         DataFrame from the input, with an additional column 'v',
         contain the value of the velocity for every feature at
         every possible timestep
-
-    Notes
-    -----
-    needs short summary, description and type of track
     """
 
     for cell_i, track_i in track.groupby("cell"):
