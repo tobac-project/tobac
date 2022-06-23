@@ -63,7 +63,7 @@ def linking_trackpy(
     independent of the temporal and spatial resolution of the input
     data. The algorithm creates a continuous track for the cloud that
     most directly follows the direction of travel of the preceding or
-    following cell path. [5]_
+    following cell path. 
 
     Parameters
     ----------
