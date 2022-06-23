@@ -389,7 +389,7 @@ def add_cell_time(t):
 
     Parameters
     ----------
-    t : pandas  DataFrame
+    t : pandas.DataFrame
         trajectories with added coordinates
 
     Returns
