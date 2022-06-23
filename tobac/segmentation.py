@@ -44,7 +44,7 @@ def segmentation_3D(
     method="watershed",
     max_distance=None,
 ):
-    """Wraper for the segmentation()-function.
+    """Wrapper for the segmentation()-function.
 
     Notes
     ----------
