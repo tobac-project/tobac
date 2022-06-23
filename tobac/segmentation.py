@@ -45,8 +45,7 @@ def segmentation_3D(
     method="watershed",
     max_distance=None,
 ):
-    """Wrapper for the segmentation()-function.
-    """
+    """Wrapper for the segmentation()-function."""
 
     return segmentation(
         features,
@@ -70,8 +69,7 @@ def segmentation_2D(
     method="watershed",
     max_distance=None,
 ):
-    """Wrapper for the segmentation()-function.
-    """
+    """Wrapper for the segmentation()-function."""
     return segmentation(
         features,
         field,
@@ -400,14 +398,12 @@ def segmentation(
 
 
 def watershedding_3D(track, field_in, **kwargs):
-    """Wrapper for the segmentation()-function.
-    """
+    """Wrapper for the segmentation()-function."""
     kwargs.pop("method", None)
     return segmentation_3D(track, field_in, method="watershed", **kwargs)
 
 
 def watershedding_2D(track, field_in, **kwargs):
-    """Wrapper for the segmentation()-function.
-    """
+    """Wrapper for the segmentation()-function."""
     kwargs.pop("method", None)
     return segmentation_2D(track, field_in, method="watershed", **kwargs)
