@@ -412,7 +412,7 @@ def feature_detection_multithreshold_timestep(
 
     Based on iteratively finding regions above/below a set of
     thresholds. Smoothing the input data with the Gaussian filter makes
-    output more reliable. [2]_
+    output less sensitive to noisiness of input data.
 
     Parameters
     ----------
