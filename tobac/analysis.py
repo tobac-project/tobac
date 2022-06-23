@@ -545,7 +545,7 @@ def calculate_velocity_individual(feature_old, feature_new, method_distance=None
         and projection_y_coordinate or latitude and longitude coordinates.
 
     method_distance : {None, 'xy', 'latlon'}, optional
-        Method of distance calculation, used to calculate the velocit.
+        Method of distance calculation, used to calculate the velocity.
         'xy' uses the length of the vector between the two features,
         'latlon' uses the haversine distance. None checks wether the
         required coordinates are present and starts with 'xy'.
