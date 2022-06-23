@@ -3,7 +3,7 @@
 This module can work with any two-dimensional field 
 either present or derived from the input data. To 
 identify the features, contiguous regions above or 
-below a threshold arendetermined and labelled individually.
+below a threshold are determined and labelled individually.
 To describe the specific location of the feature at a 
 specific point in time, different spatial properties 
 are used to describe the identified region. [2]_
