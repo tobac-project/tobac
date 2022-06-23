@@ -394,7 +394,7 @@ def add_cell_time(t):
 
     Returns
     -------
-    t : pandas dataframe
+    t : pandas.Dataframe
         trajectories with added cell time
     """
 
