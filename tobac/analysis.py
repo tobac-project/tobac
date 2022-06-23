@@ -23,7 +23,6 @@ References
    
 Notes
 -----
-unsure about page numer in the reference
 """
 
 import pandas as pd
