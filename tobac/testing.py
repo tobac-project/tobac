@@ -99,7 +99,7 @@ def make_sample_data_2D_3blobs(data_type="iris"):
     The grid has a grid spacing of 1km in both horizontal directions
     and 100 grid cells in x direction and 200 in y direction.
     Time resolution is 1 minute and the total length of the dataset is
-    100 minutes around a abritraty date (2000-01-01 12:00).
+    100 minutes around a arbitrary date (2000-01-01 12:00).
     The longitude and latitude coordinates are added as 2D aux
     coordinates and arbitrary, but in realisitic range.
     The data contains three individual blobs travelling on a linear
