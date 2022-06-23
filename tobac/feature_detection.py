@@ -658,7 +658,7 @@ def filter_min_distance(features, dxy, min_distance):
     features : pandas.DataFrame
 
     dxy : float
-        Grid spacing of the input data.
+        Grid spacing (in meter) of the input data.
 
     min_distance : float, optional
         Minimum distance between detected features.
