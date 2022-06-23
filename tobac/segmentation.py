@@ -20,7 +20,7 @@ there is no cloud or updraft and the integer number of the associated
 feature at all grid points belonging to that specific cloud/updraft.
 this mask can be conveniently and efficiently used to select the volume
 of each cloud object at a specific time step for further analysis or
-visialization. [4]_
+visialization. 
 
 References
 ----------
