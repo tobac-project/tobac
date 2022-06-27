@@ -1,0 +1,3 @@
+[run]
+source=tobac
+omit = tobac/tests/*
