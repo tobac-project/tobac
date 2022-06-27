@@ -1,4 +1,5 @@
 import logging
+import warnings
 
 
 def segmentation_3D(
@@ -11,6 +12,17 @@ def segmentation_3D(
     method="watershed",
     max_distance=None,
 ):
+    warnings.simplefilter(
+        "always", DeprecationWarning
+    )  # turn off filter; this is an easy switch for users.
+    warnings.warn(
+        "Warning: using deprecated function `segmentation_3D`. Switch to `segmentation` instead."
+        " The arguments and output of `segmentation` is the same, so it is an easy switch."
+        " This function will be removed in v1.5.0.",
+        category=DeprecationWarning,
+        stacklevel=2,
+    )
+    warnings.simplefilter("default", DeprecationWarning)  # reset filter
     return segmentation(
         features,
         field,
@@ -33,6 +45,18 @@ def segmentation_2D(
     method="watershed",
     max_distance=None,
 ):
+    warnings.simplefilter(
+        "always", DeprecationWarning
+    )  # turn off filter; this is an easy switch for users.
+    warnings.warn(
+        "Warning: using deprecated function `segmentation_2D`. Switch to `segmentation` instead."
+        " The arguments and output of `segmentation` is the same, so it is an easy switch."
+        " This function will be removed in v1.5.0.",
+        category=DeprecationWarning,
+        stacklevel=2,
+    )
+    warnings.simplefilter("default", DeprecationWarning)  # reset filter
+
     return segmentation(
         features,
         field,
