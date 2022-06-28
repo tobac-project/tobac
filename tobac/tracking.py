@@ -89,7 +89,12 @@ def linking_trackpy(
 
     # If subnetwork size given, set maximum subnet size
     if subnetwork_size is not None:
-        tp.linking.Linker.MAX_SUB_NET_SIZE = subnetwork_size
+        # Choose the right parameter depending on the use of adaptive search
+        if adaptive_step is None and adaptive_stop is None:
+            tp.linking.Linker.MAX_SUB_NET_SIZE = subnetwork_size
+        else:
+            tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE = subnetwork_size
+
     # deep copy to preserve features field:
     features_linking = deepcopy(features)
 
