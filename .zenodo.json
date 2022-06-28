@@ -11,6 +11,11 @@
             "affiliation": "University of Gothenburg (Sweden)",
             "orcid": "0000-0001-6084-0069",
         },
+        {
+            "name": "Nils Pfeifer",
+            "affiliation": "University of Leipzig",
+            "orcid": "0000-0002-5350-1445",
+        },
     ],
     "keywords": ["cloud tracking"],
     "upload_type": "software",
