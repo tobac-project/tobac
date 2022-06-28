@@ -12,10 +12,15 @@
             "orcid": "0000-0001-6084-0069",
         },
         {
+            "name": "Eric Bruning",
+            "affiliation": "Texas Tech University",
+            "orcid": "0000-0003-1959-442X",
+         },
+          {
             "name": "Nils Pfeifer",
             "affiliation": "University of Leipzig",
             "orcid": "0000-0002-5350-1445",
-        },
+        }
     ],
     "keywords": ["cloud tracking"],
     "upload_type": "software",
