@@ -49,20 +49,20 @@ def linking_trackpy(
     """Perform Linking of features in trajectories.
 
     The linking determines which of the features detected in a specific
-    timestep is most likely identical to an existing feature in the 
-    previous timestep. For each existing feature, the movement within 
-    a time step is extrapolated based on the velocities in a number 
-    previous time steps. The algorithm then breaks the search process 
-    down to a few candidate features by restricting the search to a 
-    circular search region centered around the predicted position of 
-    the feature in the next time step. For newly initialized trajectories, 
-    where no velocity from previous time steps is available, the 
-    algorithm resorts to the average velocity of the nearest tracked 
-    objects. v_max and d_min are given as physical quantities and then 
-    converted into pixel-based values used in trackpy. This allows for 
+    timestep is most likely identical to an existing feature in the
+    previous timestep. For each existing feature, the movement within
+    a time step is extrapolated based on the velocities in a number
+    previous time steps. The algorithm then breaks the search process
+    down to a few candidate features by restricting the search to a
+    circular search region centered around the predicted position of
+    the feature in the next time step. For newly initialized trajectories,
+    where no velocity from previous time steps is available, the
+    algorithm resorts to the average velocity of the nearest tracked
+    objects. v_max and d_min are given as physical quantities and then
+    converted into pixel-based values used in trackpy. This allows for
     tracking that is controlled by physically-based parameters that are
     independent of the temporal and spatial resolution of the input
-    data. The algorithm creates a continuous track for the feature 
+    data. The algorithm creates a continuous track for the feature
     that is the most probable based on the previous cell path.
 
     Parameters
@@ -94,8 +94,8 @@ def linking_trackpy(
         Default is None.
 
     subnetwork_size : int, optional
-        Maximum size of subnetwork for linking. This parameter should be 
-        adjusted when using adaptive search. Usually a lower value is desired 
+        Maximum size of subnetwork for linking. This parameter should be
+        adjusted when using adaptive search. Usually a lower value is desired
         in that case. For a more in depth explanation have look
         `here <https://soft-matter.github.io/trackpy/v0.3.0/tutorial/adaptive-search.html>`_
         If None, 30 is used for regular search and 15 for adaptive search.
@@ -156,7 +156,7 @@ def linking_trackpy(
         This enables filtering the resulting trajectories, e.g. to
         reject trajectories that are only partially captured at the
         boundaries of the input field both in space and time. [5]_
-        
+
     Raises
     ------
     ValueError
