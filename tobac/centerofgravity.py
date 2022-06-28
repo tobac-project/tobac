@@ -18,14 +18,14 @@ def calculate_cog(tracks, mass, mask):
         'projection_y_coordinate').
 
     mask : iris.cube.Cube
-        Cube containing mask (int > where belonging to cloud volume,
-        0 everywhere else).
+        Cube containing mask (int > where belonging to area/volume
+        of feature, 0 else).
 
     Returns
     -------
     tracks_out : pandas.DataFrame
         Dataframe containing t, x, y, z positions of center of gravity
-        and total cloud mass each tracked cells at each timestep.
+        and total mass of each tracked cell at each timestep.
     """
 
     from .utils import mask_cube_cell
@@ -63,14 +63,14 @@ def calculate_cog_untracked(mass, mask):
         'projection_y_coordinate').
 
     mask : iris.cube.Cube
-        Cube containing mask (int > where belonging to cloud volume,
-        0 everywhere else).
+        Cube containing mask (int > where belonging to area/volume
+        of feature, 0 else).
 
     Returns
     -------
     tracks_out : pandas.DataFrame
         Dataframe containing t, x, y, z positions of center of gravity
-        and total cloud mass for untracked part of domain.
+        and total mass for untracked part of the domain.
     """
 
     from pandas import DataFrame
@@ -117,7 +117,7 @@ def calculate_cog_domain(mass):
     -------
     tracks_out : pandas.DataFrame
         Dataframe containing t, x, y, z positions of center of gravity
-        and total cloud mass.
+        and total mass of the entire domain.
     """
 
     from pandas import DataFrame

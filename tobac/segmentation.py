@@ -13,14 +13,12 @@ the weighted mean center position of the identified features fulfilling
 the threshold condition are set to the respective marker. The algorithm
 then fills the area (2D) or volume (3D) based on the input field
 starting from these markers until reaching the threshold. If two or more
-cloud objects are directly connected, the border runs along the
-watershed line between the two regions. This procedure creates a mask of
-the same shape as the input data, with zeros at all grid points where
-there is no cloud or updraft and the integer number of the associated
-feature at all grid points belonging to that specific cloud/updraft.
-this mask can be conveniently and efficiently used to select the volume
-of each cloud object at a specific time step for further analysis or
-visialization. 
+features are directly connected, the border runs along the
+watershed line between the two regions. This procedure creates a mask 
+that has the same form as the input data, with the corresponding integer 
+number at all grid points that belong to a feature, else with zero. This 
+mask can be conveniently and efficiently used to select the volume of each
+feature at a specific time step for further analysis or visialization. 
 
 References
 ----------
@@ -137,8 +135,8 @@ def segmentation_timestep(
     Returns
     -------
     segmentation_out : iris.cube.Cube
-        Cloud mask, 0 outside and integer numbers according to track
-        inside the clouds.
+        Mask, 0 outside and integer numbers according to track
+        inside the ojects.
 
     features_out : pandas.DataFrame
         Feature dataframe including the number of cells (2D or 3D) in
@@ -335,8 +333,8 @@ def segmentation(
     Returns
     -------
     segmentation_out : iris.cube.Cube
-        Cloud mask, 0 outside and integer numbers according to track
-        inside the clouds.
+        Mask, 0 outside and integer numbers according to track
+        inside the area/volume of the feature.
 
     features_out : pandas.DataFrame
         Feature dataframe including the number of cells (2D or 3D) in
