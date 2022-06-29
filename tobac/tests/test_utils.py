@@ -2,16 +2,17 @@ import numpy as np
 import tobac.utils as tb_utils
 from scipy import fft
 
+
 def test_spectral_filtering():
     """Testing tobac.utils.spectral_filtering with random test data that contains a wave signal."""
 
     # set wavelengths for filtering and grid spacing
     dxy = 4000
-    lambda_min  = 400*1000
-    lambda_max = 1000*1000
+    lambda_min = 400 * 1000
+    lambda_max = 1000 * 1000
 
-    # get wavelengths for domain 
-    matrix= np.zeros((200,100))
+    # get wavelengths for domain
+    matrix = np.zeros((200, 100))
     Ni = matrix.shape[-2]
     Nj = matrix.shape[-1]
     m, n = np.meshgrid(np.arange(Ni), np.arange(Nj), indexing="ij")
@@ -21,7 +22,7 @@ def test_spectral_filtering():
     # seed wave signal that lies within wavelength range for filtering
     signal_min = np.where(lambda_mn[0] < lambda_min)[0].min()
     signal_idx = np.random.randint(signal_min, matrix.shape[-1])
-    matrix[0,signal_idx] = 1
+    matrix[0, signal_idx] = 1
     wave_data = fft.idctn(matrix)
 
     # use spectral filtering function on random wave data
@@ -44,6 +45,11 @@ def test_spectral_filtering():
     )
 
     # because the randomly generated wave lies outside of range that is set for filtering,
-    # make sure that the filtering results in the disappearance of this signal 
-    assert abs( np.floor(np.log10(filtered_data.mean())) - np.floor(np.log10(random_data.mean()))  )   >= 1 
-
+    # make sure that the filtering results in the disappearance of this signal
+    assert (
+        abs(
+            np.floor(np.log10(filtered_data.mean()))
+            - np.floor(np.log10(random_data.mean()))
+        )
+        >= 1
+    )
