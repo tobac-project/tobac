@@ -17,7 +17,9 @@ def test_spectral_filtering():
     Nj = matrix.shape[-1]
     m, n = np.meshgrid(np.arange(Ni), np.arange(Nj), indexing="ij")
     alpha = np.sqrt(m**2 / Ni**2 + n**2 / Nj**2)
-    lambda_mn = 2 * dxy / alpha
+    # turn off warning for zero divide here, because it is not avoidable with normalized wavenumbers
+    with np.errstate(divide="ignore", invalid="ignore"):
+        lambda_mn = 2 * dxy / alpha
 
     # seed wave signal that lies within wavelength range for filtering
     signal_min = np.where(lambda_mn[0] < lambda_min)[0].min()
@@ -41,15 +43,15 @@ def test_spectral_filtering():
 
     # check that filtered/ smoothed field exhibits smaller range of values
     assert (filtered_data.max() - filtered_data.min()) < (
-        random_data.max() - random_data.min()
+        wave_data.max() - wave_data.min()
     )
 
     # because the randomly generated wave lies outside of range that is set for filtering,
     # make sure that the filtering results in the disappearance of this signal
     assert (
         abs(
-            np.floor(np.log10(filtered_data.mean()))
-            - np.floor(np.log10(random_data.mean()))
+            np.floor(np.log10(abs(filtered_data.mean())))
+            - np.floor(np.log10(abs(wave_data.mean())))
         )
         >= 1
     )
