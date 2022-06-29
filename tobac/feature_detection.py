@@ -424,7 +424,7 @@ def feature_detection_multithreshold_timestep(
         is None.
 
     min_num : int, optional
-        Default is 0.
+        This parameter is not used in the function. Default is 0.
 
     target : {'maximum', 'minimum'}, optinal
         Flag to determine if tracking is targetting minima or maxima
@@ -578,7 +578,8 @@ def feature_detection_multithreshold(
     Returns
     -------
     features : pandas.DataFrame
-        Detected features.
+        Detected features. The structure of this dataframe is explained
+        `here <https://tobac.readthedocs.io/en/latest/data_input.html>`__
     """
 
     from .utils import add_coordinates

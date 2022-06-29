@@ -85,10 +85,6 @@ def cell_statistics_all(
     Returns
     -------
     None
-
-    Notes
-    -----
-    Not sure what this function does
     """
     if cell_selection is None:
         cell_selection = np.unique(track["cell"])
@@ -159,10 +155,6 @@ def cell_statistics(
     Returns
     -------
     None
-
-    Notes
-    -----
-    Not sure what this function does
     """
 
     from iris.cube import Cube, CubeList
@@ -319,10 +311,6 @@ def cog_cell(
     Returns
     -------
     None
-
-    Notes
-    -----
-    Not sure what this function does
     """
 
     from iris import Constraint
@@ -383,7 +371,8 @@ def lifetime_histogram(
         If bin_edges is an int, it defines the number of equal-width
         bins in the given range. If bins is a ndarray, it defines a
         monotonically increasing array of bin edges, including the
-        rightmost edge. Default is np.arange(0, 200, 20).
+        rightmost edge. The unit is minutes.
+        Default is np.arange(0, 200, 20).
 
     density : bool, optional
         If False, the result will contain the number of samples in
@@ -408,6 +397,7 @@ def lifetime_histogram(
 
     minutes, optional : ndarray
         Numpy.array of the lifetime of each feature in minutes.
+        Returned if return_values is True.
 
     """
 
@@ -480,9 +470,9 @@ def calculate_distance(feature_1, feature_2, method_distance=None):
     -------
     distance : float or pandas.Series
         Float with the distance between the two features in meters if
-         the input are two pandas.Series containing one feature,
-         pandas.Series of the distancesif one of the inputs contains
-         multiple features.
+        the input are two pandas.Series containing one feature,
+        pandas.Series of the distances if one of the inputs contains
+        multiple features.
 
     """
     if method_distance is None:
@@ -1045,7 +1035,8 @@ def histogram_cellwise(
     Track, variable=None, bin_edges=None, quantity="max", density=False
 ):
     """Create a histogram of the maximum, minimum or mean of
-    a variable for the cells of a track. Essentially a wrapper
+    a variable for the cells (series of features linked together
+    over multiple timesteps) of a track. Essentially a wrapper
     of the numpy.histogram() method.
 
     Parameters
@@ -1110,9 +1101,9 @@ def histogram_cellwise(
 
 
 def histogram_featurewise(Track, variable=None, bin_edges=None, density=False):
-    """Create a histogram of a variable from the features of a
-    track. Essentially a wrapper of the numpy.histogram()
-    method.
+    """Create a histogram of a variable from the features
+    (detected objects at a single time step) of a track.
+    Essentially a wrapper of the numpy.histogram() method.
 
     Parameters
     ----------

@@ -287,13 +287,14 @@ def segmentation(
     max_distance=None,
     vertical_coord="auto",
 ):
-    """Use watershedding or random walker technique to determine region above
-    a threshold value around initial seeding position for all time steps of
-    the input data. Works both in 2D (based on single seeding point) and 3D and
-    returns a mask with zeros everywhere around the identified regions and the
-    feature id inside the regions.
+    """Use watershedding to determine region above a threshold
+    value around initial seeding position for all time steps of
+    the input data. Works both in 2D (based on single seeding
+    point) and 3D and returns a mask with zeros everywhere around
+    the identified regions and the feature id inside the regions.
 
-    Calls segmentation_timestep at each individal timestep of the input data.
+    Calls segmentation_timestep at each individal timestep of the
+    input data.
 
     Parameters
     ----------
