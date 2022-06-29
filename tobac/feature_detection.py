@@ -367,7 +367,7 @@ def feature_detection_multithreshold_timestep(
     feature_number_start: int
                           feature number to start with
     wavelength_filtering: tuple, optional
-            minimum and maximum wavelengths in km, if spectral filtering of input field is desired
+            minimum and maximum wavelengths in m, if spectral filtering of input field is desired
 
 
     Output:
@@ -474,7 +474,7 @@ def feature_detection_multithreshold(
     min_distance:  float
                    minimum distance between detected features (m)
     wavelength_filtering: tuple, optional
-            minimum and maximum wavelengths in km, if spectral filtering of input field is desired
+            minimum and maximum wavelengths in m, if spectral filtering of input field is desired
     Output:
     features:      pandas DataFrame
                    detected features
@@ -501,12 +501,12 @@ def feature_detection_multithreshold(
 
     # if wavelength_filtering is given, check that value cannot be larger than distances along x and y
     if wavelength_filtering is not None:
-        distance_x = field_in.shape[1] * (dxy / 1000)
-        distance_y = field_in.shape[2] * (dxy / 1000)
+        distance_x = field_in.shape[1] * (dxy)
+        distance_y = field_in.shape[2] * (dxy)
         distance = min(distance_x, distance_y)
         if wavelength_filtering[0] > distance or wavelength_filtering[1] > distance:
             raise ValueError(
-                "The given wavelengths cannot be larger than the total distance in km along the axes of the domain."
+                "The given wavelengths cannot be larger than the total distance in m along the axes of the domain."
             )
 
     for i_time, data_i in enumerate(data_time):

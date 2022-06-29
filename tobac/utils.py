@@ -594,9 +594,9 @@ def spectral_filtering(
     field_in: numpy.array
         2D field with input data
     lambda_min: float
-        minimum wavelength in km
+        minimum wavelength in m
     lambda_max: float
-        maximum wavelength in km
+        maximum wavelength in m
     return_transfer_function: boolean, optional
         default: False. If set to True, then the 2D transfer function and the corresponding wavelengths are returned.
 
@@ -618,9 +618,6 @@ def spectral_filtering(
             "Invalid value for dxy. Please provide the grid spacing in meter."
         )
 
-    # convert grid spacing to km to get same units as given wavelengths
-    dxy = dxy / 1000
-
     # get number of grid cells in x and y direction
     Ni = field_in.shape[-2]
     Nj = field_in.shape[-1]
@@ -635,7 +632,7 @@ def spectral_filtering(
         # if domain is a rectangle:
         # alpha is the normalized wavenumber in wavenumber space
         alpha = np.sqrt(m**2 / Ni**2 + n**2 / Nj**2)
-        # compute wavelengths for target grid in km
+        # compute wavelengths for target grid in m
         lambda_mn = 2 * dxy / alpha
 
     ############### create a 2D bandpass filter (butterworth) #######################
