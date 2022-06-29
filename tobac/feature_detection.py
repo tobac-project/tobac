@@ -499,15 +499,30 @@ def feature_detection_multithreshold(
     if type(threshold) in [int, float]:
         threshold = [threshold]
 
-    # if wavelength_filtering is given, check that value cannot be larger than distances along x and y
+    # if wavelength_filtering is given, check that value cannot be larger than distances along x and y,
+    # that the value cannot be smaller or equal to the grid spacing
+    # and throw a warning if dxy and wavelengths have about the same order of magnitude
     if wavelength_filtering is not None:
         distance_x = field_in.shape[1] * (dxy)
         distance_y = field_in.shape[2] * (dxy)
         distance = min(distance_x, distance_y)
-        if wavelength_filtering[0] > distance or wavelength_filtering[1] > distance:
+
+        # make sure the smaller value is taken as the minimum and the larger as the maximum 
+        lambda_min = min(wavelength_filtering)
+        lambda_max = max(wavelength_filtering)
+
+        if lambda_min > distance or lambda_max > distance:
             raise ValueError(
                 "The given wavelengths cannot be larger than the total distance in m along the axes of the domain."
             )
+        elif lambda_min <= dxy:
+            raise ValueError("The given minimum wavelength cannot be smaller than gridspacing dxy. Please note
+            that both dxy and the values for wavelength_filtering should be given in meter.")
+
+        elif np.floor(np.log10(lambda_min)) - np.floor(np.log10(dxy)) > 1 :
+            warnings.warn("Warning: The values for dxy and the minimum wavelength are close in order of magnitude. Please
+            note that both dxy and for wavelength_filtering should be given in meter.")
+
 
     for i_time, data_i in enumerate(data_time):
         time_i = data_i.coord("time").units.num2date(data_i.coord("time").points[0])
