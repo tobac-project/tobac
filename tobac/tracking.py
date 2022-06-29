@@ -67,7 +67,7 @@ def linking_trackpy(
 
     Parameters
     ----------
-    features : xarray.Dataset
+    features : pandas.DataFrame
         Detected features to be linked.
 
     field_in : xarray.DataArray
@@ -90,14 +90,14 @@ def linking_trackpy(
         of the position of the feature by one or two grid cells even for
         a very high temporal resolution of the input data, potentially
         jeopardising the tracking procedure. To prevent this, tobac uses
-        an additional minimum radius of the search range. [5]_
+        an additional minimum radius of the search range.
         Default is None.
 
     subnetwork_size : int, optional
         Maximum size of subnetwork for linking. This parameter should be
         adjusted when using adaptive search. Usually a lower value is desired
         in that case. For a more in depth explanation have look
-        `here <https://soft-matter.github.io/trackpy/v0.3.0/tutorial/adaptive-search.html>`_
+        `here <https://soft-matter.github.io/trackpy/v0.5.0/tutorial/adaptive-search.html>`_
         If None, 30 is used for regular search and 15 for adaptive search.
         Default is None.
 
@@ -109,7 +109,7 @@ def linking_trackpy(
         be still considered tracked. Default is 0.
         .. warning :: This parameter should be used with caution, as it
                      can lead to erroneous trajectory linking,
-                     espacially for data with low time resolution. [5]_
+                     espacially for data with low time resolution.
 
     stubs : int, optional
         Minimum number of timesteps of a tracked cell to be reported
@@ -152,10 +152,11 @@ def linking_trackpy(
 
     Returns
     -------
-    trajectories_final : xarray.Dataset
-        This enables filtering the resulting trajectories, e.g. to
-        reject trajectories that are only partially captured at the
-        boundaries of the input field both in space and time. [5]_
+    trajectories_final : pandas.DataFrame
+        Dataframe of the linked features, containing the variable 'cell',
+        with integers indicating the affiliation of a feature to a specific
+        track, and the variable 'time_cell' with the time the cell has
+        already existed.
 
     Raises
     ------
