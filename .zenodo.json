@@ -25,6 +25,11 @@
             "name": "Fabian Senf",
             "affiliation": "Leibniz Institute for Tropospheric Research, Leipzig (Germany)",
             "orcid": "0000-0003-1685-2657",
+        },
+        {
+            "name": "Xin Zhang",
+            "affiliation": "Nanjing University of Information Science & Technology (China)",
+            "orcid": "0000-0002-1756-6620",
         }
     ],
     "keywords": ["cloud tracking"],
