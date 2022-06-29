@@ -5,7 +5,7 @@ import pytest
 
 @pytest.mark.parametrize(
     "test_threshs, dxy, wavelength_filtering",
-    [([1.5], -1, None), ([1.5], 10000, (100, 500))],
+    [([1.5], -1, None), ([1.5], 10000, (100*1000, 500*1000))],
 )
 def test_feature_detection_multithreshold_timestep(
     test_threshs, dxy, wavelength_filtering
