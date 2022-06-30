@@ -12,6 +12,8 @@ html_theme = "sphinx_rtd_theme"
 
 project = u'tobac'
 
+master_doc = 'index'
+
 
 def setup(app):
    app.add_css_file("theme_overrides.css")
