@@ -1,0 +1,3 @@
+Variable Name,Description,Units,Type
+cell,Tracked cell number; generally starts from 1. Untracked cell value can be set; but by default is -1.,n/a,int
+time_cell,Time since cell was first detected.,typically minutes,object/python timedelta
