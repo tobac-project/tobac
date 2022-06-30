@@ -324,9 +324,11 @@ def watershedding_3D(track, field_in, **kwargs):
     warnings.simplefilter("default", DeprecationWarning)  # reset filter
 
     kwargs.pop("method", None)
-    if 'dxy' not in kwargs:
+    if "dxy" not in kwargs:
         raise ValueError("Need grid spacing `dxy`.")
-    return segmentation(track, field_in, dxy=kwargs.get('dxy'), method="watershed", **kwargs)
+    return segmentation(
+        track, field_in, dxy=kwargs.get("dxy"), method="watershed", **kwargs
+    )
 
 
 def watershedding_2D(track, field_in, **kwargs):
@@ -342,6 +344,8 @@ def watershedding_2D(track, field_in, **kwargs):
     )
 
     kwargs.pop("method", None)
-    if 'dxy' not in kwargs:
+    if "dxy" not in kwargs:
         raise ValueError("Need grid spacing `dxy`.")
-    return segmentation(track, field_in, dxy=kwargs.get('dxy'), method="watershed", **kwargs)
+    return segmentation(
+        track, field_in, dxy=kwargs.get("dxy"), method="watershed", **kwargs
+    )
