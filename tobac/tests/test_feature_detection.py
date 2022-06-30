@@ -1,4 +1,5 @@
 import tobac.testing
+import tobac.testing as tbtest
 import tobac.feature_detection as feat_detect
 import pytest
 
@@ -44,3 +45,31 @@ def test_feature_detection_multithreshold_timestep():
     # Make sure that the location of the feature is correct
     assert fd_output.iloc[0]["hdim_1"] == pytest.approx(test_hdim_1_pt)
     assert fd_output.iloc[0]["hdim_2"] == pytest.approx(test_hdim_2_pt)
+
+@pytest.mark.parametrize(
+    "position_threshold",
+    [("center"), ("extreme"), ("weighted_diff"), ("weighted_abs")]
+)
+def test_feature_detection_position(position_threshold):
+    '''
+    Tests to make sure that all feature detection position_thresholds work. 
+    '''
+    import numpy as np
+    test_dset_size = (50, 50)
+
+    test_data = np.zeros(test_dset_size)
+
+    test_data[0:5,0:5] = 3
+    test_threshs = [
+        1.5,
+    ]
+    test_min_num = 2
+
+    test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type="iris")
+
+    fd_output = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris, 0, threshold=test_threshs, n_min_threshold=test_min_num, position_threshold = position_threshold
+    )
+
+
+    pass
