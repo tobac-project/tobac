@@ -1,50 +1,5 @@
 import logging
-from operator import is_
 from . import utils as tb_utils
-
-
-def segmentation_3D(
-    features,
-    field,
-    dxy,
-    threshold=3e-3,
-    target="maximum",
-    level=None,
-    method="watershed",
-    max_distance=None,
-):
-    return segmentation(
-        features,
-        field,
-        dxy,
-        threshold=threshold,
-        target=target,
-        level=level,
-        method=method,
-        max_distance=max_distance,
-    )
-
-
-def segmentation_2D(
-    features,
-    field,
-    dxy,
-    threshold=3e-3,
-    target="maximum",
-    level=None,
-    method="watershed",
-    max_distance=None,
-):
-    return segmentation(
-        features,
-        field,
-        dxy,
-        threshold=threshold,
-        target=target,
-        level=level,
-        method=method,
-        max_distance=max_distance,
-    )
 
 
 def transfm_pbc_point(in_dim, dim_min, dim_max):
@@ -404,9 +359,7 @@ def segmentation_timestep(
     if field_in.ndim == 2:
         hdim_1_axis = 0
         hdim_2_axis = 1
-        is_3D_seg = False
     elif field_in.ndim == 3:
-        is_3D_seg = True
         vertical_axis = tb_utils.find_vertical_axis_from_coord(
             field_in, vertical_coord=vertical_coord
         )
@@ -875,7 +828,6 @@ def segmentation_timestep(
             # Creation of actual Buddy Box space for transposition
             # of data in domain and re-seeding with Buddy feature markers
             buddy_rgn = np.zeros((bbox_zsize, bbox_ysize, bbox_xsize))
-            ind_ctr = 0
 
             # need to loop thru ALL z,y,x inds in buddy box
             # not just the ones that have nonzero seg mask values
@@ -931,7 +883,7 @@ def segmentation_timestep(
 
             # Set level at which to create "Seed" for each feature in the case of 3D watershedding:
             # If none, use all levels (later reduced to the ones fulfilling the theshold conditions)
-            if level == None:
+            if level is None:
                 level = slice(None)
 
             # transform max_distance in metres to distance in pixels:
@@ -1162,6 +1114,7 @@ def segmentation(
             vertical_coord=vertical_coord,
             PBC_flag=PBC_flag,
             seed_3D_flag=seed_3D_flag,
+            seed_3D_size=seed_3D_size,
         )
         segmentation_out_list.append(segmentation_out_i)
         features_out_list.append(features_out_i)

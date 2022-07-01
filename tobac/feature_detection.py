@@ -1,4 +1,3 @@
-from operator import is_
 import numpy as np
 import pandas as pd
 import logging
@@ -8,8 +7,8 @@ from . import utils as tb_utils
 
 def feature_position(
     hdim1_indices,
-    hdim2_indeces,
-    vdim_indyces=None,
+    hdim2_indices,
+    vdim_indices=None,
     region_small=None,
     region_bbox=None,
     track_data=None,
@@ -29,10 +28,10 @@ def feature_position(
     hdim1_indices : list
         list of indices along hdim1 (typically ```y```)
 
-    hdim2_indeces : list
+    hdim2_indices : list
         List of indices of feature along hdim2 (typically ```x```)
 
-    vdim_indyces : list, optional
+    vdim_indices : list, optional
         List of indices of feature along optional vdim (typically ```z```)
 
     region_small : 2D or 3D array-like
@@ -101,10 +100,13 @@ def feature_position(
     # are we 3D? if so, True.
     is_3D = False
 
+    pbc_options = ["hdim_1", "hdim_2", "both"]
+
+    hdim1_indices_2 = hdim1_indices
+    hdim2_indices_2 = hdim2_indices
+
     if PBC_flag == "hdim_1":
         # ONLY periodic in y
-        hdim1_indices_2 = hdim1_indices
-        hdim2_indeces_2 = hdim2_indeces
 
         if ((np.max(hdim1_indices)) == y_max) and ((np.min(hdim1_indices) == y_min)):
             for y2 in range(0, len(hdim1_indices_2)):
@@ -114,19 +116,15 @@ def feature_position(
 
     elif PBC_flag == "hdim_2":
         # ONLY periodic in x
-        hdim1_indices_2 = hdim1_indices
-        hdim2_indeces_2 = hdim2_indeces
 
-        if ((np.max(hdim2_indeces)) == x_max) and ((np.min(hdim2_indeces) == x_min)):
-            for x2 in range(0, len(hdim2_indeces_2)):
-                h2_ind = hdim2_indeces_2[x2]
+        if ((np.max(hdim2_indices)) == x_max) and ((np.min(hdim2_indices) == x_min)):
+            for x2 in range(0, len(hdim2_indices_2)):
+                h2_ind = hdim2_indices_2[x2]
                 if h2_ind < (x_max / 2):
-                    hdim2_indeces_2[x2] = h2_ind + x_max
+                    hdim2_indices_2[x2] = h2_ind + x_max
 
     elif PBC_flag == "both":
         # DOUBLY periodic boundaries
-        hdim1_indices_2 = hdim1_indices
-        hdim2_indeces_2 = hdim2_indeces
 
         if ((np.max(hdim1_indices)) == y_max) and ((np.min(hdim1_indices) == y_min)):
             for y2 in range(0, len(hdim1_indices_2)):
@@ -134,18 +132,14 @@ def feature_position(
                 if h1_ind < (y_max / 2):
                     hdim1_indices_2[y2] = h1_ind + y_max
 
-        if ((np.max(hdim2_indeces)) == x_max) and ((np.min(hdim2_indeces) == x_min)):
-            for x2 in range(0, len(hdim2_indeces_2)):
-                h2_ind = hdim2_indeces_2[x2]
+        if ((np.max(hdim2_indices)) == x_max) and ((np.min(hdim2_indices) == x_min)):
+            for x2 in range(0, len(hdim2_indices_2)):
+                h2_ind = hdim2_indices_2[x2]
                 if h2_ind < (x_max / 2):
-                    hdim2_indeces_2[x2] = h2_ind + x_max
-
-    else:
-        hdim1_indices_2 = hdim1_indices
-        hdim2_indeces_2 = hdim2_indeces
+                    hdim2_indices_2[x2] = h2_ind + x_max
 
     hdim1_indices = hdim1_indices_2
-    hdim2_indeces = hdim2_indeces_2
+    hdim2_indices = hdim2_indices_2
 
     if len(region_bbox) == 4:
         # 2D case
@@ -165,9 +159,9 @@ def feature_position(
     if position_threshold == "center":
         # get position as geometrical centre of identified region:
         hdim1_index = np.mean(hdim1_indices)
-        hdim2_index = np.mean(hdim2_indeces)
+        hdim2_index = np.mean(hdim2_indices)
         if is_3D:
-            vdim_index = np.mean(vdim_indyces)
+            vdim_index = np.mean(vdim_indices)
 
     elif position_threshold == "extreme":
         # get position as max/min position inside the identified region:
@@ -176,9 +170,9 @@ def feature_position(
         if target == "minimum":
             index = np.argmin(track_data_region[region_small])
         hdim1_index = hdim1_indices[index]
-        hdim2_index = hdim2_indeces[index]
+        hdim2_index = hdim2_indices[index]
         if is_3D:
-            vdim_index = vdim_indyces[index]
+            vdim_index = vdim_indices[index]
 
     elif position_threshold == "weighted_diff":
         # get position as centre of identified region, weighted by difference from the threshold:
@@ -186,9 +180,9 @@ def feature_position(
         if sum(weights) == 0:
             weights = None
         hdim1_index = np.average(hdim1_indices, weights=weights)
-        hdim2_index = np.average(hdim2_indeces, weights=weights)
+        hdim2_index = np.average(hdim2_indices, weights=weights)
         if is_3D:
-            vdim_index = np.average(vdim_indyces, weights=weights)
+            vdim_index = np.average(vdim_indices, weights=weights)
 
     elif position_threshold == "weighted_abs":
         # get position as centre of identified region, weighted by absolute values if the field:
@@ -196,9 +190,9 @@ def feature_position(
         if sum(weights) == 0:
             weights = None
         hdim1_index = np.average(hdim1_indices, weights=weights)
-        hdim2_index = np.average(hdim2_indeces, weights=weights)
+        hdim2_index = np.average(hdim2_indices, weights=weights)
         if is_3D:
-            vdim_index = np.average(vdim_indyces, weights=weights)
+            vdim_index = np.average(vdim_indices, weights=weights)
 
     else:
         raise ValueError(
@@ -600,9 +594,8 @@ def feature_detection_threshold(
     elif PBC_flag == "none":
         pass
     else:
-        # TODO: fix periodic flag to be str, then update this with the possible values.
         raise ValueError(
-            "Options for periodic are currently: none, hdim_1, hdim_2, both"
+            "Options for periodic are currently: none, " + ", ".join(pbc_options)
         )
 
         # num_labels = num_labels - len(skip_list)
@@ -612,7 +605,7 @@ def feature_detection_threshold(
     if len(label_props) > 0:
         [
             total_indices_all,
-            vdim_indyces_all,
+            vdim_indices_all,
             hdim1_indices_all,
             hdim2_indices_all,
         ] = tb_utils.get_indices_of_labels_from_reg_prop_dict(label_props)
@@ -639,11 +632,11 @@ def feature_detection_threshold(
             if curr_count <= n_min_threshold:
                 continue
             if is_3D:
-                vdim_indyces = vdim_indyces_all[cur_idx]
+                vdim_indices = vdim_indices_all[cur_idx]
             else:
-                vdim_indyces = None
+                vdim_indices = None
             hdim1_indices = hdim1_indices_all[cur_idx]
-            hdim2_indeces = hdim2_indices_all[cur_idx]
+            hdim2_indices = hdim2_indices_all[cur_idx]
 
             label_bbox = label_props[cur_idx].bbox
             (
@@ -661,15 +654,15 @@ def feature_detection_threshold(
             if is_3D:
                 region_small = np.full((bbox_zsize, bbox_ysize, bbox_xsize), False)
                 region_small[
-                    vdim_indyces - bbox_zstart,
+                    vdim_indices - bbox_zstart,
                     hdim1_indices - bbox_ystart,
-                    hdim2_indeces - bbox_xstart,
+                    hdim2_indices - bbox_xstart,
                 ] = True
 
             else:
                 region_small = np.full((bbox_ysize, bbox_xsize), False)
                 region_small[
-                    hdim1_indices - bbox_ystart, hdim2_indeces - bbox_xstart
+                    hdim1_indices - bbox_ystart, hdim2_indices - bbox_xstart
                 ] = True
                 # we are 2D and need to remove the dummy 3D coordinate.
                 label_bbox = (
@@ -679,26 +672,26 @@ def feature_detection_threshold(
                     label_bbox[5],
                 )
 
-            # [hdim1_indices,hdim2_indeces]= np.nonzero(region)
+            # [hdim1_indices,hdim2_indices]= np.nonzero(region)
             # write region for individual threshold and feature to dict
 
             if is_3D:
                 region_i = list(
                     zip(
                         hdim1_indices * x_max * z_max
-                        + hdim2_indeces * z_max
-                        + vdim_indyces
+                        + hdim2_indices * z_max
+                        + vdim_indices
                     )
                 )
             else:
-                region_i = np.array(hdim1_indices * x_max + hdim2_indeces)
+                region_i = np.array(hdim1_indices * x_max + hdim2_indices)
 
             regions[cur_idx + idx_start] = region_i
             # Determine feature position for region by one of the following methods:
             single_indices = feature_position(
                 hdim1_indices,
-                hdim2_indeces,
-                vdim_indyces=vdim_indyces,
+                hdim2_indices,
+                vdim_indices=vdim_indices,
                 region_small=region_small,
                 region_bbox=label_bbox,
                 track_data=data_i,

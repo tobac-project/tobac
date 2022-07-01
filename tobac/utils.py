@@ -1068,8 +1068,6 @@ def calc_distance_coords_pbc(
     """
 
     is_3D = len(coords_1) == 3
-    size_h1 = max_h1 - min_h1
-    size_h2 = max_h2 - min_h2
 
     if not is_3D:
         # Let's make the accounting easier.
@@ -1077,17 +1075,19 @@ def calc_distance_coords_pbc(
         coords_2 = np.array((0, coords_2[0], coords_2[1]))
 
     if PBC_flag in ["hdim_1", "both"]:
+        size_h1 = max_h1 - min_h1
         mod_h1 = size_h1
     else:
         mod_h1 = 0
     if PBC_flag in ["hdim_2", "both"]:
+        size_h2 = max_h2 - min_h2
         mod_h2 = size_h2
     else:
         mod_h2 = 0
     max_dims = np.array((0, mod_h1, mod_h2))
     deltas = np.abs(coords_1 - coords_2)
     deltas = np.where(deltas > 0.5 * max_dims, deltas - max_dims, deltas)
-    return np.sqrt(np.sum(deltas**2))
+    return np.sqrt(np.sum(deltas ** 2))
 
 
 def find_vertical_axis_from_coord(variable_cube, vertical_coord="auto"):

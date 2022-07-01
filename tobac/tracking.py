@@ -28,9 +28,9 @@ def linking_trackpy(
     cell_number_start=1,
     cell_number_unassigned=-1,
     vertical_coord="auto",
-    min_h1=None,
+    min_h1=0,
     max_h1=None,
-    min_h2=None,
+    min_h2=0,
     max_h2=None,
     PBC_flag="none",
 ):
