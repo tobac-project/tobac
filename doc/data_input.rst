@@ -1,4 +1,4 @@
-Data input and output
+*Data input and output
 ======================
 
 Input data for tobac should consist of one or more fields on a common, regular grid with a time dimension and two or more spatial dimensions. The input data should also include latitude and longitude coordinates, either as 1-d or 2-d variables depending on the grid used.
