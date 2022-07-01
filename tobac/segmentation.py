@@ -326,9 +326,9 @@ def watershedding_3D(track, field_in, **kwargs):
     kwargs.pop("method", None)
     if "dxy" not in kwargs:
         raise ValueError("Need grid spacing `dxy`.")
-    return segmentation(
-        track, field_in, dxy=kwargs.get("dxy"), method="watershed", **kwargs
-    )
+    dxy = kwargs.get("dxy")
+    kwargs.pop("dxy", None)
+    return segmentation(track, field_in, dxy=dxy, method="watershed", **kwargs)
 
 
 def watershedding_2D(track, field_in, **kwargs):
@@ -346,6 +346,6 @@ def watershedding_2D(track, field_in, **kwargs):
     kwargs.pop("method", None)
     if "dxy" not in kwargs:
         raise ValueError("Need grid spacing `dxy`.")
-    return segmentation(
-        track, field_in, dxy=kwargs.get("dxy"), method="watershed", **kwargs
-    )
+    dxy = kwargs.get("dxy")
+    kwargs.pop("dxy", None)
+    return segmentation(track, field_in, dxy=dxy, method="watershed", **kwargs)
