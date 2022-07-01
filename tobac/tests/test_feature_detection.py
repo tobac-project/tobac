@@ -1,4 +1,3 @@
-import tobac.testing
 import tobac.testing as tbtest
 import tobac.feature_detection as feat_detect
 import pytest
@@ -9,7 +8,6 @@ def test_feature_detection_multithreshold_timestep():
     Tests ```tobac.feature_detection.feature_detection_multithreshold_timestep
     """
     import numpy as np
-    from tobac import testing
     from tobac import feature_detection
 
     # start by building a simple dataset with a single feature and seeing
@@ -27,7 +25,7 @@ def test_feature_detection_multithreshold_timestep():
     test_min_num = 2
 
     test_data = np.zeros(test_dset_size)
-    test_data = testing.make_feature_blob(
+    test_data = tbtest.make_feature_blob(
         test_data,
         test_hdim_1_pt,
         test_hdim_2_pt,
@@ -35,7 +33,7 @@ def test_feature_detection_multithreshold_timestep():
         h2_size=test_hdim_2_sz,
         amplitude=test_amp,
     )
-    test_data_iris = testing.make_dataset_from_arr(test_data, data_type="iris")
+    test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type="iris")
     fd_output = feature_detection.feature_detection_multithreshold_timestep(
         test_data_iris, 0, threshold=test_threshs, n_min_threshold=test_min_num
     )
