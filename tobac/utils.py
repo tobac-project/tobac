@@ -1087,7 +1087,7 @@ def calc_distance_coords_pbc(
     max_dims = np.array((0, mod_h1, mod_h2))
     deltas = np.abs(coords_1 - coords_2)
     deltas = np.where(deltas > 0.5 * max_dims, deltas - max_dims, deltas)
-    return np.sqrt(np.sum(deltas ** 2))
+    return np.sqrt(np.sum(deltas**2))
 
 
 def find_vertical_axis_from_coord(variable_cube, vertical_coord="auto"):
