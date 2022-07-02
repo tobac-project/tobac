@@ -1,4 +1,6 @@
 import logging
+from multiprocessing.sharedctypes import Value
+import warnings
 
 
 def segmentation_3D(
@@ -11,6 +13,17 @@ def segmentation_3D(
     method="watershed",
     max_distance=None,
 ):
+    warnings.simplefilter(
+        "always", DeprecationWarning
+    )  # turn off filter; this is an easy switch for users.
+    warnings.warn(
+        "Warning: using deprecated function `segmentation_3D`. Switch to `segmentation` instead."
+        " The arguments and output of `segmentation` is the same, so it is an easy switch."
+        " This function will be removed in v1.5.0.",
+        category=DeprecationWarning,
+        stacklevel=2,
+    )
+    warnings.simplefilter("default", DeprecationWarning)  # reset filter
     return segmentation(
         features,
         field,
@@ -33,6 +46,18 @@ def segmentation_2D(
     method="watershed",
     max_distance=None,
 ):
+    warnings.simplefilter(
+        "always", DeprecationWarning
+    )  # turn off filter; this is an easy switch for users.
+    warnings.warn(
+        "Warning: using deprecated function `segmentation_2D`. Switch to `segmentation` instead."
+        " The arguments and output of `segmentation` is the same, so it is an easy switch."
+        " This function will be removed in v1.5.0.",
+        category=DeprecationWarning,
+        stacklevel=2,
+    )
+    warnings.simplefilter("default", DeprecationWarning)  # reset filter
+
     return segmentation(
         features,
         field,
@@ -286,10 +311,41 @@ def segmentation(
 
 
 def watershedding_3D(track, field_in, **kwargs):
+    warnings.simplefilter(
+        "always", DeprecationWarning
+    )  # turn off filter; this is an easy switch for users.
+    warnings.warn(
+        "Warning: using deprecated function `watershedding_3D`. Switch to `segmentation` instead."
+        " The arguments and output of `segmentation` is the same, so it is an easy switch."
+        " This function will be removed in v1.5.0.",
+        category=DeprecationWarning,
+        stacklevel=2,
+    )
+    warnings.simplefilter("default", DeprecationWarning)  # reset filter
+
     kwargs.pop("method", None)
-    return segmentation_3D(track, field_in, method="watershed", **kwargs)
+    if "dxy" not in kwargs:
+        raise ValueError("Need grid spacing `dxy`.")
+    dxy = kwargs.get("dxy")
+    kwargs.pop("dxy", None)
+    return segmentation(track, field_in, dxy=dxy, method="watershed", **kwargs)
 
 
 def watershedding_2D(track, field_in, **kwargs):
+    warnings.simplefilter(
+        "always", DeprecationWarning
+    )  # turn off filter; this is an easy switch for users.
+    warnings.warn(
+        "Warning: using deprecated function `watershedding_2D`. Switch to `segmentation` instead."
+        " The arguments and output of `segmentation` is the same, so it is an easy switch."
+        " This function will be removed in v1.5.0.",
+        category=DeprecationWarning,
+        stacklevel=2,
+    )
+
     kwargs.pop("method", None)
-    return segmentation_2D(track, field_in, method="watershed", **kwargs)
+    if "dxy" not in kwargs:
+        raise ValueError("Need grid spacing `dxy`.")
+    dxy = kwargs.get("dxy")
+    kwargs.pop("dxy", None)
+    return segmentation(track, field_in, dxy=dxy, method="watershed", **kwargs)
