@@ -1,8 +1,13 @@
+'''This file is used to configure the Sphinx build of our documentation.
+The documentation on setting this up is here: https://www.sphinx-doc.org/en/master/usage/configuration.html 
+'''
+
 import sphinx_rtd_theme
 import sys, os
 
 sys.path.insert(0, os.path.abspath('extensions'))
 
+# What Sphinx extensions do we need
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.todo',
               'sphinx.ext.coverage', 'sphinx.ext.imgmath', 'sphinx.ext.ifconfig',
               'sphinx_rtd_theme','sphinx.ext.napoleon']
@@ -14,16 +19,20 @@ project = u'tobac'
 
 master_doc = 'index'
 
-
+# Include our custom CSS (currently for special table config)
 def setup(app):
    app.add_css_file("theme_overrides.css")
 
+# This should include all modules used in tobac. These are dummy imports,
+# but should include both required and optional dependencies.
 autodoc_mock_imports = ['numpy', 'scipy', 'scikit-image', 'pandas', 'pytables', 'matplotlib', 'iris',
                         'cf-units', 'xarray', 'cartopy', 'trackpy', 'numba']
 
 sys.path.insert(0, os.path.abspath("../"))
 
-# Napoleon settings
+# Napoleon settings for configuring the Napoleon extension
+# See documentation here: 
+# https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html
 napoleon_google_docstring = True
 napoleon_numpy_docstring = True
 napoleon_include_init_with_doc = False
