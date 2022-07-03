@@ -4,18 +4,11 @@ tobac works with Python 3 installations.
 
 The easiest way is to install the most recent version of tobac via conda or mamba and the conda-forge channel:
 
-    ``conda install -c conda-forge tobac``
-
-or
-    ``mamba install -c conda-forge tobac``
+:code:`conda install -c conda-forge tobac` or :code:`mamba install -c conda-forge tobac`
 
 This will take care of all necessary dependencies and should do the job for most users. It also allows for an easy update of the installation by
 
-    ``conda update -c conda-forge tobac``
-
-or
-
-    ``mamba update -c conda-forge tobac``
+:code:`conda update -c conda-forge tobac` :code:`mamba update -c conda-forge tobac`
 
 
 You can also install conda via pip, which is mainly interesting for development purposes or using specific development branches for the Github repository.
