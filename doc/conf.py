@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.abspath('extensions'))
 # What Sphinx extensions do we need
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.todo',
               'sphinx.ext.coverage', 'sphinx.ext.imgmath', 'sphinx.ext.ifconfig',
-              'sphinx_rtd_theme','sphinx.ext.napoleon']
+              'sphinx_rtd_theme','sphinx.ext.napoleon', 'nbsphinx']
 
 
 html_theme = "sphinx_rtd_theme"
@@ -18,6 +18,9 @@ html_theme = "sphinx_rtd_theme"
 project = u'tobac'
 
 master_doc = 'index'
+
+# allow dropdowns
+collapse_navigation = False
 
 # Include our custom CSS (currently for special table config)
 def setup(app):
