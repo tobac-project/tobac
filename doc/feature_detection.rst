@@ -1,4 +1,4 @@
-.. _Feature Detection:
+.. _feature-detection-overview:
 Feature Detection Basics
 ---------------------
 

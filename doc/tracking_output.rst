@@ -2,7 +2,7 @@
 Tracking output
 -------------------------
 
-Tracking outputs a `pandas` dataframe with additional variables in addition to the variables output by Feature Detection (see `Feature Detection Output`_). The additional variables added by tracking, with column names listed in the `Variable Name` column, are described below with units. 
+Tracking outputs a `pandas` dataframe with additional variables in addition to the variables output by Feature Detection (see :doc:`feature_detection_output`). The additional variables added by tracking, with column names listed in the `Variable Name` column, are described below with units. 
 
 Variables that are common to all tracking files:
 
