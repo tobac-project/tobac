@@ -1,4 +1,3 @@
-.. _Tracking Output:
 Tracking output
 -------------------------
 

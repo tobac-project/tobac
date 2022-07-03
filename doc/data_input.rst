@@ -1,6 +1,6 @@
 ..
     Description of the input data required.
-.. _Data Input:
+
 Data input
 ==========
 

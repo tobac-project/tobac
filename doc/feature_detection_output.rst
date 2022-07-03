@@ -1,4 +1,3 @@
-.. _Feature Detection Output:
 Feature detection output
 -------------------------
 
