@@ -35,15 +35,15 @@ If you are using anaconda, the following command should make sure all dependenci
 
 You can directly install the package directly from github with pip and either of the two following commands: 
 
-    ``pip install --upgrade git+ssh://git@github.com/climate-processes/tobac.git``
+    ``pip install --upgrade git+ssh://git@github.com/tobac-project/tobac.git``
 
-    ``pip install --upgrade git+https://github.com/climate-processes/tobac.git``
+    ``pip install --upgrade git+https://github.com/tobac-project/tobac.git``
 
 You can also clone the package with any of the two following commands: 
 
-    ``git clone git@github.com:climate-processes/tobac.git``
+    ``git clone git@github.com:tobac-project/tobac.git``
 
-    ``git clone https://github.com/climate-processes/tobac.git``
+    ``git clone https://github.com/tobac-project/tobac.git``
 
 and install the package from the locally cloned version (The trailing slash is actually necessary):
 

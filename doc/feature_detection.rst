@@ -1,7 +1,8 @@
-Feature detection
+.. _Feature Detection:
+Feature Detection Basics
 ---------------------
 
-The feature detection form the first step of the analysis.
+The feature detection is the first step in using **tobac**.
 
 **Currently implemented methods:**
 
