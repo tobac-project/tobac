@@ -35,4 +35,8 @@ The minimum number of points per threshold, set by :code:`n_min_threshold`, dete
 ================
 Feature Position
 ================
-There are four ways of calculating the single point used to represent feature center: arithmetic center, extreme point, weighted differencing, and weighted absolute differencing. 
+There are four ways of calculating the single point used to represent feature center: arithmetic center, extreme point, difference weighting, and absolute weighting. Generally, difference weighting (:code:`position_threshold='weighted_diff'`) or absolute weighting (:code:`position_threshold='weighted_abs'`) is suggested for most atmospheric applications. An example of these four methods is shown below, and can be further explored in the example notebook: :doc:`feature_detection/notebooks/position_threshold_example`.
+
+	.. image:: images/position_thresholds.png
+            :width: 500 px
+
