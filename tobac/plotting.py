@@ -1,3 +1,23 @@
+"""Provide methods for plotting analyzed data.
+
+Plotting routines including both visualizations of the entire cloud field
+and detailed visualizations for individual convective cells and their
+properties. [3]_
+
+Notes
+-----
+many short summaries are the same
+
+References
+----------
+.. Heikenfeld, M., Marinescu, P. J., Christensen, M.,
+   Watson-Parris, D., Senf, F., van den Heever, S. C.
+   & Stier, P. (2019). tobac 1.2: towards a flexible 
+   framework for tracking and analysis of clouds in 
+   diverse datasets. Geoscientific Model Development,
+   12(11), 4551-4570.
+"""
+
 import matplotlib as mpl
 import warnings
 import logging
@@ -23,6 +43,65 @@ def plot_tracks_mask_field_loop(
     margin_top=0.05,
     **kwargs
 ):
+    """Plot data features and segments of all timeframes onto a map
+    projection and save as pngs. For the function to work it is
+    necessary to pass vmin, vmax and axis_extent as kwargs
+
+    Parameters
+    ----------
+    track : pandas.DataFrame
+        Output of linking_trackpy
+
+    field : iris.cube.Cube
+        Original input data
+
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tacked volumes 0 everywhere
+        else).
+
+    features : pandas.DataFrame
+        Output of the feature detection.
+
+    axes : cartopy.mpl.geoaxes.GeoAxesSubplot, optional
+        Not used. Default is None.
+
+    name : str, optional
+        First part of the filename. Same for all pngs. If None,
+        the name of the field is used. Default is None.
+
+    plot_dir : str, optional
+        Path where the plot will be saved. Default is './'.
+
+    figsize : tupel of float, optional
+        Width, height of the plot in inches.
+        Default is (10/2.54, 10/2.54).
+
+    dpi : int, optional
+        Plot resolution. Default is 300.
+
+    margin_left : float, optional
+        The position of the left edge of the axes, as a
+        fraction of the figure width. Default is 0.05.
+
+    margin_right : float, optional
+        The position of the right edge of the axes, as a
+        fraction of the figure width. Default is 0.05.
+
+    margin_bottom : float, optional
+        The position of the bottom edge of the axes, as a
+        fraction of the figure width. Default is 0.05.
+
+    margin_top : float, optional
+        The position of the top edge of the axes, as a
+        fraction of the figure width. Default is 0.05.
+
+    **kwargs
+
+    Returns
+    -------
+    none
+    """
+
     mpl_backend = mpl.get_backend()
     if mpl_backend != "agg":
         warnings.warn(
@@ -103,6 +182,135 @@ def plot_tracks_mask_field(
     rasterized=True,
     linewidth_contour=1,
 ):
+    """Plot data and segments of a timeframe and all tracks onto
+    a map projection. For the function to work it is necessary
+    to set vmin, vmax and axis_extent even though these are optional.
+
+    Parameters
+    ----------
+    track : pandas.DataFrame
+        Output of linking_trackpy
+
+    field : iris.cube.Cube
+        One frame of the original input data
+
+    mask : iris.cube.Cube
+        One frame of the Cube containing mask (int id for tacked
+        volumes 0 everywhere else), output of the segmentation.
+
+    features : pandas.DataFrame
+        Output of the feature detection.
+
+    axes : cartopy.mpl.geoaxes.GeoAxesSubplot, optional
+        GeoAxesSubplot to use for plotting. Default is None.
+
+    axis_extent : ndarray, optional
+        Array containing the bounds of the longitude and latitude
+        values. The structure is
+        [long_min, long_max, lat_min, lat_max]. Default is None.
+
+    plot_outline : bool, optional
+        Boolean defining wether the outlines of the segments are
+        plotted. Default is True.
+
+    plot_marker : bool, optional
+        Boolean defining wether the positions of the features from
+        the track dataframe are plotted. Default is True.
+
+    marker_track : str, optional
+        String defining the shape of the marker for the feature
+        positions from the track dataframe. Default is 'x'.
+
+    markersize_track : int, optional
+        Int defining the size of the marker for the feature
+        positions from the track dataframe. Default is 4.
+
+    plot_number : bool, optional
+        Boolean defining wether the index of the cells
+        is plotted next to the individual feature positions.
+        Default is True.
+
+    plot_features : bool, optional
+        Boolean defining wether the positions of the features from
+        the features dataframe are plotted. Default is True.
+
+    marker_feature : optional
+        String defining the shape of the marker for the feature
+        positions from the features dataframe. Default is None.
+
+    markersize_feature : optional
+        Int defining the size of the marker for the feature
+        positions from the features dataframe. Default is None.
+
+    title : str, optional
+        Flag determining the title of the plot. 'datestr' uses
+        date and time of the field. None sets not title.
+        Default is None.
+
+    title_str : str, optional
+        Additional string added to the beginning of the title.
+        Default is None.
+
+    vmin : float, optional
+        Lower bound of the colorbar. Default is None.
+
+    vmax : float, optional
+        Upper bound of the colorbar. Default is None.
+
+    n_levels : int, optional
+        Number of levels of the contour plot of the field.
+        Default is 50.
+
+    cmap : {'viridis',...}, optional
+        Colormap of the countour plot of the field.
+        matplotlib.colors. Default is 'viridis'.
+
+    extend : str, optional
+    Determines the coloring of values that are
+    outside the levels range. If 'neither', values outside
+    the levels range are not colored. If 'min', 'max' or
+    'both', color the values below, above or below and above
+    the levels range. Values below min(levels) and above
+    max(levels) are mapped to the under/over values of the
+    Colormap. Default is 'neither'.
+
+    orientation_colorbar : str, optional
+        Orientation of the colorbar, 'horizontal' or 'vertical'
+        Default is 'horizontal'.
+
+    pad_colorbar : float, optional
+        Fraction of original axes between colorbar and new
+        image axes. Default is 0.05.
+
+    label_colorbar : str, optional
+        Label of the colorbar. If none, name and unit of
+        the field are used. Default is None.
+
+    fraction_colorbar : float, optional
+        Fraction of original axes to use for colorbar.
+        Default is 0.046.
+
+    rasterized : bool, optional
+        True enables, False disables rasterization.
+        Default is True.
+
+    linewidth_contour : int, optional
+        Linewidth of the contour plot of the segments.
+        Default is 1.
+
+    Returns
+    -------
+    axes : cartopy.mpl.geoaxes.GeoAxesSubplot
+        Axes with the plot.
+
+    Raises
+    ------
+    ValueError
+        If axes are not cartopy.mpl.geoaxes.GeoAxesSubplot.
+
+        If mask.ndim is neither 2 nor 3.
+    """
+
     import matplotlib.pyplot as plt
 
     import cartopy
@@ -267,6 +475,40 @@ def plot_tracks_mask_field(
 def animation_mask_field(
     track, features, field, mask, interval=500, figsize=(10, 10), **kwargs
 ):
+    """Create animation of data, features and segments of
+    all timeframes.
+
+    Parameters
+    ----------
+    track : pandas.DataFrame
+        Output of linking_trackpy
+
+    features : pandas.DataFrame
+        Output of the feature detection.
+
+    field : iris.cube.Cube
+        Original input data
+
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tacked volumes 0
+        everywhere else), output of the segmentation.
+
+    interval : int, optional
+        Delay between frames in milliseconds.
+        Default is 500.
+
+    figsize : tupel of float, optional
+        Width, height of the plot in inches.
+        Default is (10, 10).
+
+    **kwargs
+
+    Returns
+    -------
+    animation : matplotlib.animation.FuncAnimation
+        Created animation as object.
+    """
+
     mpl_backend = mpl.get_backend()
     if mpl_backend != "agg":
         warnings.warn(
@@ -321,9 +563,54 @@ def plot_mask_cell_track_follow(
     dpi=300,
     **kwargs
 ):
-    """Make plots for all cells centred around cell and with one background field as filling and one background field as contrours
-    Input:
-    Output:
+    """Make plots for all cells centered around cell.
+
+    With one background field as filling and one background field as
+    contours.
+
+    Parameters
+    ----------
+    cell : int
+        Integer id of cell to create masked cube for.
+
+    track
+
+    cog
+
+    features : pandas.DataFrame
+        Output from trackpy/maketrack.
+
+    mask_total : iris.cube.Cube
+
+    field_contour
+
+    field_filled
+
+    width : int, optional
+        Default is 10000.
+
+    name : str, optional
+        Default is 'test'.
+
+    plotdir : str, optional
+        Path where the plot will be saved. Default is './'.
+
+    file_format : {['png'], ['pdf']}, optional
+        Default is ['png'].
+
+    dpi : int, optional
+        Plot resolution. Default is 300.
+
+    **kwargs
+
+    Returns
+    -------
+    none
+
+    Notes
+    -----
+    unsure about features, mask_total
+    needs more descriptions
     """
 
     mpl_backend = mpl.get_backend()
@@ -1733,30 +2020,38 @@ def plot_mask_cell_track_static_timeseries(
 def map_tracks(
     track, axis_extent=None, figsize=None, axes=None, untracked_cell_value=-1
 ):
-    """Maps the tracks of all tracked cells
+    """Plot the trajectories of the cells.
 
     Parameters
     ----------
-    track: pandas dataframe
-        Tracks from tobac
-    axis_extent: array-like, length 4
-        Extent of the map, as required by `cartopy`
-    figsize: depreciated
-        Depreciated parameter
-    axes: Matplotlib axes or geoaxes from cartopy
-        Axes to plot the tracks onto
-    untracked_cell_value: int or np.nan
-        Untracked cell value from tobac.
+    track : pandas.DataFrame
+        Dataframe conatining the linked features with a
+        column 'cell'.
+
+    axis_extent : matplotlib.axes, optional
+        Array containing the bounds of the longitude
+        and latitude values. The structure is
+        [long_min, long_max, lat_min, lat_max].
+        Default is None.
+
+    figsize : tupel of float, optional
+        Width, height of the plot in inches.
+        Default is (10, 10).
+
+    axes : cartopy.mpl.geoaxes.GeoAxesSubplot, optional
+        GeoAxesSubplot to use for plotting. Default is None.
 
     Returns
     -------
-    Returns `axes` with the tracks plotted onto it.
+    axes : cartopy.mpl.geoaxes.GeoAxesSubplot
+        Axes with the plotted trajectories.
 
     Raises
     ------
-    Raises a `ValueError` if `axes` is not passed in.
-
+    ValueError
+        If no axes is passed.
     """
+
     if figsize is not None:
         warnings.warn(
             "figsize is depreciated as this function does not create its own figure.",
@@ -1778,6 +2073,19 @@ def map_tracks(
 
 
 def make_map(axes):
+    """Configure the parameters of cartopy for plotting.
+
+    Parameters
+    ----------
+    axes : cartopy.mpl.geoaxes.GeoAxesSubplot
+        cartopy.mpl.geoaxes.GeoAxesSubplot to configure
+
+    Returns
+    -------
+    axes : cartopy.mpl.geoaxes.GeoAxesSubplot
+        Cartopy axes to configure
+    """
+
     import matplotlib.ticker as mticker
     import cartopy.crs as ccrs
     from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
@@ -1806,6 +2114,40 @@ def make_map(axes):
 def plot_lifetime_histogram(
     track, axes=None, bin_edges=np.arange(0, 200, 20), density=False, **kwargs
 ):
+    """Plot the liftetime histogram of a the cells.
+
+    Parameters
+    ----------
+    track : pandas.DataFrame
+        DataFrame of the features containing the variable as
+        column and a column 'cell'
+
+    axes : matplotlib.axes.Axes, optional
+        Matplotlib axes to plot on. Default is None.
+
+    bin_edges : int or ndarray, optional
+        If bin_edges is an int, it defines the number of
+        equal-width bins in the given range. If bins is
+        a sequence, it defines a monotonically increasing
+        array of bin edges, including the rightmost edge.
+        Default is np.arange(0, 200, 20).
+
+    density : bool, optional
+        If False, the result will contain the number of
+        samples in each bin. If True, the result is the
+        value of the probability density function at the
+        bin, normalized such that the integral over the
+        range is 1. Default is False.
+
+    **kwargs
+
+    Returns
+    -------
+    plot_hist : list
+        List containing the matplotlib.lines.Line2D instance
+        of the histogram
+    """
+
     hist, bin_edges, bin_centers = lifetime_histogram(
         track, bin_edges=bin_edges, density=density
     )
@@ -1822,6 +2164,46 @@ def plot_lifetime_histogram_bar(
     shift=0.5,
     **kwargs
 ):
+    """Plot the liftetime histogram of a the cells as bar plot.
+
+    Parameters
+    ----------
+    track : pandas.DataFrame
+        DataFrame of the features containing the variable as
+        column and a column 'cell'
+
+    axes : matplotlib.axes.Axes, optional
+        Matplotlib axes to plot on. Default is None.
+
+    bin_edges : int or ndarray, optional
+        If bin_edges is an int, it defines the number of
+        equal-width bins in the given range. If bins is
+        a sequence, it defines a monotonically increasing
+        array of bin edges, including the rightmost edge.
+
+    density : bool, optional
+        If False, the result will contain the number of
+        samples in each bin. If True, the result is the
+        value of the probability density function at the
+        bin, normalized such that the integral over the
+        range is 1. Default is False.
+
+    width_bar : float
+        Didth of the bars. Default is 1.
+
+    shift : float
+        Value to shift the bin centers to the right.
+        Default is 0.5.
+
+    **kwargs
+
+    Returns
+    -------
+    plot_hist : matplotlib.container.BarContainer
+        matplotlib.container.BarContainer instance
+        of the histogram
+    """
+
     hist, bin_edges, bin_centers = lifetime_histogram(
         track, bin_edges=bin_edges, density=density
     )
@@ -1832,6 +2214,48 @@ def plot_lifetime_histogram_bar(
 def plot_histogram_cellwise(
     track, bin_edges, variable, quantity, axes=None, density=False, **kwargs
 ):
+    """Plot the histogram of a variable based on the cells.
+
+    Parameters
+    ----------
+    track : pandas.DataFrame
+        DataFrame of the features containing the variable as
+        column and a column 'cell'
+
+    bin_edges : int or ndarray, optional
+        If bin_edges is an int, it defines the number of
+        equal-width bins in the given range. If bins is
+        a sequence, it defines a monotonically increasing
+        array of bin edges, including the rightmost edge.
+
+    variable : string
+        Column of the DataFrame with the variable on which the
+        histogram is to be based on. Default is None.
+
+    quantity : {'max', 'min', 'mean'}, optional
+        Flag determining wether to use maximum, minimum or mean
+        of a variable from all timeframes the cell covers.
+        Default is 'max'.
+
+    axes : matplotlib.axes.Axes, optional
+        Matplotlib axes to plot on. Default is None.
+
+    density : bool, optional
+        If False, the result will contain the number of
+        samples in each bin. If True, the result is the
+        value of the probability density function at the
+        bin, normalized such that the integral over the
+        range is 1. Default is False.
+
+    **kwargs
+
+    Returns
+    -------
+    plot_hist : list
+        List containing the matplotlib.lines.Line2D instance
+        of the histogram
+    """
+
     hist, bin_edges, bin_centers = histogram_cellwise(
         track,
         bin_edges=bin_edges,
@@ -1846,6 +2270,42 @@ def plot_histogram_cellwise(
 def plot_histogram_featurewise(
     Track, bin_edges, variable, axes=None, density=False, **kwargs
 ):
+    """Plot the histogram of a variable based on the features.
+
+    Parameters
+    ----------
+    Track : pandas.DataFrame
+        DataFrame of the features containing the variable as column
+
+    bin_edges : int or ndarray, optional
+        If bin_edges is an int, it defines the number of
+        equal-width bins in the given range. If bins is
+        a sequence, it defines a monotonically increasing
+        array of bin edges, including the rightmost edge.
+
+    variable : string
+        Column of the DataFrame with the variable on which the
+        histogram is to be based on. Default is None.
+
+    axes : matplotlib.axes.Axes, optional
+        Matplotlib axes to plot on. Default is None.
+
+    density : bool, optional
+        If False, the result will contain the number of
+        samples in each bin. If True, the result is the
+        value of the probability density function at the
+        bin, normalized such that the integral over the
+        range is 1. Default is False.
+
+    **kwargs
+
+    Returns
+    -------
+    plot_hist : list
+        List containing the matplotlib.lines.Line2D instance
+        of the histogram
+    """
+
     hist, bin_edges, bin_centers = histogram_featurewise(
         Track, bin_edges=bin_edges, variable=variable, density=density
     )
