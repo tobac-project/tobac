@@ -1829,10 +1829,6 @@ def plot_mask_cell_track_static_timeseries(
     Input:
     Output:
     """
-    """Make plots for all cells with fixed frame including entire development of the cell and with one background field as filling and one background field as contrours
-    Input:
-    Output:
-    """
 
     mpl_backend = mpl.get_backend()
     if mpl_backend != "agg":
