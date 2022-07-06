@@ -2,11 +2,7 @@
 
 Plotting routines including both visualizations of the entire cloud field
 and detailed visualizations for individual convective cells and their
-properties. [3]_
-
-Notes
------
-many short summaries are the same
+properties.
 
 References
 ----------
@@ -43,21 +39,22 @@ def plot_tracks_mask_field_loop(
     margin_top=0.05,
     **kwargs
 ):
-    """Plot data features and segments of all timeframes onto a map
-    projection and save as pngs. For the function to work it is
-    necessary to pass vmin, vmax and axis_extent as kwargs
+    """Plot field, feature positions and segments
+    onto individual maps for all timeframes and
+    save them as pngs. It is required to pass vmin,
+    vmax and axis_extent as kwargs.
 
     Parameters
     ----------
     track : pandas.DataFrame
-        Output of linking_trackpy
+        Output of linking_trackpy.
 
     field : iris.cube.Cube
-        Original input data
+        Original input data.
 
     mask : iris.cube.Cube
-        Cube containing mask (int id for tacked volumes 0 everywhere
-        else).
+        Cube containing mask (int id for tacked volumes, 0
+        everywhere else). Ouput of the segmentation step.
 
     features : pandas.DataFrame
         Output of the feature detection.
@@ -70,7 +67,7 @@ def plot_tracks_mask_field_loop(
         the name of the field is used. Default is None.
 
     plot_dir : str, optional
-        Path where the plot will be saved. Default is './'.
+        Path where the plots will be saved. Default is './'.
 
     figsize : tupel of float, optional
         Width, height of the plot in inches.
@@ -99,7 +96,7 @@ def plot_tracks_mask_field_loop(
 
     Returns
     -------
-    none
+    None
     """
 
     mpl_backend = mpl.get_backend()
@@ -182,24 +179,25 @@ def plot_tracks_mask_field(
     rasterized=True,
     linewidth_contour=1,
 ):
-    """Plot data and segments of a timeframe and all tracks onto
-    a map projection. For the function to work it is necessary
-    to set vmin, vmax and axis_extent even though these are optional.
+    """Plot field, features and segments of a timeframe and
+    on a map projection. It is required to pass vmin, vmax
+    and axis_extent.
 
     Parameters
     ----------
     track : pandas.DataFrame
-        Output of linking_trackpy
+        One ore more framesof the output of linking_trackpy.
 
     field : iris.cube.Cube
-        One frame of the original input data
+        One frame of the original input data.
 
     mask : iris.cube.Cube
         One frame of the Cube containing mask (int id for tacked
-        volumes 0 everywhere else), output of the segmentation.
+        volumes 0 everywhere else), output of the segmentation
+        step.
 
     features : pandas.DataFrame
-        Output of the feature detection.
+        Output of the feature detection, one or more frames.
 
     axes : cartopy.mpl.geoaxes.GeoAxesSubplot, optional
         GeoAxesSubplot to use for plotting. Default is None.
@@ -227,7 +225,7 @@ def plot_tracks_mask_field(
 
     plot_number : bool, optional
         Boolean defining wether the index of the cells
-        is plotted next to the individual feature positions.
+        is plotted next to the individual feature position.
         Default is True.
 
     plot_features : bool, optional
@@ -266,13 +264,13 @@ def plot_tracks_mask_field(
         matplotlib.colors. Default is 'viridis'.
 
     extend : str, optional
-    Determines the coloring of values that are
-    outside the levels range. If 'neither', values outside
-    the levels range are not colored. If 'min', 'max' or
-    'both', color the values below, above or below and above
-    the levels range. Values below min(levels) and above
-    max(levels) are mapped to the under/over values of the
-    Colormap. Default is 'neither'.
+        Determines the coloring of values that are
+        outside the levels range. If 'neither', values outside
+        the levels range are not colored. If 'min', 'max' or
+        'both', color the values below, above or below and above
+        the levels range. Values below min(levels) and above
+        max(levels) are mapped to the under/over values of the
+        Colormap. Default is 'neither'.
 
     orientation_colorbar : str, optional
         Orientation of the colorbar, 'horizontal' or 'vertical'
@@ -475,23 +473,23 @@ def plot_tracks_mask_field(
 def animation_mask_field(
     track, features, field, mask, interval=500, figsize=(10, 10), **kwargs
 ):
-    """Create animation of data, features and segments of
+    """Create animation of field, features and segments of
     all timeframes.
 
     Parameters
     ----------
     track : pandas.DataFrame
-        Output of linking_trackpy
+        Output of linking_trackpy.
 
     features : pandas.DataFrame
         Output of the feature detection.
 
     field : iris.cube.Cube
-        Original input data
+        Original input data.
 
     mask : iris.cube.Cube
         Cube containing mask (int id for tacked volumes 0
-        everywhere else), output of the segmentation.
+        everywhere else), output of the segmentation step.
 
     interval : int, optional
         Delay between frames in milliseconds.
@@ -2016,7 +2014,7 @@ def plot_mask_cell_track_static_timeseries(
 def map_tracks(
     track, axis_extent=None, figsize=None, axes=None, untracked_cell_value=-1
 ):
-    """Plot the trajectories of the cells.
+    """Plot the trajectories of the cells on a map.
 
     Parameters
     ----------
@@ -2074,7 +2072,7 @@ def make_map(axes):
     Parameters
     ----------
     axes : cartopy.mpl.geoaxes.GeoAxesSubplot
-        cartopy.mpl.geoaxes.GeoAxesSubplot to configure
+        GeoAxesSubplot to configure.
 
     Returns
     -------
@@ -2110,13 +2108,13 @@ def make_map(axes):
 def plot_lifetime_histogram(
     track, axes=None, bin_edges=np.arange(0, 200, 20), density=False, **kwargs
 ):
-    """Plot the liftetime histogram of a the cells.
+    """Plot the liftetime histogram of the cells.
 
     Parameters
     ----------
     track : pandas.DataFrame
-        DataFrame of the features containing the variable as
-        column and a column 'cell'
+        DataFrame of the features containing the columns
+        'cell' and 'time_cell'.
 
     axes : matplotlib.axes.Axes, optional
         Matplotlib axes to plot on. Default is None.
@@ -2165,8 +2163,8 @@ def plot_lifetime_histogram_bar(
     Parameters
     ----------
     track : pandas.DataFrame
-        DataFrame of the features containing the variable as
-        column and a column 'cell'
+        DataFrame of the features containing the columns
+        'cell' and 'time_cell'.
 
     axes : matplotlib.axes.Axes, optional
         Matplotlib axes to plot on. Default is None.
@@ -2185,7 +2183,7 @@ def plot_lifetime_histogram_bar(
         range is 1. Default is False.
 
     width_bar : float
-        Didth of the bars. Default is 1.
+        Width of the bars. Default is 1.
 
     shift : float
         Value to shift the bin centers to the right.
@@ -2215,8 +2213,8 @@ def plot_histogram_cellwise(
     Parameters
     ----------
     track : pandas.DataFrame
-        DataFrame of the features containing the variable as
-        column and a column 'cell'
+        DataFrame of the features containing the variable
+        as column and a column 'cell'.
 
     bin_edges : int or ndarray, optional
         If bin_edges is an int, it defines the number of
@@ -2271,7 +2269,8 @@ def plot_histogram_featurewise(
     Parameters
     ----------
     Track : pandas.DataFrame
-        DataFrame of the features containing the variable as column
+        DataFrame of the features containing the variable
+        as column.
 
     bin_edges : int or ndarray, optional
         If bin_edges is an int, it defines the number of
