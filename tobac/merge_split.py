@@ -8,9 +8,27 @@
     
 """
 
+try:
+    import geopy
+except ImportError:
+    geopy = None
 
-from geopy.distance import geodesic
-from networkx import *
+if geopy:
+    from geopy.distance import geodesic
+else:
+    print("You could be merge/splitting in lat/lons if you had geopy.")
+
+try:
+    import networkx
+except ImportError:
+    networkx = None
+
+if networkx:
+    from networkx import *
+else:
+    print("Cannot Merge/Split. Please install networkx.")
+# from geopy.distance import geodesic
+# from networkx import *
 import numpy as np
 from pandas.core.common import flatten
 import xarray as xr
