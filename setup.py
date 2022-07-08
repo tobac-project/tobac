@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="tobac",
-    version="1.3.1",
+    version="1.3.2",
     description="Tracking and object-based analysis of clouds",
     url="http://github.com/tobac-project/tobac",
     author=[
