@@ -40,6 +40,7 @@ The project is currently being extended by several contributors to include addit
    :maxdepth: 2
 
    segmentation
+   segmentation_parameters
 
 .. toctree::
    :caption: Tracking
