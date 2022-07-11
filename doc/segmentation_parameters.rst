@@ -30,4 +30,12 @@ Unlike in multiple threshold detection in Feature Detection, Watershedding Segme
 ======================================================
 Where the 3D seeds are placed for 2D feature detection
 ======================================================
-When running feature detection on a 2D dataset and then using these detected features to segment data in 3D, there is clearly no information on where to put the seeds in the vertical. This is currently controlled by the :code:`level` parameter. By default, this parameter is :code:`None`, which seeds the full column at every 2D detected feature point. As *tobac* does not run a continuity check, this can result in undesired behavior, such as clouds in multiple layers being detected as one large object. 
+When running feature detection on a 2D dataset and then using these detected features to segment data in 3D, there is clearly no information on where to put the seeds in the vertical. This is currently controlled by the :code:`level` parameter. By default, this parameter is :code:`None`, which seeds the full column at every 2D detected feature point. As *tobac* does not run a continuity check, this can result in undesired behavior, such as clouds in multiple layers being detected as one large object.
+
+:code:`level` can also be set to a `slice <https://docs.python.org/3/c-api/slice.html>`, which determines where in the vertical dimension (see `Vertical Coordinate`_) the features are seeded from. Note that :code:`level` operates in *array* coordinates rather than physical coordinates.
+
+.. _Max Distance:
+================
+Maximum Distance
+================
+*tobac*'s watershedding segmentation allows you to set a maximum distance away from the feature to classify as a segmented region belonging to that figure. :code:`max_distance` sets this distance in meters away from the detected feature to allow it to be considered part of the point. To turn this feature off, set :code:`max_distance=None`.
