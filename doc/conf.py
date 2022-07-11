@@ -2,6 +2,7 @@
 The documentation on setting this up is here: https://www.sphinx-doc.org/en/master/usage/configuration.html 
 '''
 
+# This is the standard readthedocs theme.
 import sphinx_rtd_theme
 import sys, os
 

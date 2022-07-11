@@ -14,13 +14,13 @@ The *tobac* multiple threshold algorithm searches the input data (`field_in`) fo
 ======
 Target
 ======
-First, you must determine whether you want to feature detect on maxima or minima in your dataset. For example, if you are trying to detect clouds in IR satellite data, where clouds have relatively lower brightness temperatures than the background, you would set :code:`target='minimum'`. If, instead, you are trying to detect clouds by cloud water in model data, where an increase in mixing ratio indicates the presence of a cloud, you would set :code:`target='maximum'`. The :code:`target` parameter will determine the selection of many of the following parameters.
+First, you must determine whether you want to detect features on maxima or minima in your dataset. For example, if you are trying to detect clouds in IR satellite data, where clouds have relatively lower brightness temperatures than the background, you would set :code:`target='minimum'`. If, instead, you are trying to detect clouds by cloud water in model data, where an increase in mixing ratio indicates the presence of a cloud, you would set :code:`target='maximum'`. The :code:`target` parameter will determine the selection of many of the following parameters.
 
 .. _Thresholds:
 ==========
 Thresholds
 ==========
-You can select to feature detect on either one or multiple thresholds. The first threshold (or the single threshold) sets the minimum magnitude (either lowest value for :code:`target='maximum'` or highest value for :code:`target='minimum'`) that a feature can be detected on. For example, if you have a field made up of values lower than :code:`10`, and you set :code:`target='maximum', threshold=[10,]`, *tobac* will detect no features. 
+You can select to detect features on either one or multiple thresholds. The first threshold (or the single threshold) sets the minimum magnitude (either lowest value for :code:`target='maximum'` or highest value for :code:`target='minimum'`) that a feature can be detected on. For example, if you have a field made up of values lower than :code:`10`, and you set :code:`target='maximum', threshold=[10,]`, *tobac* will detect no features. 
 
 Including *multiple* thresholds will allow *tobac* to refine the detection of features and detect multiple features that are connected through a contiguous region of less restrictive threshold values. You can see a conceptual diagram of that here: :doc:`feature_detection_overview`. To examine how setting different thresholds can change the number of features detected, see the example in this notebook: :doc:`feature_detection/notebooks/multiple_thresholds_example`.
 
@@ -40,3 +40,19 @@ There are four ways of calculating the single point used to represent feature ce
 	.. image:: images/position_thresholds.png
             :width: 500 px
 
+.. _Filtering Options:
+=================
+Filtering Options
+=================
+Before *tobac* detects features, two filtering options can optionally be employed. First is a multidimensional Gaussian Filter (`scipy.ndimage.gaussian_filter <https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.gaussian_filter.html>`), with its standard deviation controlled by the :code:`sigma_threshold` parameter. It is not required that users use this filter (to turn it off, set :code:`sigma_threshold=0`), but the use of the filter is recommended for most atmospheric datasets that are not otherwise smoothed. An example of varying the :code:`sigma_threshold` parameter can be seen in the below figure, and can be explored in the example notebook: :doc:`feature_detection/notebooks/feature_detection_filtering`.
+
+	.. image:: images/sigma_threshold_example.png
+            :width: 500 px
+
+The second filtering option is a binary erosion (`skimage.morphology.binary_erosion <https://scikit-image.org/docs/stable/api/skimage.morphology.html#skimage.morphology.binary_erosion>`), which reduces the size of features in all directions. The amount of the erosion is controlled by the :code:`n_erosion_threshold` parameter, with larger values resulting in smaller potential features. It is not required to use this feature (to turn it off, set :code:`n_erosion_threshold=0`), and its use should be considered alongside careful selection of :code:`n_min_threshold`.
+
+.. _Minimum Distance:
+================
+Minimum Distance
+================
+The parameter :code:`min_distance` sets the minimum distance between two detected features. If two detected features are within :code:`min_distance` of each other, the feature with the larger value is kept, and the feature with the smaller value is discarded. 
