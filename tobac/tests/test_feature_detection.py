@@ -46,7 +46,7 @@ def test_feature_detection_multithreshold_timestep():
 
 
 @pytest.mark.parametrize(
-        "position_threshold", [("center"), ("extreme"), ("weighted_diff"), ("weighted_abs")]
+    "position_threshold", [("center"), ("extreme"), ("weighted_diff"), ("weighted_abs")]
 )
 def test_feature_detection_position(position_threshold):
     """
@@ -75,6 +75,8 @@ def test_feature_detection_position(position_threshold):
     )
 
     pass
+
+
 @pytest.mark.parametrize(
     "feature_1_loc, feature_2_loc, dxy, dz, min_distance,"
     " add_x_coords, add_y_coords,"
