@@ -242,18 +242,15 @@ def test_calc_distance_coords_pbc_param(loc_1, loc_2, bounds, PBC_flag, expected
     """
     import numpy as np
 
-    assert (
-        tb_utils.calc_distance_coords_pbc(
-            np.array(loc_1),
-            np.array(loc_2),
-            bounds[0],
-            bounds[1],
-            bounds[2],
-            bounds[3],
-            PBC_flag,
-        )
-        == pytest.approx(expected_dist)
-    )
+    assert tb_utils.calc_distance_coords_pbc(
+        np.array(loc_1),
+        np.array(loc_2),
+        bounds[0],
+        bounds[1],
+        bounds[2],
+        bounds[3],
+        PBC_flag,
+    ) == pytest.approx(expected_dist)
 
 
 def test_get_pbc_coordinates():
