@@ -41,8 +41,7 @@ def plot_tracks_mask_field_loop(
 ):
     """Plot field, feature positions and segments
     onto individual maps for all timeframes and
-    save them as pngs. It is required to pass vmin,
-    vmax and axis_extent as kwargs.
+    save them as pngs.
 
     Parameters
     ----------
@@ -180,8 +179,8 @@ def plot_tracks_mask_field(
     linewidth_contour=1,
 ):
     """Plot field, features and segments of a timeframe and
-    on a map projection. It is required to pass vmin, vmax
-    and axis_extent.
+    on a map projection. It is required to pass vmin, vmax,
+    axes and axis_extent as keyword arguments.
 
     Parameters
     ----------
@@ -200,10 +199,10 @@ def plot_tracks_mask_field(
     features : pandas.DataFrame
         Output of the feature detection, one or more frames/time steps.
 
-    axes : cartopy.mpl.geoaxes.GeoAxesSubplot, optional
+    axes : cartopy.mpl.geoaxes.GeoAxesSubplot
         GeoAxesSubplot to use for plotting. Default is None.
 
-    axis_extent : ndarray, optional
+    axis_extent : ndarray
         Array containing the bounds of the longitude and latitude
         values. The structure is
         [long_min, long_max, lat_min, lat_max]. Default is None.
@@ -250,10 +249,10 @@ def plot_tracks_mask_field(
         Additional string added to the beginning of the title.
         Default is None.
 
-    vmin : float, optional
+    vmin : float
         Lower bound of the colorbar. Default is None.
 
-    vmax : float, optional
+    vmax : float
         Upper bound of the colorbar. Default is None.
 
     n_levels : int, optional
