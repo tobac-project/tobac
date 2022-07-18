@@ -1,5 +1,18 @@
 ### Tobac Changelog
 
+_**Version 1.3.2:**_
+
+**Bug fixes**
+
+- Fixed a bug with Feature Detection that caused it to fail when using `weighted_abs` position [#148](https://github.com/tobac-project/tobac/pull/148)
+- Fixed a bug where adaptive_search within `linking_trackpy` was not working correctly [#140](https://github.com/tobac-project/tobac/pull/140)
+
+**Repository enhancements**
+
+- Added automatic code coverage reports [#124](https://github.com/tobac-project/tobac/pull/124)
+- Added automatic building of readthedocs documentation on pull requests
+
+
 _**Version 1.3.1:**_
 
 **Enhancements**

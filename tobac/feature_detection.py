@@ -90,7 +90,7 @@ def feature_position(
 
     elif position_threshold == "weighted_abs":
         # get position as centre of identified region, weighted by absolute values if the field:
-        weights = abs(track_data[region_small])
+        weights = abs(track_data_region[region_small])
         if sum(weights) == 0:
             weights = None
         hdim1_index = np.average(hdim1_indices, weights=weights)
