@@ -14,6 +14,8 @@ The volume/area associated with the identified objects can be determined based o
 
 Detailed documentation of the package can be found at https://tobac.readthedocs.io.
 
+Also, join [tobac-users group](https://groups.google.com/g/tobac-users/about) for more help and [tobac core group](https://groups.google.com/g/tobac/about) to get involved.
+
 
 Installation
 ------------
