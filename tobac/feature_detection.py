@@ -21,6 +21,7 @@ import logging
 import numpy as np
 import pandas as pd
 from . import utils as tb_utils
+from tobac.utils import spectral_filtering
 import warnings
 
 
@@ -406,7 +407,10 @@ def feature_detection_multithreshold_timestep(
     n_min_threshold=0,
     min_distance=0,
     feature_number_start=1,
+    dxy=-1,
+    wavelength_filtering=None,
 ):
+<<<<<<< HEAD
     """Find features in each timestep.
 
     Based on iteratively finding regions above/below a set of
@@ -455,6 +459,41 @@ def feature_detection_multithreshold_timestep(
     -------
     features_threshold : pandas DataFrame
         Detected features for individual timestep.
+=======
+    """
+    function to find features in each timestep based on iteratively finding regions above/below a set of thresholds
+    Input:
+    data_i:      iris.cube.Cube
+                 2D field to perform the feature detection (single timestep)
+    i_time:      int
+                 number of the current timestep
+
+    threshold:    list of floats
+                  threshold values used to select target regions to track
+    dxy:          float
+                  grid spacing of the input data (m)
+    target:       str ('minimum' or 'maximum')
+                  flag to determine if tracking is targetting minima or maxima in the data
+    position_threshold: str('extreme', 'weighted_diff', 'weighted_abs' or 'center')
+                      flag choosing method used for the position of the tracked feature
+    sigma_threshold: float
+                     standard deviation for intial filtering step
+    n_erosion_threshold: int
+                         number of pixel by which to erode the identified features
+    n_min_threshold: int
+                     minimum number of identified features
+    min_distance:  float
+                   minimum distance between detected features (m)
+    feature_number_start: int
+                          feature number to start with
+    wavelength_filtering: tuple, optional
+            minimum and maximum wavelengths in m, if spectral filtering of input field is desired
+
+
+    Output:
+    features_threshold:      pandas DataFrame
+                             detected features for individual timestep
+>>>>>>> f8ba18c62ba4ef4ddbf7dd15c7d138eb14f8c812
     """
     # Handle scipy depreciation gracefully
     try:
@@ -473,6 +512,13 @@ def feature_detection_multithreshold_timestep(
     track_data = gaussian_filter(
         track_data, sigma=sigma_threshold
     )  # smooth data slightly to create rounded, continuous field
+
+    # spectrally filter the input data, if desired
+    if wavelength_filtering is not None:
+        track_data = spectral_filtering(
+            dxy, track_data, wavelength_filtering[0], wavelength_filtering[1]
+        )
+
     # create empty lists to store regions and features for individual timestep
     features_thresholds = pd.DataFrame()
     for i_threshold, threshold_i in enumerate(threshold):
@@ -525,7 +571,9 @@ def feature_detection_multithreshold(
     n_min_threshold=0,
     min_distance=0,
     feature_number_start=1,
+    wavelength_filtering=None,
 ):
+<<<<<<< HEAD
     """Perform feature detection based on contiguous regions.
 
     The regions are above/below a threshold.
@@ -580,6 +628,34 @@ def feature_detection_multithreshold(
     features : pandas.DataFrame
         Detected features. The structure of this dataframe is explained
         `here <https://tobac.readthedocs.io/en/latest/data_input.html>`__
+=======
+    """Function to perform feature detection based on contiguous regions above/below a threshold
+    Input:
+    field_in:      iris.cube.Cube
+                   2D field to perform the tracking on (needs to have coordinate 'time' along one of its dimensions)
+
+    thresholds:    list of floats
+                   threshold values used to select target regions to track
+    dxy:           float
+                   grid spacing of the input data (m)
+    target:        str ('minimum' or 'maximum')
+                   flag to determine if tracking is targetting minima or maxima in the data
+    position_threshold: str('extreme', 'weighted_diff', 'weighted_abs' or 'center')
+                      flag choosing method used for the position of the tracked feature
+    sigma_threshold: float
+                     standard deviation for intial filtering step
+    n_erosion_threshold: int
+                         number of pixel by which to erode the identified features
+    n_min_threshold: int
+                     minimum number of identified features
+    min_distance:  float
+                   minimum distance between detected features (m)
+    wavelength_filtering: tuple, optional
+            minimum and maximum wavelengths in m, if spectral filtering of input field is desired
+    Output:
+    features:      pandas DataFrame
+                   detected features
+>>>>>>> f8ba18c62ba4ef4ddbf7dd15c7d138eb14f8c812
     """
 
     from .utils import add_coordinates
@@ -602,6 +678,33 @@ def feature_detection_multithreshold(
     if type(threshold) in [int, float]:
         threshold = [threshold]
 
+    # if wavelength_filtering is given, check that value cannot be larger than distances along x and y,
+    # that the value cannot be smaller or equal to the grid spacing
+    # and throw a warning if dxy and wavelengths have about the same order of magnitude
+    if wavelength_filtering is not None:
+        distance_x = field_in.shape[1] * (dxy)
+        distance_y = field_in.shape[2] * (dxy)
+        distance = min(distance_x, distance_y)
+
+        # make sure the smaller value is taken as the minimum and the larger as the maximum
+        lambda_min = min(wavelength_filtering)
+        lambda_max = max(wavelength_filtering)
+
+        if lambda_min > distance or lambda_max > distance:
+            raise ValueError(
+                "The given wavelengths cannot be larger than the total distance in m along the axes of the domain."
+            )
+
+        elif lambda_min <= dxy:
+            raise ValueError(
+                "The given minimum wavelength cannot be smaller than gridspacing dxy. Please note that both dxy and the values for wavelength_filtering should be given in meter."
+            )
+
+        elif np.floor(np.log10(lambda_min)) - np.floor(np.log10(dxy)) > 1:
+            warnings.warn(
+                "Warning: The values for dxy and the minimum wavelength are close in order of magnitude. Please note that both dxy and for wavelength_filtering should be given in meter."
+            )
+
     for i_time, data_i in enumerate(data_time):
         time_i = data_i.coord("time").units.num2date(data_i.coord("time").points[0])
         features_thresholds = feature_detection_multithreshold_timestep(
@@ -616,6 +719,8 @@ def feature_detection_multithreshold(
             n_min_threshold=n_min_threshold,
             min_distance=min_distance,
             feature_number_start=feature_number_start,
+            dxy=dxy,
+            wavelength_filtering=wavelength_filtering,
         )
         # check if list of features is not empty, then merge features from different threshold values
         # into one DataFrame and append to list for individual timesteps:

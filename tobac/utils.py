@@ -578,3 +578,83 @@ def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
         curr_loc_indices[index] = len(curr_y_ixs)
 
     return (curr_loc_indices, y_indices, x_indices)
+
+
+def spectral_filtering(
+    dxy, field_in, lambda_min, lambda_max, return_transfer_function=False
+):
+    """
+    This function creates and applies a 2D transfer function that can be used as a bandpass filter to remove
+    certain wavelengths of an atmospheric input field (e.g. vorticity, IVT, etc).
+
+    Parameters:
+    -----------
+    dxy : float
+        grid spacing in m
+    field_in: numpy.array
+        2D field with input data
+    lambda_min: float
+        minimum wavelength in m
+    lambda_max: float
+        maximum wavelength in m
+    return_transfer_function: boolean, optional
+        default: False. If set to True, then the 2D transfer function and the corresponding wavelengths are returned.
+
+    Returns:
+    --------
+    filtered_field: numpy.array
+        spectrally filtered 2D field of data (with same shape as input data)
+    transfer_function: tuple
+        Two 2D fields, where the first one corresponds to the wavelengths in the spectral space of the domain and the second one
+        to the 2D transfer function of the bandpass filter. Only returned, if return_transfer_function is True.
+    """
+    import numpy as np
+    from scipy import signal
+    from scipy import fft
+
+    # check if valid value for dxy is given
+    if dxy <= 0:
+        raise ValueError(
+            "Invalid value for dxy. Please provide the grid spacing in meter."
+        )
+
+    # get number of grid cells in x and y direction
+    Ni = field_in.shape[-2]
+    Nj = field_in.shape[-1]
+    # wavenumber space
+    m, n = np.meshgrid(np.arange(Ni), np.arange(Nj), indexing="ij")
+
+    # if domain is squared:
+    if Ni == Nj:
+        wavenumber = np.sqrt(m**2 + n**2)
+        lambda_mn = (2 * Ni * (dxy)) / wavenumber
+    else:
+        # if domain is a rectangle:
+        # alpha is the normalized wavenumber in wavenumber space
+        alpha = np.sqrt(m**2 / Ni**2 + n**2 / Nj**2)
+        # compute wavelengths for target grid in m
+        lambda_mn = 2 * dxy / alpha
+
+    ############### create a 2D bandpass filter (butterworth) #######################
+    b, a = signal.iirfilter(
+        2,
+        [1 / lambda_max, 1 / lambda_min],
+        btype="band",
+        ftype="butter",
+        fs=1 / dxy,
+        output="ba",
+    )
+    w, h = signal.freqz(b, a, 1 / lambda_mn.flatten(), fs=1 / dxy)
+    transfer_function = np.reshape(abs(h), lambda_mn.shape)
+
+    # 2-dimensional discrete cosine transformation to convert data to spectral space
+    spectral = fft.dctn(field_in.data)
+    # multiplication of spectral coefficients with transfer function
+    filtered = spectral * transfer_function
+    # inverse discrete cosine transformation to go back from spectral to original space
+    filtered_field = fft.idctn(filtered)
+
+    if return_transfer_function is True:
+        return (lambda_mn, transfer_function), filtered_field
+    else:
+        return filtered_field
