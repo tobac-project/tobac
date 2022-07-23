@@ -25,6 +25,7 @@ The project is currently being extended by several contributors to include addit
    analysis 
    plotting 
    examples
+   publications
 
 .. toctree::
    :caption: Feature Detection
