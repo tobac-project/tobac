@@ -16,9 +16,6 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.todo',
 
 html_theme = "sphinx_rtd_theme"
 
-html_static_path = ['_static']
-
-
 project = u'tobac'
 
 master_doc = 'index'
@@ -38,7 +35,7 @@ autodoc_mock_imports = ['numpy', 'scipy', 'scikit-image', 'pandas', 'pytables', 
 sys.path.insert(0, os.path.abspath("../"))
 
 # Napoleon settings for configuring the Napoleon extension
-# See documentation here:
+# See documentation here: 
 # https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html
 napoleon_google_docstring = True
 napoleon_numpy_docstring = True
