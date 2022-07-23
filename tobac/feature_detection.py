@@ -21,6 +21,7 @@ import logging
 import numpy as np
 import pandas as pd
 from . import utils as tb_utils
+from tobac.utils import spectral_filtering
 import warnings
 
 
@@ -406,6 +407,8 @@ def feature_detection_multithreshold_timestep(
     n_min_threshold=0,
     min_distance=0,
     feature_number_start=1,
+    dxy=-1,
+    wavelength_filtering=None,
 ):
     """Find features in each timestep.
 
@@ -473,6 +476,13 @@ def feature_detection_multithreshold_timestep(
     track_data = gaussian_filter(
         track_data, sigma=sigma_threshold
     )  # smooth data slightly to create rounded, continuous field
+
+    # spectrally filter the input data, if desired
+    if wavelength_filtering is not None:
+        track_data = spectral_filtering(
+            dxy, track_data, wavelength_filtering[0], wavelength_filtering[1]
+        )
+
     # create empty lists to store regions and features for individual timestep
     features_thresholds = pd.DataFrame()
     for i_threshold, threshold_i in enumerate(threshold):
@@ -525,6 +535,7 @@ def feature_detection_multithreshold(
     n_min_threshold=0,
     min_distance=0,
     feature_number_start=1,
+    wavelength_filtering=None,
 ):
     """Perform feature detection based on contiguous regions.
 
@@ -581,7 +592,6 @@ def feature_detection_multithreshold(
         Detected features. The structure of this dataframe is explained
         `here <https://tobac.readthedocs.io/en/latest/data_input.html>`__
     """
-
     from .utils import add_coordinates
 
     if min_num != 0:
@@ -602,6 +612,33 @@ def feature_detection_multithreshold(
     if type(threshold) in [int, float]:
         threshold = [threshold]
 
+    # if wavelength_filtering is given, check that value cannot be larger than distances along x and y,
+    # that the value cannot be smaller or equal to the grid spacing
+    # and throw a warning if dxy and wavelengths have about the same order of magnitude
+    if wavelength_filtering is not None:
+        distance_x = field_in.shape[1] * (dxy)
+        distance_y = field_in.shape[2] * (dxy)
+        distance = min(distance_x, distance_y)
+
+        # make sure the smaller value is taken as the minimum and the larger as the maximum
+        lambda_min = min(wavelength_filtering)
+        lambda_max = max(wavelength_filtering)
+
+        if lambda_min > distance or lambda_max > distance:
+            raise ValueError(
+                "The given wavelengths cannot be larger than the total distance in m along the axes of the domain."
+            )
+
+        elif lambda_min <= dxy:
+            raise ValueError(
+                "The given minimum wavelength cannot be smaller than gridspacing dxy. Please note that both dxy and the values for wavelength_filtering should be given in meter."
+            )
+
+        elif np.floor(np.log10(lambda_min)) - np.floor(np.log10(dxy)) > 1:
+            warnings.warn(
+                "Warning: The values for dxy and the minimum wavelength are close in order of magnitude. Please note that both dxy and for wavelength_filtering should be given in meter."
+            )
+
     for i_time, data_i in enumerate(data_time):
         time_i = data_i.coord("time").units.num2date(data_i.coord("time").points[0])
         features_thresholds = feature_detection_multithreshold_timestep(
@@ -616,6 +653,8 @@ def feature_detection_multithreshold(
             n_min_threshold=n_min_threshold,
             min_distance=min_distance,
             feature_number_start=feature_number_start,
+            dxy=dxy,
+            wavelength_filtering=wavelength_filtering,
         )
         # check if list of features is not empty, then merge features from different threshold values
         # into one DataFrame and append to list for individual timesteps:
