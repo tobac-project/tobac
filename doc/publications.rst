@@ -34,7 +34,7 @@ Refereed Publications
       
 **Have you used tobac in your research?**
 
-Please contact us (e.g. by joining our tobac google group `<(https://groups.google.com/g/tobac/about)>`_) or submit a pull request containing your reference in our `main repo on GitHub <https://github.com/tobac-project/tobac>`_!
+Please contact us (e.g. by joining our `tobac google group <https://groups.google.com/g/tobac/about>`_) or submit a pull request containing your reference in our `main repo on GitHub <https://github.com/tobac-project/tobac>`_!
   
 
 
