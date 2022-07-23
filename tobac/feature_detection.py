@@ -410,7 +410,6 @@ def feature_detection_multithreshold_timestep(
     dxy=-1,
     wavelength_filtering=None,
 ):
-<<<<<<< HEAD
     """Find features in each timestep.
 
     Based on iteratively finding regions above/below a set of
@@ -459,41 +458,6 @@ def feature_detection_multithreshold_timestep(
     -------
     features_threshold : pandas DataFrame
         Detected features for individual timestep.
-=======
-    """
-    function to find features in each timestep based on iteratively finding regions above/below a set of thresholds
-    Input:
-    data_i:      iris.cube.Cube
-                 2D field to perform the feature detection (single timestep)
-    i_time:      int
-                 number of the current timestep
-
-    threshold:    list of floats
-                  threshold values used to select target regions to track
-    dxy:          float
-                  grid spacing of the input data (m)
-    target:       str ('minimum' or 'maximum')
-                  flag to determine if tracking is targetting minima or maxima in the data
-    position_threshold: str('extreme', 'weighted_diff', 'weighted_abs' or 'center')
-                      flag choosing method used for the position of the tracked feature
-    sigma_threshold: float
-                     standard deviation for intial filtering step
-    n_erosion_threshold: int
-                         number of pixel by which to erode the identified features
-    n_min_threshold: int
-                     minimum number of identified features
-    min_distance:  float
-                   minimum distance between detected features (m)
-    feature_number_start: int
-                          feature number to start with
-    wavelength_filtering: tuple, optional
-            minimum and maximum wavelengths in m, if spectral filtering of input field is desired
-
-
-    Output:
-    features_threshold:      pandas DataFrame
-                             detected features for individual timestep
->>>>>>> f8ba18c62ba4ef4ddbf7dd15c7d138eb14f8c812
     """
     # Handle scipy depreciation gracefully
     try:
@@ -573,7 +537,6 @@ def feature_detection_multithreshold(
     feature_number_start=1,
     wavelength_filtering=None,
 ):
-<<<<<<< HEAD
     """Perform feature detection based on contiguous regions.
 
     The regions are above/below a threshold.
@@ -628,36 +591,7 @@ def feature_detection_multithreshold(
     features : pandas.DataFrame
         Detected features. The structure of this dataframe is explained
         `here <https://tobac.readthedocs.io/en/latest/data_input.html>`__
-=======
-    """Function to perform feature detection based on contiguous regions above/below a threshold
-    Input:
-    field_in:      iris.cube.Cube
-                   2D field to perform the tracking on (needs to have coordinate 'time' along one of its dimensions)
-
-    thresholds:    list of floats
-                   threshold values used to select target regions to track
-    dxy:           float
-                   grid spacing of the input data (m)
-    target:        str ('minimum' or 'maximum')
-                   flag to determine if tracking is targetting minima or maxima in the data
-    position_threshold: str('extreme', 'weighted_diff', 'weighted_abs' or 'center')
-                      flag choosing method used for the position of the tracked feature
-    sigma_threshold: float
-                     standard deviation for intial filtering step
-    n_erosion_threshold: int
-                         number of pixel by which to erode the identified features
-    n_min_threshold: int
-                     minimum number of identified features
-    min_distance:  float
-                   minimum distance between detected features (m)
-    wavelength_filtering: tuple, optional
-            minimum and maximum wavelengths in m, if spectral filtering of input field is desired
-    Output:
-    features:      pandas DataFrame
-                   detected features
->>>>>>> f8ba18c62ba4ef4ddbf7dd15c7d138eb14f8c812
     """
-
     from .utils import add_coordinates
 
     if min_num != 0:
