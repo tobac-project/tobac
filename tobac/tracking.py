@@ -195,6 +195,19 @@ def linking_trackpy(
             FutureWarning,
         )
 
+    # in case of adaptive search, check wether both parameters are specified
+    if adaptive_stop is not None:
+        if adaptive_step is None:
+            raise ValueError(
+                "Adaptive search requires values for adaptive_step and adaptive_stop. Please specify adaptive_step."
+            )
+
+    if adaptive_step is not None:
+        if adaptive_stop is None:
+            raise ValueError(
+                "Adaptive search requires values for adaptive_step and adaptive_stop. Please specify adaptive_stop."
+            )
+
     if time_cell_min:
         stubs = np.floor(time_cell_min / dt) + 1
 
@@ -246,7 +259,11 @@ def linking_trackpy(
     else:
         raise ValueError("method_linking unknown")
 
-        # Filter trajectories to exclude short trajectories that are likely to be spurious
+    # Reset trackpy parameters to default values
+    tp.linking.Linker.MAX_SUB_NET_SIZE = 30
+    tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE = 15
+
+    # Filter trajectories to exclude short trajectories that are likely to be spurious
     #    trajectories_filtered = filter_stubs(trajectories_unfiltered,threshold=stubs)
     #    trajectories_filtered=trajectories_filtered.reset_index(drop=True)
 
