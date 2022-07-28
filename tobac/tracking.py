@@ -133,13 +133,15 @@ def linking_trackpy(
         Default is 'random'.
 
     adaptive_step : float, optional
-        Reduce search range by multiplying it by this factor.
+        Reduce search range by multiplying it by this factor. Needs to be
+        used in combination with adaptive_stop. Default is None.
 
     adaptive_stop : float, optional
         If not None, when encountering an oversize subnet, retry by progressively
-        reducing search_range until the subnet is solvable. If search_range
-        becomes <= adaptive_stop, give up and raise a SubnetOversizeException.
-        Default is None
+        reducing search_range by multiplying with adaptive_step until the subnet
+        is solvable. If search_range becomes <= adaptive_stop, give up and raise
+        a SubnetOversizeException. Needs to be used in combination with
+        adaptive_step. Default is None.
 
     cell_number_start : int, optional
         Cell number for first tracked cell.
