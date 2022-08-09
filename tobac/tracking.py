@@ -219,10 +219,12 @@ def linking_trackpy(
 
     # If subnetwork size given, set maximum subnet size
     if subnetwork_size is not None:
-        # Choose the right parameter depending on the use of adaptive search
+        # Choose the right parameter depending on the use of adaptive search, save previously set values
         if adaptive_step is None and adaptive_stop is None:
+            size_cache = tp.linking.Linker.MAX_SUB_NET_SIZE
             tp.linking.Linker.MAX_SUB_NET_SIZE = subnetwork_size
         else:
+            size_cache = tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE
             tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE = subnetwork_size
 
     # deep copy to preserve features field:
@@ -261,9 +263,12 @@ def linking_trackpy(
     else:
         raise ValueError("method_linking unknown")
 
-    # Reset trackpy parameters to default values
-    tp.linking.Linker.MAX_SUB_NET_SIZE = 30
-    tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE = 15
+    # Reset trackpy parameters to previously set values
+    if subnetwork_size is not None:
+        if adaptive_step is None and adaptive_stop is None:
+            tp.linking.Linker.MAX_SUB_NET_SIZE = size_cache
+        else:
+            tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE = size_cache
 
     # Filter trajectories to exclude short trajectories that are likely to be spurious
     #    trajectories_filtered = filter_stubs(trajectories_unfiltered,threshold=stubs)
