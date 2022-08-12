@@ -1,0 +1,14 @@
+name: check_formatting
+on: [push, pull_request]
+jobs:
+  formatting_job:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+      - run: pip install .
+      - run: pip install black
+      - run: black tobac --check
+      

@@ -29,13 +29,11 @@ conda update -c conda-forge tobac
 ```
 
 
-You can also install conda via pip, which is mainly interesting for development purposed or to use specific development branches for the Github repository.
+You can also install conda via git, either for development purposes or to use specific development branches for the Github repository.
 
-Required packages: trackpy scipy numpy iris scikit-learn cartopy pandas pytables 
-
-If you are using anaconda, the following command should make sure all dependencies are met and up to date:
+If you are using anaconda, the following command from within the cloned repository should make sure all dependencies are met and up to date:
 ```
-conda install -c conda-forge trackpy scipy numpy iris scikit-learn cartopy pandas pytables 
+conda install -c conda-forge --yes --file conda-requirements.txt
 ```
 You can directly install the package directly from github with pip and either of the two following commands:
 ```
@@ -54,7 +52,9 @@ pip install tobac/
 
 Contributing
 ------------
-The current development branch is v2.0-dev.
+The current development branch for minor updates to tobac v1 is dev.
+
+Preliminary development of the future major update to tobac is v2.0-dev.
 
 For more details on contributing, please see https://github.com/climate-processes/tobac/blob/v2.0-dev/CONTRIBUTING.md
 

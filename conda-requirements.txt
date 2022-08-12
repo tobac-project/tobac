@@ -4,9 +4,10 @@ scipy
 scikit-image
 pandas
 pytables
-matplotlib 
+matplotlib
 iris
-cf-units 
-xarray 
+cf-units
+xarray
 cartopy
 trackpy
+pre-commit
