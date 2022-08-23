@@ -54,6 +54,9 @@ def test_linking_trackpy():
     [(5, 10, None, None), (5, 10, 0.9, 0.1)],
 )
 def test_keep_trackpy_parameters(max_trackpy, max_tobac, adaptive_step, adaptive_stop):
+    """
+    Tests that tobac does not change the parameters of trackpy
+    """
 
     tp.linking.Linker.MAX_SUB_NET_SIZE = max_trackpy
     tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE = max_trackpy
