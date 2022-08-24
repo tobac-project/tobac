@@ -48,8 +48,9 @@ def test_linking_trackpy():
         expected_out_feature.sort_index(axis=1), actual_out_feature.sort_index(axis=1)
     )
 
+
 def test_trackpy_predict():
-    """Function to test if linking_trackpy() with method='predict' correctly links two 
+    """Function to test if linking_trackpy() with method='predict' correctly links two
     features at constant speeds crossing each other.
     """
 
@@ -88,16 +89,9 @@ def test_trackpy_predict():
     features = pd.concat([cell_1, cell_2])
     expected_output = pd.concat([cell_1_expected, cell_2_expected])
 
-    output = tobac.linking_trackpy(features, 
-                                None, 
-                                1, 
-                                1, 
-                                d_max=100,
-                                method_linking='predict')
-    output = output[
-        ["hdim_1", "hdim_2", "frame", "time",  "feature", "cell"]
-    ]
-
-    assert_frame_equal(
-        expected_output.sort_index(), output.sort_index()
+    output = tobac.linking_trackpy(
+        features, None, 1, 1, d_max=100, method_linking="predict"
     )
+    output = output[["hdim_1", "hdim_2", "frame", "time", "feature", "cell"]]
+
+    assert_frame_equal(expected_output.sort_index(), output.sort_index())
