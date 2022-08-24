@@ -113,9 +113,12 @@ def linking_trackpy(
         )
     elif method_linking == "predict":
 
+        # generate list of features as input for df_link_iter to avoid bug in df_link
+        features_linking_list = [frame for i, frame in features.groupby("frame")]
+
         pred = tp.predict.NearestVelocityPredict(span=1)
-        trajectories_unfiltered = pred.link_df(
-            features_linking,
+        trajectories_unfiltered = pred.link_df_iter(
+            features_linking_list,
             search_range=search_range,
             memory=memory,
             pos_columns=["hdim_1", "hdim_2"],
@@ -128,6 +131,8 @@ def linking_trackpy(
             #                                 hash_size=None, box_size=None, verify_integrity=True,
             #                                 retain_index=False
         )
+        # recreate a single dataframe from the list
+        trajectories_unfiltered = pd.concat(trajectories_unfiltered)
     else:
         raise ValueError("method_linking unknown")
 
