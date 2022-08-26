@@ -117,7 +117,9 @@ def linking_trackpy(
         features.rename(columns={"hdim_1": "y", "hdim_2": "x"}, inplace=True)
 
         # generate list of features as input for df_link_iter to avoid bug in df_link
-        features_linking_list = [frame for i, frame in features.groupby("frame", sort=True)]
+        features_linking_list = [
+            frame for i, frame in features.groupby("frame", sort=True)
+        ]
 
         pred = tp.predict.NearestVelocityPredict(span=1)
         trajectories_unfiltered = pred.link_df_iter(
