@@ -92,6 +92,15 @@ def test_trackpy_predict():
     output = tobac.linking_trackpy(
         features, None, 1, 1, d_max=100, method_linking="predict"
     )
+
+    output_random = tobac.linking_trackpy(
+        features, None, 1, 1, d_max=100, method_linking="random"
+    )
+
+    # check that the two methods of linking produce different results for this case
+    assert not output_random.equals(output)
+
+    # sorting and dropping indices for comparison with the expected output
     output = output[["hdim_1", "hdim_2", "frame", "time", "feature", "cell"]]
 
     assert_frame_equal(expected_output.sort_index(), output.sort_index())
