@@ -2,18 +2,27 @@ import logging
 
 
 def column_mask_from2D(mask_2D, cube, z_coord="model_level_number"):
-    """function to turn 2D watershedding mask into a 3D mask of selected columns
-    Input:
-    cube:              iris.cube.Cube
-                       data cube
-    mask_2D:           iris.cube.Cube
-                       2D cube containing mask (int id for tacked volumes 0 everywhere else)
-    z_coord:           str
-                       name of the vertical coordinate in the cube
-    Output:
-    mask_2D:           iris.cube.Cube
-                       3D cube containing columns of 2D mask (int id for tacked volumes 0 everywhere else)
+    """Turn 2D watershedding mask into a 3D mask of selected columns.
+
+    Parameters
+    ----------
+    cube : iris.cube.Cube
+        Data cube.
+
+    mask_2D : iris.cube.Cube
+        2D cube containing mask (int id for tacked volumes 0
+        everywhere else).
+
+    z_coord : str
+        Name of the vertical coordinate in the cube.
+
+    Returns
+    -------
+    mask_2D : iris.cube.Cube
+        3D cube containing columns of 2D mask (int id for tacked
+        volumes 0 everywhere else).
     """
+    
     from copy import deepcopy
 
     mask_3D = deepcopy(cube)
@@ -28,18 +37,29 @@ def column_mask_from2D(mask_2D, cube, z_coord="model_level_number"):
 
 
 def mask_cube_cell(variable_cube, mask, cell, track):
-    """Mask cube for tracked volume of an individual cell
-    Input:
-    variable_cube:     iris.cube.Cube
-                       unmasked data cube
-    mask:              iris.cube.Cube
-                       cube containing mask (int id for tacked volumes 0 everywhere else)
-    cell:          int
-                       interger id of cell to create masked cube for
-    Output:
-    variable_cube_out: iris.cube.Cube
-                       Masked cube with data for respective cell
+    """Mask cube for tracked volume of an individual cell.
+
+    Parameters
+    ----------
+    variable_cube : iris.cube.Cube
+        Unmasked data cube.
+
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tacked volumes, 0 everywhere
+        else).
+
+    cell : int
+        Integer id of cell to create masked cube for.
+
+    track : pandas.DataFrame
+        Output of the linking.
+
+    Returns
+    -------
+    variable_cube_out : iris.cube.Cube
+        Masked cube with data for respective cell.
     """
+
     from copy import deepcopy
 
     variable_cube_out = deepcopy(variable_cube)
@@ -49,16 +69,23 @@ def mask_cube_cell(variable_cube, mask, cell, track):
 
 
 def mask_cube_all(variable_cube, mask):
-    """Mask cube for untracked volume
-    Input:
-    variable_cube:     iris.cube.Cube
-                       unmasked data cube
-    mask:              iris.cube.Cube
-                       cube containing mask (int id for tacked volumes 0 everywhere else)
-    Output:
-    variable_cube_out: iris.cube.Cube
-                       Masked cube for untracked volume
+    """Mask cube (iris.cube) for tracked volume.
+
+    Parameters
+    ----------
+    variable_cube : iris.cube.Cube
+        Unmasked data cube.
+
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tacked volumes 0 everywhere
+        else).
+
+    Returns
+    -------
+    variable_cube_out : iris.cube.Cube
+        Masked cube for untracked volume.
     """
+
     from dask.array import ma
     from copy import deepcopy
 
@@ -70,16 +97,23 @@ def mask_cube_all(variable_cube, mask):
 
 
 def mask_cube_untracked(variable_cube, mask):
-    """Mask cube for untracked volume
-    Input:
-    variable_cube:     iris.cube.Cube
-                       unmasked data cube
-    mask:              iris.cube.Cube
-                       cube containing mask (int id for tacked volumes 0 everywhere else)
-    Output:
-    variable_cube_out: iris.cube.Cube
-                       Masked cube for untracked volume
+    """Mask cube (iris.cube) for untracked volume.
+
+    Parameters
+    ----------
+    variable_cube : iris.cube.Cube
+        Unmasked data cube.
+
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tacked volumes 0 everywhere
+        else).
+
+    Returns
+    -------
+    variable_cube_out : iris.cube.Cube
+        Masked cube for untracked volume.
     """
+
     from dask.array import ma
     from copy import deepcopy
 
@@ -91,33 +125,55 @@ def mask_cube_untracked(variable_cube, mask):
 
 
 def mask_cube(cube_in, mask):
-    """Mask cube where mask is larger than zero
-    Input:
-    cube_in:           iris.cube.Cube
-                       unmasked data cube
-    mask:              numpy.ndarray or dask.array
-                       mask to use for masking, >0 where cube is supposed to be masked
-    Output:
-    cube_out:          iris.cube.Cube
-                       Masked cube
+    """Mask cube where mask (array) is not zero.
+
+    Parameters
+    ----------
+    cube_in : iris.cube.Cube
+        Unmasked data cube.
+
+    mask : numpy.ndarray or dask.array
+        Mask to use for masking, >0 where cube is supposed to be masked.
+
+    Returns
+    -------
+    variable_cube_out : iris.cube.Cube
+        Masked cube.
     """
+
     from dask.array import ma
     from copy import deepcopy
 
     cube_out = deepcopy(cube_in)
-    cube_out.data = ma.masked_where(mask != 0, cube_in.core_data())
+    cube_out.data = ma.masked_where(mask.core_data() != 0, cube_in.core_data())
     return cube_out
 
 
 def mask_cell(mask, cell, track, masked=False):
-    """create mask for specific cell
-    Input:
-    mask:              iris.cube.Cube
-                       cube containing mask (int id for tacked volumes 0 everywhere else)
-    Output:
-    variable_cube_out: numpy.ndarray
-                       Masked cube for untracked volume
+    """Create mask for specific cell.
+
+    Parameters
+    ----------
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tacked volumes 0 everywhere
+        else).
+
+    cell : int
+        Interger id of cell to create masked cube for.
+
+    track : pandas.DataFrame
+        Output of linking.
+
+    masked : bool, optional
+        Bool determining whether to mask the mask for the cell. 
+        Default is False.
+
+    Returns
+    -------
+    mask_i : numpy.ndarray
+        Mask for a specific cell.
     """
+
     feature_ids = track.loc[track["cell"] == cell, "feature"].values
     mask_i = mask_features(mask, feature_ids, masked=masked)
     return mask_i
