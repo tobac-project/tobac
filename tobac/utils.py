@@ -162,11 +162,11 @@ def mask_cell(mask, cell, track, masked=False):
         Interger id of cell to create masked cube for.
 
     track : pandas.DataFrame
-        Output of linking.
+        Output of the linking.
 
     masked : bool, optional
-        Bool determining whether to mask the mask for the cell. 
-        Default is False.
+        Bool determining whether to mask the mask for the cell where 
+        it is 0. Default is False.
 
     Returns
     -------
@@ -180,14 +180,36 @@ def mask_cell(mask, cell, track, masked=False):
 
 
 def mask_cell_surface(mask, cell, track, masked=False, z_coord="model_level_number"):
-    """Create surface projection of mask for individual cell
-    Input:
-    mask:              iris.cube.Cube
-                       cube containing mask (int id for tacked volumes 0 everywhere else)
-    Output:
-    variable_cube_out: iris.cube.Cube
-                       Masked cube for untracked volume
+    """Create surface projection of 3d-mask for individual cell by 
+    collapsing one coordinate.
+
+    Parameters
+    ----------
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tacked volumes, 0 everywhere
+        else).
+
+    cell : int
+        Interger id of cell to create masked cube for.
+
+    track : pandas.DataFrame
+        Output of the linking.
+
+    masked : bool, optional
+        Bool determining whether to mask the mask for the cell where 
+        it is 0. Default is False.
+
+    z_coord : str, optional
+        Name of the coordinate to collapse. Default is 'model_level_number'.
+
+    Returns
+    -------
+    mask_i_surface : iris.cube.Cube
+        Collapsed Masked cube for the cell with the maximum value 
+        along the collapsed coordinate.
+
     """
+
     feature_ids = track.loc[track["cell"] == cell, "feature"].values
     mask_i_surface = mask_features_surface(
         mask, feature_ids, masked=masked, z_coord=z_coord
@@ -196,32 +218,65 @@ def mask_cell_surface(mask, cell, track, masked=False, z_coord="model_level_numb
 
 
 def mask_cell_columns(mask, cell, track, masked=False, z_coord="model_level_number"):
-    """Create mask with entire columns for individual cell
-    Input:
-    mask:              iris.cube.Cube
-                       cube containing mask (int id for tacked volumes 0 everywhere else)
-    Output:
-    variable_cube_out: iris.cube.Cube
-                       Masked cube for untracked volume
+    """Create mask with entire columns for individual cell.
+
+    Parameters
+    ----------
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tacked volumes 0 everywhere
+        else).
+
+    cell : int
+        Interger id of cell to create the masked cube for.
+
+    track : pandas.DataFrame
+        Output of the linking.
+
+    masked : bool, optional
+        Bool determining whether to mask the mask for the cell where 
+        it is 0. Default is False.
+
+    z_coord : str, optional
+        Default is 'model_level_number'.
+
+    Returns
+    -------
+    mask_i : iris.cube.Cube
+        Masked cube for untracked volume.
+
+    Notes
+    -------
+    Function is not working since mask_features_columns()
+    is commented out
     """
+
     feature_ids = track.loc[track["cell"] == cell].loc["feature"]
     mask_i = mask_features_columns(mask, feature_ids, masked=masked, z_coord=z_coord)
     return mask_i
 
 
 def mask_cube_features(variable_cube, mask, feature_ids):
-    """Mask cube for tracked volume of an individual cell
-    Input:
-    variable_cube:     iris.cube.Cube
-                       unmasked data cube
-    mask:              iris.cube.Cube
-                       cube containing mask (int id for tacked volumes 0 everywhere else)
-    cell:          int
-                       interger id of cell to create masked cube for
-    Output:
-    variable_cube_out: iris.cube.Cube
-                       Masked cube with data for respective cell
+    """Mask cube for tracked volume of one or more specific 
+    features.
+
+    Parameters
+    ----------
+    variable_cube : iris.cube.Cube
+        Unmasked data cube.
+
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tacked volumes, 0 everywhere
+        else).
+
+    feature_ids : int or list of ints
+        Integer ids of features to create masked cube for.
+
+    Returns
+    -------
+    variable_cube_out : iris.cube.Cube
+        Masked cube with data for respective features.
     """
+
     from dask.array import ma, isin
     from copy import deepcopy
 
@@ -233,14 +288,27 @@ def mask_cube_features(variable_cube, mask, feature_ids):
 
 
 def mask_features(mask, feature_ids, masked=False):
-    """create mask for specific features
-    Input:
-    mask:              iris.cube.Cube
-                       cube containing mask (int id for tacked volumes 0 everywhere else)
-    Output:
-    variable_cube_out: numpy.ndarray
-                       Masked cube for untracked volume
+    """Create mask for specific features.
+
+    Parameters
+    ----------
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tacked volumes 0 everywhere
+        else).
+
+    feature_ids : int or list of ints
+        Integer ids of the features to create the masked cube for.
+
+    masked : bool, optional
+        Bool determining whether to mask the mask for the cell where 
+        it is 0. Default is False.
+
+    Returns
+    -------
+    mask_i : numpy.ndarray
+        Masked cube for specific features.
     """
+
     from dask.array import ma, isin
     from copy import deepcopy
 
@@ -255,14 +323,33 @@ def mask_features(mask, feature_ids, masked=False):
 def mask_features_surface(
     mask, feature_ids, masked=False, z_coord="model_level_number"
 ):
-    """create surface mask for individual features
-    Input:
-    mask:              iris.cube.Cube
-                       cube containing mask (int id for tacked volumes 0 everywhere else)
-    Output:
-    variable_cube_out: iris.cube.Cube
-                       Masked cube for untracked volume
+    """Create surface projection of 3d-mask for specific features 
+    by collapsing one coordinate.
+
+    Parameters
+    ----------
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tacked volumes 0 everywhere
+        else).
+
+    feature_ids : int or list of ints
+        Integer ids of the features to create the masked cube for.
+
+    masked : bool, optional
+        Bool determining whether to mask the mask for the cell where 
+        it is 0. Default is False
+
+    z_coord : str, optional
+        Name of the coordinate to collapse. Default is 
+        'model_level_number'.
+
+    Returns
+    -------
+    mask_i_surface : iris.cube.Cube
+        Collapsed Masked cube for the features with the maximum value 
+        along the collapsed coordinate.
     """
+
     from iris.analysis import MAX
     from dask.array import ma, isin
     from copy import deepcopy
