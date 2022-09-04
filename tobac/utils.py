@@ -20,9 +20,9 @@ def column_mask_from2D(mask_2D, cube, z_coord="model_level_number"):
     -------
     mask_2D : iris.cube.Cube
         3D cube containing columns of 2D mask (int id for tacked
-        volumes 0 everywhere else).
+        volumes, 0 everywhere else).
     """
-    
+
     from copy import deepcopy
 
     mask_3D = deepcopy(cube)
@@ -365,14 +365,30 @@ def mask_features_surface(
 
 
 def mask_all_surface(mask, masked=False, z_coord="model_level_number"):
-    """create surface mask for individual features
-    Input:
-    mask:              iris.cube.Cube
-                       cube containing mask (int id for tacked volumes 0 everywhere else)
-    Output:
-    mask_i_surface:    iris.cube.Cube (2D)
-                       Mask with 1 below features and 0 everywhere else
+    """Create surface projection of 3d-mask for all features 
+    by collapsing one coordinate.
+
+    Parameters
+    ----------
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tacked volumes 0 everywhere
+        else).
+
+    masked : bool, optional
+        Bool determining whether to mask the mask for the cell where 
+        it is 0. Default is False
+
+    z_coord : str, optional
+        Name of the coordinate to collapse. Default is 
+        'model_level_number'.
+
+    Returns
+    -------
+    mask_i_surface : iris.cube.Cube (2D)
+        Collapsed Masked cube for the features with the maximum value 
+        along the collapsed coordinate.
     """
+
     from iris.analysis import MAX
     from dask.array import ma, isin
     from copy import deepcopy
@@ -380,7 +396,7 @@ def mask_all_surface(mask, masked=False, z_coord="model_level_number"):
     mask_i = deepcopy(mask)
     mask_i_surface = mask_i.collapsed(z_coord, MAX)
     mask_i_surface_data = mask_i_surface.core_data()
-    mask_i_surface[mask_i_surface_data > 0] = 1
+    mask_i_surface.data[mask_i_surface_data > 0] = 1
     if masked:
         mask_i_surface.data = ma.masked_equal(mask_i_surface.core_data(), 0)
     return mask_i_surface
@@ -769,12 +785,12 @@ def spectral_filtering(
 
     # if domain is squared:
     if Ni == Nj:
-        wavenumber = np.sqrt(m**2 + n**2)
+        wavenumber = np.sqrt(m ** 2 + n ** 2)
         lambda_mn = (2 * Ni * (dxy)) / wavenumber
     else:
         # if domain is a rectangle:
         # alpha is the normalized wavenumber in wavenumber space
-        alpha = np.sqrt(m**2 / Ni**2 + n**2 / Nj**2)
+        alpha = np.sqrt(m ** 2 / Ni ** 2 + n ** 2 / Nj ** 2)
         # compute wavelengths for target grid in m
         lambda_mn = 2 * dxy / alpha
 
