@@ -165,7 +165,7 @@ def mask_cell(mask, cell, track, masked=False):
         Output of the linking.
 
     masked : bool, optional
-        Bool determining whether to mask the mask for the cell where 
+        Bool determining whether to mask the mask for the cell where
         it is 0. Default is False.
 
     Returns
@@ -180,7 +180,7 @@ def mask_cell(mask, cell, track, masked=False):
 
 
 def mask_cell_surface(mask, cell, track, masked=False, z_coord="model_level_number"):
-    """Create surface projection of 3d-mask for individual cell by 
+    """Create surface projection of 3d-mask for individual cell by
     collapsing one coordinate.
 
     Parameters
@@ -196,7 +196,7 @@ def mask_cell_surface(mask, cell, track, masked=False, z_coord="model_level_numb
         Output of the linking.
 
     masked : bool, optional
-        Bool determining whether to mask the mask for the cell where 
+        Bool determining whether to mask the mask for the cell where
         it is 0. Default is False.
 
     z_coord : str, optional
@@ -205,7 +205,7 @@ def mask_cell_surface(mask, cell, track, masked=False, z_coord="model_level_numb
     Returns
     -------
     mask_i_surface : iris.cube.Cube
-        Collapsed Masked cube for the cell with the maximum value 
+        Collapsed Masked cube for the cell with the maximum value
         along the collapsed coordinate.
 
     """
@@ -233,7 +233,7 @@ def mask_cell_columns(mask, cell, track, masked=False, z_coord="model_level_numb
         Output of the linking.
 
     masked : bool, optional
-        Bool determining whether to mask the mask for the cell where 
+        Bool determining whether to mask the mask for the cell where
         it is 0. Default is False.
 
     z_coord : str, optional
@@ -256,7 +256,7 @@ def mask_cell_columns(mask, cell, track, masked=False, z_coord="model_level_numb
 
 
 def mask_cube_features(variable_cube, mask, feature_ids):
-    """Mask cube for tracked volume of one or more specific 
+    """Mask cube for tracked volume of one or more specific
     features.
 
     Parameters
@@ -300,7 +300,7 @@ def mask_features(mask, feature_ids, masked=False):
         Integer ids of the features to create the masked cube for.
 
     masked : bool, optional
-        Bool determining whether to mask the mask for the cell where 
+        Bool determining whether to mask the mask for the cell where
         it is 0. Default is False.
 
     Returns
@@ -323,7 +323,7 @@ def mask_features(mask, feature_ids, masked=False):
 def mask_features_surface(
     mask, feature_ids, masked=False, z_coord="model_level_number"
 ):
-    """Create surface projection of 3d-mask for specific features 
+    """Create surface projection of 3d-mask for specific features
     by collapsing one coordinate.
 
     Parameters
@@ -336,17 +336,17 @@ def mask_features_surface(
         Integer ids of the features to create the masked cube for.
 
     masked : bool, optional
-        Bool determining whether to mask the mask for the cell where 
+        Bool determining whether to mask the mask for the cell where
         it is 0. Default is False
 
     z_coord : str, optional
-        Name of the coordinate to collapse. Default is 
+        Name of the coordinate to collapse. Default is
         'model_level_number'.
 
     Returns
     -------
     mask_i_surface : iris.cube.Cube
-        Collapsed Masked cube for the features with the maximum value 
+        Collapsed Masked cube for the features with the maximum value
         along the collapsed coordinate.
     """
 
@@ -365,7 +365,7 @@ def mask_features_surface(
 
 
 def mask_all_surface(mask, masked=False, z_coord="model_level_number"):
-    """Create surface projection of 3d-mask for all features 
+    """Create surface projection of 3d-mask for all features
     by collapsing one coordinate.
 
     Parameters
@@ -375,17 +375,17 @@ def mask_all_surface(mask, masked=False, z_coord="model_level_number"):
         else).
 
     masked : bool, optional
-        Bool determining whether to mask the mask for the cell where 
+        Bool determining whether to mask the mask for the cell where
         it is 0. Default is False
 
     z_coord : str, optional
-        Name of the coordinate to collapse. Default is 
+        Name of the coordinate to collapse. Default is
         'model_level_number'.
 
     Returns
     -------
     mask_i_surface : iris.cube.Cube (2D)
-        Collapsed Masked cube for the features with the maximum value 
+        Collapsed Masked cube for the features with the maximum value
         along the collapsed coordinate.
     """
 
@@ -465,7 +465,7 @@ def mask_all_surface(mask, masked=False, z_coord="model_level_number"):
 
 
 def add_coordinates(t, variable_cube):
-    """Add coordinates from the input cube of the feature detection 
+    """Add coordinates from the input cube of the feature detection
     to the trajectories/features.
 
     Parameters
@@ -474,8 +474,8 @@ def add_coordinates(t, variable_cube):
         Trajectories/features from feature detection or linking step.
 
     variable_cube : iris.cube.Cube
-        Input data used for the tracking with coordinate information 
-        to transfer to the resulting DataFrame. Needs to contain the 
+        Input data used for the tracking with coordinate information
+        to transfer to the resulting DataFrame. Needs to contain the
         coordinate 'time'.
 
     Returns
@@ -608,7 +608,7 @@ def add_coordinates(t, variable_cube):
 
 
 def get_bounding_box(x, buffer=1):
-    """Finds the bounding box of a ndarray, i.e. the smallest 
+    """Finds the bounding box of a ndarray, i.e. the smallest
     bounding rectangle for nonzero values as explained here:
     https://stackoverflow.com/questions/31400769/bounding-box-of-numpy-array
 
@@ -618,13 +618,13 @@ def get_bounding_box(x, buffer=1):
         Array for which the bounding box is to be determined.
 
     buffer : int, optional
-        Number to set a buffer between the nonzero values and 
+        Number to set a buffer between the nonzero values and
         the edges of the box. Default is 1.
 
     Returns
     -------
     bbox : list
-        Dimensionwise list of the indices representing the edges 
+        Dimensionwise list of the indices representing the edges
         of the bounding box.
 
     """
@@ -658,7 +658,7 @@ def get_bounding_box(x, buffer=1):
 
 
 def get_spacings(field_in, grid_spacing=None, time_spacing=None):
-    """Determine spatial and temporal grid spacing of the 
+    """Determine spatial and temporal grid spacing of the
     input data.
 
     Parameters
@@ -667,11 +667,11 @@ def get_spacings(field_in, grid_spacing=None, time_spacing=None):
         Input field where to get spacings.
 
     grid_spacing : float, optional
-        Manually sets the grid spacing if specified. 
+        Manually sets the grid spacing if specified.
         Default is None.
 
     time_spacing : float, optional
-        Manually sets the time spacing if specified. 
+        Manually sets the time spacing if specified.
         Default is None.
 
     Returns
@@ -740,7 +740,7 @@ def get_label_props_in_dict(labels):
     Returns
     -------
     region_properties_dict: dict
-        Output from skimage.measure.regionprops in dictionary 
+        Output from skimage.measure.regionprops in dictionary
         format, where they key is the label number.
     """
 
@@ -777,7 +777,7 @@ def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
     Raises
     ------
     ValueError
-        A ValueError is raised if there are no regions in the region 
+        A ValueError is raised if there are no regions in the region
         property dict.
     """
 
@@ -806,8 +806,8 @@ def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
 def spectral_filtering(
     dxy, field_in, lambda_min, lambda_max, return_transfer_function=False
 ):
-    """This function creates and applies a 2D transfer function that 
-    can be used as a bandpass filter to remove certain wavelengths 
+    """This function creates and applies a 2D transfer function that
+    can be used as a bandpass filter to remove certain wavelengths
     of an atmospheric input field (e.g. vorticity, IVT, etc).
 
     Parameters:
@@ -825,7 +825,7 @@ def spectral_filtering(
         Maximum wavelength in m.
 
     return_transfer_function: boolean, optional
-        default: False. If set to True, then the 2D transfer function and 
+        default: False. If set to True, then the 2D transfer function and
         the corresponding wavelengths are returned.
 
     Returns:
@@ -834,9 +834,9 @@ def spectral_filtering(
         Spectrally filtered 2D field of data (with same shape as input data).
 
     transfer_function: tuple
-        Two 2D fields, where the first one corresponds to the wavelengths 
-        in the spectral space of the domain and the second one to the 2D 
-        transfer function of the bandpass filter. Only returned, if 
+        Two 2D fields, where the first one corresponds to the wavelengths
+        in the spectral space of the domain and the second one to the 2D
+        transfer function of the bandpass filter. Only returned, if
         return_transfer_function is True.
     """
 
@@ -858,12 +858,12 @@ def spectral_filtering(
 
     # if domain is squared:
     if Ni == Nj:
-        wavenumber = np.sqrt(m ** 2 + n ** 2)
+        wavenumber = np.sqrt(m**2 + n**2)
         lambda_mn = (2 * Ni * (dxy)) / wavenumber
     else:
         # if domain is a rectangle:
         # alpha is the normalized wavenumber in wavenumber space
-        alpha = np.sqrt(m ** 2 / Ni ** 2 + n ** 2 / Nj ** 2)
+        alpha = np.sqrt(m**2 / Ni**2 + n**2 / Nj**2)
         # compute wavelengths for target grid in m
         lambda_mn = 2 * dxy / alpha
 
