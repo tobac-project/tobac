@@ -465,18 +465,27 @@ def mask_all_surface(mask, masked=False, z_coord="model_level_number"):
 
 
 def add_coordinates(t, variable_cube):
-    import numpy as np
+    """Add coordinates from the input cube of the feature detection 
+    to the trajectories/features.
 
-    """ Function adding coordinates from the tracking cube to the trajectories: time, longitude&latitude, x&y dimensions
-    Input:
-    t:             pandas DataFrame
-                   trajectories/features
-    variable_cube: iris.cube.Cube 
-                   Cube containing the dimensions 'time','longitude','latitude','x_projection_coordinate','y_projection_coordinate', usually cube that the tracking is performed on
-    Output:
-    t:             pandas DataFrame 
-                   trajectories with added coordinated
+    Parameters
+    ----------
+    t : pandas.DataFrame
+        Trajectories/features from feature detection or linking step.
+
+    variable_cube : iris.cube.Cube
+        Input data used for the tracking with coordinate information 
+        to transfer to the resulting DataFrame. Needs to contain the 
+        coordinate 'time'.
+
+    Returns
+    -------
+    t : pandas.DataFrame
+        Trajectories with added coordinates.
+
     """
+
+    import numpy as np
     from scipy.interpolate import interp2d, interp1d
 
     logging.debug("start adding coordinates from cube")
@@ -599,11 +608,29 @@ def add_coordinates(t, variable_cube):
 
 
 def get_bounding_box(x, buffer=1):
+    """Finds the bounding box of a ndarray, i.e. the smallest 
+    bounding rectangle for nonzero values as explained here:
+    https://stackoverflow.com/questions/31400769/bounding-box-of-numpy-array
+
+    Parameters
+    ----------
+    x : numpy.ndarray
+        Array for which the bounding box is to be determined.
+
+    buffer : int, optional
+        Number to set a buffer between the nonzero values and 
+        the edges of the box. Default is 1.
+
+    Returns
+    -------
+    bbox : list
+        Dimensionwise list of the indices representing the edges 
+        of the bounding box.
+
+    """
+
     from numpy import delete, arange, diff, nonzero, array
 
-    """ Calculates the bounding box of a ndarray
-    https://stackoverflow.com/questions/31400769/bounding-box-of-numpy-array
-    """
     mask = x == 0
 
     bbox = []
@@ -631,6 +658,38 @@ def get_bounding_box(x, buffer=1):
 
 
 def get_spacings(field_in, grid_spacing=None, time_spacing=None):
+    """Determine spatial and temporal grid spacing of the 
+    input data.
+
+    Parameters
+    ----------
+    field_in : iris.cube.Cube
+        Input field where to get spacings.
+
+    grid_spacing : float, optional
+        Manually sets the grid spacing if specified. 
+        Default is None.
+
+    time_spacing : float, optional
+        Manually sets the time spacing if specified. 
+        Default is None.
+
+    Returns
+    -------
+    dxy : float
+        Grid spacing in metres.
+
+    dt : float
+        Time resolution in seconds.
+
+    Raises
+    ------
+    ValueError
+        If input_cube does not contain projection_x_coord and
+        projection_y_coord or keyword argument grid_spacing.
+
+    """
+
     import numpy as np
     from copy import deepcopy
 
@@ -675,14 +734,16 @@ def get_label_props_in_dict(labels):
 
     Parameters
     ----------
-    labels:    2D array-like
-        comes from the `skimage.measure.label` function
+    labels : 2D array-like
+        Outpu of the `skimage.measure.label` function.
 
     Returns
     -------
-    dict
-        output from skimage.measure.regionprops in dictionary format, where they key is the label number
+    region_properties_dict: dict
+        Output from skimage.measure.regionprops in dictionary 
+        format, where they key is the label number.
     """
+
     import skimage.measure
 
     region_properties_raw = skimage.measure.regionprops(labels)
@@ -699,24 +760,27 @@ def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
 
     Parameters
     ----------
-    region_property_dict:    dict of region_property objects
+    region_property_dict : dict of region_property objects
         This dict should come from the get_label_props_in_dict function.
 
     Returns
     -------
-    dict (key: label number, int)
-        The number of points in the label number
-    dict (key: label number, int)
-        the y indices in the label number
-    dict (key: label number, int)
-        the x indices in the label number
+    curr_loc_indices : dict
+        The number of points in the label number (key: label number).
+
+    y_indices : dict
+        The y indices in the label number (key: label number).
+
+    x_indices : dict
+        The x indices in the label number (key: label number).
 
     Raises
     ------
     ValueError
-        a ValueError is raised if there are no regions in the region property dict
-
+        A ValueError is raised if there are no regions in the region 
+        property dict.
     """
+
     import numpy as np
 
     if len(region_property_dict) == 0:
@@ -742,31 +806,40 @@ def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
 def spectral_filtering(
     dxy, field_in, lambda_min, lambda_max, return_transfer_function=False
 ):
-    """
-    This function creates and applies a 2D transfer function that can be used as a bandpass filter to remove
-    certain wavelengths of an atmospheric input field (e.g. vorticity, IVT, etc).
+    """This function creates and applies a 2D transfer function that 
+    can be used as a bandpass filter to remove certain wavelengths 
+    of an atmospheric input field (e.g. vorticity, IVT, etc).
 
     Parameters:
     -----------
     dxy : float
-        grid spacing in m
+        Grid spacing in m.
+
     field_in: numpy.array
-        2D field with input data
+        2D field with input data.
+
     lambda_min: float
-        minimum wavelength in m
+        Minimum wavelength in m.
+
     lambda_max: float
-        maximum wavelength in m
+        Maximum wavelength in m.
+
     return_transfer_function: boolean, optional
-        default: False. If set to True, then the 2D transfer function and the corresponding wavelengths are returned.
+        default: False. If set to True, then the 2D transfer function and 
+        the corresponding wavelengths are returned.
 
     Returns:
     --------
     filtered_field: numpy.array
-        spectrally filtered 2D field of data (with same shape as input data)
+        Spectrally filtered 2D field of data (with same shape as input data).
+
     transfer_function: tuple
-        Two 2D fields, where the first one corresponds to the wavelengths in the spectral space of the domain and the second one
-        to the 2D transfer function of the bandpass filter. Only returned, if return_transfer_function is True.
+        Two 2D fields, where the first one corresponds to the wavelengths 
+        in the spectral space of the domain and the second one to the 2D 
+        transfer function of the bandpass filter. Only returned, if 
+        return_transfer_function is True.
     """
+
     import numpy as np
     from scipy import signal
     from scipy import fft
