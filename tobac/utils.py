@@ -664,6 +664,8 @@ def standardize_track_dataset(TrackedFeatures, Mask, Projection=None):
         xarray dataset of merged Track and Segmentation Mask datasets with renamed variables.
 
     """
+    import xarray as xr
+
     feature_standard_names = {
         # new variable name, and long description for the NetCDF attribute
         "frame": (
