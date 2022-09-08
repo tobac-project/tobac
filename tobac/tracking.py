@@ -113,12 +113,20 @@ def linking_trackpy(
         )
     elif method_linking == "predict":
 
+        # avoid setting pos_columns by renaimng to default values to avoid trackpy bug
+        features.rename(columns={"hdim_1": "y", "hdim_2": "x"}, inplace=True)
+
+        # generate list of features as input for df_link_iter to avoid bug in df_link
+        features_linking_list = [
+            frame for i, frame in features.groupby("frame", sort=True)
+        ]
+
         pred = tp.predict.NearestVelocityPredict(span=1)
-        trajectories_unfiltered = pred.link_df(
-            features_linking,
+        trajectories_unfiltered = pred.link_df_iter(
+            features_linking_list,
             search_range=search_range,
             memory=memory,
-            pos_columns=["hdim_1", "hdim_2"],
+            # pos_columns=["hdim_1", "hdim_2"], # not working atm
             t_column="frame",
             neighbor_strategy="KDTree",
             link_strategy="auto",
@@ -128,6 +136,14 @@ def linking_trackpy(
             #                                 hash_size=None, box_size=None, verify_integrity=True,
             #                                 retain_index=False
         )
+        # recreate a single dataframe from the list
+        trajectories_unfiltered = pd.concat(trajectories_unfiltered)
+
+        # change to column names back
+        trajectories_unfiltered.rename(
+            columns={"y": "hdim_1", "x": "hdim_2"}, inplace=True
+        )
+        features.rename(columns={"y": "hdim_1", "x": "hdim_2"}, inplace=True)
     else:
         raise ValueError("method_linking unknown")
 
