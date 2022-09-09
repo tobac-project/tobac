@@ -250,6 +250,10 @@ def mask_cell_columns(mask, cell, track, masked=False, z_coord="model_level_numb
     is commented out
     """
 
+    raise NotImplementedError(
+        "The function mask_cell_columns() is not implemented currently."
+    )
+
     feature_ids = track.loc[track["cell"] == cell].loc["feature"]
     mask_i = mask_features_columns(mask, feature_ids, masked=masked, z_coord=z_coord)
     return mask_i
