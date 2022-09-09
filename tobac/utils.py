@@ -19,7 +19,7 @@ def column_mask_from2D(mask_2D, cube, z_coord="model_level_number"):
     Returns
     -------
     mask_2D : iris.cube.Cube
-        3D cube containing columns of 2D mask (int id for tacked
+        3D cube containing columns of 2D mask (int id for tracked
         volumes, 0 everywhere else).
     """
 
@@ -45,7 +45,7 @@ def mask_cube_cell(variable_cube, mask, cell, track):
         Unmasked data cube.
 
     mask : iris.cube.Cube
-        Cube containing mask (int id for tacked volumes, 0 everywhere
+        Cube containing mask (int id for tracked volumes, 0 everywhere
         else).
 
     cell : int
@@ -125,14 +125,14 @@ def mask_cube_untracked(variable_cube, mask):
 
 
 def mask_cube(cube_in, mask):
-    """Mask cube where mask (array) is not zero.
+    """Mask cube where mask is not zero.
 
     Parameters
     ----------
     cube_in : iris.cube.Cube
         Unmasked data cube.
 
-    mask : numpy.ndarray or dask.array
+    mask : iris.cube.Cube
         Mask to use for masking, >0 where cube is supposed to be masked.
 
     Returns
@@ -155,11 +155,11 @@ def mask_cell(mask, cell, track, masked=False):
     Parameters
     ----------
     mask : iris.cube.Cube
-        Cube containing mask (int id for tacked volumes 0 everywhere
+        Cube containing mask (int id for tracked volumes 0 everywhere
         else).
 
     cell : int
-        Interger id of cell to create masked cube for.
+        Integer id of cell to create masked cube for.
 
     track : pandas.DataFrame
         Output of the linking.
@@ -190,7 +190,7 @@ def mask_cell_surface(mask, cell, track, masked=False, z_coord="model_level_numb
         else).
 
     cell : int
-        Interger id of cell to create masked cube for.
+        Integer id of cell to create masked cube for.
 
     track : pandas.DataFrame
         Output of the linking.
@@ -735,7 +735,7 @@ def get_label_props_in_dict(labels):
     Parameters
     ----------
     labels : 2D array-like
-        Outpu of the `skimage.measure.label` function.
+        Output of the `skimage.measure.label` function.
 
     Returns
     -------
