@@ -61,3 +61,6 @@ from .feature_detection import feature_detection_multithreshold
 from .tracking import linking_trackpy
 from .wrapper import maketrack
 from .wrapper import tracking_wrapper
+
+# Set version number
+__version__ = "1.4.0"
