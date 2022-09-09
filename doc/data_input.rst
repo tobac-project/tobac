@@ -11,7 +11,7 @@ xarray DataArays can be easily converted into iris cubes using xarray's `to_iris
 
 For the future development of the next major version of tobac (v2.0), we are moving the basic data structures from Iris cubes to xarray DataArrays for improved computing performance and interoperability with other open-source sorftware packages, including the Pangeo project.
 
-The output of the different analysis steps in tobac are output as either pandas DataFrames in the case of one-dimensional data, such a lists of identified features or feature tracks or as Iris cubes in the case of 2D/3D/4D fields such as cloud masks. Note that the dataframe output from tracking is a superset of the features dataframe.
+The output of the different analysis steps in tobac are output as either pandas DataFrames in the case of one-dimensional data, such a lists of identified features or feature tracks or as Iris cubes in the case of 2D/3D/4D fields such as feature masks. Note that the dataframe output from tracking is a superset of the features dataframe.
 
 For information on feature detection *output*, see :doc:`feature_detection_output`. 
 For information on tracking *output*, see :doc:`tracking_output`. 
