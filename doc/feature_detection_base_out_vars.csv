@@ -5,7 +5,7 @@ hdim_1,"First horizontal dimension in grid point space (typically, although not 
 hdim_2,"Second horizontal dimension in grid point space (typically, although not always, E/W or x space)",Number of grid points,float
 num,Number of grid points that are within the threshold of this feature,Number of grid points,int
 threshold_value,Maximum threshold value reached by the feature,Units of the input feature,int
-feature,Unique number of the feature; starts from 1 and increments by 1 to the number of features,n/a,int
+feature,Unique number of the feature; starts from 1 and increments by 1 to the number of features identified in all frames,n/a,int
 time,Time of the feature,Date and time,object/python datetime
 timestr,String representation of the feature time,YYYY-MM-DD HH:MM:SS,object/string
 y,Grid point y location of the feature (see hdim_1 and hdim_2). Note that this is not necessarily an integer value depending on your selection of position_threshold,Number of grid points,float

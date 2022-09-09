@@ -44,12 +44,12 @@ There are four ways of calculating the single point used to represent feature ce
 =================
 Filtering Options
 =================
-Before *tobac* detects features, two filtering options can optionally be employed. First is a multidimensional Gaussian Filter (`scipy.ndimage.gaussian_filter <https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.gaussian_filter.html>`), with its standard deviation controlled by the :code:`sigma_threshold` parameter. It is not required that users use this filter (to turn it off, set :code:`sigma_threshold=0`), but the use of the filter is recommended for most atmospheric datasets that are not otherwise smoothed. An example of varying the :code:`sigma_threshold` parameter can be seen in the below figure, and can be explored in the example notebook: :doc:`feature_detection/notebooks/feature_detection_filtering`.
+Before *tobac* detects features, two filtering options can optionally be employed. First is a multidimensional Gaussian Filter (`scipy.ndimage.gaussian_filter <https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.gaussian_filter.html>`_), with its standard deviation controlled by the :code:`sigma_threshold` parameter. It is not required that users use this filter (to turn it off, set :code:`sigma_threshold=0`), but the use of the filter is recommended for most atmospheric datasets that are not otherwise smoothed. An example of varying the :code:`sigma_threshold` parameter can be seen in the below figure, and can be explored in the example notebook: :doc:`feature_detection/notebooks/feature_detection_filtering`.
 
 	.. image:: images/sigma_threshold_example.png
             :width: 500 px
 
-The second filtering option is a binary erosion (`skimage.morphology.binary_erosion <https://scikit-image.org/docs/stable/api/skimage.morphology.html#skimage.morphology.binary_erosion>`), which reduces the size of features in all directions. The amount of the erosion is controlled by the :code:`n_erosion_threshold` parameter, with larger values resulting in smaller potential features. It is not required to use this feature (to turn it off, set :code:`n_erosion_threshold=0`), and its use should be considered alongside careful selection of :code:`n_min_threshold`.
+The second filtering option is a binary erosion (`skimage.morphology.binary_erosion <https://scikit-image.org/docs/stable/api/skimage.morphology.html#skimage.morphology.binary_erosion>`_), which reduces the size of features in all directions. The amount of the erosion is controlled by the :code:`n_erosion_threshold` parameter, with larger values resulting in smaller potential features. It is not required to use this feature (to turn it off, set :code:`n_erosion_threshold=0`), and its use should be considered alongside careful selection of :code:`n_min_threshold`. The default value is :code:`n_erosion_threshold=0`. 
 
 .. _Minimum Distance:
 ================
