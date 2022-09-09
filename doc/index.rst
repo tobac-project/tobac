@@ -10,7 +10,7 @@ The software is set up in a modular way to include different algorithms for feat
 
 In the current implementation, individual features are identified as either maxima or minima in a two-dimensional time-varying field (see :doc:`feature_detection_overview`). An associated volume can then be determined using these features with a separate (or identical) time-varying 2D or 3D field and a threshold value (see :doc:`segmentation`). The identified objects are linked into consistent trajectories representing the cloud over its lifecycle in the tracking step. Analysis and visualization methods provide a convenient way to use and display the tracking results.
 
-Version 1.2 of tobac and some example applications are described in a manuscript in Geoscientific Model Development as:
+Version 1.2 of tobac and some example applications are described in a peer-reviewed article in Geoscientific Model Development as:
 
 Heikenfeld, M., Marinescu, P. J., Christensen, M., Watson-Parris, D., Senf, F., van den Heever, S. C., and Stier, P.: tobac 1.2: towards a flexible framework for tracking and analysis of clouds in diverse datasets, Geosci. Model Dev., 12, 4551–4570, https://doi.org/10.5194/gmd-12-4551-2019, 2019.
 

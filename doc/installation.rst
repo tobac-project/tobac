@@ -19,7 +19,9 @@ The following python packages are required (including dependencies of these pack
    
 If you are using anaconda, the following command should make sure all dependencies are met and up to date:
 
-    ``conda install -c conda-forge -y numpy scipy scikit-image pandas pytables matplotlib iris xarray cartopy trackpy``
+.. code-block:: console
+
+    conda install -c conda-forge -y numpy scipy scikit-image pandas pytables matplotlib iris xarray cartopy trackpy
 
 You can directly install the package directly from github with pip and either of the two following commands: 
 
