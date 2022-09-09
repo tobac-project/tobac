@@ -13,7 +13,7 @@ This will take care of all necessary dependencies and should do the job for most
 
 You can also install conda via pip, which is mainly interesting for development purposes or using specific development branches for the Github repository.
 
-The follwoing python packages are required (including dependencies of these packages):
+The following python packages are required (including dependencies of these packages):
 
 *numpy*, *scipy*, *scikit-image*, *pandas*, *pytables*, *matplotlib*, *iris*, *xarray*, *cartopy*, *trackpy*
    
