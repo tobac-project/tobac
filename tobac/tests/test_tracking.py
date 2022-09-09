@@ -8,6 +8,7 @@ import copy
 import pandas as pd
 from pandas.testing import assert_frame_equal
 import numpy as np
+import trackpy as tp
 
 
 def test_linking_trackpy():
@@ -47,6 +48,42 @@ def test_linking_trackpy():
     assert_frame_equal(
         expected_out_feature.sort_index(axis=1), actual_out_feature.sort_index(axis=1)
     )
+
+
+@pytest.mark.parametrize(
+    "max_trackpy, max_tobac, adaptive_step, adaptive_stop",
+    [(5, 10, None, None), (5, 10, 0.9, 0.1)],
+)
+def test_keep_trackpy_parameters(max_trackpy, max_tobac, adaptive_step, adaptive_stop):
+    """
+    Tests that tobac does not change the parameters of trackpy
+    """
+
+    tp.linking.Linker.MAX_SUB_NET_SIZE = max_trackpy
+    tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE = max_trackpy
+
+    expected_value = tp.linking.Linker.MAX_SUB_NET_SIZE
+    expected_value_adaptive = tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE
+
+    data = tobac.testing.make_simple_sample_data_2D()
+    dxy, dt = tobac.utils.get_spacings(data)
+    features = tobac.feature_detection.feature_detection_multithreshold(
+        data, dxy, threshold=0.1
+    )
+
+    track = tobac.linking_trackpy(
+        features,
+        data,
+        dt=dt,
+        dxy=dxy,
+        v_max=100,
+        adaptive_step=adaptive_step,
+        adaptive_stop=adaptive_stop,
+        subnetwork_size=max_tobac,
+    )
+
+    assert expected_value == tp.linking.Linker.MAX_SUB_NET_SIZE
+    assert expected_value_adaptive == tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE
 
 
 def test_trackpy_predict():
