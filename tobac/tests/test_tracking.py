@@ -141,3 +141,26 @@ def test_trackpy_predict():
     output = output[["hdim_1", "hdim_2", "frame", "time", "feature", "cell"]]
 
     assert_frame_equal(expected_output.sort_index(), output.sort_index())
+
+
+def test_tracking_extrapolation():
+    """Tests the extrapolation capabilities of tracking.
+    Right now, this is not implemented, so it will raise an error.
+    """
+
+    cell_1 = tobac.testing.generate_single_feature(
+        1,
+        1,
+        min_h1=0,
+        max_h1=100,
+        min_h2=0,
+        max_h2=100,
+        frame_start=0,
+        num_frames=5,
+        spd_h1=20,
+        spd_h2=20,
+    )
+    with pytest.raises(NotImplementedError):
+        output = tobac.linking_trackpy(
+            cell_1, None, 1, 1, d_max=100, method_linking="predict", extrapolate=1
+        )
