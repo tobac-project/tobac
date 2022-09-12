@@ -28,7 +28,7 @@ PACKAGE_NAME = "tobac"
 
 setup(
     name=PACKAGE_NAME,
-    version=get_version("tobac/__init__.py"),
+    version=get_version(PACKAGE_NAME),
     description="Tracking and object-based analysis of clouds",
     url="http://github.com/tobac-project/tobac",
     author=[
