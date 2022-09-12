@@ -166,6 +166,11 @@ def linking_trackpy(
         If method_linking is neither 'random' nor 'predict'.
     """
 
+    if extrapolate != 0:
+        raise NotImplementedError(
+            "Extrapolation is not yet implemented. Set this parameter to 0 to continue."
+        )
+
     #    from trackpy import link_df
     import trackpy as tp
     from copy import deepcopy
