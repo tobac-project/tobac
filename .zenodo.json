@@ -1,5 +1,6 @@
 {
     "title": "tobac - Tracking and Object-based Analysis of Clouds",
+    "description": "tobac is a Python package to identify, track and analyze clouds in different types of gridded datasets, such as 3D model output from cloud-resolving model simulations or 2D data from satellite retrievals.",
     "creators": [
         {
             "name": "Heikenfeld, Max",
@@ -32,6 +33,10 @@
             "orcid": "0000-0002-1756-6620",
         }
     ],
-    "keywords": ["cloud tracking"],
-    "upload_type": "software",
+    "license": "BSD-3-Clause",
+    "keywords": [
+        "cloud tracking"
+    ],
+    "access_right": "open",
+    "upload_type": "software"
 }
