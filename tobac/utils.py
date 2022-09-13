@@ -582,7 +582,9 @@ def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
 
 
 def iris_to_xarray(func):
-    """Decorator that converts all input of a function that is in the form of Iris cubes into xarray DataArrays and converts all output in xarray DataArrays back into Iris cubes
+    """Decorator that converts all input of a function that is in the form of 
+    Iris cubes into xarray DataArrays and converts all output in xarray 
+    DataArrays back into Iris cubes.
 
     Parameters
     ----------
@@ -594,6 +596,7 @@ def iris_to_xarray(func):
     wrapper : function
         Function including decorator
     """
+
     import iris
     import xarray
 
@@ -644,17 +647,19 @@ def iris_to_xarray(func):
 
 
 def xarray_to_iris(func):
-    """Decorator that converts all input of a function that is in the form of xarray DataArrays Iris cubes into and converts all output in Iris cubes back into xarray DataArrays
+    """Decorator that converts all input of a function that is in the form of 
+    xarray DataArrays Iris cubes into and converts all output in Iris cubes 
+    back into xarray DataArrays.
 
     Parameters
     ----------
     func : function
-        Function to be decorated
+        Function to be decorated.
 
     Returns
     -------
     wrapper : function
-        Function including decorator
+        Function including decorator.
     """
 
     import iris
@@ -714,17 +719,19 @@ def xarray_to_iris(func):
 
 
 def irispandas_to_xarray(func):
-    """Decorator that converts all input of a function that is in the form of Iris cubes into xarray DataArrays and converts all output in xarray DataArrays back into Iris cubes
+    """Decorator that converts all input of a function that is in the form of 
+    Iris cubes into xarray DataArrays and converts all output in xarray 
+    DataArrays back into Iris cubes.
 
     Parameters
     ----------
     func : function
-        Function to be decorated
+        Function to be decorated.
 
     Returns
     -------
     wrapper : function
-        Function including decorator
+        Function including decorator.
     """
     import iris
     import xarray
@@ -791,17 +798,19 @@ def irispandas_to_xarray(func):
 
 
 def xarray_to_irispandas(func):
-    """Decorator that converts all input of a function that is in the form of xarray DataArrays Iris cubes into and converts all output in Iris cubes back into xarray DataArrays
+    """Decorator that converts all input of a function that is in the form of 
+    xarray DataArrays Iris cubes into and converts all output in Iris cubes 
+    back into xarray DataArrays.
 
     Parameters
     ----------
     func : function
-        Function to be decorated
+        Function to be decorated.
 
     Returns
     -------
     wrapper : function
-        Function including decorator
+        Function including decorator.
     """
 
     import iris
