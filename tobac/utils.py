@@ -583,8 +583,8 @@ def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
 
 def iris_to_xarray(func):
     """Decorator that converts all input of a function that is in the form of
-    Iris cubes into xarray DataArrays and converts all output in xarray
-    DataArrays back into Iris cubes.
+    Iris cubes into xarray DataArrays and converts all outputs with type
+    xarray DataArrays back into Iris cubes.
 
     Parameters
     ----------
@@ -614,7 +614,7 @@ def iris_to_xarray(func):
                     for arg in args
                 ]
             )
-            kwargs = kwargs.update(
+            kwargs_new = dict(
                 zip(
                     kwargs.keys(),
                     [
@@ -625,8 +625,9 @@ def iris_to_xarray(func):
                     ],
                 )
             )
-
-            output = func(*args, **kwargs)
+            # print(args)
+            # print(kwargs)
+            output = func(*args, **kwargs_new)
             if type(output) == tuple:
                 output = tuple(
                     [
@@ -648,8 +649,8 @@ def iris_to_xarray(func):
 
 def xarray_to_iris(func):
     """Decorator that converts all input of a function that is in the form of
-    xarray DataArrays into Iris cubes and converts all output in Iris cubes
-    back into xarray DataArrays.
+    xarray DataArrays into Iris cubes and converts all outputs with type
+    Iris cubes back into xarray DataArrays.
 
     Parameters
     ----------
@@ -720,8 +721,9 @@ def xarray_to_iris(func):
 
 def irispandas_to_xarray(func):
     """Decorator that converts all input of a function that is in the form of
-    Iris cubes into xarray DataArrays and pandas Dataframes into xarray Datasets
-    and converts all output in xarray DataArrays back into Iris cubes.
+    Iris cubes/pandas Dataframes into xarray DataArrays/xarray Datasets and
+    converts all outputs with the type xarray DataArray/xarray Dataset
+    back into Iris cubes/pandas Dataframes.
 
     Parameters
     ----------
@@ -752,19 +754,19 @@ def irispandas_to_xarray(func):
                 [
                     xarray.DataArray.from_iris(arg)
                     if type(arg) == iris.cube.Cube
-                    else arg.to_xarray
+                    else arg.to_xarray()
                     if type(arg) == pd.DataFrame
                     else arg
                     for arg in args
                 ]
             )
-            kwargs = kwargs.update(
+            kwargs = dict(
                 zip(
                     kwargs.keys(),
                     [
                         xarray.DataArray.from_iris(arg)
                         if type(arg) == iris.cube.Cube
-                        else arg.to_xarray
+                        else arg.to_xarray()
                         if type(arg) == pd.DataFrame
                         else arg
                         for arg in kwargs.values()
@@ -788,7 +790,7 @@ def irispandas_to_xarray(func):
                 if type(output) == xarray.DataArray:
                     output = xarray.DataArray.to_iris(output)
                 elif type(output) == xarray.Dataset:
-                    output.to_dataframe()
+                    output = output.to_dataframe()
 
         else:
             output = func(*args, **kwargs)
@@ -799,8 +801,9 @@ def irispandas_to_xarray(func):
 
 def xarray_to_irispandas(func):
     """Decorator that converts all input of a function that is in the form of
-    xarray DataArrays into Iris cubes  and converts all output in Iris cubes
-    back into xarray DataArrays.
+    DataArrays/xarray Datasets into xarray Iris cubes/pandas Dataframes and
+    converts all outputs with the type Iris cubes/pandas Dataframes back into
+    xarray DataArray/xarray Dataset.
 
     Parameters
     ----------
@@ -876,7 +879,7 @@ def xarray_to_irispandas(func):
                 if type(output) == iris.cube.Cube:
                     output = xarray.DataArray.from_iris(output)
                 elif type(output) == pd.DataFrame:
-                    output.to_xarray()
+                    output = output.to_xarray()
 
         else:
             output = func(*args, **kwargs)
