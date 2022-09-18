@@ -35,13 +35,13 @@ def merge_split(TRACK, distance=25000, frame_len=5, dxy=500):
 
     d : xarray.core.dataset.Dataset
         xarray dataset of tobac merge/split cells with parent and child designations.
-
-                Parent/child variables include:
-        - cell_parent_track_id: The associated track id for each cell. All cells that have merged or split will have the same parent track id. If a cell never merges/splits, only one cell will have a particular track id.
-        - feature_parent_cell_id: The associated parent cell id for each feature. All feature in a given cell will have the same cell id.
-        - feature_parent_track_id: The associated parent track id for each feature. This is not the same as the cell id number.
-        - track_child_cell_count: The total number of features belonging to all child cells of a given track id.
-        - cell_child_feature_count: The total number of features for each cell.
+        
+		Parent/child variables include:
+        - cell_parent_track_id: The associated track id for each cell. All cells that have merged or split will have the same parent track id. If a cell never merges/splits, only one cell will have a particular track id. 
+  		- feature_parent_cell_id: The associated parent cell id for each feature. All feature in a given cell will have the same cell id. 
+  		- feature_parent_track_id: The associated parent track id for each feature. This is not the same as the cell id number. 
+  		- track_child_cell_count: The total number of features belonging to all child cells of a given track id.
+  		- cell_child_feature_count: The total number of features for each cell. 
 
 
     Example usage:
@@ -52,6 +52,7 @@ def merge_split(TRACK, distance=25000, frame_len=5, dxy=500):
         both_ds.to_netcdf(os.path.join(savedir,'Track_features_merges.nc'))
 
     """
+
 
     try:
         import networkx as nx
@@ -83,6 +84,7 @@ def merge_split(TRACK, distance=25000, frame_len=5, dxy=500):
     a_names = list()
     b_names = list()
     dist = list()
+
 
     for i in id_data:
         # print(i)
