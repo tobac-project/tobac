@@ -1,10 +1,9 @@
 """
     Tobac merge and split v0.1
     This submodule is a post processing step to address tracked cells which merge/split. 
-    The first iteration of this module is to combine the cells which are merging but receive 
-    a new cell id once merged. In general this submodule will label these three cell-ids using
-    the largest cell number of those within the merged/split cell ids. 
-    
+    The first iteration of this module is to combine the cells which are merging but have received
+    a new cell id (and are considered a new cell) once merged. In general this submodule will label merged/split cells
+    with a TRACK number in addition to its CELL number.
     
 """
 
@@ -37,27 +36,22 @@ def merge_split(TRACK, distance=25000, frame_len=5, dxy=500):
     d : xarray.core.dataset.Dataset
         xarray dataset of tobac merge/split cells with parent and child designations.
 
+                Parent/child variables include:
+        - cell_parent_track_id: The associated track id for each cell. All cells that have merged or split will have the same parent track id. If a cell never merges/splits, only one cell will have a particular track id.
+                - feature_parent_cell_id: The associated parent cell id for each feature. All feature in a given cell will have the same cell id.
+                - feature_parent_track_id: The associated parent track id for each feature. This is not the same as the cell id number.
+                - track_child_cell_count: The total number of features belonging to all child cells of a given track id.
+                - cell_child_feature_count: The total number of features for each cell.
+
 
     Example usage:
         d = merge_split(Track)
-        ds = standardize_track_dataset(Track, refl_mask)
+        ds = tobac.utils.standardize_track_dataset(Track, refl_mask)
         both_ds = xr.merge([ds, d],compat ='override')
-        both_ds = compress_all(both_ds)
+        both_ds = tobac.utils.compress_all(both_ds)
         both_ds.to_netcdf(os.path.join(savedir,'Track_features_merges.nc'))
 
     """
-
-    try:
-        import geopy
-    except ImportError:
-        geopy = None
-
-    if geopy:
-        from geopy.distance import geodesic
-    else:
-        print(
-            "Geopy not available, Merge/Split will proceed in tobac general coordinates."
-        )
 
     try:
         import networkx as nx
@@ -90,39 +84,22 @@ def merge_split(TRACK, distance=25000, frame_len=5, dxy=500):
     b_names = list()
     dist = list()
 
-    if hasattr(TRACK, "longitude"):
-        print("is in lat/lon")
-        for i in id_data:
-            a_pointx = track_groups[i].grid_longitude[-1].values
-            a_pointy = track_groups[i].grid_latitude[-1].values
-            for j in id_data:
-                b_pointx = track_groups[j].grid_longitude[0].values
-                b_pointy = track_groups[j].grid_latitude[0].values
-                d = geodesic((a_pointy, a_pointx), (b_pointy, b_pointx)).m
-                if d <= distance:
-                    a_points.append([a_pointx, a_pointy])
-                    b_points.append([b_pointx, b_pointy])
-                    dist.append(d)
-                    a_names.append(i)
-                    b_names.append(j)
-    else:
-
-        for i in id_data:
-            # print(i)
-            a_pointx = track_groups[i].hdim_2[-1].values * dxy
-            a_pointy = track_groups[i].hdim_1[-1].values * dxy
-            for j in id_data:
-                b_pointx = track_groups[j].hdim_2[0].values * dxy
-                b_pointy = track_groups[j].hdim_1[0].values * dxy
-                d = np.linalg.norm(
-                    np.array((a_pointx, a_pointy)) - np.array((b_pointx, b_pointy))
-                )
-                if d <= distance:
-                    a_points.append([a_pointx, a_pointy])
-                    b_points.append([b_pointx, b_pointy])
-                    dist.append(d)
-                    a_names.append(i)
-                    b_names.append(j)
+    for i in id_data:
+        # print(i)
+        a_pointx = track_groups[i].hdim_2[-1].values * dxy
+        a_pointy = track_groups[i].hdim_1[-1].values * dxy
+        for j in id_data:
+            b_pointx = track_groups[j].hdim_2[0].values * dxy
+            b_pointy = track_groups[j].hdim_1[0].values * dxy
+            d = np.linalg.norm(
+                np.array((a_pointx, a_pointy)) - np.array((b_pointx, b_pointy))
+            )
+            if d <= distance:
+                a_points.append([a_pointx, a_pointy])
+                b_points.append([b_pointx, b_pointy])
+                dist.append(d)
+                a_names.append(i)
+                b_names.append(j)
 
     id = []
     # This is removing any tracks that have matched to themselves - e.g.,
@@ -137,7 +114,7 @@ def merge_split(TRACK, distance=25000, frame_len=5, dxy=500):
             b_names.pop(i)
         else:
             continue
-
+    # This is inputting data to the object with will perform the spanning tree.
     g = nx.Graph()
     for i in np.arange(len(dist)):
         g.add_edge(a_names[i], b_names[i], weight=dist[i])
@@ -270,11 +247,14 @@ def merge_split(TRACK, distance=25000, frame_len=5, dxy=500):
     assert len(cell_id) == len(cell_parent_track_id)
     assert len(feature_id) == len(feature_parent_cell_id)
     assert sum(track_child_cell_count) == len(cell_id)
-    assert sum(
-        [
-            sum(cell_child_feature_count[1:]),
-            (len(np.where(feature_parent_track_id < 0)[0])),
-        ]
-    ) == len(feature_id)
+    assert (
+        sum(
+            [
+                sum(cell_child_feature_count[1:]),
+                (len(np.where(feature_parent_track_id < 0)[0])),
+            ]
+        )
+        == len(feature_id)
+    )
 
     return d
