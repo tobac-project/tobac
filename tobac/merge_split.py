@@ -171,8 +171,8 @@ def merge_split(TRACK, distance=25000, frame_len=5, dxy=500):
 
                 track_id[np.nanmax(np.unique(temp))] = list(np.unique(temp))
 
-    track_ids = np.array(list(track_id.keys()))
-    logging.debug("found track ids")
+    #     track_ids = np.array(list(track_id.keys()))
+    #     logging.debug("found track ids")
 
     cell_id = list(
         np.unique(
@@ -186,13 +186,16 @@ def merge_split(TRACK, distance=25000, frame_len=5, dxy=500):
     for i, id in enumerate(track_id):
 
         if len(track_id[int(id)]) == 1:
-            cell_parent_track_id.append(int(id))
+            cell_parent_track_id.append(int(i))
 
         else:
-            cell_parent_track_id.append(np.repeat(int(id), len(track_id[int(id)])))
+            cell_parent_track_id.append(np.repeat(int(i), len(track_id[int(id)])))
 
     cell_parent_track_id = list(flatten(cell_parent_track_id))
     logging.debug("found cell parent track ids")
+
+    track_ids = np.array(np.unique(cell_parent_track_id))
+    logging.debug("found track ids")
 
     feature_parent_cell_id = list(TRACK.cell.values.astype(int))
     logging.debug("found feature parent cell ids")
@@ -205,7 +208,7 @@ def merge_split(TRACK, distance=25000, frame_len=5, dxy=500):
     feature_parent_track_id = np.zeros(len(feature_id))
     for i, id in enumerate(feature_id):
         cellid = feature_parent_cell_id[i]
-        if np.isnan(cellid):
+        if cellid < 0:
             feature_parent_track_id[i] = -1
         else:
             j = np.where(cell_id == cellid)
