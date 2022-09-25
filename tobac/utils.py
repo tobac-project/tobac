@@ -1061,7 +1061,7 @@ def standardize_track_dataset(TrackedFeatures, Mask, Projection=None):
     )
 
     # Add the projection data back in
-    if not None in Projection:
+    if Projection is not None:
         ds["ProjectionCoordinateSystem"] = Projection
 
     return ds
