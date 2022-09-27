@@ -9,6 +9,6 @@ jobs:
         with:
           python-version: '3.8'
       - run: pip install .
-      - run: pip install black
+      - run: pip install black==22.6.0 
       - run: black tobac --check
       
