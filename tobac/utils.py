@@ -932,12 +932,14 @@ def compress_all(nc_grids, min_dims=2, comp_level=4):
 
 def standardize_track_dataset(TrackedFeatures, Mask, Projection=None):
     """
+    CAUTION: this function is experimental. No data structures output are guaranteed to be supported in future versions of tobac.
+
     Combine a feature mask with the feature data table into a common dataset.
 
     returned by tobac.segmentation
     with the TrackedFeatures dataset returned by tobac.linking_trackpy.
 
-    Also rename the variables to be more desciptive and comply with cf-tree.
+    Also rename the variables to be more descriptive and comply with cf-tree.
 
     Convert the default cell parent ID  to an integer table.
 

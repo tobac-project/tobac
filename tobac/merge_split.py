@@ -1,5 +1,5 @@
 """
-    Tobac merge and split v0.1
+    Tobac merge and split
     This submodule is a post processing step to address tracked cells which merge/split. 
     The first iteration of this module is to combine the cells which are merging but have received
     a new cell id (and are considered a new cell) once merged. In general this submodule will label merged/split cells
@@ -8,7 +8,7 @@
 """
 
 
-def merge_split(TRACK, distance=25000, frame_len=5, dxy=500):
+def merge_split_cells(TRACK, dxy, distance=25000, frame_len=5):
     """
     function to  postprocess tobac track data for merge/split cells
 
@@ -18,17 +18,18 @@ def merge_split(TRACK, distance=25000, frame_len=5, dxy=500):
     TRACK : pandas.core.frame.DataFrame
         Pandas dataframe of tobac Track information
 
+    dxy : float, mandatory
+        The x/y grid spacing of the data.
+        Should be in meters.
+
+
     distance : float, optional
-        Distance threshold prior to adding a pair of points into the minimum spanning tree.
+        Distance threshold determining how close two features must be in order to consider merge/splitting.
         Default is 25000 meters.
 
     frame_len : float, optional
-        Threshold for the spanning length within which two points can be separated.
+        Threshold for the maximum number of frames that can separate the end of cell and the start of a related cell.
         Default is five (5) frames.
-
-    dxy : float, optional
-        The x/y/ grid spacing of the data.
-        Default is 500m.
 
     Returns
     -------
@@ -58,63 +59,43 @@ def merge_split(TRACK, distance=25000, frame_len=5, dxy=500):
     except ImportError:
         networkx = None
 
-    #     if networkx:
-    #         import networkx as nx
-    #     else:
-    #         print("Cannot Merge/Split. Please install networkx.")
     import logging
     import numpy as np
     from pandas.core.common import flatten
     import xarray as xr
-
-    # Check if dxy is in meters of in kilometers. It should be in meters
-    if dxy <= 5:
-        dxy *= 1000
+    from scipy.spatial.distance import cdist
 
     # Immediately convert pandas dataframe of track information to xarray:
     TRACK = TRACK.to_xarray()
     track_groups = TRACK.groupby("cell")
-    cell_ids = {cid: len(v) for cid, v in track_groups.groups.items()}
-    id_data = np.fromiter(cell_ids.keys(), dtype=int)
-    count_data = np.fromiter(cell_ids.values(), dtype=int)
-    all_frames = np.sort(np.unique(TRACK.frame))
-    a_points = list()
-    b_points = list()
+    first = track_groups.first()
+    last = track_groups.last()
+
     a_names = list()
     b_names = list()
     dist = list()
 
-    for i in id_data:
-        # print(i)
-        a_pointx = track_groups[i].hdim_2[-1].values * dxy
-        a_pointy = track_groups[i].hdim_1[-1].values * dxy
-        for j in id_data:
-            b_pointx = track_groups[j].hdim_2[0].values * dxy
-            b_pointy = track_groups[j].hdim_1[0].values * dxy
-            d = np.linalg.norm(
-                np.array((a_pointx, a_pointy)) - np.array((b_pointx, b_pointy))
-            )
-            if d <= distance:
-                a_points.append([a_pointx, a_pointy])
-                b_points.append([b_pointx, b_pointy])
-                dist.append(d)
-                a_names.append(i)
-                b_names.append(j)
+    # write all sets of points (a and b) as Nx2 arrays
+    l = len(last["hdim_2"].values)
+    cells = first["cell"].values
+    a_xy = np.zeros((l, 2))
+    a_xy[:, 0] = last["hdim_2"].values * dxy
+    a_xy[:, 1] = last["hdim_1"].values * dxy
+    b_xy = np.zeros((l, 2))
+    b_xy[:, 0] = first["hdim_2"].values * dxy
+    b_xy[:, 1] = first["hdim_1"].values * dxy
 
-    id = []
-    # This is removing any tracks that have matched to themselves - e.g.,
-    # a beginning of a track has found its tail.
-    for i in range(len(dist) - 1, -1, -1):
-        if a_names[i] == b_names[i]:
-            id.append(i)
-            a_points.pop(i)
-            b_points.pop(i)
-            dist.pop(i)
-            a_names.pop(i)
-            b_names.pop(i)
-        else:
-            continue
-    # This is inputting data to the object with will perform the spanning tree.
+    # Use cdist to find distance matrix
+    out = cdist(a_xy, b_xy)
+    # Find all cells under the distance threshold
+    j = np.where(out <= distance)
+
+    # Compile cells meeting the criteria to an array of both the distance and cell ids
+    a_names = cells[j[0]]
+    b_names = cells[j[1]]
+    dist = out[j]
+
+    # This is inputing data to the object which will perform the spanning tree.
     g = nx.Graph()
     for i in np.arange(len(dist)):
         g.add_edge(a_names[i], b_names[i], weight=dist[i])
@@ -123,6 +104,8 @@ def merge_split(TRACK, distance=25000, frame_len=5, dxy=500):
     tree_list = list(tree)
 
     new_tree = []
+    
+    #Pruning the tree for time limits.
     for i, j in enumerate(tree_list):
         frame_a = np.nanmax(track_groups[j[0]].frame.values)
         frame_b = np.nanmin(track_groups[j[1]].frame.values)
@@ -136,6 +119,7 @@ def merge_split(TRACK, distance=25000, frame_len=5, dxy=500):
     )
     track_id = dict()  # same size as number of total merged tracks
 
+	#Cleaning up tracks, combining tracks which contain the same cells. 
     arr = np.array([0])
     for p in cell_id:
         j = np.where(arr == int(p))
@@ -171,20 +155,12 @@ def merge_split(TRACK, distance=25000, frame_len=5, dxy=500):
 
                 track_id[np.nanmax(np.unique(temp))] = list(np.unique(temp))
 
-    #     track_ids = np.array(list(track_id.keys()))
-    #     logging.debug("found track ids")
-
-    cell_id = list(
-        np.unique(
-            TRACK.cell.values.astype(int)[~np.isnan(TRACK.cell.values.astype(int))]
-        )
-    )
+    cell_id = list(np.unique(TRACK.cell.values.astype(int)))
     logging.debug("found cell ids")
 
     cell_parent_track_id = []
 
-    for i, id in enumerate(track_id):
-
+    for i, id in enumerate(track_id, start=-1):
         if len(track_id[int(id)]) == 1:
             cell_parent_track_id.append(int(i))
 
