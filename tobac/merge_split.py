@@ -39,7 +39,7 @@ def merge_split_cells(TRACK, dxy, distance=25000, frame_len=5):
 
                 Parent/child variables include:
         - cell_parent_track_id: The associated track id for each cell. All cells that have merged or split will have the same parent track id. If a cell never merges/splits, only one cell will have a particular track id.
-        - feature_parent_cell_id: The associated parent cell id for each feature. All feature in a given cell will have the same cell id.
+        - feature_parent_cell_id: The associated parent cell id for each feature. All features in a given cell will have the same cell id. This is the original TRACK cell_id.
         - feature_parent_track_id: The associated parent track id for each feature. This is not the same as the cell id number.
         - track_child_cell_count: The total number of features belonging to all child cells of a given track id.
         - cell_child_feature_count: The total number of features for each cell.
@@ -104,8 +104,8 @@ def merge_split_cells(TRACK, dxy, distance=25000, frame_len=5):
     tree_list = list(tree)
 
     new_tree = []
-    
-    #Pruning the tree for time limits.
+
+    # Pruning the tree for time limits.
     for i, j in enumerate(tree_list):
         frame_a = np.nanmax(track_groups[j[0]].frame.values)
         frame_b = np.nanmin(track_groups[j[1]].frame.values)
@@ -119,7 +119,7 @@ def merge_split_cells(TRACK, dxy, distance=25000, frame_len=5):
     )
     track_id = dict()  # same size as number of total merged tracks
 
-	#Cleaning up tracks, combining tracks which contain the same cells. 
+    # Cleaning up tracks, combining tracks which contain the same cells.
     arr = np.array([0])
     for p in cell_id:
         j = np.where(arr == int(p))
