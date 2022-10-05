@@ -1,4 +1,4 @@
-""""Tests for the iris/xarray conversion decorators"""
+"""Tests for the iris/xarray conversion decorators"""
 
 import tobac
 import tobac.testing
@@ -149,7 +149,7 @@ def test_converting_irispandas_to_xarray():
     assert type(output_kwargs_2) == pd.DataFrame
 
 
-def test_xarray_to_iris():
+def test_xarray_workflow():
     """Test comparing the outputs of the standard functions of tobac for a test dataset
     with the output of the same functions decorated with tobac.utils.xarray_to_iris"""
 
