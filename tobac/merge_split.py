@@ -226,11 +226,6 @@ def merge_split_cells(TRACK, dxy, distance=25000, frame_len=5):
     assert len(cell_id) == len(cell_parent_track_id)
     assert len(feature_id) == len(feature_parent_cell_id)
     assert sum(track_child_cell_count) == len(cell_id)
-    assert sum(
-        [
-            sum(cell_child_feature_count[1:]),
-            (len(np.where(feature_parent_track_id < 0)[0])),
-        ]
-    ) == len(feature_id)
+    assert sum(cell_child_feature_count) == len(feature_id)
 
     return d
