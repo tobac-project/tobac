@@ -17,6 +17,6 @@ coverage:
 
 # what folders and files to ignore
 ignore:
-  - tobac/tests/.*
-  - setup.py
+  - "tobac/tests/.*"
+  - "setup.py"
 
