@@ -1,3 +1,5 @@
 [run]
 source=tobac
-omit = tobac/tests/*
+omit =
+        tobac/tests/*
+        setup.py
