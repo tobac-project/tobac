@@ -11,7 +11,7 @@ def test_feature_detection_multithreshold_timestep(
     test_threshs, dxy, wavelength_filtering
 ):
     """
-    Tests ```tobac.feature_detection.feature_detection_multithreshold_timestep
+    Tests ```tobac.feature_detection.feature_detection_multithreshold_timestep```
     """
     import numpy as np
 
@@ -57,7 +57,7 @@ def test_feature_detection_multithreshold_timestep(
 )
 def test_filter_min_distance(test_threshs, min_distance, dxy):
     """
-    Tests ```tobac.feature_detection.filter_min_distance
+    Tests ```tobac.feature_detection.filter_min_distance```
     """
     # start by building a simple dataset with two features close to each other
     import numpy as np
