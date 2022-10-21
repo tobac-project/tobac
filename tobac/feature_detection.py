@@ -258,7 +258,7 @@ def feature_detection_threshold(
         Minimum number of identified features. Default is 0.
 
     min_distance : float, optional
-        Minimum distance between detected features. Default is 0.
+        Minimum distance between detected features (in meter). Default is 0.
 
     idx_start : int, optional
         Feature id to start with. Default is 0.
@@ -449,7 +449,7 @@ def feature_detection_multithreshold_timestep(
         Minimum number of identified features. Default is 0.
 
     min_distance : float, optional
-        Minimum distance between detected features. Default is 0.
+        Minimum distance between detected features (in meter). Default is 0.
 
     feature_number_start : int, optional
         Feature id to start with. Default is 1.
@@ -588,7 +588,7 @@ def feature_detection_multithreshold(
         Minimum number of identified features. Default is 0.
 
     min_distance : float, optional
-        Minimum distance between detected features in meter. Default is 0.
+        Minimum distance between detected features (in meter). Default is 0.
 
     feature_number_start : int, optional
         Feature id to start with. Default is 1.
