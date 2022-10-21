@@ -1,6 +1,11 @@
-import numpy as np
+import datetime
+
 import tobac.utils as tb_utils
 import tobac.testing as tb_test
+
+import pandas as pd
+import pandas.testing as pd_test
+import numpy as np
 from scipy import fft
 
 
@@ -65,8 +70,6 @@ def test_combine_tobac_feats():
     testing to see if a single dataframe
     matches.
     """
-    import datetime
-    import pandas as pd
 
     single_feat_1 = tb_test.generate_single_feature(
         0, 0, start_date=datetime.datetime(2022, 1, 1, 0, 0), frame_start=0
@@ -77,6 +80,15 @@ def test_combine_tobac_feats():
 
     combined_feat = tb_utils.combine_tobac_feats([single_feat_1, single_feat_2])
 
-    tot_feat = tb_test.generate_single_feature(0, 0, num_frames=2, frame_start=0)
+    tot_feat = tb_test.generate_single_feature(
+        0, 0, spd_h1=1, spd_h2=1, num_frames=2, frame_start=0
+    )
 
-    assert combined_feat.equals(tot_feat)
+    pd_test.assert_frame_equal(combined_feat, tot_feat)
+
+    # Now try preserving the old feature numbers.
+    combined_feat = tb_utils.combine_tobac_feats(
+        [single_feat_1, single_feat_2], preserve_old_feat_nums="old_feat_column"
+    )
+    assert np.all(list(combined_feat["old_feat_column"].values) == [1, 1])
+    assert np.all(list(combined_feat["feature"].values) == [1, 2])

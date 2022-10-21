@@ -896,7 +896,7 @@ def spectral_filtering(
         return filtered_field
 
 
-def combine_tobac_feats(list_of_feats):
+def combine_tobac_feats(list_of_feats, preserve_old_feat_nums=None):
     """Function to combine a list of tobac feature detection dataframes
     into one combined dataframe that can be used for tracking
     or segmentation.
@@ -905,12 +905,18 @@ def combine_tobac_feats(list_of_feats):
     ----------
     list_of_feats: array-like of Pandas DataFrames
         A list of dataframes (generated, for example, by
-        running feature detection on multiple nodes)
+        running feature detection on multiple nodes).
+
+    preserve_old_feat_nums: str or None
+        The column name to preserve old feature numbers in. If None, these
+        old numbers will be deleted. Users may want to enable this feature
+        if they have run segmentation with the separate dataframes and
+        therefore old feature numbers.
 
     Returns
     -------
     pd.DataFrame
-        One combined DataFrame
+        One combined DataFrame.
 
     """
     import pandas as pd
@@ -923,6 +929,10 @@ def combine_tobac_feats(list_of_feats):
     all_times = sorted(combined_df["time"].unique())
     # Loop through current times
     start_feat_num = combined_df["feature"].min()
+    # Save the old feature numbers if requested.
+    if preserve_old_feat_nums is not None:
+        combined_df[preserve_old_feat_nums] = combined_df["feature"]
+
     for frame_num, curr_time in enumerate(all_times):
         # renumber the frame number
         combined_df.loc[combined_df["time"] == curr_time, "frame"] = frame_num
