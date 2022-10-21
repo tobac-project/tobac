@@ -505,7 +505,7 @@ def feature_detection_multithreshold_timestep(
         )
         if any([x is not None for x in features_threshold_i]):
             features_thresholds = pd.concat(
-                [features_thresholds, features_threshold_i], drop_index=True
+                [features_thresholds, features_threshold_i], ignore_index=True
             )
 
         # For multiple threshold, and features found both in the current and previous step, remove "parent" features from Dataframe
