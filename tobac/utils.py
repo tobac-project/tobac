@@ -894,3 +894,43 @@ def spectral_filtering(
         return (lambda_mn, transfer_function), filtered_field
     else:
         return filtered_field
+
+
+def combine_tobac_feats(list_of_feats):
+    """Function to combine a list of tobac feature detection dataframes
+    into one combined dataframe that can be used for tracking
+    or segmentation.
+
+    Parameters
+    ----------
+    list_of_feats: array-like of Pandas DataFrames
+        A list of dataframes (generated, for example, by
+        running feature detection on multiple nodes)
+
+    Returns
+    -------
+    pd.DataFrame
+        One combined DataFrame
+
+    """
+    import pandas as pd
+    import numpy as np
+
+    # first, let's just combine these.
+    combined_df = pd.concat(list_of_feats)
+    # Then, sort by time first, then by feature number
+    combined_df = combined_df.sort_values(["time", "feature"])
+    all_times = sorted(combined_df["time"].unique())
+    # Loop through current times
+    start_feat_num = combined_df["feature"].min()
+    for frame_num, curr_time in enumerate(all_times):
+        # renumber the frame number
+        combined_df.loc[combined_df["time"] == curr_time, "frame"] = frame_num
+        # renumber the features
+        curr_row_count = len(combined_df.loc[combined_df["time"] == curr_time])
+        feat_num_arr = np.arange(start_feat_num, start_feat_num + curr_row_count)
+        combined_df.loc[combined_df["time"] == curr_time, "feature"] = feat_num_arr
+        start_feat_num = np.max(feat_num_arr) + 1
+
+    combined_df = combined_df.reset_index()
+    return combined_df
