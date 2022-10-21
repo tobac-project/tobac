@@ -23,7 +23,8 @@ The project is currently being extended by several contributors to include addit
    installation
    data_input
    analysis 
-   plotting 
+   plotting
+   big_datasets 
    examples
    publications
 
