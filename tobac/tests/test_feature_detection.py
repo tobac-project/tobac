@@ -60,6 +60,7 @@ def test_filter_min_distance(test_threshs, min_distance, dxy):
     Tests ```tobac.feature_detection.filter_min_distance
     """
     # start by building a simple dataset with two features close to each other
+    import numpy as np
 
     test_dset_size = (50, 50)
     test_hdim_1_pt = 20.0
