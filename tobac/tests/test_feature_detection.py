@@ -14,7 +14,6 @@ def test_feature_detection_multithreshold_timestep(
     Tests ```tobac.feature_detection.feature_detection_multithreshold_timestep
     """
     import numpy as np
-    from tobac import feature_detection
 
     # start by building a simple dataset with a single feature and seeing
     # if we identify it
@@ -37,7 +36,7 @@ def test_feature_detection_multithreshold_timestep(
         amplitude=test_amp,
     )
     test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type="iris")
-    fd_output = feature_detection.feature_detection_multithreshold_timestep(
+    fd_output = feat_detect.feature_detection_multithreshold_timestep(
         test_data_iris,
         0,
         threshold=test_threshs,
