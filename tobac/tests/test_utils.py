@@ -1,5 +1,6 @@
 import numpy as np
 import tobac.utils as tb_utils
+import tobac.testing as tb_test
 from scipy import fft
 
 
@@ -55,3 +56,27 @@ def test_spectral_filtering():
         )
         >= 1
     )
+
+
+def test_combine_tobac_feats():
+    """tests tobac.utils.combine_tobac_feats
+    Test by generating two single feature dataframes,
+    combining them with this function, and then
+    testing to see if a single dataframe
+    matches.
+    """
+    import datetime
+    import pandas as pd
+
+    single_feat_1 = tb_test.generate_single_feature(
+        0, 0, start_date=datetime.datetime(2022, 1, 1, 0, 0), frame_start=0
+    )
+    single_feat_2 = tb_test.generate_single_feature(
+        1, 1, start_date=datetime.datetime(2022, 1, 1, 0, 5), frame_start=0
+    )
+
+    combined_feat = tb_utils.combine_tobac_feats([single_feat_1, single_feat_2])
+
+    tot_feat = tb_test.generate_single_feature(0, 0, num_frames=2, frame_start=0)
+
+    assert combined_feat.equals(tot_feat)

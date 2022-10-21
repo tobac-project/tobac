@@ -932,5 +932,5 @@ def combine_tobac_feats(list_of_feats):
         combined_df.loc[combined_df["time"] == curr_time, "feature"] = feat_num_arr
         start_feat_num = np.max(feat_num_arr) + 1
 
-    combined_df = combined_df.reset_index()
+    combined_df = combined_df.reset_index(drop=True)
     return combined_df
