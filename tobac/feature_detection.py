@@ -20,8 +20,8 @@ References
 import logging
 import numpy as np
 import pandas as pd
-from . import utils as tb_utils
-from tobac.utils import spectral_filtering
+from .utils import internal as internal_utils
+from tobac.utils.general import spectral_filtering
 import warnings
 
 
@@ -297,13 +297,13 @@ def feature_detection_threshold(
         # detect individual regions, label  and count the number of pixels included:
     labels, num_labels = label(mask, background=0, return_num=True)
 
-    label_props = tb_utils.get_label_props_in_dict(labels)
+    label_props = internal_utils.get_label_props_in_dict(labels)
     if len(label_props) > 0:
         (
             total_indices_all,
             hdim1_indices_all,
             hdim2_indices_all,
-        ) = tb_utils.get_indices_of_labels_from_reg_prop_dict(label_props)
+        ) = internal_utils.get_indices_of_labels_from_reg_prop_dict(label_props)
 
     x_size = labels.shape[1]
 

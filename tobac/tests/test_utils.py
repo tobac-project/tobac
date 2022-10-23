@@ -28,7 +28,7 @@ def test_spectral_filtering():
     wave_data = fft.idctn(matrix)
 
     # use spectral filtering function on random wave data
-    transfer_function, filtered_data = tb_utils.spectral_filtering(
+    transfer_function, filtered_data = tb_utils.general.spectral_filtering(
         dxy, wave_data, lambda_min, lambda_max, return_transfer_function=True
     )
 
