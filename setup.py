@@ -1,8 +1,5 @@
 from setuptools import setup
 
-import sys
-import warnings
-
 """
 This code is from the python documentation and is
 designed to read in the version number.
@@ -24,14 +21,6 @@ def get_version(pkg_name):
             return line.split(delim)[1]
     else:
         raise RuntimeError("Unable to find version string.")
-
-
-if sys.version_info < (3, 7):
-    warnings.warn(
-        "Support for Python versions less than 3.7 is deprecated. "
-        "Version 1.5 of tobac will require Python 3.7 or later.",
-        DeprecationWarning,
-    )
 
 
 PACKAGE_NAME = "tobac"

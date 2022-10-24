@@ -17,7 +17,7 @@ Detailed documentation of the package can be found at https://tobac.readthedocs.
 
 Installation
 ------------
-tobac now works for both Python 3 and Python 2 installations.
+tobac requires Python 3, and support for Python versions before 3.7 (i.e., 3.6 and lower) is deprecated and will be removed in tobac version 1.5.
 
 The easiest way is to install the most recent version of tobac via conda and the conda-forge channel:
 ```
