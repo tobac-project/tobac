@@ -44,6 +44,7 @@ The project is currently being extended by several contributors to include addit
    segmentation
    segmentation_parameters
    segmentation_output
+   features_without_segmented_area
 
 .. toctree::
    :caption: Tracking
