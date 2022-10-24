@@ -1,6 +1,7 @@
 from setuptools import setup
 
 import sys
+import warnings
 
 """
 This code is from the python documentation and is
@@ -26,7 +27,11 @@ def get_version(pkg_name):
 
 
 if sys.version_info < (3, 7):
-    raise RuntimeError("tobac requires Python 3.7 or higher.")
+    warnings.warn(
+        "Support for Python versions less than 3.7 is deprecated. "
+        "Version 1.5 of tobac will require Python 3.7 or later.",
+        DeprecationWarning,
+    )
 
 
 PACKAGE_NAME = "tobac"
