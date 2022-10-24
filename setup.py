@@ -48,7 +48,7 @@ setup(
         "peter.marinescu@colostate.edu",
     ],
     license="BSD-3-Clause License",
-    packages=[PACKAGE_NAME],
+    packages=[PACKAGE_NAME, PACKAGE_NAME + ".utils"],
     install_requires=[],
     zip_safe=False,
 )
