@@ -1,5 +1,6 @@
 from setuptools import setup
 
+import sys
 
 """
 This code is from the python documentation and is
@@ -24,13 +25,42 @@ def get_version(pkg_name):
         raise RuntimeError("Unable to find version string.")
 
 
+if sys.version_info < (3, 7):
+    raise RuntimeError("tobac requires Python 3.7 or higher.")
+
+
 PACKAGE_NAME = "tobac"
+
+# See classifiers list at: https://pypi.org/classifiers/
+CLASSIFIERS = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Atmospheric Science",
+]
+
 
 setup(
     name=PACKAGE_NAME,
     version=get_version(PACKAGE_NAME),
     description="Tracking and object-based analysis of clouds",
     url="http://github.com/tobac-project/tobac",
+    classifiers=CLASSIFIERS,
     author=[
         "Max Heikenfeld",
         "William Jones",
