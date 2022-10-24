@@ -1,3 +1,24 @@
+"""Provide tracking methods.
+
+The individual features and associated area/volumes identified in
+each timestep have to be linked into trajectories to analyse
+the time evolution of their properties for a better understanding of
+the underlying physical processes. 
+The implementations are structured in a way that allows for the future
+addition of more complex tracking methods recording a more complex
+network of relationships between features at different points in
+time. 
+
+References
+----------
+.. Heikenfeld, M., Marinescu, P. J., Christensen, M.,
+   Watson-Parris, D., Senf, F., van den Heever, S. C.
+   & Stier, P. (2019). tobac 1.2: towards a flexible 
+   framework for tracking and analysis of clouds in 
+   diverse datasets. Geoscientific Model Development,
+   12(11), 4551-4570.
+"""
+
 import logging
 from operator import is_
 import numpy as np
@@ -34,43 +55,130 @@ def linking_trackpy(
     max_h2=None,
     PBC_flag="none",
 ):
-    """Function to perform the linking of features in trajectories
+
+    """Perform Linking of features in trajectories.
+
+    The linking determines which of the features detected in a specific
+    timestep is most likely identical to an existing feature in the
+    previous timestep. For each existing feature, the movement within
+    a time step is extrapolated based on the velocities in a number
+    previous time steps. The algorithm then breaks the search process
+    down to a few candidate features by restricting the search to a
+    circular search region centered around the predicted position of
+    the feature in the next time step. For newly initialized trajectories,
+    where no velocity from previous time steps is available, the
+    algorithm resorts to the average velocity of the nearest tracked
+    objects. v_max and d_min are given as physical quantities and then
+    converted into pixel-based values used in trackpy. This allows for
+    tracking that is controlled by physically-based parameters that are
+    independent of the temporal and spatial resolution of the input
+    data. The algorithm creates a continuous track for the feature
+    that is the most probable based on the previous cell path.
 
     Parameters
     ----------
-    features:     pandas.DataFrame
-                  Detected features to be linked
-    v_max:        float
-                  speed at which features are allowed to move
-    dt:           float
-                  time resolution of tracked features
-    dxy:          float
-                  Horizontal grid spacing of input data
-    dz: float
-        Constant vertical grid spacing of input data. If None,
-        uses `vertical_dim` to get vertical location.
-    memory        int
-                  number of output timesteps features allowed to vanish for to be still considered tracked
-    subnetwork_size int
-                    maximim size of subnetwork for linking
+    features : pandas.DataFrame
+        Detected features to be linked.
+
+    field_in : xarray.DataArray
+        Input field to perform the watershedding on (2D or 3D for one
+        specific point in time).
+
+    dt : float
+        Time resolution of tracked features.
+
+    dxy : float
+        Grid spacing of the input data.
+
+    d_max : float, optional
+        Maximum search range
+        Default is None.
+
+    d_min : float, optional
+        Variations in the shape of the regions used to determine the
+        positions of the features can lead to quasi-instantaneous shifts
+        of the position of the feature by one or two grid cells even for
+        a very high temporal resolution of the input data, potentially
+        jeopardising the tracking procedure. To prevent this, tobac uses
+        an additional minimum radius of the search range.
+        Default is None.
+
+    subnetwork_size : int, optional
+        Maximum size of subnetwork for linking. This parameter should be
+        adjusted when using adaptive search. Usually a lower value is desired
+        in that case. For a more in depth explanation have look
+        `here <https://soft-matter.github.io/trackpy/v0.5.0/tutorial/adaptive-search.html>`_
+        If None, 30 is used for regular search and 15 for adaptive search.
+        Default is None.
+
+    v_max : float, optional
+        Speed at which features are allowed to move. Default is None.
+
+    memory : int, optional
+        Number of output timesteps features allowed to vanish for to
+        be still considered tracked. Default is 0.
+        .. warning :: This parameter should be used with caution, as it
+                     can lead to erroneous trajectory linking,
+                     espacially for data with low time resolution.
+
+    stubs : int, optional
+        Minimum number of timesteps of a tracked cell to be reported
+        Default is 1
+
+    time_cell_min : float, optional
+        Minimum length in time of tracked cell to be reported in minutes
+        Default is None.
+
+    order : int, optional
+        Order of polynomial used to extrapolate trajectory into gaps and
+        ond start and end point.
+        Default is 1.
+
+    extrapolate : int, optional
+        Number or timesteps to extrapolate trajectories.
+        Default is 0.
+
+    method_linking : {'random', 'predict'}, optional
+        Flag choosing method used for trajectory linking.
+        Default is 'random'.
+
+    adaptive_step : float, optional
+        Reduce search range by multiplying it by this factor. Needs to be
+        used in combination with adaptive_stop. Default is None.
+
+    adaptive_stop : float, optional
+        If not None, when encountering an oversize subnet, retry by progressively
+        reducing search_range by multiplying with adaptive_step until the subnet
+        is solvable. If search_range becomes <= adaptive_stop, give up and raise
+        a SubnetOversizeException. Needs to be used in combination with
+        adaptive_step. Default is None.
+
+    cell_number_start : int, optional
+        Cell number for first tracked cell.
+        Default is 1
+
     cell_number_unassigned: int
-        Number to set the unassigned/non-tracked cells to. By default, this is -1.
-        Note that if you set this to `np.nan`, the data type of 'cell' will
-        change to float.
-    method_linking:   str('predict' or 'random')
-                      flag choosing method used for trajectory linking
+        Number to set the unassigned/non-tracked cells to. Note that if you set this
+        to `np.nan`, the data type of 'cell' will change to float.
+        Default is -1
+
     vertical_coord: str
         Name of the vertical coordinate in meters. If 'auto', tries to auto-detect.
         It looks for the coordinate or the dimension name corresponding
         to the string. To use `dz`, set this to `None`.
+
     min_h1: int
         Minimum hdim_1 value, required when PBC_flag is 'hdim_1' or 'both'
+
     max_h1: int
         Maximum hdim_1 value, required when PBC_flag is 'hdim_1' or 'both'
+
     min_h2: int
         Minimum hdim_2 value, required when PBC_flag is 'hdim_2' or 'both'
+
     max_h2: int
         Maximum hdim_2 value, required when PBC_flag is 'hdim_2' or 'both'
+
     PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
         Sets whether to use periodic boundaries, and if so in which directions.
         'none' means that we do not have periodic boundaries
@@ -80,9 +188,23 @@ def linking_trackpy(
 
     Returns
     -------
-    pandas.dataframe
-        Pandas dataframe containing the linked features
+    trajectories_final : pandas.DataFrame
+        Dataframe of the linked features, containing the variable 'cell',
+        with integers indicating the affiliation of a feature to a specific
+        track, and the variable 'time_cell' with the time the cell has
+        already existed.
+
+    Raises
+    ------
+    ValueError
+        If method_linking is neither 'random' nor 'predict'.
     """
+
+    if extrapolate != 0:
+        raise NotImplementedError(
+            "Extrapolation is not yet implemented. Set this parameter to 0 to continue."
+        )
+
     #    from trackpy import link_df
     #    from trackpy import link_df
     import trackpy as tp
@@ -140,6 +262,19 @@ def linking_trackpy(
     if PBC_flag in ["hdim_2", "both"] and (min_h2 is None or max_h2 is None):
         raise ValueError("For PBC tracking, must set min and max coordinates.")
 
+    # in case of adaptive search, check wether both parameters are specified
+    if adaptive_stop is not None:
+        if adaptive_step is None:
+            raise ValueError(
+                "Adaptive search requires values for adaptive_step and adaptive_stop. Please specify adaptive_step."
+            )
+
+    if adaptive_step is not None:
+        if adaptive_stop is None:
+            raise ValueError(
+                "Adaptive search requires values for adaptive_step and adaptive_stop. Please specify adaptive_stop."
+            )
+
     if time_cell_min:
         stubs = np.floor(time_cell_min / dt) + 1
 
@@ -149,10 +284,12 @@ def linking_trackpy(
 
     # If subnetwork size given, set maximum subnet size
     if subnetwork_size is not None:
-        # Choose the right parameter depending on the use of adaptive search
+        # Choose the right parameter depending on the use of adaptive search, save previously set values
         if adaptive_step is None and adaptive_stop is None:
+            size_cache = tp.linking.Linker.MAX_SUB_NET_SIZE
             tp.linking.Linker.MAX_SUB_NET_SIZE = subnetwork_size
         else:
+            size_cache = tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE
             tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE = subnetwork_size
 
     # deep copy to preserve features field:
@@ -200,12 +337,20 @@ def linking_trackpy(
         )
     elif method_linking == "predict":
 
+        # avoid setting pos_columns by renaimng to default values to avoid trackpy bug
+        features.rename(columns={"hdim_1": "y", "hdim_2": "x"}, inplace=True)
+
+        # generate list of features as input for df_link_iter to avoid bug in df_link
+        features_linking_list = [
+            frame for i, frame in features.groupby("frame", sort=True)
+        ]
+
         pred = tp.predict.NearestVelocityPredict(span=1)
-        trajectories_unfiltered = pred.link_df(
-            features_linking,
+        trajectories_unfiltered = pred.link_df_iter(
+            features_linking_list,
             search_range=search_range,
             memory=memory,
-            pos_columns=pos_columns_tp,
+            # pos_columns=["hdim_1", "hdim_2"], # not working atm
             t_column="frame",
             neighbor_strategy=neighbor_strategy,
             link_strategy="auto",
@@ -216,10 +361,25 @@ def linking_trackpy(
             #                                 hash_size=None, box_size=None, verify_integrity=True,
             #                                 retain_index=False
         )
+        # recreate a single dataframe from the list
+        trajectories_unfiltered = pd.concat(trajectories_unfiltered)
+
+        # change to column names back
+        trajectories_unfiltered.rename(
+            columns={"y": "hdim_1", "x": "hdim_2"}, inplace=True
+        )
+        features.rename(columns={"y": "hdim_1", "x": "hdim_2"}, inplace=True)
     else:
         raise ValueError("method_linking unknown")
 
-        # Filter trajectories to exclude short trajectories that are likely to be spurious
+    # Reset trackpy parameters to previously set values
+    if subnetwork_size is not None:
+        if adaptive_step is None and adaptive_stop is None:
+            tp.linking.Linker.MAX_SUB_NET_SIZE = size_cache
+        else:
+            tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE = size_cache
+
+    # Filter trajectories to exclude short trajectories that are likely to be spurious
     #    trajectories_filtered = filter_stubs(trajectories_unfiltered,threshold=stubs)
     #    trajectories_filtered=trajectories_filtered.reset_index(drop=True)
 
@@ -293,27 +453,34 @@ def linking_trackpy(
 def fill_gaps(
     t, order=1, extrapolate=0, frame_max=None, hdim_1_max=None, hdim_2_max=None
 ):
-    """add cell time as time since the initiation of each cell
+    """Add cell time as time since the initiation of each cell.
 
     Parameters
     ----------
-    t:             pandas dataframe
-                   trajectories from trackpy
-    order:         int
-                    Order of polynomial used to extrapolate trajectory into gaps and beyond start and end point
-    extrapolate     int
-                    number of timesteps to extrapolate trajectories by
-    frame_max:      int
-                    size of input data along time axis
-    hdim_1_max:     int
-                    size of input data along first horizontal axis
-    hdim_2_max:     int
-                    size of input data along second horizontal axis
+    t : pandas.DataFrame
+        Trajectories from trackpy.
+
+    order : int, optional
+        Order of polynomial used to extrapolate trajectory into
+        gaps and beyond start and end point. Default is 1.
+
+    extrapolate : int, optional
+        Number or timesteps to extrapolate trajectories. Default is 0.
+
+    frame_max : int, optional
+        Size of input data along time axis. Default is None.
+
+    hdim_1_max, hdim2_max : int, optional
+        Size of input data along first and second horizontal axis.
+        Default is None.
+
     Returns
     -------
-    pandas dataframe
-        trajectories from trackpy with with filled gaps and potentially extrapolated
+    t : pandas.DataFrame
+        Trajectories from trackpy with with filled gaps and potentially
+        extrapolated.
     """
+
     from scipy.interpolate import InterpolatedUnivariateSpline
 
     logging.debug("start filling gaps")
@@ -370,13 +537,13 @@ def add_cell_time(t):
 
     Parameters
     ----------
-    t:             pandas  DataFrame
-                   trajectories with added coordinates
+    t : pandas.DataFrame
+        trajectories with added coordinates
 
     Returns
     -------
-    t:             pandas dataframe
-                   trajectories with added cell time
+    t : pandas.Dataframe
+        trajectories with added cell time
     """
 
     # logging.debug('start adding time relative to cell initiation')

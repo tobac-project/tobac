@@ -1,5 +1,11 @@
 ### Tobac Changelog
 
+_**Version 1.3.3:**_
+
+**Bug fixes**
+
+- Added a workaround to a bug in trackpy that fixes predictive tracking [#170](https://github.com/tobac-project/tobac/pull/170)
+
 _**Version 1.3.2:**_
 
 **Bug fixes**

@@ -1,3 +1,7 @@
+"""Containing methods to make simple sample data for testing.
+
+"""
+
 import datetime
 from multiprocessing.sharedctypes import Value
 import numpy as np
@@ -6,23 +10,28 @@ import pandas as pd
 
 
 def make_simple_sample_data_2D(data_type="iris"):
-    """function creating a simple dataset to use in tests for tobac.
-    The grid has a grid spacing of 1km in both horizontal directions and 100 grid cells in x direction and 500 in y direction.
-    Time resolution is 1 minute and the total length of the dataset is 100 minutes around a arbitrary date (2000-01-01 12:00).
-    The longitude and latitude coordinates are added as 2D aux coordinates and arbitrary, but in realisitic range.
-    The data contains a single blob travelling on a linear trajectory through the dataset for part of the time.
+    """Create a simple dataset to use in tests.
+
+    The grid has a grid spacing of 1km in both horizontal directions
+    and 100 grid cells in x direction and 500 in y direction.
+    Time resolution is 1 minute and the total length of the dataset is
+    100 minutes around a abritraty date (2000-01-01 12:00).
+    The longitude and latitude coordinates are added as 2D aux
+    coordinates and arbitrary, but in realisitic range.
+    The data contains a single blob travelling on a linear trajectory
+    through the dataset for part of the time.
+
     Parameters
     ----------
-    data_type: {'iris', 'xarray'}
-        The type of dataset to produce. Note that this function currently generates an iris cube
-        and if xarray is requested, it simply converts to xarray with the from_iris function in xarray.
+    data_type : {'iris', 'xarray'}, optional
+        Choose type of the dataset that will be produced.
+        Default is 'iris'
 
     Returns
     -------
-    Iris.Cube.cube or xarray.DataArray
-        The simple output
-
+    sample_data : iris.cube.Cube or xarray.DataArray
     """
+
     from iris.cube import Cube
     from iris.coords import DimCoord, AuxCoord
 
@@ -86,26 +95,30 @@ def make_simple_sample_data_2D(data_type="iris"):
 
 
 def make_sample_data_2D_3blobs(data_type="iris"):
-    from iris.cube import Cube
-    from iris.coords import DimCoord, AuxCoord
+    """Create a simple dataset to use in tests.
 
-    """function creating a simple dataset to use in tests for tobac. 
-    The grid has a grid spacing of 1km in both horizontal directions and 100 grid cells in x direction and 200 in y direction.
-    Time resolution is 1 minute and the total length of the dataset is 100 minutes around a abritraty date (2000-01-01 12:00). 
-    The longitude and latitude coordinates are added as 2D aux coordinates and arbitrary, but in realisitic range.
-    The data contains a three individual blobs travelling on a linear trajectory through the dataset for part of the time.
-    
+    The grid has a grid spacing of 1km in both horizontal directions
+    and 100 grid cells in x direction and 200 in y direction.
+    Time resolution is 1 minute and the total length of the dataset is
+    100 minutes around a arbitrary date (2000-01-01 12:00).
+    The longitude and latitude coordinates are added as 2D aux
+    coordinates and arbitrary, but in realisitic range.
+    The data contains three individual blobs travelling on a linear
+    trajectory through the dataset for part of the time.
+
     Parameters
     ----------
-    data_type: {'iris', 'xarray'}
-        The type of dataset to produce. Note that this function currently generates an iris cube 
-        and if xarray is requested, it simply converts to xarray with the from_iris function in xarray.
-    
+    data_type : {'iris', 'xarray'}, optional
+        Choose type of the dataset that will be produced.
+        Default is 'iris'
+
     Returns
     -------
-    Iris.Cube.cube or xarray.DataArray
-        The simple output
+    sample_data : iris.cube.Cube or xarray.DataArray
     """
+
+    from iris.cube import Cube
+    from iris.coords import DimCoord, AuxCoord
 
     t_0 = datetime.datetime(2000, 1, 1, 12, 0, 0)
 
@@ -196,21 +209,24 @@ def make_sample_data_2D_3blobs(data_type="iris"):
 
 
 def make_sample_data_2D_3blobs_inv(data_type="iris"):
-    """function creating a version of the dataset created in the function make_sample_cube_2D, but with switched coordinate order for the horizontal coordinates
-    for tests to ensure that this does not affect the results
+    """Create a version of the dataset with switched coordinates.
+
+    Create a version of the dataset created in the function
+    make_sample_cube_2D, but with switched coordinate order for the
+    horizontal coordinates for tests to ensure that this does not
+    affect the results.
 
     Parameters
     ----------
-    data_type: {'iris', 'xarray'}
-        The type of dataset to produce. Note that this function currently generates an iris cube
-        and if xarray is requested, it simply converts to xarray with the from_iris function in xarray.
+    data_type : {'iris', 'xarray'}, optional
+        Choose type of the dataset that will be produced.
+        Default is 'iris'
 
     Returns
     -------
-    Iris.Cube.cube or xarray.DataArray
-        The simple output
-
+    sample_data : iris.cube.Cube or xarray.DataArray
     """
+
     from iris.cube import Cube
     from iris.coords import DimCoord, AuxCoord
 
@@ -305,29 +321,34 @@ def make_sample_data_2D_3blobs_inv(data_type="iris"):
 
 
 def make_sample_data_3D_3blobs(data_type="iris", invert_xy=False):
-    from iris.cube import Cube
-    from iris.coords import DimCoord, AuxCoord
+    """Create a simple dataset to use in tests.
 
-    """function creating a simple dataset to use in tests for tobac. 
-    The grid has a grid spacing of 1km in both horizontal directions and 100 grid cells in x direction and 200 in y direction.
-    Time resolution is 1 minute and the total length of the dataset is 100 minutes around a abritraty date (2000-01-01 12:00). 
-    The longitude and latitude coordinates are added as 2D aux coordinates and arbitrary, but in realisitic range.
-    The data contains a three individual blobs travelling on a linear trajectory through the dataset for part of the time.
-    
+    The grid has a grid spacing of 1km in both horizontal directions
+    and 100 grid cells in x direction and 200 in y direction.
+    Time resolution is 1 minute and the total length of the dataset is
+    100 minutes around a abritraty date (2000-01-01 12:00).
+    The longitude and latitude coordinates are added as 2D aux
+    coordinates and arbitrary, but in realisitic range.
+    The data contains three individual blobs travelling on a linear
+    trajectory through the dataset for part of the time.
+
     Parameters
     ----------
-    data_type: {'iris', 'xarray'}
-        The type of dataset to produce. Note that this function currently generates an iris cube 
-        and if xarray is requested, it simply converts to xarray with the from_iris function in xarray.
-    invert_xy: bool
-        True to invert the x and y, false to keep them as they are originally. 
-    
+    data_type : {'iris', 'xarray'}, optional
+        Choose type of the dataset that will be produced.
+        Default is 'iris'
+
+    invert_xy : bool, optional
+        Flag to determine wether to switch x and y coordinates
+        Default is False
+
     Returns
     -------
-    Iris.Cube.cube or xarray.DataArray
-        The simple output
-
+    sample_data : iris.cube.Cube or xarray.DataArray
     """
+
+    from iris.cube import Cube
+    from iris.coords import DimCoord, AuxCoord
 
     t_0 = datetime.datetime(2000, 1, 1, 12, 0, 0)
 
@@ -468,24 +489,33 @@ def make_dataset_from_arr(
     ----------
     in_arr: array-like
         The input array to convert to iris/xarray
-    data_type: str('xarray' or 'iris')
+
+    data_type: str('xarray' or 'iris'), optional
         Type of the dataset to return
-    time_dim_num: int or None
+        Default is 'xarray'
+
+    time_dim_num: int or None, optional
         What axis is the time dimension on, None for a single timestep
-    z_dim_num: int or None
+        Default is None
+
+    z_dim_num: int or None, optional
         What axis is the z dimension on, None for a 2D array
     z_dim_name: str
         What the z dimension name is named
     y_dim_num: int
         What axis is the y dimension on, typically 0 for a 2D array
-    x_dim_num: int
+        Default is 0
+
+    x_dim_num: int, optional
         What axis is the x dimension on, typically 1 for a 2D array
+        Default is 1
 
     Returns
     -------
     Iris or xarray dataset with everything we need for feature detection/tracking.
 
     """
+
     import xarray as xr
     import iris
 
@@ -539,36 +569,49 @@ def make_feature_blob(
     amplitude=1,
     PBC_flag="none",
 ):
-    import xarray as xr
-
-    """Function to make a defined "blob" in location (zloc, yloc, xloc) with 
+    """Function to make a defined "blob" in location (zloc, yloc, xloc) with
     user-specified shape and amplitude. Note that this function will
     round the size and locations to the nearest point within the array.
-    
+
     Parameters
     ----------
     in_arr: array-like
         input array to add the "blob" to
+
     h1_loc: float
         Center hdim_1 location of the blob, required
+
     h2_loc: float
         Center hdim_2 location of the blob, required
-    v_loc: float
+
+    v_loc: float, optional
         Center vdim location of the blob, optional. If this is None, we assume that the
         dataset is 2D.
-    h1_size: float
+        Default is None
+
+    h1_size: float, optional
         Size of the bubble in array coordinates in hdim_1
-    h2_size: float
+        Default is 1
+
+    h2_size: float, optional
         Size of the bubble in array coordinates in hdim_2
-    v_size: float
+        Default is 1
+
+    v_size: float, optional
         Size of the bubble in array coordinates in vdim
-    shape: str('rectangle')
+        Default is 1
+
+    shape: str('rectangle'), optional
         The shape of the blob that is added. For now, this is just rectangle
         'oval' adds an oval/spherical bubble with constant amplitude `amplitude`. We assume that the
-        sizes specified are the diameters in each dimension. 
+        sizes specified are the diameters in each dimension.
         'rectangle' adds a rectangular/rectangular prism bubble with constant amplitude `amplitude`.
-    amplitude: float
+        Default is "rectangle"
+
+    amplitude: float, optional
         Maximum amplitude of the blob
+        Default is 1
+
     PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
         Sets whether to use periodic boundaries, and if so in which directions.
         'none' means that we do not have periodic boundaries
@@ -576,12 +619,13 @@ def make_feature_blob(
         'hdim_2' means that we are periodic along hdim2
         'both' means that we are periodic along both horizontal dimensions
 
-
     Returns
     -------
     array-like
         An array with the same type as `in_arr` that has the blob added.
     """
+
+    import xarray as xr
 
     # Check if z location is there and set our 3D-ness based on this.
     if v_loc is None:
@@ -656,27 +700,37 @@ def set_arr_2D_3D(
     ----------
     in_arr: array-like
         Array of values to set
+
     value: int, float, or array-like of size (end_v-start_v, end_h1-start_h1, end_h2-start_h2)
         The value to assign to in_arr. This will work to assign an array, but the array
         must have the same dimensions as the size specified in the function.
+
     start_h1: int
         Start index to set for hdim_1
+
     end_h1: int
         End index to set for hdim_1 (exclusive, so it acts like [start_h1:end_h1])
+
     start_h2: int
         Start index to set for hdim_2
+
     end_h2: int
         End index to set for hdim_2
-    start_v: int
-        Start index to set for vdim (optional)
-    end_v: int
-        End index to set for vdim (optional)
+
+    start_v: int, optional
+        Start index to set for vdim
+        Default is None
+
+    end_v: int, optional
+        End index to set for vdim
+        Default is None
 
     Returns
     -------
     array-like
         in_arr with the new values set.
     """
+
     if start_v is not None and end_v is not None:
         in_arr[start_v:end_v, start_h1:end_h1, start_h2:end_h2] = value
     else:
@@ -940,33 +994,57 @@ def generate_single_feature(
     ----------
     start_h1: float
         Starting point of the feature in hdim_1 space
+
     start_h2: float
         Starting point of the feature in hdim_2 space
-    start_v: float
+
+    start_v: float, optional
         Starting point of the feature in vdim space (if 3D). For 2D, set to None.
-    spd_h1: float
+        Default is None
+
+    spd_h1: float, optional
         Speed (per frame) of the feature in hdim_1
-    spd_h2: float
+        Default is 1
+
+    spd_h2: float, optional
         Speed (per frame) of the feature in hdim_2
-    spd_v: float
+        Default is 1
+
+    spd_v: float, optional
         Speed (per frame) of the feature in vdim
-    min_h1: int
+        Default is 1
+
+    min_h1: int, optional
         Minimum value of hdim_1 allowed. If PBC_flag is not 'none', then
         this will be used to know when to wrap around periodic boundaries.
         If PBC_flag is 'none', features will disappear if they are above/below
         these bounds.
-    max_h1: int
+        Default is 0
+
+    max_h1: int, optional
         Similar to min_h1, but the max value of hdim_1 allowed.
-    min_h2: int
+        Default is 1000
+
+    min_h2: int, optional
         Similar to min_h1, but the minimum value of hdim_2 allowed.
-    max_h2: int
+        Default is 0
+
+    max_h2: int, optional
         Similar to min_h1, but the maximum value of hdim_2 allowed.
-    num_frames: int
+        Default is 1000
+
+    num_frames: int, optional
         Number of frames to generate
-    dt: datetime.timedelta
+        Default is 1
+
+    dt: datetime.timedelta, optional
         Difference in time between each frame
-    start_date: datetime.datetime
+        Default is datetime.timedelta(minutes=5)
+
+    start_date: datetime.datetime, optional
         Start datetime
+        Default is datetime.datetime(2022, 1, 1, 0)
+
     PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
         Sets whether to use periodic boundaries, and if so in which directions.
         'none' means that we do not have periodic boundaries
@@ -975,8 +1053,11 @@ def generate_single_feature(
         'both' means that we are periodic along both horizontal dimensions
     frame_start: int
         Number to start the frame at
-    feature_num: int
+        Default is 1
+
+    feature_num: int, optional
         What number to start the feature at
+        Default is 1
     feature_size: int or None
         'num' column in output; feature size
         If None, doesn't set this column

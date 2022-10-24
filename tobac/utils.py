@@ -3,20 +3,27 @@ import numpy as np
 
 
 def column_mask_from2D(mask_2D, cube, z_coord="model_level_number"):
-    """function to turn 2D watershedding mask into a 3D mask of selected columns
+    """Turn 2D watershedding mask into a 3D mask of selected columns.
+
     Parameters
     ----------
-    cube:              iris.cube.Cube
-                       data cube
-    mask_2D:           iris.cube.Cube
-                       2D cube containing mask (int id for tacked volumes 0 everywhere else)
-    z_coord:           str
-                       name of the vertical coordinate in the cube
+    cube : iris.cube.Cube
+        Data cube.
+
+    mask_2D : iris.cube.Cube
+        2D cube containing mask (int id for tacked volumes 0
+        everywhere else).
+
+    z_coord : str
+        Name of the vertical coordinate in the cube.
+
     Returns
     -------
-    iris.cube.Cube
-                       3D cube containing columns of 2D mask (int id for tacked volumes 0 everywhere else)
+    mask_2D : iris.cube.Cube
+        3D cube containing columns of 2D mask (int id for tracked
+        volumes, 0 everywhere else).
     """
+
     from copy import deepcopy
 
     mask_3D = deepcopy(cube)
@@ -31,22 +38,29 @@ def column_mask_from2D(mask_2D, cube, z_coord="model_level_number"):
 
 
 def mask_cube_cell(variable_cube, mask, cell, track):
-    """Mask cube for tracked volume of an individual cell
+    """Mask cube for tracked volume of an individual cell.
 
     Parameters
     ----------
-    variable_cube:     iris.cube.Cube
-                       unmasked data cube
-    mask:              iris.cube.Cube
-                       cube containing mask (int id for tacked volumes 0 everywhere else)
-    cell:          int
-                       interger id of cell to create masked cube for
+    variable_cube : iris.cube.Cube
+        Unmasked data cube.
+
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tracked volumes, 0 everywhere
+        else).
+
+    cell : int
+        Integer id of cell to create masked cube for.
+
+    track : pandas.DataFrame
+        Output of the linking.
 
     Returns
     -------
-    iris.cube.Cube
-                       Masked cube with data for respective cell
+    variable_cube_out : iris.cube.Cube
+        Masked cube with data for respective cell.
     """
+
     from copy import deepcopy
 
     variable_cube_out = deepcopy(variable_cube)
@@ -56,20 +70,23 @@ def mask_cube_cell(variable_cube, mask, cell, track):
 
 
 def mask_cube_all(variable_cube, mask):
-    """Mask cube for untracked volume
+    """Mask cube (iris.cube) for tracked volume.
 
     Parameters
     ----------
-    variable_cube:     iris.cube.Cube
-                       unmasked data cube
-    mask:              iris.cube.Cube
-                       cube containing mask (int id for tacked volumes 0 everywhere else)
+    variable_cube : iris.cube.Cube
+        Unmasked data cube.
+
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tacked volumes 0 everywhere
+        else).
 
     Returns
     -------
-    variable_cube_out: iris.cube.Cube
-                       Masked cube for untracked volume
+    variable_cube_out : iris.cube.Cube
+        Masked cube for untracked volume.
     """
+
     from dask.array import ma
     from copy import deepcopy
 
@@ -81,20 +98,23 @@ def mask_cube_all(variable_cube, mask):
 
 
 def mask_cube_untracked(variable_cube, mask):
-    """Mask cube for untracked volume
+    """Mask cube (iris.cube) for untracked volume.
 
     Parameters
     ----------
-    variable_cube:     iris.cube.Cube
-                       unmasked data cube
-    mask:              iris.cube.Cube
-                       cube containing mask (int id for tacked volumes 0 everywhere else)
+    variable_cube : iris.cube.Cube
+        Unmasked data cube.
+
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tacked volumes 0 everywhere
+        else).
 
     Returns
     -------
-    variable_cube_out: iris.cube.Cube
-                       Masked cube for untracked volume
+    variable_cube_out : iris.cube.Cube
+        Masked cube for untracked volume.
     """
+
     from dask.array import ma
     from copy import deepcopy
 
@@ -106,59 +126,91 @@ def mask_cube_untracked(variable_cube, mask):
 
 
 def mask_cube(cube_in, mask):
-    """Mask cube where mask is larger than zero
+    """Mask cube where mask is not zero.
 
     Parameters
     ----------
-    cube_in:           iris.cube.Cube
-                       unmasked data cube
-    mask:              numpy.ndarray or dask.array
-                       mask to use for masking, >0 where cube is supposed to be masked
+    cube_in : iris.cube.Cube
+        Unmasked data cube.
+
+    mask : iris.cube.Cube
+        Mask to use for masking, >0 where cube is supposed to be masked.
 
     Returns
     -------
-    iris.cube.Cube
-                       Masked cube
+    variable_cube_out : iris.cube.Cube
+        Masked cube.
     """
+
     from dask.array import ma
     from copy import deepcopy
 
     cube_out = deepcopy(cube_in)
-    cube_out.data = ma.masked_where(mask != 0, cube_in.core_data())
+    cube_out.data = ma.masked_where(mask.core_data() != 0, cube_in.core_data())
     return cube_out
 
 
 def mask_cell(mask, cell, track, masked=False):
-    """create mask for specific cell
+    """Create mask for specific cell.
 
     Parameters
     ----------
-    mask:              iris.cube.Cube
-                       cube containing mask (int id for tacked volumes 0 everywhere else)
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tracked volumes 0 everywhere
+        else).
+
+    cell : int
+        Integer id of cell to create masked cube for.
+
+    track : pandas.DataFrame
+        Output of the linking.
+
+    masked : bool, optional
+        Bool determining whether to mask the mask for the cell where
+        it is 0. Default is False.
 
     Returns
     -------
-    numpy.ndarray
-                       Masked cube for untracked volume
+    mask_i : numpy.ndarray
+        Mask for a specific cell.
     """
+
     feature_ids = track.loc[track["cell"] == cell, "feature"].values
     mask_i = mask_features(mask, feature_ids, masked=masked)
     return mask_i
 
 
 def mask_cell_surface(mask, cell, track, masked=False, z_coord="model_level_number"):
-    """Create surface projection of mask for individual cell
+    """Create surface projection of 3d-mask for individual cell by
+    collapsing one coordinate.
 
     Parameters
     ----------
-    mask:              iris.cube.Cube
-                       cube containing mask (int id for tacked volumes 0 everywhere else)
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tacked volumes, 0 everywhere
+        else).
+
+    cell : int
+        Integer id of cell to create masked cube for.
+
+    track : pandas.DataFrame
+        Output of the linking.
+
+    masked : bool, optional
+        Bool determining whether to mask the mask for the cell where
+        it is 0. Default is False.
+
+    z_coord : str, optional
+        Name of the coordinate to collapse. Default is 'model_level_number'.
 
     Returns
     -------
-    iris.cube.Cube
-                       Masked cube for untracked volume
+    mask_i_surface : iris.cube.Cube
+        Collapsed Masked cube for the cell with the maximum value
+        along the collapsed coordinate.
+
     """
+
     feature_ids = track.loc[track["cell"] == cell, "feature"].values
     mask_i_surface = mask_features_surface(
         mask, feature_ids, masked=masked, z_coord=z_coord
@@ -167,40 +219,69 @@ def mask_cell_surface(mask, cell, track, masked=False, z_coord="model_level_numb
 
 
 def mask_cell_columns(mask, cell, track, masked=False, z_coord="model_level_number"):
-    """Create mask with entire columns for individual cell
+    """Create mask with entire columns for individual cell.
 
     Parameters
     ----------
-    mask:              iris.cube.Cube
-                       cube containing mask (int id for tacked volumes 0 everywhere else)
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tacked volumes 0 everywhere
+        else).
+
+    cell : int
+        Interger id of cell to create the masked cube for.
+
+    track : pandas.DataFrame
+        Output of the linking.
+
+    masked : bool, optional
+        Bool determining whether to mask the mask for the cell where
+        it is 0. Default is False.
+
+    z_coord : str, optional
+        Default is 'model_level_number'.
 
     Returns
     -------
-    iris.cube.Cube
-                       Masked cube for untracked volume
+    mask_i : iris.cube.Cube
+        Masked cube for untracked volume.
+
+    Notes
+    -------
+    Function is not working since mask_features_columns()
+    is commented out
     """
+
+    raise NotImplementedError(
+        "The function mask_cell_columns() is not implemented currently."
+    )
+
     feature_ids = track.loc[track["cell"] == cell].loc["feature"]
     mask_i = mask_features_columns(mask, feature_ids, masked=masked, z_coord=z_coord)
     return mask_i
 
 
 def mask_cube_features(variable_cube, mask, feature_ids):
-    """Mask cube for tracked volume of an individual cell
+    """Mask cube for tracked volume of one or more specific
+    features.
 
     Parameters
     ----------
-    variable_cube:     iris.cube.Cube
-                       unmasked data cube
-    mask:              iris.cube.Cube
-                       cube containing mask (int id for tacked volumes 0 everywhere else)
-    cell:          int
-                       interger id of cell to create masked cube for
+    variable_cube : iris.cube.Cube
+        Unmasked data cube.
+
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tacked volumes, 0 everywhere
+        else).
+
+    feature_ids : int or list of ints
+        Integer ids of features to create masked cube for.
 
     Returns
     -------
-    iris.cube.Cube
-                       Masked cube with data for respective cell
+    variable_cube_out : iris.cube.Cube
+        Masked cube with data for respective features.
     """
+
     from dask.array import ma, isin
     from copy import deepcopy
 
@@ -212,18 +293,27 @@ def mask_cube_features(variable_cube, mask, feature_ids):
 
 
 def mask_features(mask, feature_ids, masked=False):
-    """create mask for specific features
+    """Create mask for specific features.
 
     Parameters
     ----------
-    mask:              iris.cube.Cube
-                       cube containing mask (int id for tacked volumes 0 everywhere else)
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tacked volumes 0 everywhere
+        else).
+
+    feature_ids : int or list of ints
+        Integer ids of the features to create the masked cube for.
+
+    masked : bool, optional
+        Bool determining whether to mask the mask for the cell where
+        it is 0. Default is False.
 
     Returns
     -------
-    numpy.ndarray
-                       Masked cube for untracked volume
+    mask_i : numpy.ndarray
+        Masked cube for specific features.
     """
+
     from dask.array import ma, isin
     from copy import deepcopy
 
@@ -238,18 +328,33 @@ def mask_features(mask, feature_ids, masked=False):
 def mask_features_surface(
     mask, feature_ids, masked=False, z_coord="model_level_number"
 ):
-    """create surface mask for individual features
+    """Create surface projection of 3d-mask for specific features
+    by collapsing one coordinate.
 
     Parameters
     ----------
-    mask:              iris.cube.Cube
-                       cube containing mask (int id for tacked volumes 0 everywhere else)
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tacked volumes 0 everywhere
+        else).
+
+    feature_ids : int or list of ints
+        Integer ids of the features to create the masked cube for.
+
+    masked : bool, optional
+        Bool determining whether to mask the mask for the cell where
+        it is 0. Default is False
+
+    z_coord : str, optional
+        Name of the coordinate to collapse. Default is
+        'model_level_number'.
 
     Returns
     -------
-    iris.cube.Cube
-                       Masked cube for untracked volume
+    mask_i_surface : iris.cube.Cube
+        Collapsed Masked cube for the features with the maximum value
+        along the collapsed coordinate.
     """
+
     from iris.analysis import MAX
     from dask.array import ma, isin
     from copy import deepcopy
@@ -265,18 +370,30 @@ def mask_features_surface(
 
 
 def mask_all_surface(mask, masked=False, z_coord="model_level_number"):
-    """create surface mask for individual features
+    """Create surface projection of 3d-mask for all features
+    by collapsing one coordinate.
 
     Parameters
     ----------
-    mask:              iris.cube.Cube
-                       cube containing mask (int id for tacked volumes 0 everywhere else)
+    mask : iris.cube.Cube
+        Cube containing mask (int id for tacked volumes 0 everywhere
+        else).
+
+    masked : bool, optional
+        Bool determining whether to mask the mask for the cell where
+        it is 0. Default is False
+
+    z_coord : str, optional
+        Name of the coordinate to collapse. Default is
+        'model_level_number'.
 
     Returns
     -------
-    mask_i_surface:    iris.cube.Cube (2D)
-                       Mask with 1 below features and 0 everywhere else
+    mask_i_surface : iris.cube.Cube (2D)
+        Collapsed Masked cube for the features with the maximum value
+        along the collapsed coordinate.
     """
+
     from iris.analysis import MAX
     from dask.array import ma, isin
     from copy import deepcopy
@@ -284,7 +401,7 @@ def mask_all_surface(mask, masked=False, z_coord="model_level_number"):
     mask_i = deepcopy(mask)
     mask_i_surface = mask_i.collapsed(z_coord, MAX)
     mask_i_surface_data = mask_i_surface.core_data()
-    mask_i_surface[mask_i_surface_data > 0] = 1
+    mask_i_surface.data[mask_i_surface_data > 0] = 1
     if masked:
         mask_i_surface.data = ma.masked_equal(mask_i_surface.core_data(), 0)
     return mask_i_surface
@@ -353,26 +470,27 @@ def mask_all_surface(mask, masked=False, z_coord="model_level_number"):
 
 
 def add_coordinates(t, variable_cube):
-    import numpy as np
+    """Add coordinates from the input cube of the feature detection
+    to the trajectories/features.
 
-    """Function adding coordinates from the tracking cube to the trajectories
-        for the 2D case: time, longitude&latitude, x&y dimensions
-    
     Parameters
     ----------
-    t:             pandas DataFrame
-                   trajectories/features
-    variable_cube: iris.cube.Cube 
-        Cube (usually the one you are tracking on) at least conaining the dimension of 'time'. 
-        Typically, 'longitude','latitude','x_projection_coordinate','y_projection_coordinate', 
-        are the coordinates that we expect, although this function
-        will happily interpolate along any dimension coordinates you give. 
-    
+    t : pandas.DataFrame
+        Trajectories/features from feature detection or linking step.
+
+    variable_cube : iris.cube.Cube
+        Input data used for the tracking with coordinate information
+        to transfer to the resulting DataFrame. Needs to contain the
+        coordinate 'time'.
+
     Returns
     -------
-    pandas DataFrame 
-                   trajectories with added coordinates
+    t : pandas.DataFrame
+        Trajectories with added coordinates.
+
     """
+
+    import numpy as np
     from scipy.interpolate import interp2d, interp1d
 
     logging.debug("start adding coordinates from cube")
@@ -663,11 +781,29 @@ def add_coordinates_3D(
 
 
 def get_bounding_box(x, buffer=1):
+    """Finds the bounding box of a ndarray, i.e. the smallest
+    bounding rectangle for nonzero values as explained here:
+    https://stackoverflow.com/questions/31400769/bounding-box-of-numpy-array
+
+    Parameters
+    ----------
+    x : numpy.ndarray
+        Array for which the bounding box is to be determined.
+
+    buffer : int, optional
+        Number to set a buffer between the nonzero values and
+        the edges of the box. Default is 1.
+
+    Returns
+    -------
+    bbox : list
+        Dimensionwise list of the indices representing the edges
+        of the bounding box.
+
+    """
+
     from numpy import delete, arange, diff, nonzero, array
 
-    """Calculates the bounding box of a ndarray
-    https://stackoverflow.com/questions/31400769/bounding-box-of-numpy-array
-    """
     mask = x == 0
 
     bbox = []
@@ -695,6 +831,38 @@ def get_bounding_box(x, buffer=1):
 
 
 def get_spacings(field_in, grid_spacing=None, time_spacing=None):
+    """Determine spatial and temporal grid spacing of the
+    input data.
+
+    Parameters
+    ----------
+    field_in : iris.cube.Cube
+        Input field where to get spacings.
+
+    grid_spacing : float, optional
+        Manually sets the grid spacing if specified.
+        Default is None.
+
+    time_spacing : float, optional
+        Manually sets the time spacing if specified.
+        Default is None.
+
+    Returns
+    -------
+    dxy : float
+        Grid spacing in metres.
+
+    dt : float
+        Time resolution in seconds.
+
+    Raises
+    ------
+    ValueError
+        If input_cube does not contain projection_x_coord and
+        projection_y_coord or keyword argument grid_spacing.
+
+    """
+
     import numpy as np
     from copy import deepcopy
 
@@ -740,13 +908,15 @@ def get_label_props_in_dict(labels):
     Parameters
     ----------
     labels:    2D or 3D array-like
-        comes from the `skimage.measure.label` function
+        comes from the `skimage.measure.label` function.
 
     Returns
     -------
-    dict
-        output from skimage.measure.regionprops in dictionary format, where they key is the label number
+    region_properties_dict: dict
+        Output from skimage.measure.regionprops in dictionary
+        format, where they key is the label number.
     """
+
     import skimage.measure
 
     region_properties_raw = skimage.measure.regionprops(labels)
@@ -762,28 +932,30 @@ def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
 
     Parameters
     ----------
-    region_property_dict:    dict of region_property objects
+    region_property_dict : dict of region_property objects
         This dict should come from the get_label_props_in_dict function.
 
     Returns
     -------
-    dict (key: label number, int)
-        The number of points in the label number
-    dict (key: label number, int)
-        The z indices in the label number. If a 2D property dict is passed, this value is not returned
-    dict (key: label number, int)
-        the y indices in the label number
-    dict (key: label number, int)
-        the x indices in the label number
+    curr_loc_indices : dict
+        The number of points in the label number (key: label number).
+
+    z_indices : dict
+        The z indices in the label number. If a 2D property dict is passed, this value is not returned.
+
+    y_indices : dict
+        The y indices in the label number (key: label number).
+
+    x_indices : dict
+        The x indices in the label number (key: label number).
 
     Raises
     ------
     ValueError
-        a ValueError is raised if there are no regions in the region property dict
-
+        A ValueError is raised if there are no regions in the region
+        property dict.
     """
 
-    import skimage.measure
     import numpy as np
 
     if len(region_property_dict) == 0:
@@ -810,7 +982,6 @@ def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
         y_indices[index] = curr_y_ixs
         x_indices[index] = curr_x_ixs
         curr_loc_indices[index] = len(curr_y_ixs)
-
     # print("indices found")
     if is_3D:
         return [curr_loc_indices, z_indices, y_indices, x_indices]
@@ -1163,3 +1334,92 @@ def find_dataframe_vertical_coord(variable_dataframe, vertical_coord="auto"):
             return vertical_coord
         else:
             raise ValueError("Please specify vertical coordinate")
+
+
+def spectral_filtering(
+    dxy, field_in, lambda_min, lambda_max, return_transfer_function=False
+):
+    """This function creates and applies a 2D transfer function that
+    can be used as a bandpass filter to remove certain wavelengths
+    of an atmospheric input field (e.g. vorticity, IVT, etc).
+
+    Parameters:
+    -----------
+    dxy : float
+        Grid spacing in m.
+
+    field_in: numpy.array
+        2D field with input data.
+
+    lambda_min: float
+        Minimum wavelength in m.
+
+    lambda_max: float
+        Maximum wavelength in m.
+
+    return_transfer_function: boolean, optional
+        default: False. If set to True, then the 2D transfer function and
+        the corresponding wavelengths are returned.
+
+    Returns:
+    --------
+    filtered_field: numpy.array
+        Spectrally filtered 2D field of data (with same shape as input data).
+
+    transfer_function: tuple
+        Two 2D fields, where the first one corresponds to the wavelengths
+        in the spectral space of the domain and the second one to the 2D
+        transfer function of the bandpass filter. Only returned, if
+        return_transfer_function is True.
+    """
+
+    import numpy as np
+    from scipy import signal
+    from scipy import fft
+
+    # check if valid value for dxy is given
+    if dxy <= 0:
+        raise ValueError(
+            "Invalid value for dxy. Please provide the grid spacing in meter."
+        )
+
+    # get number of grid cells in x and y direction
+    Ni = field_in.shape[-2]
+    Nj = field_in.shape[-1]
+    # wavenumber space
+    m, n = np.meshgrid(np.arange(Ni), np.arange(Nj), indexing="ij")
+
+    # if domain is squared:
+    if Ni == Nj:
+        wavenumber = np.sqrt(m**2 + n**2)
+        lambda_mn = (2 * Ni * (dxy)) / wavenumber
+    else:
+        # if domain is a rectangle:
+        # alpha is the normalized wavenumber in wavenumber space
+        alpha = np.sqrt(m**2 / Ni**2 + n**2 / Nj**2)
+        # compute wavelengths for target grid in m
+        lambda_mn = 2 * dxy / alpha
+
+    ############### create a 2D bandpass filter (butterworth) #######################
+    b, a = signal.iirfilter(
+        2,
+        [1 / lambda_max, 1 / lambda_min],
+        btype="band",
+        ftype="butter",
+        fs=1 / dxy,
+        output="ba",
+    )
+    w, h = signal.freqz(b, a, 1 / lambda_mn.flatten(), fs=1 / dxy)
+    transfer_function = np.reshape(abs(h), lambda_mn.shape)
+
+    # 2-dimensional discrete cosine transformation to convert data to spectral space
+    spectral = fft.dctn(field_in.data)
+    # multiplication of spectral coefficients with transfer function
+    filtered = spectral * transfer_function
+    # inverse discrete cosine transformation to go back from spectral to original space
+    filtered_field = fft.idctn(filtered)
+
+    if return_transfer_function is True:
+        return (lambda_mn, transfer_function), filtered_field
+    else:
+        return filtered_field

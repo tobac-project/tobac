@@ -10,7 +10,3 @@ This approach only takes the point-like position of the feature, e.g. determined
         .. image:: images/linking_prediction.png
             :width: 500 px
 
-**Current development:**
-
-We are currently actively working on additional options for the tracking of the clouds that take into account the shape of the identified features by evaluating overlap between adjacent time steps, as well as the inclusion of cloud splitting and merging.
-
