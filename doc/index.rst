@@ -43,6 +43,7 @@ The project is currently being extended by several contributors to include addit
 
    segmentation
    segmentation_parameters
+   segmentation_output
 
 .. toctree::
    :caption: Tracking
