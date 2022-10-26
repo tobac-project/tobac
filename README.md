@@ -52,11 +52,9 @@ pip install tobac/
 
 Contributing
 ------------
-The current development branch for minor updates to tobac v1 is dev.
+We encourage bug reports, questions, and code contributions. For more details on contributing, please see https://github.com/tobac-project/tobac/blob/v2.0-dev/CONTRIBUTING.md
 
-Preliminary development of the future major update to tobac is v2.0-dev.
-
-For more details on contributing, please see https://github.com/tobac-project/tobac/blob/v2.0-dev/CONTRIBUTING.md
+We are currently in a transition phase between versions 1.x and 2.x. v2.x will enable the use of multiple tracking methods (including TINT) and will use xarray for gridded data instead of Iris. Preliminary development on v2.x has taken place on the `v2.0-dev` branch, while work on the `main` and `RC_v1.x.x` branches (containing v1.x development) is ongoing to unify these development efforts. 
 
 Roadmap
 ------------
