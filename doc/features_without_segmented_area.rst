@@ -11,10 +11,9 @@ output dataframe results in 0 grid cells. )
 Case 1: Segmentation threshold 
 ======
 
-If the segmentation threshold is lower (assuming `target='minimum'`) than the highest threshold specified in the :doc:`feature_detection_overview`,
-this could leave some features without a segmented area, simply because there are no values to be segmented.
+If the segmentation threshold is lower (assuming `target='minimum'`) than the highest threshold specified in the Feature Detection (see :doc:`threshold_detection_parameters`) this could leave some features without a segmented area, simply because there are no values to be segmented.
 
-Consider for example the following data with 5 being the highest threshold specified for the :doc:`feature_detection_overview`:  
+Consider for example the following data with 5 being the highest threshold specified for the Feature Detection (see :doc:`feature_detection_overview`):  
 
 	.. image:: images/features_without_segment.png
             :width: 500 px
@@ -35,7 +34,7 @@ Another reason for features that do not have a segmented area associated with th
             :width: 500 px
 
               
-In this case, it may help to change the `position_threshold` (see :doc: `feature_detection`) to  `extreme` instead of  `center`:
+In this case, it may help to change the `position_threshold` (see :doc:`threshold_detection_parameters`) to  `extreme` instead of  `center`:
 
 	.. image:: images/feature_outside_of_threshold_area_extreme.png
             :width: 500 px
