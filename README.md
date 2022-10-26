@@ -1,6 +1,6 @@
 tobac - Tracking and Object-based Analysis of Clouds
 ======
-[![Documentation Status](https://readthedocs.org/projects/tobac/badge/?version=latest)](https://tobac.readthedocs.io/en/latest/?badge=latest)[![Download Counter](https://anaconda.org/conda-forge/tobac/badges/downloads.svg)](https://anaconda.org/conda-forge/tobac/badges/downloads.svg)
+[![Documentation Status](https://readthedocs.org/projects/tobac/badge/?version=latest)](https://tobac.readthedocs.io/en/latest/?badge=latest)[![Download Counter](https://anaconda.org/conda-forge/tobac/)](https://anaconda.org/conda-forge/tobac/badges/downloads.svg)
 
 What is it?
 -----------
@@ -37,13 +37,13 @@ conda install -c conda-forge --yes --file conda-requirements.txt
 ```
 You can directly install the package directly from github with pip and either of the two following commands:
 ```
-pip install --upgrade git+ssh://git@github.com/climate-processes/tobac.git
-pip install --upgrade git+https://github.com/climate-processes/tobac.git
+pip install --upgrade git+ssh://git@github.com/tobac-project/tobac.git
+pip install --upgrade git+https://github.com/tobac-project/tobac.git
 ```
 You can also clone the package with any of the two following commands
 ```
-git clone git@github.com:climate-processes/tobac.git
-git clone https://github.com/climate-processes/tobac.git
+git clone git@github.com:tobac-project/tobac.git
+git clone https://github.com/tobac-project/tobac.git
 ```
 and install the package from the locally cloned version:
 ```
@@ -56,8 +56,8 @@ The current development branch for minor updates to tobac v1 is dev.
 
 Preliminary development of the future major update to tobac is v2.0-dev.
 
-For more details on contributing, please see https://github.com/climate-processes/tobac/blob/v2.0-dev/CONTRIBUTING.md
+For more details on contributing, please see https://github.com/tobac-project/tobac/blob/v2.0-dev/CONTRIBUTING.md
 
 Roadmap
 ------------
-A roadmap for the future development of tobac is available here: https://github.com/fsenf/tobac-roadmap/blob/master/tobac-roadmap-main.md
+A roadmap for the future development of tobac is available here: https://github.com/tobac-project/tobac-roadmap/blob/master/tobac-roadmap-main.md
