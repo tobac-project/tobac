@@ -9,7 +9,7 @@ What is it?
 
 Documentation
 -------------
-Individual features are indentified as either maxima or minima in a two dimensional time varying field.
+Individual features are identified as either maxima or minima in a two dimensional time varying field.
 The volume/area associated with the identified objects can be determined based on a time-varying 2D or 3D field and a threshold value. The in thre tracking step, the identified objects are linked into consistent trajectories representing the cloud over its lifecycle.
 
 Detailed documentation of the package can be found at https://tobac.readthedocs.io.
