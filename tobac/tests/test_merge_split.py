@@ -92,5 +92,3 @@ def test_merge_split_cells():
     # These cells should NOT have merged together.
     print(mergesplit_output_unmerged["track"])
     assert len(mergesplit_output_unmerged["track"]) == 2
-
-    pass
