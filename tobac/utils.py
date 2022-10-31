@@ -895,6 +895,7 @@ def spectral_filtering(
     else:
         return filtered_field
 
+
 def compress_all(nc_grids, min_dims=2, comp_level=4):
     """
     The purpose of this subroutine is to compress the netcdf variables as they are saved.
@@ -1066,6 +1067,7 @@ def standardize_track_dataset(TrackedFeatures, Mask, Projection=None):
         ds["ProjectionCoordinateSystem"] = Projection
 
     return ds
+
 
 def combine_tobac_feats(list_of_feats, preserve_old_feat_nums=None):
     """Function to combine a list of tobac feature detection dataframes
