@@ -1,4 +1,17 @@
 # from .tracking import maketrack
+import sys
+
+if sys.version_info < (3, 7):
+    warning = """ \n\n 
+    Support for Python versions less than 3.7 is deprecated. 
+    Version 1.5 of tobac will require Python 3.7 or later.
+   Python {py} detected. \n\n
+    """.format(
+        py=".".join(str(v) for v in sys.version_info[:3])
+    )
+
+    print(warning)
+
 from .segmentation import (
     segmentation_3D,
     segmentation_2D,
@@ -61,3 +74,6 @@ from .feature_detection import feature_detection_multithreshold
 from .tracking import linking_trackpy
 from .wrapper import maketrack
 from .wrapper import tracking_wrapper
+
+# Set version number
+__version__ = "1.4.0"

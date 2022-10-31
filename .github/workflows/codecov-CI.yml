@@ -26,7 +26,7 @@ jobs:
       run: mamba install --quiet --yes --file conda-requirements.txt coverage pytest-cov &&
            python -m coverage run -m pytest --cov=./ --cov-report=xml
     - name: Upload Coverage to Codecov
-      uses: codecov/codecov-action@v2
+      uses: codecov/codecov-action@v3
       with: 
         fail_ci_if_error: true
         flags: unittests
