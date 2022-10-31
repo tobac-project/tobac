@@ -14,8 +14,9 @@ The volume/area associated with the identified objects can be determined based o
 
 Detailed documentation of the package can be found at https://tobac.readthedocs.io.
 
-Also, join [tobac-users group](https://groups.google.com/g/tobac-users/about) for more help and [tobac core group](https://groups.google.com/g/tobac/about) to get involved.
+Release announcements, workshop and conference announcements, and other information of interest to the broader *tobac* users group are sent to the [tobac core group](https://groups.google.com/g/tobac/about) mailing list. If you are interested in contributing to the development of *tobac*, we invite you to join the [tobac developers](https://groups.google.com/u/1/g/tobac-developers) mailing list. Information on monthly developers' meetings and other developer discussion and announcements are sent to that list. 
 
+We also have a Slack server for both users and developers. For information on joining that, please contact the *tobac* developers mailing list, or see the information in the *tobac* release notes sent to the *tobac* mailing list. 
 
 Installation
 ------------
