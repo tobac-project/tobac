@@ -683,7 +683,7 @@ def iris_to_xarray(func):
     def wrapper(*args, **kwargs):
         # print(kwargs)
         if any([type(arg) == iris.cube.Cube for arg in args]) or any(
-            [type(arg) == iris.cube.Cube for arg in kwargs]
+            [type(arg) == iris.cube.Cube for arg in kwargs.values()]
         ):
             # print("converting iris to xarray and back")
             args = tuple(
@@ -750,7 +750,7 @@ def xarray_to_iris(func):
         # print(args)
         # print(kwargs)
         if any([type(arg) == xarray.DataArray for arg in args]) or any(
-            [type(arg) == xarray.DataArray for arg in kwargs]
+            [type(arg) == xarray.DataArray for arg in kwargs.values()]
         ):
             # print("converting xarray to iris and back")
             args = tuple(
