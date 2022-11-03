@@ -23,18 +23,24 @@ from tobac.utils import xarray_to_iris, iris_to_xarray, xarray_to_irispandas, ir
     (iris_to_xarray, [xarray.DataArray, Cube], [xarray.DataArray, xarray.DataArray], xarray.DataArray),
     (iris_to_xarray, [Cube, xarray.DataArray], [xarray.DataArray, xarray.DataArray], Cube),
 
-    (xarray_to_irispandas, [xarray.DataArray, xarray.DataArray], [Cube, Cube], xarray.DataArray)]
+    (xarray_to_irispandas, [xarray.DataArray, xarray.DataArray], [Cube, Cube], xarray.DataArray),
+    (xarray_to_irispandas, [Cube, Cube], [Cube, Cube], Cube),
+    (xarray_to_irispandas, [xarray.DataArray, Cube], [Cube, Cube], xarray.DataArray),
+    (xarray_to_irispandas, [Cube, xarray.DataArray], [Cube, Cube], Cube)]
 )
 def test_converting(decorator, input_types, expected_internal_types, expected_output_type):
-    """Function to test if the xarray_to_iris decorator converts the correct
-    types to the intended types"""
+    """Function to test if the decorators convert correctly"""
 
     def test_function_kwarg(test_input, kwarg=None):
         assert type(test_input) == expected_internal_types[0], "Expected internal type {}, but got {} for {}".format(expected_internal_types[0], type(test_input), decorator.__name__)
         assert type(kwarg) == expected_internal_types[1], "Expected internal type {}, but got {} for {} as keyword argument".format(expected_internal_types[1], type(kwarg), decorator.__name__)
         return (test_input)
 
+    def test_function_tuple_output(test_input):
+        return (test_input, test_input)
+
     decorated_function_kwarg = decorator(test_function_kwarg)
+    decorated_function_tuple = decorator(test_function_tuple_output)
 
     if input_types[0] == xarray.DataArray:
         data = xarray.DataArray.from_iris(tobac.testing.make_simple_sample_data_2D())
@@ -61,8 +67,10 @@ def test_converting(decorator, input_types, expected_internal_types, expected_ou
     output = decorated_function_kwarg(
         data, kwarg=kwarg
     )
+    tuple_output = decorated_function_tuple(data)
 
     assert type(output) == expected_output_type, "Expected output type {}, but got {} for {}".format(expected_output_type, type(output), decorator.__name__)
+    assert all([type(tuple_output[0]),  type(tuple_output[1])]) == expected_output_type, "Expected output type {}, but got {} for {}".format(expected_output_type, type(output), decorator.__name__)
 
 def test_converting_xarray_to_iris():
     """Function to test if the xarray_to_iris decorator converts the correct
