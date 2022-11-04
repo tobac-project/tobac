@@ -826,7 +826,7 @@ def irispandas_to_xarray(func):
         ) or any(
             [
                 (type(arg) == iris.cube.Cube or type(arg) == pd.DataFrame)
-                for arg in kwargs
+                for arg in kwargs.values()
             ]
         ):
             # print("converting iris to xarray and back")
@@ -911,7 +911,7 @@ def xarray_to_irispandas(func):
         ) or any(
             [
                 (type(arg) == xarray.DataArray or type(arg) == xarray.Dataset)
-                for arg in kwargs
+                for arg in kwargs.values()
             ]
         ):
             # print("converting xarray to iris and back")
