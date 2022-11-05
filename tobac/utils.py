@@ -1012,7 +1012,7 @@ def standardize_track_dataset(TrackedFeatures, Mask, Projection=None):
             "Feature number within that frame; starts at 1, increments by 1 to the number of features for each frame, and resets to 1 when the frame increments",
         ),
         "feature": (
-            "feature_id",
+            "feature",
             "Unique number of the feature; starts from 1 and increments by 1 to the number of features",
         ),
         "time": (
