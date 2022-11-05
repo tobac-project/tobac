@@ -53,7 +53,6 @@ def merge_split_cells(TRACK, dxy, distance=None, frame_len=5):
         both_ds.to_netcdf(os.path.join(savedir,'Track_features_merges.nc'))
 
     """
-    print("update")
     try:
         import networkx as nx
     except ImportError:
