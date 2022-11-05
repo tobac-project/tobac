@@ -160,7 +160,7 @@ def merge_split_cells(TRACK, dxy, distance=25000, frame_len=5):
 
     cell_parent_track_id = []
 
-    for i, id in enumerate(track_id, start=-1):
+    for i, id in enumerate(track_id, start=0):
         if len(track_id[int(id)]) == 1:
             cell_parent_track_id.append(int(i))
 
