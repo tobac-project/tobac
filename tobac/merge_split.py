@@ -53,7 +53,7 @@ def merge_split_cells(TRACK, dxy, distance=None, frame_len=5):
         both_ds.to_netcdf(os.path.join(savedir,'Track_features_merges.nc'))
 
     """
-    print('update')
+    print("update")
     try:
         import networkx as nx
     except ImportError:
@@ -72,8 +72,8 @@ def merge_split_cells(TRACK, dxy, distance=None, frame_len=5):
     last = track_groups.last()
 
     if distance == None:
-         distance = dxy*25.
-    
+        distance = dxy * 25.0
+
     a_names = list()
     b_names = list()
     dist = list()
@@ -87,8 +87,8 @@ def merge_split_cells(TRACK, dxy, distance=None, frame_len=5):
     b_xy = np.zeros((l, 2))
     b_xy[:, 0] = first["hdim_2"].values * dxy
     b_xy[:, 1] = first["hdim_1"].values * dxy
-    a_xy = a_xy*dxy
-    b_xy = b_xy*dxy
+    a_xy = a_xy * dxy
+    b_xy = b_xy * dxy
     # Use cdist to find distance matrix
     out = cdist(a_xy, b_xy)
     # Find all cells under the distance threshold
@@ -227,9 +227,9 @@ def merge_split_cells(TRACK, dxy, distance=None, frame_len=5):
 
     d = d.set_coords(["feature", "cell", "track"])
 
-#     assert len(cell_id) == len(cell_parent_track_id)
-#     assert len(feature_id) == len(feature_parent_cell_id)
-#     assert sum(track_child_cell_count) == len(cell_id)
-#     assert sum(cell_child_feature_count) == len(feature_id)
+    #     assert len(cell_id) == len(cell_parent_track_id)
+    #     assert len(feature_id) == len(feature_parent_cell_id)
+    #     assert sum(track_child_cell_count) == len(cell_id)
+    #     assert sum(cell_child_feature_count) == len(feature_id)
 
     return d
