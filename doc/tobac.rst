@@ -60,13 +60,25 @@ tobac.tracking module
    :undoc-members:
    :show-inheritance:
 
-tobac.utils module
+tobac.utils modules
 ------------------
 
-.. automodule:: tobac.utils
+tobac.utils.general modules
+------------------
+
+.. automodule:: tobac.utils.general
    :members:
    :undoc-members:
    :show-inheritance:
+
+tobac.utils.mask modules
+------------------
+
+.. automodule:: tobac.utils.mask
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 tobac.wrapper module
 --------------------
