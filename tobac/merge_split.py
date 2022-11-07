@@ -25,7 +25,8 @@ def merge_split_cells(TRACK, dxy, distance=None, frame_len=5):
 
     distance : float, optional
         Distance threshold determining how close two features must be in order to consider merge/splitting.
-        Default is 10x the x/y grid spacing of the data, given in dxy.
+        Default is 25x the x/y grid spacing of the data, given in dxy.
+        The distance should be in units of meters.
 
     frame_len : float, optional
         Threshold for the maximum number of frames that can separate the end of cell and the start of a related cell.
@@ -70,7 +71,7 @@ def merge_split_cells(TRACK, dxy, distance=None, frame_len=5):
     first = track_groups.first()
     last = track_groups.last()
 
-    if distance == None:
+    if distance is None:
         distance = dxy * 25.0
 
     a_names = list()
@@ -86,8 +87,7 @@ def merge_split_cells(TRACK, dxy, distance=None, frame_len=5):
     b_xy = np.zeros((l, 2))
     b_xy[:, 0] = first["hdim_2"].values * dxy
     b_xy[:, 1] = first["hdim_1"].values * dxy
-    a_xy = a_xy * dxy
-    b_xy = b_xy * dxy
+
     # Use cdist to find distance matrix
     out = cdist(a_xy, b_xy)
     # Find all cells under the distance threshold
