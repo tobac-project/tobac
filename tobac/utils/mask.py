@@ -219,48 +219,6 @@ def mask_cell_surface(mask, cell, track, masked=False, z_coord="model_level_numb
     return mask_i_surface
 
 
-def mask_cell_columns(mask, cell, track, masked=False, z_coord="model_level_number"):
-    """Create mask with entire columns for individual cell.
-
-    Parameters
-    ----------
-    mask : iris.cube.Cube
-        Cube containing mask (int id for tacked volumes 0 everywhere
-        else).
-
-    cell : int
-        Interger id of cell to create the masked cube for.
-
-    track : pandas.DataFrame
-        Output of the linking.
-
-    masked : bool, optional
-        Bool determining whether to mask the mask for the cell where
-        it is 0. Default is False.
-
-    z_coord : str, optional
-        Default is 'model_level_number'.
-
-    Returns
-    -------
-    mask_i : iris.cube.Cube
-        Masked cube for untracked volume.
-
-    Notes
-    -------
-    Function is not working since mask_features_columns()
-    is commented out
-    """
-
-    raise NotImplementedError(
-        "The function mask_cell_columns() is not implemented currently."
-    )
-
-    feature_ids = track.loc[track["cell"] == cell].loc["feature"]
-    mask_i = mask_features_columns(mask, feature_ids, masked=masked, z_coord=z_coord)
-    return mask_i
-
-
 def mask_cube_features(variable_cube, mask, feature_ids):
     """Mask cube for tracked volume of one or more specific
     features.

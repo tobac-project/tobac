@@ -10,3 +10,4 @@ from .mask import (
     mask_features_surface,
     mask_cube_features,
 )
+from .internal import get_label_props_in_dict, get_indices_of_labels_from_reg_prop_dict
