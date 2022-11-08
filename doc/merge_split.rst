@@ -3,6 +3,7 @@ Merge and Split
 
 This submodule is a post processing step to address tracked cells which merge/split. 
 The first iteration of this module is to combine the cells which are merging but have received a new cell id (and are considered a new cell) once merged. 
+This module uses a minimum euclidian spanning tree to combine merging cells, thus the postfix for the function is MEST.
 This submodule will label merged/split cells with a TRACK number in addition to its CELL number.
 
 Features, cells, and tracks are combined using parent/child nomenclature. 
@@ -29,7 +30,7 @@ Parent/child variables include:
 
 Example usage:
         
-``d = merge_split(Track)``
+``d = merge_split_MEST(Track)``
 
 merge_split outputs an `xarray` dataset with several variables. The variables, (with column names listed in the `Variable Name` column), are described below with units. Coordinates and dataset dimensions are Feature, Cell, and Track. 
 

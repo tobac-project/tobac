@@ -11,7 +11,7 @@ import tobac.tracking as tbtrack
 import tobac.merge_split as mergesplit
 
 
-def test_merge_split_cells():
+def test_merge_split_MEST():
     """Tests tobac.merge_split.merge_split_cells by
     generating two cells, colliding them into one another,
     and merging them.
@@ -77,7 +77,7 @@ def test_merge_split_cells():
     )
 
     # Test a successful merger
-    mergesplit_output_merged = mergesplit.merge_split_cells(
+    mergesplit_output_merged = mergesplit.merge_split_MEST(
         output, dxy=1, distance=dist_between + 50
     )
 
@@ -85,7 +85,7 @@ def test_merge_split_cells():
     assert len(mergesplit_output_merged["track"]) == 1
 
     # Test an unsuccessful merger.
-    mergesplit_output_unmerged = mergesplit.merge_split_cells(
+    mergesplit_output_unmerged = mergesplit.merge_split_MEST(
         output, dxy=1, distance=dist_between - 50
     )
 
