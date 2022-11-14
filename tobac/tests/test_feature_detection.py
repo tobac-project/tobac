@@ -1,6 +1,8 @@
 import tobac.testing as tbtest
 import tobac.feature_detection as feat_detect
 import pytest
+import numpy as np
+from pandas.testing import assert_frame_equal
 
 
 @pytest.mark.parametrize(
@@ -13,7 +15,6 @@ def test_feature_detection_multithreshold_timestep(
     """
     Tests ```tobac.feature_detection.feature_detection_multithreshold_timestep```
     """
-    import numpy as np
 
     # start by building a simple dataset with a single feature and seeing
     # if we identify it
@@ -60,7 +61,6 @@ def test_filter_min_distance(test_threshs, min_distance, dxy):
     Tests ```tobac.feature_detection.filter_min_distance```
     """
     # start by building a simple dataset with two features close to each other
-    import numpy as np
 
     test_dset_size = (50, 50)
     test_hdim_1_pt = 20.0
@@ -124,7 +124,6 @@ def test_feature_detection_position(position_threshold):
     """
     Tests to make sure that all feature detection position_thresholds work.
     """
-    import numpy as np
 
     test_dset_size = (50, 50)
 
@@ -147,3 +146,51 @@ def test_feature_detection_position(position_threshold):
     )
 
     pass
+
+
+@pytest.mark.parametrize(
+    "test_threshs, target",
+    [
+        (([1, 2, 3], [3, 2, 1], [1, 3, 2]), "maximum"),
+        (([1, 2, 3], [3, 2, 1], [1, 3, 2]), "minimum"),
+    ],
+)
+def test_feature_detection_threshold_sort(test_threshs, target):
+    """Tests that feature detection is consistent regardless of what order they are in"""
+    test_dset_size = (50, 50)
+    test_hdim_1_pt = 20.0
+    test_hdim_2_pt = 20.0
+    test_hdim_1_sz = 5
+    test_hdim_2_sz = 5
+    test_amp = 2
+    test_min_num = 2
+
+    test_data = np.zeros(test_dset_size)
+    test_data = tbtest.make_feature_blob(
+        test_data,
+        test_hdim_1_pt,
+        test_hdim_2_pt,
+        h1_size=test_hdim_1_sz,
+        h2_size=test_hdim_2_sz,
+        amplitude=test_amp,
+    )
+    test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type="iris")
+    fd_output_first = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        threshold=test_threshs[0],
+        n_min_threshold=test_min_num,
+        dxy=1,
+        target=target,
+    )
+
+    for thresh_test in test_threshs[1:]:
+        fd_output_test = feat_detect.feature_detection_multithreshold_timestep(
+            test_data_iris,
+            0,
+            threshold=thresh_test,
+            n_min_threshold=test_min_num,
+            dxy=1,
+            target=target,
+        )
+        assert_frame_equal(fd_output_first, fd_output_test)

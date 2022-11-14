@@ -490,9 +490,12 @@ def feature_detection_multithreshold_timestep(
             dxy, track_data, wavelength_filtering[0], wavelength_filtering[1]
         )
 
+    # sort thresholds from least extreme to most extreme
+    threshold_sorted = sorted(threshold, reverse=(target == "minimum"))
+
     # create empty lists to store regions and features for individual timestep
     features_thresholds = pd.DataFrame()
-    for i_threshold, threshold_i in enumerate(threshold):
+    for i_threshold, threshold_i in enumerate(threshold_sorted):
         if i_threshold > 0 and not features_thresholds.empty:
             idx_start = features_thresholds["idx"].max() + feature_number_start
         else:
