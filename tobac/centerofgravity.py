@@ -2,6 +2,7 @@
 """
 
 import logging
+import warnings
 
 
 def calculate_cog(tracks, mass, mask):
@@ -30,6 +31,11 @@ def calculate_cog(tracks, mass, mask):
 
     from .utils import mask_cube_cell
     from iris import Constraint
+
+    warnings.warn(
+        "calculate_cog is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
 
     logging.info("start calculating centre of gravity for tracked cells")
 
@@ -77,6 +83,11 @@ def calculate_cog_untracked(mass, mask):
     from .utils import mask_cube_untracked
     from iris import Constraint
 
+    warnings.warn(
+        "calculate_cog_untracked is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
+
     logging.info(
         "start calculating centre of gravity for untracked parts of the domain"
     )
@@ -122,6 +133,11 @@ def calculate_cog_domain(mass):
 
     from pandas import DataFrame
     from iris import Constraint
+
+    warnings.warn(
+        "calculate_cog_domain is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
 
     logging.info("start calculating centre of gravity for entire domain")
 
@@ -172,6 +188,11 @@ def center_of_gravity(cube_in):
 
     from iris.analysis import SUM
     import numpy as np
+
+    warnings.warn(
+        "center_of_gravity is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
 
     cube_sum = cube_in.collapsed(["bottom_top", "south_north", "west_east"], SUM)
     z = cube_in.coord("geopotential_height")
