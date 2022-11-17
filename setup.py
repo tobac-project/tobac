@@ -56,7 +56,7 @@ setup(
         "scikit-learn",
         "pandas",
         "matplotlib",
-        "iris",
+        "scitools-iris",
         "xarray",
         "cartopy",
         "trackpy",
