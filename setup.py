@@ -49,6 +49,17 @@ setup(
     ],
     license="BSD-3-Clause License",
     packages=[PACKAGE_NAME],
-    install_requires=[],
+    install_requires=[
+        "numpy",
+        "scipy",
+        "scikit-image",
+        "scikit-learn",
+        "pandas",
+        "matplotlib",
+        "iris",
+        "xarray",
+        "cartopy",
+        "trackpy",
+    ],
     zip_safe=False,
 )
