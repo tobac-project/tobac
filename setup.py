@@ -58,7 +58,6 @@ setup(
         "matplotlib",
         "scitools-iris",
         "xarray",
-        "cartopy",
         "trackpy",
     ],
     zip_safe=False,
