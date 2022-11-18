@@ -26,6 +26,7 @@ Threshold
 =========
 Unlike in multiple threshold detection in Feature Detection, Watershedding Segmentation only accepts one threshold. This value will set either the minimum (for :code:`target='maximum'`) or maximum (for :code:`target='minimum'`) value to be segmented. 
 
+
 .. _Level:
 ======================================================
 Where the 3D seeds are placed for 2D feature detection
