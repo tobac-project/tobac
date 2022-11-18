@@ -1,6 +1,6 @@
 tobac - Tracking and Object-based Analysis of Clouds
 ======
-[![Documentation Status](https://readthedocs.org/projects/tobac/badge/?version=latest)](https://tobac.readthedocs.io/en/latest/?badge=latest)[![Download Counter](https://anaconda.org/conda-forge/tobac/)](https://anaconda.org/conda-forge/tobac/badges/downloads.svg)
+[![Documentation Status](https://readthedocs.org/projects/tobac/badge/?version=latest)](https://tobac.readthedocs.io/en/latest/?badge=latest)[![Download Counter](https://anaconda.org/conda-forge/tobac/badges/downloads.svg)](https://anaconda.org/conda-forge/tobac/)
 
 What is it?
 -----------
