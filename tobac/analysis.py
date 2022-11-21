@@ -30,6 +30,7 @@ import pandas as pd
 import numpy as np
 import logging
 import os
+import warnings
 
 from .utils import mask_cell, mask_cell_surface, mask_cube_cell, get_bounding_box
 
@@ -86,6 +87,11 @@ def cell_statistics_all(
     -------
     None
     """
+    warnings.warn(
+        "cell_statistics_all is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
+
     if cell_selection is None:
         cell_selection = np.unique(track["cell"])
     for cell in cell_selection:
@@ -160,6 +166,11 @@ def cell_statistics(
     from iris.cube import Cube, CubeList
     from iris.coords import AuxCoord
     from iris import Constraint, save
+
+    warnings.warn(
+        "cell_statistics is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
 
     # If input is single cube, turn into cubelist
     if type(input_cubes) is Cube:
@@ -312,6 +323,11 @@ def cog_cell(
     -------
     None
     """
+
+    warnings.warn(
+        "cog_cell is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
 
     from iris import Constraint
 
