@@ -565,6 +565,10 @@ def plot_mask_cell_track_follow(
     Input:
     Output:
     """
+    warnings.warn(
+        "plot_mask_cell_track_follow is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
 
     mpl_backend = mpl.get_backend()
     if mpl_backend != "agg":
@@ -704,6 +708,11 @@ def plot_mask_cell_individual_follow(
     from .utils import mask_cell_surface
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     from matplotlib.colors import Normalize
+
+    warnings.warn(
+        "plot_mask_cell_individual_follow is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
 
     divider = make_axes_locatable(axes)
 
@@ -891,6 +900,12 @@ def plot_mask_cell_track_static(
     Input:
     Output:
     """
+
+    warnings.warn(
+        "plot_mask_cell_track_static is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
+
     mpl_backend = mpl.get_backend()
     if mpl_backend != "agg":
         warnings.warn(
@@ -1056,6 +1071,11 @@ def plot_mask_cell_individual_static(
     from .utils import mask_features, mask_features_surface
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     from matplotlib.colors import Normalize
+
+    warnings.warn(
+        "plot_mask_cell_individual_static is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
 
     divider = make_axes_locatable(axes)
 
@@ -1252,6 +1272,11 @@ def plot_mask_cell_track_2D3Dstatic(
     Input:
     Output:
     """
+    warnings.warn(
+        "plot_mask_cell_track_2D3Dstatic is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
+
     mpl_backend = mpl.get_backend()
     if mpl_backend != "agg":
         warnings.warn(
@@ -1426,6 +1451,11 @@ def plot_mask_cell_track_3Dstatic(
     Input:
     Output:
     """
+    warnings.warn(
+        "plot_mask_cell_track_3Dstatic is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
+
     mpl_backend = mpl.get_backend()
     if mpl_backend != "agg":
         warnings.warn(
@@ -1602,6 +1632,11 @@ def plot_mask_cell_individual_3Dstatic(
     #    from mpl_toolkits.axes_grid1 import make_axes_locatable
     #    from matplotlib.colors import Normalize
     from mpl_toolkits.mplot3d import Axes3D
+
+    warnings.warn(
+        "plot_mask_cell_individual_3Dstatic is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
 
     axes.view_init(elev=ele, azim=azim)
     axes.grid(b=False)
@@ -1782,6 +1817,10 @@ def plot_mask_cell_track_static_timeseries(
     Input:
     Output:
     """
+    warnings.warn(
+        "plot_mask_cell_track_static_timeseries is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
 
     mpl_backend = mpl.get_backend()
     if mpl_backend != "agg":

@@ -133,13 +133,15 @@ def linking_trackpy(
         Default is 'random'.
 
     adaptive_step : float, optional
-        Reduce search range by multiplying it by this factor.
+        Reduce search range by multiplying it by this factor. Needs to be
+        used in combination with adaptive_stop. Default is None.
 
     adaptive_stop : float, optional
         If not None, when encountering an oversize subnet, retry by progressively
-        reducing search_range until the subnet is solvable. If search_range
-        becomes <= adaptive_stop, give up and raise a SubnetOversizeException.
-        Default is None
+        reducing search_range by multiplying with adaptive_step until the subnet
+        is solvable. If search_range becomes <= adaptive_stop, give up and raise
+        a SubnetOversizeException. Needs to be used in combination with
+        adaptive_step. Default is None.
 
     cell_number_start : int, optional
         Cell number for first tracked cell.
@@ -163,6 +165,11 @@ def linking_trackpy(
     ValueError
         If method_linking is neither 'random' nor 'predict'.
     """
+
+    if extrapolate != 0:
+        raise NotImplementedError(
+            "Extrapolation is not yet implemented. Set this parameter to 0 to continue."
+        )
 
     #    from trackpy import link_df
     import trackpy as tp
@@ -195,6 +202,19 @@ def linking_trackpy(
             FutureWarning,
         )
 
+    # in case of adaptive search, check wether both parameters are specified
+    if adaptive_stop is not None:
+        if adaptive_step is None:
+            raise ValueError(
+                "Adaptive search requires values for adaptive_step and adaptive_stop. Please specify adaptive_step."
+            )
+
+    if adaptive_step is not None:
+        if adaptive_stop is None:
+            raise ValueError(
+                "Adaptive search requires values for adaptive_step and adaptive_stop. Please specify adaptive_stop."
+            )
+
     if time_cell_min:
         stubs = np.floor(time_cell_min / dt) + 1
 
@@ -204,10 +224,12 @@ def linking_trackpy(
 
     # If subnetwork size given, set maximum subnet size
     if subnetwork_size is not None:
-        # Choose the right parameter depending on the use of adaptive search
+        # Choose the right parameter depending on the use of adaptive search, save previously set values
         if adaptive_step is None and adaptive_stop is None:
+            size_cache = tp.linking.Linker.MAX_SUB_NET_SIZE
             tp.linking.Linker.MAX_SUB_NET_SIZE = subnetwork_size
         else:
+            size_cache = tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE
             tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE = subnetwork_size
 
     # deep copy to preserve features field:
@@ -262,7 +284,14 @@ def linking_trackpy(
     else:
         raise ValueError("method_linking unknown")
 
-        # Filter trajectories to exclude short trajectories that are likely to be spurious
+    # Reset trackpy parameters to previously set values
+    if subnetwork_size is not None:
+        if adaptive_step is None and adaptive_stop is None:
+            tp.linking.Linker.MAX_SUB_NET_SIZE = size_cache
+        else:
+            tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE = size_cache
+
+    # Filter trajectories to exclude short trajectories that are likely to be spurious
     #    trajectories_filtered = filter_stubs(trajectories_unfiltered,threshold=stubs)
     #    trajectories_filtered=trajectories_filtered.reset_index(drop=True)
 
