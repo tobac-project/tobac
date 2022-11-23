@@ -982,8 +982,8 @@ def xarray_to_iris(func):
     --------
     >>> segmentation_xarray = xarray_to_iris(segmentation)
 
-    This line creates a new function that can process xarray fields and 
-    also outputs fields in xarray format, but otherwise works just like 
+    This line creates a new function that can process xarray fields and
+    also outputs fields in xarray format, but otherwise works just like
     the original function:
 
     >>> mask_xarray, features = segmentation_xarray(
@@ -1149,8 +1149,8 @@ def xarray_to_irispandas(func):
         linking_trackpy
         )
 
-    This line creates a new function that can process xarray inputs and 
-    also outputs in xarray formats, but otherwise works just like the 
+    This line creates a new function that can process xarray inputs and
+    also outputs in xarray formats, but otherwise works just like the
     original function:
 
     >>> track_xarray = linking_trackpy_xarray(
