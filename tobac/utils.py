@@ -987,7 +987,7 @@ def xarray_to_iris(func):
     the original function:
 
     >>> mask_xarray, features = segmentation_xarray(
-        data_xarray, dxy, threshold
+        features, data_xarray, dxy, threshold
         )
     """
 
