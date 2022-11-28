@@ -33,7 +33,7 @@ You can also install conda via git, either for development purposes or to use sp
 
 If you are using anaconda, the following command from within the cloned repository should make sure all dependencies are met and up to date:
 ```
-conda install -c conda-forge --yes --file conda-requirements.txt
+conda install -c conda-forge --yes --file requirements.txt
 ```
 You can directly install the package directly from github with pip and either of the two following commands:
 ```
