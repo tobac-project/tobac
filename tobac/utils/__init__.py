@@ -1,4 +1,9 @@
-from .general import add_coordinates, get_spacings, get_bounding_box
+from .general import (
+    add_coordinates,
+    get_spacings,
+    get_bounding_box,
+    combine_tobac_feats,
+)
 from .mask import (
     mask_cell,
     mask_cell_surface,

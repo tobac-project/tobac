@@ -28,6 +28,14 @@ tobac.feature\_detection module
    :undoc-members:
    :show-inheritance:
 
+tobac.merge_split module
+---------------------
+
+.. automodule:: tobac.merge_split
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 tobac.plotting module
 ---------------------
 

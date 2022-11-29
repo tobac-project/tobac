@@ -23,7 +23,8 @@ The project is currently being extended by several contributors to include addit
    installation
    data_input
    analysis 
-   plotting 
+   plotting
+   big_datasets 
    examples
    publications
 
@@ -42,6 +43,8 @@ The project is currently being extended by several contributors to include addit
 
    segmentation
    segmentation_parameters
+   segmentation_output
+   features_without_segmented_area
 
 .. toctree::
    :caption: Tracking
@@ -49,6 +52,13 @@ The project is currently being extended by several contributors to include addit
 
    linking  
    tracking_output
+   
+.. toctree::
+   :caption: Merge/Split
+   :maxdepth: 2
+
+   merge_split
+   merge_split_out_vars
 
 .. toctree::
    :caption: API Reference
