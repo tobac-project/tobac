@@ -357,6 +357,7 @@ def spectral_filtering(
     else:
         return filtered_field
 
+
 def combine_tobac_feats(list_of_feats, preserve_old_feat_nums=None):
     """Function to combine a list of tobac feature detection dataframes
     into one combined dataframe that can be used for tracking
