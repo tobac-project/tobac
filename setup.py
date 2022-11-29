@@ -59,5 +59,8 @@ setup(
         "xarray",
         "trackpy",
     ],
+    test_requires=[
+        "pytest",
+    ],
     zip_safe=False,
 )
