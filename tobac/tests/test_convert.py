@@ -9,7 +9,7 @@ from iris.cube import Cube
 import pandas as pd
 from pandas.testing import assert_frame_equal
 from copy import deepcopy
-from tobac.utils import (
+from tobac.utils.internal import (
     xarray_to_iris,
     iris_to_xarray,
     xarray_to_irispandas,
@@ -223,7 +223,7 @@ def test_xarray_workflow():
     data_xarray = xarray.DataArray.from_iris(deepcopy(data))
 
     # Testing the get_spacings utility
-    get_spacings_xarray = tobac.utils.xarray_to_iris(tobac.utils.get_spacings)
+    get_spacings_xarray = xarray_to_iris(tobac.utils.get_spacings)
     dxy, dt = tobac.utils.get_spacings(data)
     dxy_xarray, dt_xarray = get_spacings_xarray(data_xarray)
 
@@ -231,7 +231,7 @@ def test_xarray_workflow():
     assert dt == dt_xarray
 
     # Testing feature detection
-    feature_detection_xarray = tobac.utils.xarray_to_iris(
+    feature_detection_xarray = xarray_to_iris(
         tobac.feature_detection.feature_detection_multithreshold
     )
     features = tobac.feature_detection.feature_detection_multithreshold(data, dxy, 1.0)
@@ -240,7 +240,7 @@ def test_xarray_workflow():
     assert_frame_equal(features, features_xarray)
 
     # Testing the segmentation
-    segmentation_xarray = tobac.utils.xarray_to_iris(tobac.segmentation.segmentation)
+    segmentation_xarray = xarray_to_iris(tobac.segmentation.segmentation)
     mask, features = tobac.segmentation.segmentation(features, data, dxy, 1.0)
     mask_xarray, features_xarray = segmentation_xarray(
         features_xarray, data_xarray, dxy_xarray, 1.0
@@ -249,7 +249,7 @@ def test_xarray_workflow():
     assert (mask.data == mask_xarray.to_iris().data).all()
 
     # testing tracking
-    tracking_xarray = tobac.utils.xarray_to_iris(tobac.tracking.linking_trackpy)
+    tracking_xarray = xarray_to_iris(tobac.tracking.linking_trackpy)
     track = tobac.tracking.linking_trackpy(features, data, dt, dxy, v_max=100.0)
     track_xarray = tracking_xarray(
         features_xarray, data_xarray, dt_xarray, dxy_xarray, v_max=100.0
