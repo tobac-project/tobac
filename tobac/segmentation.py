@@ -35,6 +35,8 @@ import logging
 import skimage
 
 from . import utils as tb_utils
+from .utils import periodic_boundaries as pbc_utils
+from .utils import internal as internal_utils
 
 
 def transfm_pbc_point(in_dim, dim_min, dim_max):
@@ -168,7 +170,7 @@ def add_markers(
             hdim_2_min = int(np.ceil(row["hdim_2"] - seed_h2 / 2))
             hdim_2_max = int(np.ceil(row["hdim_2"] + seed_h2 / 2))
 
-            all_seed_boxes = tb_utils.get_pbc_coordinates(
+            all_seed_boxes = pbc_utils.get_pbc_coordinates(
                 h1_min=0,
                 h1_max=h1_len,
                 h2_min=0,
@@ -215,7 +217,7 @@ def add_markers(
                             else:
                                 curr_coord = (0, row["hdim_1"], row["hdim_2"])
 
-                            dist_from_curr_pt = tb_utils.calc_distance_coords_pbc(
+                            dist_from_curr_pt = pbc_utils.calc_distance_coords_pbc(
                                 np.array(global_index),
                                 np.array(curr_coord),
                                 min_h1=0,
@@ -239,7 +241,7 @@ def add_markers(
                                 )
                             else:
                                 orig_coord = (0, orig_row["hdim_1"], orig_row["hdim_2"])
-                            dist_from_orig_pt = tb_utils.calc_distance_coords_pbc(
+                            dist_from_orig_pt = pbc_utils.calc_distance_coords_pbc(
                                 np.array(global_index),
                                 np.array(orig_coord),
                                 min_h1=0,
@@ -439,7 +441,7 @@ def segmentation_timestep(
         hdim_1_axis = 0
         hdim_2_axis = 1
     elif field_in.ndim == 3:
-        vertical_axis = tb_utils.find_vertical_axis_from_coord(
+        vertical_axis = internal_utils.find_vertical_axis_from_coord(
             field_in, vertical_coord=vertical_coord
         )
         ndim_vertical = field_in.coord_dims(vertical_axis)
@@ -554,7 +556,7 @@ def segmentation_timestep(
     if PBC_flag in pbc_options:
 
         # read in labeling/masks and region-finding functions
-        reg_props_dict = tb_utils.get_label_props_in_dict(seg_m_data)
+        reg_props_dict = internal_utils.get_label_props_in_dict(seg_m_data)
 
         if not is_3D_seg:
             # let's transpose segmentation_mask to a 1,y,x array to make calculations etc easier.
@@ -723,7 +725,7 @@ def segmentation_timestep(
         'buddies' array contains features of interest and any neighbors that are across the boundary or 
         otherwise have lateral and/or diagonal physical contact with that label
         """
-        reg_props_dict = tb_utils.get_label_props_in_dict(segmentation_mask_3)
+        reg_props_dict = internal_utils.get_label_props_in_dict(segmentation_mask_3)
 
         if len(reg_props_dict) != 0:
             (
@@ -731,7 +733,7 @@ def segmentation_timestep(
                 z_reg_inds,
                 y_reg_inds,
                 x_reg_inds,
-            ) = tb_utils.get_indices_of_labels_from_reg_prop_dict(reg_props_dict)
+            ) = internal_utils.get_indices_of_labels_from_reg_prop_dict(reg_props_dict)
 
         wall_labels = np.array([])
 
@@ -768,8 +770,8 @@ def segmentation_timestep(
                 ):
 
                     # adjust x and y points to the other side
-                    y_val_alt = tb_utils.adjust_pbc_point(label_y, hdim1_min, hdim1_max)
-                    x_val_alt = tb_utils.adjust_pbc_point(label_x, hdim2_min, hdim2_max)
+                    y_val_alt = pbc_utils.adjust_pbc_point(label_y, hdim1_min, hdim1_max)
+                    x_val_alt = pbc_utils.adjust_pbc_point(label_x, hdim2_min, hdim2_max)
                     label_on_corner = segmentation_mask_3[label_z, y_val_alt, x_val_alt]
 
                     if label_on_corner > 0:
@@ -780,7 +782,7 @@ def segmentation_timestep(
                 if (PBC_flag == "hdim_1" or PBC_flag == "both") and np.any(
                     label_y == [hdim1_min, hdim1_max]
                 ):
-                    y_val_alt = tb_utils.adjust_pbc_point(label_y, hdim1_min, hdim1_max)
+                    y_val_alt = pbc_utils.adjust_pbc_point(label_y, hdim1_min, hdim1_max)
 
                     # get the label value on the opposite side
                     label_alt = segmentation_mask_3[label_z, y_val_alt, label_x]
@@ -793,7 +795,7 @@ def segmentation_timestep(
                 if (PBC_flag == "hdim_2" or PBC_flag == "both") and np.any(
                     label_x == [hdim2_min, hdim2_max]
                 ):
-                    x_val_alt = tb_utils.adjust_pbc_point(label_x, hdim2_min, hdim2_max)
+                    x_val_alt = pbc_utils.adjust_pbc_point(label_x, hdim2_min, hdim2_max)
 
                     # get the seg value on the opposite side
                     label_alt = segmentation_mask_3[label_z, label_y, x_val_alt]

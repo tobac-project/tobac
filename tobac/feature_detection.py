@@ -20,10 +20,10 @@ References
 import logging
 import numpy as np
 import pandas as pd
-from . import utils as tb_utils
-from tobac.utils import spectral_filtering
+from .utils import internal as internal_utils
+from .utils import periodic_boundaries as pbc_utils
+from tobac.utils.general import spectral_filtering
 import warnings
-from . import utils as tb_utils
 
 
 def feature_position(
@@ -371,7 +371,7 @@ def feature_detection_threshold(
         Minimum number of identified features. Default is 0.
 
     min_distance : float, optional
-        Minimum distance between detected features. Default is 0.
+        Minimum distance between detected features (in meter). Default is 0.
 
     idx_start : int, optional
         Feature id to start with. Default is 0.
@@ -461,13 +461,13 @@ def feature_detection_threshold(
         wall_labels = np.array([])
 
         if num_labels > 0:
-            all_label_props = tb_utils.get_label_props_in_dict(labels)
+            all_label_props = internal_utils.get_label_props_in_dict(labels)
             [
                 all_labels_max_size,
                 all_label_locs_v,
                 all_label_locs_h1,
                 all_label_locs_h2,
-            ] = tb_utils.get_indices_of_labels_from_reg_prop_dict(all_label_props)
+            ] = internal_utils.get_indices_of_labels_from_reg_prop_dict(all_label_props)
 
             # find the points along the boundaries
 
@@ -523,8 +523,8 @@ def feature_detection_threshold(
                     ):
 
                         # adjust x and y points to the other side
-                        y_val_alt = tb_utils.adjust_pbc_point(label_y, y_min, y_max)
-                        x_val_alt = tb_utils.adjust_pbc_point(label_x, x_min, x_max)
+                        y_val_alt = pbc_utils.adjust_pbc_point(label_y, y_min, y_max)
+                        x_val_alt = pbc_utils.adjust_pbc_point(label_x, x_min, x_max)
 
                         label_on_corner = labels[label_z, y_val_alt, x_val_alt]
 
@@ -572,7 +572,7 @@ def feature_detection_threshold(
                     if (PBC_flag == "hdim_1" or PBC_flag == "both") and np.any(
                         label_y == [y_min, y_max]
                     ):
-                        y_val_alt = tb_utils.adjust_pbc_point(label_y, y_min, y_max)
+                        y_val_alt = pbc_utils.adjust_pbc_point(label_y, y_min, y_max)
 
                         # get the label value on the opposite side
                         label_alt = labels[label_z, y_val_alt, label_x]
@@ -615,7 +615,7 @@ def feature_detection_threshold(
                     if (PBC_flag == "hdim_2" or PBC_flag == "both") and np.any(
                         label_x == [x_min, x_max]
                     ):
-                        x_val_alt = tb_utils.adjust_pbc_point(label_x, x_min, x_max)
+                        x_val_alt = pbc_utils.adjust_pbc_point(label_x, x_min, x_max)
 
                         # get the label value on the opposite side
                         label_alt = labels[label_z, label_y, x_val_alt]
@@ -664,17 +664,18 @@ def feature_detection_threshold(
             "Options for periodic are currently: none, " + ", ".join(pbc_options)
         )
 
-        # num_labels = num_labels - len(skip_list)
     # END PBC treatment
     # we need to get label properties again after we handle PBCs.
-    label_props = tb_utils.get_label_props_in_dict(labels)
+    label_props = internal_utils.get_label_props_in_dict(labels)
+
+    label_props = internal_utils.get_label_props_in_dict(labels)
     if len(label_props) > 0:
-        [
+        (
             total_indices_all,
             vdim_indices_all,
             hdim1_indices_all,
             hdim2_indices_all,
-        ] = tb_utils.get_indices_of_labels_from_reg_prop_dict(label_props)
+        ) = internal_utils.get_indices_of_labels_from_reg_prop_dict(label_props)
 
     # values, count = np.unique(labels[:,:].ravel(), return_counts=True)
     # values_counts=dict(zip(values, count))
@@ -881,7 +882,7 @@ def feature_detection_multithreshold_timestep(
         Minimum number of identified features. Default is 0.
 
     min_distance : float, optional
-        Minimum distance between detected features. Default is 0.
+        Minimum distance between detected features (in meter). Default is 0.
 
     feature_number_start : int, optional
         Feature id to start with. Default is 1.
@@ -895,6 +896,11 @@ def feature_detection_multithreshold_timestep(
 
     vertical_axis: int
         The vertical axis number of the data.
+    dxy : float
+        Grid spacing in meter.
+
+    wavelength_filtering: tuple, optional
+       Minimum and maximum wavelength for spectral filtering in meter. Default is None.
 
 
     Returns
@@ -927,9 +933,12 @@ def feature_detection_multithreshold_timestep(
             dxy, track_data, wavelength_filtering[0], wavelength_filtering[1]
         )
 
+    # sort thresholds from least extreme to most extreme
+    threshold_sorted = sorted(threshold, reverse=(target == "minimum"))
+
     # create empty lists to store regions and features for individual timestep
     features_thresholds = pd.DataFrame()
-    for i_threshold, threshold_i in enumerate(threshold):
+    for i_threshold, threshold_i in enumerate(threshold_sorted):
         if i_threshold > 0 and not features_thresholds.empty:
             idx_start = features_thresholds["idx"].max() + feature_number_start
         else:
@@ -950,7 +959,9 @@ def feature_detection_multithreshold_timestep(
             vertical_axis=vertical_axis,
         )
         if any([x is not None for x in features_threshold_i]):
-            features_thresholds = features_thresholds.append(features_threshold_i)
+            features_thresholds = pd.concat(
+                [features_thresholds, features_threshold_i], ignore_index=True
+            )
 
         # For multiple threshold, and features found both in the current and previous step, remove "parent" features from Dataframe
         if i_threshold > 0 and not features_thresholds.empty and regions_old:
@@ -972,7 +983,6 @@ def feature_detection_multithreshold_timestep(
 def feature_detection_multithreshold(
     field_in,
     dxy=None,
-    dz=None,
     threshold=None,
     min_num=0,
     target="maximum",
@@ -987,6 +997,8 @@ def feature_detection_multithreshold(
     vertical_axis=None,
     detect_subset=None,
     wavelength_filtering=None,
+    dz=None,
+
 ):
 
     """Perform feature detection based on contiguous regions.
@@ -1033,7 +1045,7 @@ def feature_detection_multithreshold(
         Minimum number of identified features. Default is 0.
 
     min_distance : float, optional
-        Minimum distance between detected features. Default is 0.
+        Minimum distance between detected features (in meter). Default is 0.
 
     feature_number_start : int, optional
         Feature id to start with. Default is 1.
@@ -1060,6 +1072,15 @@ def feature_detection_multithreshold(
         For example, if your data are oriented as (time, z, y, x) and you want to
         only detect on values between z levels 10 and 29, you would set:
         {1: (10, 30)}.
+    wavelength_filtering: tuple, optional
+       Minimum and maximum wavelength for spectral filtering in meter. Default is None.
+
+    dz : float
+        Constant vertical grid spacing (m), optional. If not specified
+        and the input is 3D, this function requires that `altitude` is available
+        in the `features` input. If you specify a value here, this function assumes
+        that it is the constant z spacing between points, even if ```z_coordinate_name```
+        is specified.
 
     Returns
     -------
@@ -1104,7 +1125,7 @@ def feature_detection_multithreshold(
                 vertical_axis = vertical_axis - 1
         else:
             # We need to determine vertical axis
-            vertical_axis = tb_utils.find_vertical_axis_from_coord(
+            vertical_axis = internal_utils.find_vertical_axis_from_coord(
                 field_in, vertical_coord=vertical_coord
             )
 
@@ -1279,7 +1300,7 @@ def filter_min_distance(
     is_3D = "vdim" in features
 
     if is_3D and dz is None:
-        z_coordinate_name = tb_utils.find_dataframe_vertical_coord(
+        z_coordinate_name = internal_utils.find_dataframe_vertical_coord(
             features, z_coordinate_name
         )
 
@@ -1337,7 +1358,7 @@ def filter_min_distance(
                     dxy * features.loc[index_2, "hdim_2"],
                 )
 
-            distance = tb_utils.calc_distance_coords_pbc(
+            distance = pbc_utils.calc_distance_coords_pbc(
                 coords_1=np.array(coord_1),
                 coords_2=np.array(coord_2),
                 min_h1=0,

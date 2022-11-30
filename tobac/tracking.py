@@ -26,6 +26,8 @@ import pandas as pd
 import warnings
 import math
 from . import utils as tb_utils
+from .utils import periodic_boundaries as pbc_utils
+from .utils import internal as internal_utils
 
 
 def linking_trackpy(
@@ -249,7 +251,7 @@ def linking_trackpy(
                 "Neither dz nor vertical_coord are set. One" " must be set."
             )
         if vertical_coord is not None:
-            found_vertical_coord = tb_utils.find_dataframe_vertical_coord(
+            found_vertical_coord = internal_utils.find_dataframe_vertical_coord(
                 variable_dataframe=features, vertical_coord=vertical_coord
             )
     else:
@@ -600,7 +602,7 @@ def build_distance_function(min_h1, max_h1, min_h2, max_h2, PBC_flag):
     import functools
 
     return functools.partial(
-        tb_utils.calc_distance_coords_pbc,
+        pbc_utils.calc_distance_coords_pbc,
         min_h1=min_h1,
         max_h1=max_h1,
         min_h2=min_h2,

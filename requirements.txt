@@ -4,10 +4,8 @@ scipy
 scikit-image
 scikit-learn
 pandas
-pytables
 matplotlib
 iris
-cf-units
 xarray
 cartopy
 trackpy

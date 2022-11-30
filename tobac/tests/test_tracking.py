@@ -306,7 +306,7 @@ def test_3D_tracking_min_dist_z(
         "time_cell_min": 1,
         "dxy": dxy,
         "v_max": v_max,
-        "method_linking": "predict",
+        "method_linking": "random",
         "cell_number_unassigned": -1,
     }
     if use_dz:
