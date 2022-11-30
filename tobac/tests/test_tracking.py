@@ -368,9 +368,9 @@ def test_trackpy_predict():
         1,
         1,
         min_h1=0,
-        max_h1=100,
+        max_h1=101,
         min_h2=0,
-        max_h2=100,
+        max_h2=101,
         frame_start=0,
         num_frames=5,
         spd_h1=20,
@@ -384,9 +384,9 @@ def test_trackpy_predict():
         1,
         100,
         min_h1=0,
-        max_h1=100,
+        max_h1=101,
         min_h2=0,
-        max_h2=100,
+        max_h2=101,
         frame_start=0,
         num_frames=5,
         spd_h1=20,
@@ -394,7 +394,7 @@ def test_trackpy_predict():
     )
 
     cell_2_expected = copy.deepcopy(cell_2)
-    cell_2_expected["cell"] = 2
+    cell_2_expected["cell"] = np.int32(2)
 
     features = pd.concat([cell_1, cell_2])
     expected_output = pd.concat([cell_1_expected, cell_2_expected])
@@ -412,7 +412,7 @@ def test_trackpy_predict():
 
     # sorting and dropping indices for comparison with the expected output
     output = output[["hdim_1", "hdim_2", "frame", "time", "feature", "cell"]]
-
+    expected_output["cell"] = expected_output["cell"].astype(np.int32)
     assert_frame_equal(expected_output.sort_index(), output.sort_index())
 
 

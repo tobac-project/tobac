@@ -437,8 +437,10 @@ def feature_detection_threshold(
     if not is_3D:
         # let's transpose labels to a 1,y,x array to make calculations etc easier.
         labels = labels[np.newaxis, :, :]
+    # these are [min, max], meaning that the max value is inclusive and a valid
+    # value.
     z_min = 0
-    z_max = labels.shape[0]
+    z_max = labels.shape[0] - 1
     y_min = 0
     y_max = labels.shape[1] - 1
     x_min = 0
@@ -742,8 +744,8 @@ def feature_detection_threshold(
             if is_3D:
                 region_i = list(
                     zip(
-                        hdim1_indices * x_max * z_max
-                        + hdim2_indices * z_max
+                        hdim1_indices * (x_max + 1) * (z_max + 1)
+                        + hdim2_indices * (z_max + 1)
                         + vdim_indices
                     )
                 )

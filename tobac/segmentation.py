@@ -31,6 +31,9 @@ References
 """
 
 import logging
+
+import skimage
+
 from . import utils as tb_utils
 
 
