@@ -28,25 +28,21 @@ def get_label_props_in_dict(labels):
 
 
 def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
-    """Function to get the x and y indices (as well as point count) of
-    all labeled regions.
-
+    """Function to get the x, y, and z indices (as well as point count) of all labeled regions.
     Parameters
     ----------
     region_property_dict : dict of region_property objects
         This dict should come from the get_label_props_in_dict function.
-
     Returns
     -------
     curr_loc_indices : dict
         The number of points in the label number (key: label number).
-
+    z_indices : dict
+        The z indices in the label number. If a 2D property dict is passed, this value is not returned.
     y_indices : dict
         The y indices in the label number (key: label number).
-
     x_indices : dict
         The x indices in the label number (key: label number).
-
     Raises
     ------
     ValueError
@@ -59,21 +55,32 @@ def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
     if len(region_property_dict) == 0:
         raise ValueError("No regions!")
 
+    z_indices = dict()
     y_indices = dict()
     x_indices = dict()
     curr_loc_indices = dict()
+    is_3D = False
 
     # loop through all skimage identified regions
     for region_prop_key in region_property_dict:
         region_prop = region_property_dict[region_prop_key]
         index = region_prop.label
-        curr_y_ixs, curr_x_ixs = np.transpose(region_prop.coords)
+        if len(region_prop.coords[0]) >= 3:
+            is_3D = True
+            curr_z_ixs, curr_y_ixs, curr_x_ixs = np.transpose(region_prop.coords)
+            z_indices[index] = curr_z_ixs
+        else:
+            curr_y_ixs, curr_x_ixs = np.transpose(region_prop.coords)
+            z_indices[index] = -1
 
         y_indices[index] = curr_y_ixs
         x_indices[index] = curr_x_ixs
         curr_loc_indices[index] = len(curr_y_ixs)
-
-    return (curr_loc_indices, y_indices, x_indices)
+    # print("indices found")
+    if is_3D:
+        return [curr_loc_indices, z_indices, y_indices, x_indices]
+    else:
+        return [curr_loc_indices, y_indices, x_indices]
 
 
 def iris_to_xarray(func):
@@ -407,3 +414,97 @@ def xarray_to_irispandas(func):
         return output
 
     return wrapper
+
+
+def njit_if_available(func, **kwargs):
+    """Decorator to wrap a function with numba.njit if available.
+    If numba isn't available, it just returns the function.
+
+    Parameters
+    ----------
+    func: function object
+        Function to wrap with njit
+    kwargs:
+        Keyword arguments to pass to numba njit
+    """
+    try:
+        from numba import njit
+
+        return njit(func, kwargs)
+    except ModuleNotFoundError:
+        return func
+
+
+def find_vertical_axis_from_coord(variable_cube, vertical_coord="auto"):
+    """Function to find the vertical coordinate in the iris cube
+
+    Parameters
+    ----------
+    variable_cube: iris.cube
+        Input variable cube, containing a vertical coordinate.
+    vertical_coord: str
+        Vertical coordinate name. If `auto`, this function tries to auto-detect.
+
+    Returns
+    -------
+    str
+        the vertical coordinate name
+
+    Raises
+    ------
+    ValueError
+        Raised if the vertical coordinate isn't found in the cube.
+    """
+
+    list_coord_names = [coord.name() for coord in variable_cube.coords()]
+
+    if vertical_coord == "auto":
+        list_vertical = ["z", "model_level_number", "altitude", "geopotential_height"]
+        # find the intersection
+        all_vertical_axes = list(set(list_coord_names) & set(list_vertical))
+        if len(all_vertical_axes) >= 1:
+            return all_vertical_axes[0]
+        else:
+            raise ValueError(
+                "Cube lacks suitable automatic vertical coordinate (z, model_level_number, altitude, or geopotential_height)"
+            )
+    elif vertical_coord in list_coord_names:
+        return vertical_coord
+    else:
+        raise ValueError("Please specify vertical coordinate found in cube")
+
+
+def find_dataframe_vertical_coord(variable_dataframe, vertical_coord="auto"):
+    """Function to find the vertical coordinate in the iris cube
+
+    Parameters
+    ----------
+    variable_dataframe: pandas.DataFrame
+        Input variable cube, containing a vertical coordinate.
+    vertical_coord: str
+        Vertical coordinate name. If `auto`, this function tries to auto-detect.
+
+    Returns
+    -------
+    str
+        the vertical coordinate name
+
+    Raises
+    ------
+    ValueError
+        Raised if the vertical coordinate isn't found in the cube.
+    """
+
+    if vertical_coord == "auto":
+        list_vertical = ["z", "model_level_number", "altitude", "geopotential_height"]
+        all_vertical_axes = list(set(variable_dataframe.columns) & set(list_vertical))
+        if len(all_vertical_axes) == 1:
+            return all_vertical_axes[0]
+        else:
+            raise ValueError("Please specify vertical coordinate")
+
+    else:
+        if vertical_coord in variable_dataframe.columns:
+            return vertical_coord
+        else:
+            raise ValueError("Please specify vertical coordinate")
