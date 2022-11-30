@@ -20,8 +20,8 @@ References
 import logging
 import numpy as np
 import pandas as pd
-from . import utils as tb_utils
-from tobac.utils import spectral_filtering
+from .utils import internal as internal_utils
+from tobac.utils.general import spectral_filtering
 import warnings
 
 
@@ -258,7 +258,7 @@ def feature_detection_threshold(
         Minimum number of identified features. Default is 0.
 
     min_distance : float, optional
-        Minimum distance between detected features. Default is 0.
+        Minimum distance between detected features (in meter). Default is 0.
 
     idx_start : int, optional
         Feature id to start with. Default is 0.
@@ -297,13 +297,13 @@ def feature_detection_threshold(
         # detect individual regions, label  and count the number of pixels included:
     labels, num_labels = label(mask, background=0, return_num=True)
 
-    label_props = tb_utils.get_label_props_in_dict(labels)
+    label_props = internal_utils.get_label_props_in_dict(labels)
     if len(label_props) > 0:
         (
             total_indices_all,
             hdim1_indices_all,
             hdim2_indices_all,
-        ) = tb_utils.get_indices_of_labels_from_reg_prop_dict(label_props)
+        ) = internal_utils.get_indices_of_labels_from_reg_prop_dict(label_props)
 
     x_size = labels.shape[1]
 
@@ -449,10 +449,17 @@ def feature_detection_multithreshold_timestep(
         Minimum number of identified features. Default is 0.
 
     min_distance : float, optional
-        Minimum distance between detected features. Default is 0.
+        Minimum distance between detected features (in meter). Default is 0.
 
     feature_number_start : int, optional
         Feature id to start with. Default is 1.
+
+    dxy : float
+        Grid spacing in meter.
+
+    wavelength_filtering: tuple, optional
+       Minimum and maximum wavelength for spectral filtering in meter. Default is None.
+
 
     Returns
     -------
@@ -483,9 +490,12 @@ def feature_detection_multithreshold_timestep(
             dxy, track_data, wavelength_filtering[0], wavelength_filtering[1]
         )
 
+    # sort thresholds from least extreme to most extreme
+    threshold_sorted = sorted(threshold, reverse=(target == "minimum"))
+
     # create empty lists to store regions and features for individual timestep
     features_thresholds = pd.DataFrame()
-    for i_threshold, threshold_i in enumerate(threshold):
+    for i_threshold, threshold_i in enumerate(threshold_sorted):
         if i_threshold > 0 and not features_thresholds.empty:
             idx_start = features_thresholds["idx"].max() + feature_number_start
         else:
@@ -504,7 +514,9 @@ def feature_detection_multithreshold_timestep(
             idx_start=idx_start,
         )
         if any([x is not None for x in features_threshold_i]):
-            features_thresholds = pd.concat([features_thresholds, features_threshold_i])
+            features_thresholds = pd.concat(
+                [features_thresholds, features_threshold_i], ignore_index=True
+            )
 
         # For multiple threshold, and features found both in the current and previous step, remove "parent" features from Dataframe
         if i_threshold > 0 and not features_thresholds.empty and regions_old:
@@ -581,10 +593,13 @@ def feature_detection_multithreshold(
         Minimum number of identified features. Default is 0.
 
     min_distance : float, optional
-        Minimum distance between detected features. Default is 0.
+        Minimum distance between detected features (in meter). Default is 0.
 
     feature_number_start : int, optional
         Feature id to start with. Default is 1.
+
+    wavelength_filtering: tuple, optional
+       Minimum and maximum wavelength for spectral filtering in meter. Default is None.
 
     Returns
     -------
