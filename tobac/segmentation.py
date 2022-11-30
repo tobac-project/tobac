@@ -770,8 +770,12 @@ def segmentation_timestep(
                 ):
 
                     # adjust x and y points to the other side
-                    y_val_alt = pbc_utils.adjust_pbc_point(label_y, hdim1_min, hdim1_max)
-                    x_val_alt = pbc_utils.adjust_pbc_point(label_x, hdim2_min, hdim2_max)
+                    y_val_alt = pbc_utils.adjust_pbc_point(
+                        label_y, hdim1_min, hdim1_max
+                    )
+                    x_val_alt = pbc_utils.adjust_pbc_point(
+                        label_x, hdim2_min, hdim2_max
+                    )
                     label_on_corner = segmentation_mask_3[label_z, y_val_alt, x_val_alt]
 
                     if label_on_corner > 0:
@@ -782,7 +786,9 @@ def segmentation_timestep(
                 if (PBC_flag == "hdim_1" or PBC_flag == "both") and np.any(
                     label_y == [hdim1_min, hdim1_max]
                 ):
-                    y_val_alt = pbc_utils.adjust_pbc_point(label_y, hdim1_min, hdim1_max)
+                    y_val_alt = pbc_utils.adjust_pbc_point(
+                        label_y, hdim1_min, hdim1_max
+                    )
 
                     # get the label value on the opposite side
                     label_alt = segmentation_mask_3[label_z, y_val_alt, label_x]
@@ -795,7 +801,9 @@ def segmentation_timestep(
                 if (PBC_flag == "hdim_2" or PBC_flag == "both") and np.any(
                     label_x == [hdim2_min, hdim2_max]
                 ):
-                    x_val_alt = pbc_utils.adjust_pbc_point(label_x, hdim2_min, hdim2_max)
+                    x_val_alt = pbc_utils.adjust_pbc_point(
+                        label_x, hdim2_min, hdim2_max
+                    )
 
                     # get the seg value on the opposite side
                     label_alt = segmentation_mask_3[label_z, label_y, x_val_alt]

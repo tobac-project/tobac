@@ -149,7 +149,7 @@ def add_coordinates(t, variable_cube):
 
 
 def add_coordinates_3D(
-        t, variable_cube, vertical_coord="auto", assume_coords_fixed_in_time=True
+    t, variable_cube, vertical_coord="auto", assume_coords_fixed_in_time=True
 ):
     import numpy as np
 
@@ -277,9 +277,9 @@ def add_coordinates_3D(
         # one of the dimensions is time and we assume the coordinates
         # don't vary in time.
         elif (
-                var_coord.ndim == 3
-                and ndim_time in variable_cube.coord_dims(coord)
-                and assume_coords_fixed_in_time
+            var_coord.ndim == 3
+            and ndim_time in variable_cube.coord_dims(coord)
+            and assume_coords_fixed_in_time
         ):
             time_pos = variable_cube.coord_dims(coord).index(ndim_time)
             hdim1_pos = 0 if time_pos != 0 else 1
@@ -303,8 +303,8 @@ def add_coordinates_3D(
                 [
                     [a, b, c]
                     for a, b, c in zip(
-                    t[first_dim[1]], t[second_dim[1]], t[third_dim[1]]
-                )
+                        t[first_dim[1]], t[second_dim[1]], t[third_dim[1]]
+                    )
                 ],
             )
             # coordinate_points=[f(a,b) for a,b in zip(t[first_dim[1]],t[second_dim[1]])]

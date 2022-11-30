@@ -182,7 +182,9 @@ def test_converting(
     elif input_types[0] == Cube:
         data = tobac.testing.make_simple_sample_data_2D()
     elif input_types[0] == xarray.Dataset:
-        data = tobac.testing.generate_single_feature(1, 1, max_h1=100, max_h2=100).to_xarray()
+        data = tobac.testing.generate_single_feature(
+            1, 1, max_h1=100, max_h2=100
+        ).to_xarray()
     elif input_types[0] == pd.DataFrame:
         data = tobac.testing.generate_single_feature(1, 1, max_h1=100, max_h2=100)
 
@@ -191,7 +193,9 @@ def test_converting(
     elif input_types[1] == Cube:
         kwarg = tobac.testing.make_simple_sample_data_2D()
     elif input_types[1] == xarray.Dataset:
-        kwarg = tobac.testing.generate_single_feature(1, 1, max_h1=100, max_h2=100).to_xarray()
+        kwarg = tobac.testing.generate_single_feature(
+            1, 1, max_h1=100, max_h2=100
+        ).to_xarray()
     elif input_types[1] == pd.DataFrame:
         kwarg = tobac.testing.generate_single_feature(1, 1, max_h1=100, max_h2=100)
 
@@ -234,7 +238,9 @@ def test_xarray_workflow():
     feature_detection_xarray = xarray_to_iris(
         tobac.feature_detection.feature_detection_multithreshold
     )
-    features = tobac.feature_detection.feature_detection_multithreshold(data, dxy, threshold=1.0)
+    features = tobac.feature_detection.feature_detection_multithreshold(
+        data, dxy, threshold=1.0
+    )
     features_xarray = feature_detection_xarray(data_xarray, dxy_xarray, threshold=1.0)
 
     assert_frame_equal(features, features_xarray)

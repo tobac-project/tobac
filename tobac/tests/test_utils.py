@@ -119,8 +119,6 @@ def test_get_indices_of_labels_from_reg_prop_dict():
         )
 
 
-
-
 @pytest.mark.parametrize(
     "feature_loc, min_max_coords, lengths, expected_coord_interp",
     [
@@ -371,18 +369,26 @@ def test_combine_tobac_feats():
     """
 
     single_feat_1 = tb_test.generate_single_feature(
-        0, 0, start_date=datetime.datetime(2022, 1, 1, 0, 0), frame_start=0,
-        max_h1 = 100, max_h2 = 100
+        0,
+        0,
+        start_date=datetime.datetime(2022, 1, 1, 0, 0),
+        frame_start=0,
+        max_h1=100,
+        max_h2=100,
     )
     single_feat_2 = tb_test.generate_single_feature(
-        1, 1, start_date=datetime.datetime(2022, 1, 1, 0, 5), frame_start=0,
-        max_h1 = 100, max_h2 = 100
+        1,
+        1,
+        start_date=datetime.datetime(2022, 1, 1, 0, 5),
+        frame_start=0,
+        max_h1=100,
+        max_h2=100,
     )
 
     combined_feat = tb_utils.combine_tobac_feats([single_feat_1, single_feat_2])
 
     tot_feat = tb_test.generate_single_feature(
-        0, 0, spd_h1=1, spd_h2=1, num_frames=2, frame_start=0, max_h1 = 100, max_h2 = 100
+        0, 0, spd_h1=1, spd_h2=1, num_frames=2, frame_start=0, max_h1=100, max_h2=100
     )
 
     pd_test.assert_frame_equal(combined_feat, tot_feat)

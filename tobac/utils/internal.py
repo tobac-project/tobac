@@ -415,6 +415,7 @@ def xarray_to_irispandas(func):
 
     return wrapper
 
+
 def njit_if_available(func, **kwargs):
     """Decorator to wrap a function with numba.njit if available.
     If numba isn't available, it just returns the function.
@@ -432,6 +433,7 @@ def njit_if_available(func, **kwargs):
         return njit(func, kwargs)
     except ModuleNotFoundError:
         return func
+
 
 def find_vertical_axis_from_coord(variable_cube, vertical_coord="auto"):
     """Function to find the vertical coordinate in the iris cube

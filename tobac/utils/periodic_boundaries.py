@@ -1,6 +1,7 @@
 import numpy as np
 from .internal import njit_if_available
 
+
 def adjust_pbc_point(in_dim, dim_min, dim_max):
     """Function to adjust a point to the other boundary for PBCs
 

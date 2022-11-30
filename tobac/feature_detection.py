@@ -998,7 +998,6 @@ def feature_detection_multithreshold(
     detect_subset=None,
     wavelength_filtering=None,
     dz=None,
-
 ):
 
     """Perform feature detection based on contiguous regions.

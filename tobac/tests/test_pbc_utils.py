@@ -4,7 +4,6 @@ import tobac.testing as tb_test
 from collections import Counter
 
 
-
 def lists_equal_without_order(a, b):
     """
     This will make sure the inner list contain the same,
