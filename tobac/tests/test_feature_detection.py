@@ -151,7 +151,7 @@ def test_feature_detection_position(position_threshold):
 @pytest.mark.parametrize(
     "feature_1_loc, feature_2_loc, dxy, dz, min_distance,"
     " add_x_coords, add_y_coords,"
-    "add_z_coords, PBC_flag, expect_feature_1, expect_feature_2",
+    "add_z_coords, expect_feature_1, expect_feature_2",
     [
         (
             (0, 0, 0, 4, 1),
@@ -162,7 +162,6 @@ def test_feature_detection_position(position_threshold):
             False,
             False,
             False,
-            "none",
             True,
             True,
         ),
@@ -175,7 +174,6 @@ def test_feature_detection_position(position_threshold):
             False,
             False,
             False,
-            "none",
             True,
             False,
         ),
@@ -188,7 +186,6 @@ def test_feature_detection_position(position_threshold):
             False,
             False,
             False,
-            "none",
             True,
             False,
         ),
@@ -203,7 +200,6 @@ def test_filter_min_distance(
     add_x_coords,
     add_y_coords,
     add_z_coords,
-    PBC_flag,
     expect_feature_1,
     expect_feature_2,
 ):
@@ -229,12 +225,6 @@ def test_filter_min_distance(
         Whether or not to add y coordinates
     add_z_coords: bool
         Whether or not to add z coordinates
-    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
-        Sets whether to use periodic boundaries, and if so in which directions.
-        'none' means that we do not have periodic boundaries
-        'hdim_1' means that we are periodic along hdim1
-        'hdim_2' means that we are periodic along hdim2
-        'both' means that we are periodic along both horizontal dimensions
     expect_feature_1: bool
         True if we expect feature 1 to remain, false if we expect it gone.
     expect_feature_2: bool
@@ -302,7 +292,6 @@ def test_filter_min_distance(
         "dxy": dxy,
         "dz": dz,
         "min_distance": min_distance,
-        "PBC_flag": PBC_flag,
     }
 
     out_feats = feat_detect.filter_min_distance(**filter_dist_opts)

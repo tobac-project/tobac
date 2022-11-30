@@ -1,5 +1,7 @@
 """Internal tobac utilities
 """
+import numpy as np
+import skimage.measure
 
 
 def get_label_props_in_dict(labels):
@@ -16,8 +18,6 @@ def get_label_props_in_dict(labels):
         Output from skimage.measure.regionprops in dictionary
         format, where they key is the label number.
     """
-
-    import skimage.measure
 
     region_properties_raw = skimage.measure.regionprops(labels)
     region_properties_dict = {
@@ -49,8 +49,6 @@ def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
         A ValueError is raised if there are no regions in the region
         property dict.
     """
-
-    import numpy as np
 
     if len(region_property_dict) == 0:
         raise ValueError("No regions!")
@@ -508,3 +506,31 @@ def find_dataframe_vertical_coord(variable_dataframe, vertical_coord="auto"):
             return vertical_coord
         else:
             raise ValueError("Please specify vertical coordinate")
+
+
+@njit_if_available
+def calc_distance_coords(coords_1, coords_2):
+    """Function to calculate the distance between cartesian
+    coordinate set 1 and coordinate set 2.
+    Parameters
+    ----------
+    coords_1: 2D or 3D array-like
+        Set of coordinates passed in from trackpy of either (vdim, hdim_1, hdim_2)
+        coordinates or (hdim_1, hdim_2) coordinates.
+    coords_2: 2D or 3D array-like
+        Similar to coords_1, but for the second pair of coordinates
+    Returns
+    -------
+    float
+        Distance between coords_1 and coords_2 in cartesian space.
+    """
+
+    is_3D = len(coords_1) == 3
+
+    if not is_3D:
+        # Let's make the accounting easier.
+        coords_1 = np.array((0, coords_1[0], coords_1[1]))
+        coords_2 = np.array((0, coords_2[0], coords_2[1]))
+
+    deltas = np.abs(coords_1 - coords_2)
+    return np.sqrt(np.sum(deltas**2))
