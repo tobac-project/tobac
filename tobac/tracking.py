@@ -29,6 +29,8 @@ from . import utils as tb_utils
 from .utils import periodic_boundaries as pbc_utils
 from .utils import internal as internal_utils
 
+from packaging import version as pkgvsn
+
 
 def linking_trackpy(
     features,
@@ -308,6 +310,7 @@ def linking_trackpy(
             features_linking["vdim_adj"] = features_linking[found_vertical_coord] / dxy
 
         pos_columns_tp = ["vdim_adj", "hdim_1", "hdim_2"]
+
     else:
         pos_columns_tp = ["hdim_1", "hdim_2"]
 
@@ -338,13 +341,24 @@ def linking_trackpy(
             dist_func=dist_func,
         )
     elif method_linking == "predict":
+        if is_3D and pkgvsn.parse(tp.__version__) < pkgvsn.parse("0.6.0"):
+            raise ValueError(
+                "3D Predictive Tracking Only Supported with trackpy versions newer than 0.6.0."
+            )
 
         # avoid setting pos_columns by renaimng to default values to avoid trackpy bug
-        features.rename(columns={"hdim_1": "y", "hdim_2": "x"}, inplace=True)
+        if not is_3D:
+            features_linking.rename(
+                columns={"hdim_1": "y", "hdim_2": "x"}, inplace=True
+            )
+        else:
+            features_linking.rename(
+                columns={"hdim_1": "y", "hdim_2": "x", "vdim_adj": "z"}, inplace=True
+            )
 
         # generate list of features as input for df_link_iter to avoid bug in df_link
         features_linking_list = [
-            frame for i, frame in features.groupby("frame", sort=True)
+            frame for i, frame in features_linking.groupby("frame", sort=True)
         ]
 
         pred = tp.predict.NearestVelocityPredict(span=1)
@@ -358,19 +372,31 @@ def linking_trackpy(
             link_strategy="auto",
             adaptive_step=adaptive_step,
             adaptive_stop=adaptive_stop,
-            dist_func=dist_func
+            # dist_func=dist_func
             #                                 copy_features=False, diagnostics=False,
             #                                 hash_size=None, box_size=None, verify_integrity=True,
             #                                 retain_index=False
         )
         # recreate a single dataframe from the list
+
         trajectories_unfiltered = pd.concat(trajectories_unfiltered)
 
         # change to column names back
-        trajectories_unfiltered.rename(
-            columns={"y": "hdim_1", "x": "hdim_2"}, inplace=True
-        )
-        features.rename(columns={"y": "hdim_1", "x": "hdim_2"}, inplace=True)
+        if not is_3D:
+            trajectories_unfiltered.rename(
+                columns={"y": "hdim_1", "x": "hdim_2"}, inplace=True
+            )
+            features_linking.rename(
+                columns={"y": "hdim_1", "x": "hdim_2"}, inplace=True
+            )
+        else:
+            trajectories_unfiltered.rename(
+                columns={"y": "hdim_1", "x": "hdim_2", "z": "vdim_adj"}, inplace=True
+            )
+            features_linking.rename(
+                columns={"y": "hdim_1", "x": "hdim_2", "z": "vdim_adj"}, inplace=True
+            )
+
     else:
         raise ValueError("method_linking unknown")
 

@@ -13,6 +13,37 @@ import numpy as np
 import trackpy as tp
 
 
+def convert_cell_dtype_if_appropriate(output, expected_output):
+    """Helper function to convert datatype of output if
+    necessary. Fixes a bug in testing on some OS/Python versions that cause
+    default int types to be different
+
+    Parameters
+    ----------
+    output: pd.DataFrame
+        the pandas dataframe to base cell datatype off of
+    expected_output: pd.DataFrame
+        the pandas dataframe to change the cell datatype
+
+    Returns
+    -------
+    expected_output: pd.DataFrame
+        an adjusted dataframe with a matching int dtype
+    """
+
+    # if they are already the same datatype, can return.
+    if output["cell"].dtype == expected_output["cell"].dtype:
+        return expected_output
+
+    if output["cell"].dtype == np.int32:
+        expected_output["cell"] = expected_output["cell"].astype(np.int32)
+
+    if output["cell"].dtype == np.int64:
+        expected_output["cell"] = expected_output["cell"].astype(np.int64)
+
+    return expected_output
+
+
 def test_linking_trackpy():
     """Function to test ```tobac.tracking.linking_trackpy```
     Currently tests:
@@ -53,6 +84,9 @@ def test_linking_trackpy():
         ["hdim_1", "hdim_2", "frame", "feature", "time", "cell"]
     ]
 
+    expected_out_feature = convert_cell_dtype_if_appropriate(
+        actual_out_feature, expected_out_feature
+    )
     assert_frame_equal(
         expected_out_feature.sort_index(axis=1), actual_out_feature.sort_index(axis=1)
     )
@@ -84,7 +118,7 @@ def test_linking_trackpy():
         1000,
         dz=1000,
         v_max=10000,
-        method_linking="predict",
+        method_linking="random",
         PBC_flag="none",
         vertical_coord=None,
     )
@@ -92,6 +126,10 @@ def test_linking_trackpy():
     actual_out_feature = actual_out_feature[
         ["hdim_1", "hdim_2", "vdim", "frame", "feature", "time", "cell"]
     ]
+
+    expected_out_feature = convert_cell_dtype_if_appropriate(
+        actual_out_feature, expected_out_feature
+    )
 
     assert_frame_equal(
         expected_out_feature.sort_index(axis=1), actual_out_feature.sort_index(axis=1)
@@ -128,7 +166,7 @@ def test_linking_trackpy():
         min_h2=0,
         max_h2=10,
         v_max=4,
-        method_linking="predict",
+        method_linking="random",
         vertical_coord=None,
         PBC_flag="hdim_1",
     )
@@ -136,6 +174,9 @@ def test_linking_trackpy():
     actual_out_feature = actual_out_feature[
         ["hdim_1", "hdim_2", "vdim", "frame", "feature", "time", "cell"]
     ]
+    expected_out_feature = convert_cell_dtype_if_appropriate(
+        actual_out_feature, expected_out_feature
+    )
 
     assert_frame_equal(
         expected_out_feature.sort_index(axis=1), actual_out_feature.sort_index(axis=1)
@@ -172,7 +213,7 @@ def test_linking_trackpy():
         min_h2=0,
         max_h2=10,
         v_max=4,
-        method_linking="predict",
+        method_linking="random",
         vertical_coord=None,
         PBC_flag="hdim_2",
     )
@@ -180,6 +221,9 @@ def test_linking_trackpy():
     actual_out_feature = actual_out_feature[
         ["hdim_1", "hdim_2", "vdim", "frame", "feature", "time", "cell"]
     ]
+    expected_out_feature = convert_cell_dtype_if_appropriate(
+        actual_out_feature, expected_out_feature
+    )
 
     assert_frame_equal(
         expected_out_feature.sort_index(axis=1), actual_out_feature.sort_index(axis=1)
@@ -216,7 +260,7 @@ def test_linking_trackpy():
         min_h2=0,
         max_h2=10,
         v_max=5,
-        method_linking="predict",
+        method_linking="random",
         vertical_coord=None,
         PBC_flag="both",
     )
@@ -224,7 +268,9 @@ def test_linking_trackpy():
     actual_out_feature = actual_out_feature[
         ["hdim_1", "hdim_2", "vdim", "frame", "feature", "time", "cell"]
     ]
-
+    expected_out_feature = convert_cell_dtype_if_appropriate(
+        actual_out_feature, expected_out_feature
+    )
     assert_frame_equal(
         expected_out_feature.sort_index(axis=1), actual_out_feature.sort_index(axis=1)
     )
@@ -318,6 +364,9 @@ def test_3D_tracking_min_dist_z(
     actual_out_feature = tobac.tracking.linking_trackpy(**common_params)
     # Just want to remove the time_cell column here.
     actual_out_feature = actual_out_feature.drop("time_cell", axis=1)
+    expected_out_feature = convert_cell_dtype_if_appropriate(
+        actual_out_feature, expected_out_feature
+    )
     assert_frame_equal(
         expected_out_feature.sort_index(axis=1), actual_out_feature.sort_index(axis=1)
     )
@@ -412,7 +461,8 @@ def test_trackpy_predict():
 
     # sorting and dropping indices for comparison with the expected output
     output = output[["hdim_1", "hdim_2", "frame", "time", "feature", "cell"]]
-    expected_output["cell"] = expected_output["cell"].astype(np.int32)
+    expected_output = convert_cell_dtype_if_appropriate(output, expected_output)
+
     assert_frame_equal(expected_output.sort_index(), output.sort_index())
 
 
