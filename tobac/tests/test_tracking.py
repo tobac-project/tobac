@@ -1,8 +1,6 @@
 """
 Test for the trackpy tracking functions
-Who's watching the watchmen, basically.
 """
-from pyexpat import features
 import pytest
 import tobac.testing
 import tobac.tracking

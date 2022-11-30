@@ -231,7 +231,7 @@ def feature_position(
 
     # re-transform of any coords beyond the boundaries - (should be) general enough to work for any variety of PBC
     # as no x or y points will be beyond the boundaries if we haven't transformed them in the first place
-    if (PBC_flag == "hdim_1") or (PBC_flag == "hdim_2") or (PBC_flag == "both"):
+    if PBC_flag in pbc_options:
         if hdim1_index > y_max:
             hdim1_index = hdim1_index - y_max
 
