@@ -73,6 +73,18 @@ setup(
     ],
     license="BSD-3-Clause License",
     packages=[PACKAGE_NAME, PACKAGE_NAME + ".utils"],
-    install_requires=[],
+    install_requires=[
+        "numpy",
+        "scipy",
+        "scikit-image",
+        "scikit-learn",
+        "pandas",
+        "matplotlib",
+        "xarray",
+        "trackpy",
+    ],
+    test_requires=[
+        "pytest",
+    ],
     zip_safe=False,
 )
