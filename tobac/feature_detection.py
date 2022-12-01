@@ -519,10 +519,10 @@ def feature_detection_multithreshold_timestep(
                     zip(threshold, n_min_threshold), reverse=(target == "minimum")
                 )
             ]
-        else:
-            raise ValueError(
-                "If multiple values for n_min_threshold are given, please provide a dictionary or list."
-            )
+    else:
+        raise ValueError(
+            "If multiple values for n_min_threshold are given, please provide a dictionary or list."
+        )
 
     # create empty lists to store regions and features for individual timestep
     features_thresholds = pd.DataFrame()
