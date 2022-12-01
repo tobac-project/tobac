@@ -497,7 +497,7 @@ def feature_detection_multithreshold_timestep(
     if isinstance(n_min_threshold, list) or isinstance(n_min_threshold, dict):
         if len(n_min_threshold) is not len(threshold):
             raise ValueError(
-                "Number of elements in n_min_threshold needs to be the same as thresholds, if n_min_threshold is given as a dict or list."
+                "Number of elements in n_min_threshold needs to be the same as thresholds, if n_min_threshold is given as dict or list."
             )
 
         # check if thresholds in dict correspond to given thresholds
@@ -511,14 +511,16 @@ def feature_detection_multithreshold_timestep(
             # sort dictionary by keys (threshold values) so that they match sorted thresholds and get values for n_min_threshold
             sorted_dict = dict(sorted(n_min_threshold.items()))
             n_min_threshold = list(sorted_dict.values())
-        else:
+        elif isinstance(n_min_threshold, list):
             # if n_min_threshold is a list, sort it such that it still matches with the sorted threshold values
             n_min_threshold = [
                 x
                 for _, x in sorted(
-                    zip(threshold, n_min_threshold, reverse=(target == "minimum"))
+                    zip(threshold, n_min_threshold), reverse=(target == "minimum")
                 )
             ]
+        else:
+            raise ValueError('If multiple values for n_min_threshold are given, please provide a dictionary or list.')
 
     # create empty lists to store regions and features for individual timestep
     features_thresholds = pd.DataFrame()
