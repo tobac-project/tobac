@@ -519,7 +519,7 @@ def feature_detection_multithreshold_timestep(
                     zip(threshold, n_min_threshold), reverse=(target == "minimum")
                 )
             ]
-    else:
+    elif isinstance(n_min_threshold, np.ndarray):
         raise ValueError(
             "If multiple values for n_min_threshold are given, please provide a dictionary or list."
         )
