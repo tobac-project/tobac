@@ -493,22 +493,21 @@ def feature_detection_multithreshold_timestep(
     # sort thresholds from least extreme to most extreme
     threshold_sorted = sorted(threshold, reverse=(target == "minimum"))
 
-     # check if each threshold has a n_min_threshold (minimum nr. of grid cells associated with thresholds), if multiple n_min_threshold are given
-     if isinstance(n_min_threshold, list ) or isinstance(n_min_threshold, dict):
-         if len(n_min_threshold) is not len(threshold):
-             raise ValueError('Number of elements in n_min_threshold needs to be the same as thresholds, if n_min_threshold is given as a dict or list.')
+    # check if each threshold has a n_min_threshold (minimum nr. of grid cells associated with thresholds), if multiple n_min_threshold are given
+    if isinstance(n_min_threshold, list ) or isinstance(n_min_threshold, dict):
+        if len(n_min_threshold) is not len(threshold):
+            raise ValueError('Number of elements in n_min_threshold needs to be the same as thresholds, if n_min_threshold is given as a dict or list.' ) 
 
-         # check if thresholds in dict correspond to given thresholds
-         if isinstance(n_min_threshold, dict):
-             if threshold_sorted != sorted(n_min_threshold.keys(),reverse=(target == "minimum")):
-                 raise ValueError('Ambiguous input for threshold values. If n_min_threshold is given as a dict, the keys not to correspond to the values in threshold.')
+        # check if thresholds in dict correspond to given thresholds
+        if isinstance(n_min_threshold, dict):
+            if threshold_sorted != sorted(n_min_threshold.keys(),reverse=(target == "minimum")):
+                raise ValueError('Ambiguous input for threshold values. If n_min_threshold is given as a dict, the keys not to correspond to the values in threshold.')
             # sort dictionary by keys (threshold values) so that they match sorted thresholds and get values for n_min_threshold
             sorted_dict = dict(sorted(n_min_threshold.items()))
             n_min_threshold = list(sorted_dict.values())
-
-         else:
-             # if n_min_threshold is a list, sort it such that it still matches with the sorted threshold values
-             n_min_threshold = [x for _, x in sorted(zip(threshold, n_min_threshold, reverse=(target == "minimum")))]
+        else:
+            # if n_min_threshold is a list, sort it such that it still matches with the sorted threshold values
+            n_min_threshold = [x for _, x in sorted(zip(threshold, n_min_threshold, reverse=(target == "minimum")))]
 
     # create empty lists to store regions and features for individual timestep
     features_thresholds = pd.DataFrame()
@@ -518,11 +517,11 @@ def feature_detection_multithreshold_timestep(
         else:
             idx_start = 0
 
-         # select n_min_threshold for respective threshold, if multiple values are given
-         if isinstance(n_min_threshold, list ):
-             n_min_threshold_i  = n_min_threshold[i_threshold]
-         else:
-             n_min_threshold_i = n_min_threshold
+        # select n_min_threshold for respective threshold, if multiple values are given
+        if isinstance(n_min_threshold, list ):
+            n_min_threshold_i  = n_min_threshold[i_threshold]
+        else:
+            n_min_threshold_i = n_min_threshold
 
         features_threshold_i, regions_i = feature_detection_threshold(
             track_data,
