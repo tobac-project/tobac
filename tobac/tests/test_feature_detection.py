@@ -7,10 +7,15 @@ from pandas.testing import assert_frame_equal
 
 @pytest.mark.parametrize(
     "test_threshs, n_min_threshold,dxy, wavelength_filtering",
-    [([1.5],2, -1, None), ([1,1.5,2],2, 10000, (100 * 1000, 500 * 1000)), ([1,1.5,2], {1.5:2, 1:3, 2:1}, -1, None),  ([1,1.5,2], {1.5:2, 1:3, 2:1}, -1, None)  ],
+    [
+        ([1.5], 2, -1, None),
+        ([1, 1.5, 2], 2, 10000, (100 * 1000, 500 * 1000)),
+        ([1, 1.5, 2], {1.5: 2, 1: 3, 2: 1}, -1, None),
+        ([1, 1.5, 2], {1.5: 2, 1: 3, 2: 1}, -1, None),
+    ],
 )
 def test_feature_detection_multithreshold_timestep(
-        test_threshs,n_min_threshold, dxy, wavelength_filtering
+    test_threshs, n_min_threshold, dxy, wavelength_filtering
 ):
     """
     Tests ```tobac.feature_detection.feature_detection_multithreshold_timestep```
