@@ -541,17 +541,16 @@ def make_dataset_from_arr(
                 z_dim_num,
             )
         if has_time:
-            if is_3D:
-                out_arr_iris.add_dim_coord(
-                    iris.coords.DimCoord(
-                        pd.date_range(start=time_min, periods=time_num)
-                        .values.astype("datetime64[s]")
-                        .astype(int),
-                        standard_name="time",
-                        units="seconds since epoch",
-                    ),
-                    time_dim_num,
-                )
+            out_arr_iris.add_dim_coord(
+                iris.coords.DimCoord(
+                    pd.date_range(start=time_min, periods=time_num)
+                    .values.astype("datetime64[s]")
+                    .astype(int),
+                    standard_name="time",
+                    units="seconds since epoch",
+                ),
+                time_dim_num,
+            )
         return out_arr_iris
     else:
         raise ValueError("data_type must be 'xarray' or 'iris'")

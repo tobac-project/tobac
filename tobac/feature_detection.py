@@ -742,7 +742,8 @@ def feature_detection_multithreshold(
         only detect on values between z levels 10 and 29, you would set:
         {1: (10, 30)}.
     wavelength_filtering: tuple, optional
-       Minimum and maximum wavelength for spectral filtering in meter. Default is None.
+       Minimum and maximum wavelength for horizontal spectral filtering in meter.
+       Default is None.
 
     dz : float
         Constant vertical grid spacing (m), optional. If not specified
@@ -811,10 +812,12 @@ def feature_detection_multithreshold(
     # if wavelength_filtering is given, check that value cannot be larger than distances along x and y,
     # that the value cannot be smaller or equal to the grid spacing
     # and throw a warning if dxy and wavelengths have about the same order of magnitude
-    # TODO: fix wavelength filtering axes
     if wavelength_filtering is not None:
-        distance_x = field_in.shape[1] * (dxy)
-        distance_y = field_in.shape[2] * (dxy)
+        if is_3D:
+            raise ValueError("Wavelength filtering is not supported for 3D input data.")
+        else:
+            distance_x = field_in.shape[1] * (dxy)
+            distance_y = field_in.shape[2] * (dxy)
         distance = min(distance_x, distance_y)
 
         # make sure the smaller value is taken as the minimum and the larger as the maximum

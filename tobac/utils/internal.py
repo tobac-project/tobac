@@ -2,6 +2,7 @@
 """
 import numpy as np
 import skimage.measure
+import xarray as xr
 
 
 def get_label_props_in_dict(labels):
@@ -472,6 +473,33 @@ def find_vertical_axis_from_coord(variable_cube, vertical_coord="auto"):
         raise ValueError("Please specify vertical coordinate found in cube")
 
 
+def find_axis_from_coord(variable_cube, coord_name):
+    """Finds the axis number in an iris cube given a coordinate name.
+
+    Parameters
+    ----------
+    variable_cube: iris.cube
+        Input variable cube
+    coord_name: str
+        coordinate to look for
+
+    Returns
+    -------
+    axis_number: int
+        the number of the axis of the given coordinate, or -1 if the coordinate
+        is not found in the cube
+    """
+
+    list_coord_names = [coord.name() for coord in variable_cube.coords()]
+    all_matching_axes = list(set(list_coord_names) & set((coord_name,)))
+    if len(all_matching_axes) == 1:
+        return variable_cube.coord_dims(all_matching_axes[0])[0]
+    elif len(all_matching_axes) > 1:
+        raise ValueError("Too many axes matched.")
+    else:
+        return -1
+
+
 def find_dataframe_vertical_coord(variable_dataframe, vertical_coord="auto"):
     """Function to find the vertical coordinate in the iris cube
 
@@ -534,3 +562,76 @@ def calc_distance_coords(coords_1, coords_2):
 
     deltas = np.abs(coords_1 - coords_2)
     return np.sqrt(np.sum(deltas**2))
+
+
+def find_hdim_axes_3D(field_in, vertical_coord="auto"):
+    """Finds what the hdim axes are given a 3D (including z) or
+    4D (including z and time) dataset.
+
+    Parameters
+    ----------
+    field_in: iris cube or xarray dataset
+        Input field, can be 3D or 4D
+    vertical_coord: str
+        The name of the vertical coord, or "auto", which will attempt to find
+        the vertical coordinate name
+
+    Returns
+    -------
+    (hdim_1_axis, hdim_2_axis): (int, int)
+        The axes for hdim_1 and hdim_2
+
+    """
+    from iris import cube as iris_cube
+
+    if type(field_in) is iris_cube.Cube:
+        return find_hdim_axes_3D_iris(field_in, vertical_coord)
+    elif type(field_in) is xr.DataArray:
+        raise NotImplementedError("Xarray find_hdim_axes_3D not implemented")
+    else:
+        raise ValueError("Unknown data type: " + type(field_in).__name__)
+
+
+def find_hdim_axes_3D_iris(field_in, vertical_coord=None):
+    """Finds what the hdim axes are given a 3D (including z) or
+    4D (including z and time) dataset.
+
+    Parameters
+    ----------
+    field_in: iris cube
+        Input field, can be 3D or 4D
+    vertical_coord: str
+        The name of the vertical coord, or "auto", which will attempt to find
+        the vertical coordinate name
+
+    Returns
+    -------
+    (hdim_1_axis, hdim_2_axis): (int, int)
+        The axes for hdim_1 and hdim_2
+    """
+
+    time_axis = find_axis_from_coord(field_in, "time")
+    try:
+        vertical_axis = find_vertical_axis_from_coord(
+            field_in, vertical_coord=vertical_coord
+        )
+        ndim_vertical = field_in.coord_dims(vertical_axis)
+        if len(ndim_vertical) > 1:
+            raise ValueError("please specify 1 dimensional vertical coordinate")
+        vertical_coord_axis = ndim_vertical[0]
+
+    except ValueError:
+        # if we don't have a vertical coordinate, and we are 3D or lower
+        # that is okay.
+        if (field_in.ndim == 3 and time_axis != -1) or field_in.ndim < 3:
+            vertical_coord_axis = -1
+        else:
+            raise ValueError("No suitable vertical coordinate found")
+    # Once we know the vertical coordinate, we can resolve the
+    # horizontal coordinates
+
+    all_axes = np.arange(0, field_in.ndim)
+    output_vals = tuple(
+        all_axes[np.logical_not(np.isin(all_axes, [time_axis, vertical_coord_axis]))]
+    )
+    return output_vals
