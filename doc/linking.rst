@@ -10,13 +10,13 @@ This approach only takes the point-like position of the feature, e.g. determined
         .. image:: images/linking_prediction.png
             :width: 500 px
 
-If there is only one feature in the search radius, the linking can happen immediately. If there are none, the track ends at this timestep. If there are more options, trackpy performs a decision process. Assume there are :math:`N` features in the current and also :math:`N` in the next timeframe and they are all within each search radius. This means there are :math:`N!` options for linking. Each of these options means that :math:`N` distances between the center of the search radius of a current feature and a feature from the next time frame :math:`\delta_n, n=1, 2, ..., N` are traveled by the features. Trackpy will calculate the net squared distance
+If there is only one feature in the search radius, the linking can happen immediately. If there are none, the track ends at this timestep. If there are more options, trackpy performs a decision process. Assume there are :math:`N` features in the current and also :math:`N` in the next timeframe and they are all within each search radius. This means there are :math:`N!` options for linking. Each of these options means that :math:`N` distances between the center of the search radius of a current feature and a feature from the next time frame :math:`\delta_n, n=1, 2, ..., N` are traveled by the features. Trackpy will calculate the sum of the squared distances
 
 .. math::
 
-   \sum_{n=1}^{N} \delta_n
+   \sum_{n=1}^{N} \delta_n.
    
-for every option and the lowest value is used for linking. As an example, consider these two crossing features:
+For every option the lowest value of this sum is used for linking. As an example, consider these two crossing features:
   
         .. image:: images/cross.png
             :width: 500 px
