@@ -14,7 +14,7 @@ If there is only one feature in the search radius, the linking can happen immedi
 
 .. math::
 
-   \sum_{n=1}^{N} \delta_n.
+   \sum_{n=1}^{N} \delta_n^2.
    
 For every option the lowest value of this sum is used for linking. As an example, consider these two crossing features:
   
