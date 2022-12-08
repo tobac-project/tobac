@@ -509,8 +509,8 @@ def feature_detection_multithreshold_timestep(
                     "Ambiguous input for threshold values. If n_min_threshold is given as a dict, the keys not to correspond to the values in threshold."
                 )
             # sort dictionary by keys (threshold values) so that they match sorted thresholds and get values for n_min_threshold
-            sorted_dict = dict(sorted(n_min_threshold.items()))
-            n_min_threshold = list(sorted_dict.values())
+            n_min_threshold = [n_min_threshold[threshold] for threshold in threshold_sorted]
+
         elif isinstance(n_min_threshold, list):
             # if n_min_threshold is a list, sort it such that it still matches with the sorted threshold values
             n_min_threshold = [
@@ -519,9 +519,9 @@ def feature_detection_multithreshold_timestep(
                     zip(threshold, n_min_threshold), reverse=(target == "minimum")
                 )
             ]
-    elif isinstance(n_min_threshold, np.ndarray):
+    elif not isinstance(n_min_threshold, list) and not isinstance(n_min_threshold, dict) and not isinstance(n_min_threshold, int):
         raise ValueError(
-            "If multiple values for n_min_threshold are given, please provide a dictionary or list."
+            "N_min_threshold must be an integer. If multiple values for n_min_threshold are given, please provide a dictionary or list."
         )
 
     # create empty lists to store regions and features for individual timestep
