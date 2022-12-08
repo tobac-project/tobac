@@ -6,7 +6,7 @@ from pandas.testing import assert_frame_equal
 
 
 @pytest.mark.parametrize(
-    "test_threshs, n_min_threshold,dxy, wavelength_filtering",
+    "test_threshs, n_min_threshold, dxy, wavelength_filtering",
     [
         ([1.5], 2, -1, None),
         ([1, 1.5, 2], 2, 10000, (100 * 1000, 500 * 1000)),
