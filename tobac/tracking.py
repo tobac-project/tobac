@@ -279,11 +279,9 @@ def linking_trackpy(
 
         # change to column names back
         trajectories_unfiltered.rename(
-        columns={"y": "hdim_1", "x": "hdim_2"}, inplace=True
+            columns={"y": "hdim_1", "x": "hdim_2"}, inplace=True
         )
-        trajectories_unfiltered.rename(
-            columns={"_y": "y", "_x": "x"}, inplace=True
-        )
+        trajectories_unfiltered.rename(columns={"_y": "y", "_x": "x"}, inplace=True)
         features.rename(columns={"y": "hdim_1", "x": "hdim_2"}, inplace=True)
         features.rename(columns={"_y": "y", "_x": "x"}, inplace=True)
     else:
