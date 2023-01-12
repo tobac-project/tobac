@@ -185,5 +185,5 @@ def test_argument_logic():
     )
     with pytest.raises(ValueError):
         output = tobac.linking_trackpy(
-            cell_1, None, 1, 1, d_min=None, d_max=None, v_max=None 
+            cell_1, None, 1, 1, d_min=None, d_max=None, v_max=None
         )
