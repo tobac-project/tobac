@@ -178,6 +178,9 @@ def linking_trackpy(
     #    from trackpy import filter_stubs
     #    from .utils import add_coordinates
 
+    if (v_max is None) and (d_min is None) and (d_max is None):
+        raise ValueError("Neither one of d_min, d_max, v_max has been provided. Exactly one of these arguments must be specified.")
+
     # calculate search range based on timestep and grid spacing
     if v_max is not None:
         search_range = int(dt * v_max / dxy)
