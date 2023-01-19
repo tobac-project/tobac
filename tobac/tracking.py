@@ -330,9 +330,10 @@ def linking_trackpy(
                 + "), setting cell number to "
                 + str(cell_number_unassigned)
             )
-            trajectories_unfiltered.loc[
-                trajectories_unfiltered["cell"] == cell, "cell"
-            ] = cell_number_unassigned
+            stub_cell_nums.append(cell)
+    trajectories_unfiltered.loc[
+        trajectories_unfiltered["cell"].isin(stub_cell_nums), "cell"
+    ] = cell_number_unassigned
 
     trajectories_filtered = trajectories_unfiltered
 
