@@ -49,7 +49,10 @@ def test_linking_trackpy():
         expected_out_feature.sort_index(axis=1), actual_out_feature.sort_index(axis=1)
     )
 
-    # Check that we only add two columns, and all the other columns are the same as the inpit features
+    # Check that we only add two columns, and all the other columns are the same as the input features
+    assert len(actual_out_feature.columns.tolist()) == len(
+        set(actual_out_feature.columns.tolist())
+    )
     assert set(actual_out_feature.columns.tolist()) - set(
         test_feature.columns.tolist()
     ) == {"cell"}
@@ -148,7 +151,7 @@ def test_trackpy_predict():
     assert_frame_equal(expected_output.sort_index(), output.sort_index())
 
     # Check that we only add two columns, and all the other columns are the same as the input features
-    # expected_new_columns = set(features.columns.tolist()) - set(output.columns.tolist())
+    assert len(output.columns.tolist()) == len(set(output.columns.tolist()))
     assert set(output.columns.tolist()) - set(features.columns.tolist()) == {"cell"}
 
 
