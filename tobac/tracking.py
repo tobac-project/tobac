@@ -86,7 +86,14 @@ def linking_trackpy(
         Time resolution of tracked features.
 
     dxy : float
-        Grid spacing of the input data.
+        Horizontal grid spacing of the input data.
+
+    dz : float
+        Constant vertical grid spacing (m), optional. If not specified
+        and the input is 3D, this function requires that `vertical_coord` is available
+        in the `features` input. If you specify a value here, this function assumes
+        that it is the constant z spacing between points, even if ```vertical_coord```
+        is specified.
 
     d_max : float, optional
         Maximum search range
