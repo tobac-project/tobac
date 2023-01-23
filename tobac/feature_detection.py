@@ -935,14 +935,10 @@ def filter_min_distance(
     features:      pandas DataFrame
                    features
     dxy:           float
-        Constant horzontal grid spacing (m), optional. If not specified,
-        this function requires that ```x_coordinate_name``` and
-        ```y_coordinate_name``` are available in `features`. If you specify a
-        value here, this function assumes that it is the x/y spacing between points
-        even if ```x_coordinate_name``` and ```y_coordinate_name``` are specified.
+        Constant horzontal grid spacing (m).
     dz: float
         Constant vertical grid spacing (m), optional. If not specified
-        and the input is 3D, this function requires that `altitude` is available
+        and the input is 3D, this function requires that `z_coordinate_name` is available
         in the `features` input. If you specify a value here, this function assumes
         that it is the constant z spacing between points, even if ```z_coordinate_name```
         is specified.
@@ -950,10 +946,10 @@ def filter_min_distance(
         minimum distance between detected features (m)
     x_coordinate_name: str
         The name of the x coordinate to calculate distance based on in meters.
-        This is typically `projection_x_coordinate`
+        This is typically `projection_x_coordinate`. Currently unused.
     y_coordinate_name: str
         The name of the y coordinate to calculate distance based on in meters.
-        This is typically `projection_y_coordinate`
+        This is typically `projection_y_coordinate`. Currently unused.
     z_coordinate_name: str or None
         The name of the z coordinate to calculate distance based on in meters.
         This is typically `altitude`. If `auto`, tries to auto-detect.
@@ -965,6 +961,9 @@ def filter_min_distance(
     """
 
     from itertools import combinations
+
+    if dxy is None:
+        raise NotImplementedError("dxy currently must be set.")
 
     remove_list_distance = []
 
