@@ -433,6 +433,13 @@ def feature_detection_threshold(
             # [hdim1_indices,hdim2_indices]= np.nonzero(region)
             # write region for individual threshold and feature to dict
 
+            """
+            This block of code creates 1D coordinates from the input 
+            2D or 3D coordinates. Dealing with 1D coordinates is substantially
+            faster than having to carry around (x, y, z) or (x, y) as 
+            separate arrays. This also makes comparisons in remove_parents
+            substantially faster. 
+            """
             if is_3D:
                 region_i = list(
                     zip(
@@ -442,7 +449,7 @@ def feature_detection_threshold(
                     )
                 )
             else:
-                region_i = np.array(hdim1_indices * x_max + hdim2_indices)
+                region_i = list(hdim1_indices * x_max + hdim2_indices)
 
             regions[cur_idx + idx_start] = region_i
             # Determine feature position for region by one of the following methods:
