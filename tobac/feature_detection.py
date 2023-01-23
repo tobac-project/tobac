@@ -726,7 +726,7 @@ def feature_detection_multithreshold(
         Feature id to start with. Default is 1.
 
     vertical_coord: str
-        Name or axis number of the vertical coordinate. If 'auto', tries to auto-detect.
+        Name of the vertical coordinate. If 'auto', tries to auto-detect.
         It looks for the coordinate or the dimension name corresponding
         to the string.
     vertical_axis: int or None.
@@ -788,15 +788,26 @@ def feature_detection_multithreshold(
     if is_3D:
         # We need to determine the time axis so that we can determine the
         # vertical axis in each timestep if vertical_axis is not none.
+
+        if vertical_axis is not None and vertical_coord is not None:
+            raise ValueError(
+                "Only one of vertical_axis or vertical_coord should be set."
+            )
+
         if vertical_axis is not None:
             # We only need to adjust the axis number if the time axis
             # is a lower axis number than the specified vertical coordinate.
             if ndim_time < vertical_axis:
                 vertical_axis = vertical_axis - 1
         else:
-            # We need to determine vertical axis
-            vertical_axis = internal_utils.find_vertical_axis_from_coord(
+            # We need to determine vertical axis.
+            # first, find the name of the vertical axis
+            vertical_axis_name = internal_utils.find_vertical_axis_from_coord(
                 field_in, vertical_coord=vertical_coord
+            )
+            # then find our axis number.
+            vertical_axis = internal_utils.find_axis_from_coord(
+                field_in, vertical_axis_name
             )
 
     # create empty list to store features for all timesteps
