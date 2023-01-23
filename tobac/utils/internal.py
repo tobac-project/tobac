@@ -560,7 +560,7 @@ def calc_distance_coords(coords_1, coords_2):
         coords_1 = np.array((0, coords_1[0], coords_1[1]))
         coords_2 = np.array((0, coords_2[0], coords_2[1]))
 
-    deltas = np.abs(coords_1 - coords_2)
+    deltas = coords_1 - coords_2
     return np.sqrt(np.sum(deltas**2))
 
 
