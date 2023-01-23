@@ -392,27 +392,30 @@ def test_feature_detection_multiple_z_coords(
 
 def test_feature_detection_setting_multiple():
     """Tests that an error is raised when vertical_axis and vertical_coord
-    are both set. 
+    are both set.
     """
-    test_data = np.zeros((1,5,5,5))
+    test_data = np.zeros((1, 5, 5, 5))
     test_data[0, 0:5, 0:5, 0:5] = 3
     common_dset_opts = {
         "in_arr": test_data,
         "data_type": "iris",
-        "z_dim_name": "test",
+        "z_dim_name": "altitude",
     }
     test_data_iris = tbtest.make_dataset_from_arr(
-            time_dim_num=0, z_dim_num=1, y_dim_num=2, x_dim_num=3, **common_dset_opts
-        )
+        time_dim_num=0, z_dim_num=1, y_dim_num=2, x_dim_num=3, **common_dset_opts
+    )
 
     with pytest.raises(ValueError):
         _ = feat_detect.feature_detection_multithreshold(
-            field_in = test_data_iris,
-            dxy = 10000,
-            threshold=[1.5,],
-            vertical_coord="test",
-            vertical_axis = 1
+            field_in=test_data_iris,
+            dxy=10000,
+            threshold=[
+                1.5,
+            ],
+            vertical_coord="altitude",
+            vertical_axis=1,
         )
+
 
 @pytest.mark.parametrize(
     "test_threshs, target",
