@@ -3,6 +3,7 @@
 """
 import logging
 from . import internal as internal_utils
+import numpy as np
 
 
 def add_coordinates(t, variable_cube):
@@ -26,7 +27,6 @@ def add_coordinates(t, variable_cube):
 
     """
 
-    import numpy as np
     from scipy.interpolate import interp2d, interp1d
 
     logging.debug("start adding coordinates from cube")
@@ -151,7 +151,6 @@ def add_coordinates(t, variable_cube):
 def add_coordinates_3D(
     t, variable_cube, vertical_coord="auto", assume_coords_fixed_in_time=True
 ):
-    import numpy as np
 
     """Function adding coordinates from the tracking cube to the trajectories
         for the 3D case: time, longitude&latitude, x&y dimensions, and altitude
@@ -160,16 +159,16 @@ def add_coordinates_3D(
     ----------
     t:             pandas DataFrame
                    trajectories/features
-    variable_cube: iris.cube.Cube 
-        Cube (usually the one you are tracking on) at least conaining the dimension of 'time'. 
-        Typically, 'longitude','latitude','x_projection_coordinate','y_projection_coordinate', 
+    variable_cube: iris.cube.Cube
+        Cube (usually the one you are tracking on) at least conaining the dimension of 'time'.
+        Typically, 'longitude','latitude','x_projection_coordinate','y_projection_coordinate',
         and 'altitude' (if 3D) are the coordinates that we expect, although this function
-        will happily interpolate along any dimension coordinates you give. 
+        will happily interpolate along any dimension coordinates you give.
     vertical_coord: str or int
         Name or axis number of the vertical coordinate. If 'auto', tries to auto-detect.
         If it is a string, it looks for the coordinate or the dimension name corresponding
         to the string. If it is an int, it assumes that it is the vertical axis.
-        Note that if you only have a 2D or 3D coordinate for altitude, you must 
+        Note that if you only have a 2D or 3D coordinate for altitude, you must
         pass in an int.
     assume_coords_fixed_in_time: bool
         If true, it assumes that the coordinates are fixed in time, even if the
@@ -179,7 +178,7 @@ def add_coordinates_3D(
 
     Returns
     -------
-    pandas DataFrame 
+    pandas DataFrame
                    trajectories with added coordinates
     """
     from scipy.interpolate import interp2d, interp1d, interpn
@@ -209,7 +208,6 @@ def add_coordinates_3D(
     # chose right dimension for horizontal and vertical axes based on time dimension:
     ndim_time = variable_cube.coord_dims("time")[0]
 
-    # TODO: move this to a function, this is duplicated from segmentation.
     if type(vertical_coord) is int:
         ndim_vertical = vertical_coord
         vertical_axis = None
@@ -219,14 +217,9 @@ def add_coordinates_3D(
         )
 
     if vertical_axis is not None:
-        ndim_vertical = variable_cube.coord_dims(vertical_axis)
-        if len(ndim_vertical) > 1:
-            raise ValueError(
-                "Vertical coordinate detected as multidimensional. Please pass in "
-                "axis number of vertical data."
-            )
-        else:
-            ndim_vertical = ndim_vertical[0]
+        ndim_vertical = internal_utils.find_axis_from_coord(
+            variable_cube, vertical_axis
+        )
 
     # We need to figure out the axis number of hdim_1 and hdim_2.
     ndim_hdim_1 = None
@@ -395,7 +388,6 @@ def get_spacings(field_in, grid_spacing=None, time_spacing=None):
 
     """
 
-    import numpy as np
     from copy import deepcopy
 
     # set horizontal grid spacing of input data
@@ -471,7 +463,6 @@ def spectral_filtering(
         return_transfer_function is True.
     """
 
-    import numpy as np
     from scipy import signal
     from scipy import fft
 
@@ -543,7 +534,6 @@ def combine_tobac_feats(list_of_feats, preserve_old_feat_nums=None):
         One combined DataFrame.
     """
     import pandas as pd
-    import numpy as np
 
     # first, let's just combine these.
     combined_df = pd.concat(list_of_feats)
