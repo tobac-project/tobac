@@ -220,6 +220,8 @@ def add_coordinates_3D(
         ndim_vertical = internal_utils.find_axis_from_coord(
             variable_cube, vertical_axis
         )
+        if ndim_vertical is None:
+            raise ValueError("Vertical Coordinate not found")
 
     # We need to figure out the axis number of hdim_1 and hdim_2.
     ndim_hdim_1 = None

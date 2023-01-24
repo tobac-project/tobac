@@ -816,6 +816,8 @@ def feature_detection_multithreshold(
             vertical_axis = internal_utils.find_axis_from_coord(
                 field_in, vertical_axis_name
             )
+            if vertical_axis is None:
+                raise ValueError("Cannot find vertical coordinate.")
 
     # create empty list to store features for all timesteps
     list_features_timesteps = []

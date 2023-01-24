@@ -497,7 +497,7 @@ def find_axis_from_coord(variable_cube, coord_name):
     elif len(all_matching_axes) > 1:
         raise ValueError("Too many axes matched.")
     else:
-        return -1
+        return None
 
 
 def find_dataframe_vertical_coord(variable_dataframe, vertical_coord="auto"):
@@ -623,7 +623,7 @@ def find_hdim_axes_3D_iris(field_in, vertical_coord=None):
     except ValueError:
         # if we don't have a vertical coordinate, and we are 3D or lower
         # that is okay.
-        if (field_in.ndim == 3 and time_axis != -1) or field_in.ndim < 3:
+        if (field_in.ndim == 3 and time_axis is not None) or field_in.ndim < 3:
             vertical_coord_axis = -1
         else:
             raise ValueError("No suitable vertical coordinate found")
