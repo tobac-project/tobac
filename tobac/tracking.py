@@ -29,6 +29,8 @@ from . import utils as tb_utils
 from .utils import internal as internal_utils
 
 from packaging import version as pkgvsn
+import trackpy as tp
+from copy import deepcopy
 
 
 def linking_trackpy(
@@ -168,7 +170,8 @@ def linking_trackpy(
         Default is -1
 
     vertical_coord: str
-        Name of the vertical coordinate in meters. If 'auto', tries to auto-detect.
+        Name of the vertical coordinate. The vertical coordinate used
+        must be meters. If 'auto', tries to auto-detect.
         It looks for the coordinate or the dimension name corresponding
         to the string. To use `dz`, set this to `None`.
 
@@ -194,8 +197,6 @@ def linking_trackpy(
 
     #    from trackpy import link_df
     #    from trackpy import link_df
-    import trackpy as tp
-    from copy import deepcopy
 
     #    from trackpy import filter_stubs
     #    from .utils import add_coordinates
