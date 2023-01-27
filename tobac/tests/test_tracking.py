@@ -164,3 +164,26 @@ def test_tracking_extrapolation():
         output = tobac.linking_trackpy(
             cell_1, None, 1, 1, d_max=100, method_linking="predict", extrapolate=1
         )
+
+
+def test_argument_logic():
+    """Tests whether missing arguments are handled correctly,
+    i.e. whether a ValueError is raised if neither d_min, d_max nor v_max have
+    been provided to tobac.linking_trackpy.
+    """
+    cell_1 = tobac.testing.generate_single_feature(
+        1,
+        1,
+        min_h1=0,
+        max_h1=100,
+        min_h2=0,
+        max_h2=100,
+        frame_start=0,
+        num_frames=5,
+        spd_h1=20,
+        spd_h2=20,
+    )
+    with pytest.raises(ValueError):
+        output = tobac.linking_trackpy(
+            cell_1, None, 1, 1, d_min=None, d_max=None, v_max=None
+        )
