@@ -801,12 +801,7 @@ def feature_detection_multithreshold(
                 "Only one of vertical_axis or vertical_coord should be set."
             )
 
-        if vertical_axis is not None:
-            # We only need to adjust the axis number if the time axis
-            # is a lower axis number than the specified vertical coordinate.
-            if ndim_time < vertical_axis:
-                vertical_axis = vertical_axis - 1
-        else:
+        if vertical_axis is None:
             # We need to determine vertical axis.
             # first, find the name of the vertical axis
             vertical_axis_name = internal_utils.find_vertical_axis_from_coord(
@@ -816,8 +811,16 @@ def feature_detection_multithreshold(
             vertical_axis = internal_utils.find_axis_from_coord(
                 field_in, vertical_axis_name
             )
+
             if vertical_axis is None:
                 raise ValueError("Cannot find vertical coordinate.")
+
+        # adjust vertical axis number down based on time
+        if ndim_time < vertical_axis:
+            # We only need to adjust the axis number if the time axis
+            # is a lower axis number than the specified vertical coordinate.
+
+            vertical_axis = vertical_axis - 1
 
     # create empty list to store features for all timesteps
     list_features_timesteps = []
