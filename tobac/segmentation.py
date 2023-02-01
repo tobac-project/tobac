@@ -375,17 +375,10 @@ def segmentation_timestep(
         # horizontal coordinates
         # To make things easier, we will transpose the axes
         # so that they are consistent.
-        if vertical_coord_axis == 0:
-            hdim_1_axis = 1
-            hdim_2_axis = 2
-        elif vertical_coord_axis == 1:
-            hdim_1_axis = 0
-            hdim_2_axis = 2
-        elif vertical_coord_axis == 2:
-            hdim_1_axis = 0
-            hdim_2_axis = 1
-        else:
-            raise ValueError("Segmentation routine can't find vertical coordinate.")
+
+        hdim_1_axis, hdim_2_axis = internal_utils.find_hdim_axes_3D(
+            field_in, vertical_axis=vertical_coord_axis
+        )
     else:
         raise ValueError(
             "Segmentation routine only possible with 2 or 3 spatial dimensions"
