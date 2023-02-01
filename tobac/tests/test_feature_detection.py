@@ -380,7 +380,7 @@ def test_feature_detection_multiple_z_coords(
     else:
         # Expecting a raise
         with pytest.raises(ValueError):
-            out_seg_mask, out_df = feat_detect.feature_detection_multithreshold(
+            out_df = feat_detect.feature_detection_multithreshold(
                 field_in=test_data_iris,
                 dxy=test_dxy,
                 threshold=[

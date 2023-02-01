@@ -601,8 +601,6 @@ def make_feature_blob(
 
     shape: str('rectangle'), optional
         The shape of the blob that is added. For now, this is just rectangle
-        'oval' adds an oval/spherical bubble with constant amplitude `amplitude`. We assume that the
-        sizes specified are the diameters in each dimension.
         'rectangle' adds a rectangular/rectangular prism bubble with constant amplitude `amplitude`.
         Default is "rectangle"
 
