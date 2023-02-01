@@ -738,7 +738,7 @@ def feature_detection_multithreshold(
         to the string.
     vertical_axis: int or None.
         The vertical axis number of the data. If None, uses vertical_coord
-        to determine axis.
+        to determine axis. This must be >=0.
     detect_subset: dict-like or None
         Whether to run feature detection on only a subset of the data.
         If this is not None, it will subset the grid that we run feature detection
@@ -815,6 +815,8 @@ def feature_detection_multithreshold(
             if vertical_axis is None:
                 raise ValueError("Cannot find vertical coordinate.")
 
+        if vertical_axis < 0:
+            raise ValueError("vertical_axis must be >=0.")
         # adjust vertical axis number down based on time
         if ndim_time < vertical_axis:
             # We only need to adjust the axis number if the time axis
