@@ -9,6 +9,7 @@ from collections import Counter
 import pandas as pd
 from pandas.testing import assert_frame_equal
 import datetime
+import numpy as np
 
 
 def lists_equal_without_order(a, b):
@@ -29,7 +30,6 @@ def test_make_feature_blob():
     Currently runs the following tests:
     Creates a blob in the right location and cuts off
     """
-    import numpy as np
 
     # 2D test
     out_blob = tbtest.make_feature_blob(
@@ -311,7 +311,6 @@ def test_generate_grid_coords(min_max_coords, lengths, expected_outs):
     expected_outs: array-like, either 1D, 2D, or 3D
         The expected output
     """
-    import numpy as np
 
     out_grid = tbtest.generate_grid_coords(min_max_coords, lengths)
     assert np.all(np.isclose(out_grid, np.array(expected_outs)))
