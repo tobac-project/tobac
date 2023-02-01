@@ -344,7 +344,7 @@ def feature_detection_threshold(
             )
         else:
             selem = np.ones((n_erosion_threshold, n_erosion_threshold))
-        mask = binary_erosion(mask, selem).astype(bool)
+        mask = binary_erosion(mask, selem)
         # detect individual regions, label  and count the number of pixels included:
     labels, num_labels = label(mask, background=0, return_num=True)
     if not is_3D:
