@@ -58,10 +58,9 @@ The project is currently being extended by several contributors to include addit
    :maxdepth: 2
 
    merge_split
-   merge_split_out_vars
 
 .. toctree::
    :caption: API Reference
-   :maxdepth: 2
+   :maxdepth: 3
 
    tobac
