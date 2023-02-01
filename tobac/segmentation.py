@@ -590,7 +590,6 @@ def segmentation(
     # loop over individual input timesteps for segmentation:
     # OR do segmentation on single timestep
     field_time = field.slices_over("time")
-    time_len = len(field.coord("time").points[:])
 
     for i, field_i in enumerate(field_time):
         time_i = field_i.coord("time").units.num2date(field_i.coord("time").points[0])

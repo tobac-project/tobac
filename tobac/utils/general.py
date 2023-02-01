@@ -283,7 +283,6 @@ def add_coordinates_3D(
 
         # interpolate 3D coordinates:
         elif var_coord.ndim == 3:
-            curr_coord_dims = variable_cube.coord_dims(coord)
             first_dim = coord_to_ax[variable_cube.coord_dims(coord)[0]]
             second_dim = coord_to_ax[variable_cube.coord_dims(coord)[1]]
             third_dim = coord_to_ax[variable_cube.coord_dims(coord)[2]]
