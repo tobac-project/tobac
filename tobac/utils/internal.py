@@ -486,7 +486,7 @@ def find_axis_from_coord(variable_cube, coord_name):
     Returns
     -------
     axis_number: int
-        the number of the axis of the given coordinate, or -1 if the coordinate
+        the number of the axis of the given coordinate, or None if the coordinate
         is not found in the cube
     """
 
