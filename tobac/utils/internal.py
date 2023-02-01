@@ -564,7 +564,7 @@ def calc_distance_coords(coords_1, coords_2):
     return np.sqrt(np.sum(deltas**2))
 
 
-def find_hdim_axes_3D(field_in, vertical_coord="auto"):
+def find_hdim_axes_3D(field_in, vertical_coord="auto", vertical_axis=None):
     """Finds what the hdim axes are given a 3D (including z) or
     4D (including z and time) dataset.
 
@@ -575,6 +575,10 @@ def find_hdim_axes_3D(field_in, vertical_coord="auto"):
     vertical_coord: str
         The name of the vertical coord, or "auto", which will attempt to find
         the vertical coordinate name
+    vertical_axis: int or None
+        The axis number of the vertical coordinate, or None. Note
+        that only one of vertical_axis or vertical_coord can be set,
+        unless vertical_coord="auto".
 
     Returns
     -------
@@ -584,15 +588,19 @@ def find_hdim_axes_3D(field_in, vertical_coord="auto"):
     """
     from iris import cube as iris_cube
 
+    if vertical_coord is not None and vertical_axis is not None:
+        if vertical_coord != "auto":
+            raise ValueError("Cannot set both vertical_coord and vertical_axis.")
+
     if type(field_in) is iris_cube.Cube:
-        return find_hdim_axes_3D_iris(field_in, vertical_coord)
+        return find_hdim_axes_3D_iris(field_in, vertical_coord, vertical_axis)
     elif type(field_in) is xr.DataArray:
         raise NotImplementedError("Xarray find_hdim_axes_3D not implemented")
     else:
         raise ValueError("Unknown data type: " + type(field_in).__name__)
 
 
-def find_hdim_axes_3D_iris(field_in, vertical_coord=None):
+def find_hdim_axes_3D_iris(field_in, vertical_coord=None, vertical_axis=None):
     """Finds what the hdim axes are given a 3D (including z) or
     4D (including z and time) dataset.
 
@@ -600,9 +608,13 @@ def find_hdim_axes_3D_iris(field_in, vertical_coord=None):
     ----------
     field_in: iris cube
         Input field, can be 3D or 4D
-    vertical_coord: str
+    vertical_coord: str or None
         The name of the vertical coord, or "auto", which will attempt to find
         the vertical coordinate name
+    vertical_axis: int or None
+        The axis number of the vertical coordinate, or None. Note
+        that only one of vertical_axis or vertical_coord can be set,
+        unless vertical_coord="auto".
 
     Returns
     -------
@@ -610,21 +622,36 @@ def find_hdim_axes_3D_iris(field_in, vertical_coord=None):
         The axes for hdim_1 and hdim_2
     """
 
-    time_axis = find_axis_from_coord(field_in, "time")
-    try:
-        vertical_axis = find_vertical_axis_from_coord(
-            field_in, vertical_coord=vertical_coord
-        )
-        ndim_vertical = field_in.coord_dims(vertical_axis)
-        if len(ndim_vertical) > 1:
-            raise ValueError("please specify 1 dimensional vertical coordinate")
-        vertical_coord_axis = ndim_vertical[0]
+    if vertical_coord is not None and vertical_axis is not None:
+        if vertical_coord != "auto":
+            raise ValueError("Cannot set both vertical_coord and vertical_axis.")
 
-    except ValueError:
+    time_axis = find_axis_from_coord(field_in, "time")
+    if vertical_axis is not None:
+        vertical_coord_axis = vertical_axis
+        vert_coord_found = True
+    else:
+        try:
+            vertical_axis = find_vertical_axis_from_coord(
+                field_in, vertical_coord=vertical_coord
+            )
+        except ValueError:
+            vert_coord_found = False
+        else:
+            vert_coord_found = True
+            ndim_vertical = field_in.coord_dims(vertical_axis)
+            if len(ndim_vertical) > 1:
+                raise ValueError(
+                    "please specify 1 dimensional vertical coordinate."
+                    " Current vertical coordinates: {0}".format(ndim_vertical)
+                )
+            vertical_coord_axis = ndim_vertical[0]
+
+    if not vert_coord_found:
         # if we don't have a vertical coordinate, and we are 3D or lower
         # that is okay.
         if (field_in.ndim == 3 and time_axis is not None) or field_in.ndim < 3:
-            vertical_coord_axis = -1
+            vertical_coord_axis = None
         else:
             raise ValueError("No suitable vertical coordinate found")
     # Once we know the vertical coordinate, we can resolve the

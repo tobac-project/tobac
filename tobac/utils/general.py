@@ -224,14 +224,9 @@ def add_coordinates_3D(
             raise ValueError("Vertical Coordinate not found")
 
     # We need to figure out the axis number of hdim_1 and hdim_2.
-    ndim_hdim_1 = None
-    ndim_hdim_2 = None
-    for i in range(len(variable_cube.shape)):
-        if i != ndim_time and i != ndim_vertical:
-            if ndim_hdim_1 is None:
-                ndim_hdim_1 = i
-            else:
-                ndim_hdim_2 = i
+    ndim_hdim_1, ndim_hdim_2 = internal_utils.find_hdim_axes_3D(
+        variable_cube, vertical_axis=ndim_vertical
+    )
 
     if ndim_hdim_1 is None or ndim_hdim_2 is None:
         raise ValueError("Could not find hdim coordinates.")
