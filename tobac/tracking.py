@@ -3,18 +3,18 @@
 The individual features and associated area/volumes identified in
 each timestep have to be linked into trajectories to analyse
 the time evolution of their properties for a better understanding of
-the underlying physical processes. 
+the underlying physical processes.
 The implementations are structured in a way that allows for the future
 addition of more complex tracking methods recording a more complex
 network of relationships between features at different points in
-time. 
+time.
 
 References
 ----------
 .. Heikenfeld, M., Marinescu, P. J., Christensen, M.,
    Watson-Parris, D., Senf, F., van den Heever, S. C.
-   & Stier, P. (2019). tobac 1.2: towards a flexible 
-   framework for tracking and analysis of clouds in 
+   & Stier, P. (2019). tobac 1.2: towards a flexible
+   framework for tracking and analysis of clouds in
    diverse datasets. Geoscientific Model Development,
    12(11), 4551-4570.
 """
@@ -233,12 +233,12 @@ def linking_trackpy(
             tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE = subnetwork_size
 
     # deep copy to preserve features field:
-    features_linking = deepcopy(features)
+    features = deepcopy(features)
 
     if method_linking == "random":
         #     link features into trajectories:
         trajectories_unfiltered = tp.link(
-            features_linking,
+            features,
             search_range=search_range,
             memory=memory,
             t_column="frame",
@@ -251,6 +251,9 @@ def linking_trackpy(
     elif method_linking == "predict":
 
         # avoid setting pos_columns by renaimng to default values to avoid trackpy bug
+        features.rename(
+            columns={"y": "__temp_y_coord", "x": "__temp_x_coord"}, inplace=True
+        )
         features.rename(columns={"hdim_1": "y", "hdim_2": "x"}, inplace=True)
 
         # generate list of features as input for df_link_iter to avoid bug in df_link
@@ -280,7 +283,9 @@ def linking_trackpy(
         trajectories_unfiltered.rename(
             columns={"y": "hdim_1", "x": "hdim_2"}, inplace=True
         )
-        features.rename(columns={"y": "hdim_1", "x": "hdim_2"}, inplace=True)
+        trajectories_unfiltered.rename(
+            columns={"__temp_y_coord": "y", "__temp_x_coord": "x"}, inplace=True
+        )
     else:
         raise ValueError("method_linking unknown")
 
