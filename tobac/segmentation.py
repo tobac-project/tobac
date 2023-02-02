@@ -458,14 +458,9 @@ def segmentation_timestep(
 
     if transposed_data:
         if vertical_coord_axis == 1:
-            segmentation_mask = np.transpose(
-                segmentation_mask, axes=(1, 0, 2)
-            )
+            segmentation_mask = np.transpose(segmentation_mask, axes=(1, 0, 2))
         elif vertical_coord_axis == 2:
-            segmentation_mask = np.transpose(
-                segmentation_mask, axes=(1, 2, 0)
-            )
-
+            segmentation_mask = np.transpose(segmentation_mask, axes=(1, 2, 0))
 
     # Write resulting mask into cube for output
     segmentation_out.data = segmentation_mask
