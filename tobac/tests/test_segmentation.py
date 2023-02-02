@@ -333,7 +333,7 @@ def test_different_z_axes(
         )
     elif vertical_axis_num == 2:
         test_data_iris = testing.make_dataset_from_arr(
-            z_dim_num=1, y_dim_num=0, x_dim_num=1, **common_dset_opts
+            z_dim_num=2, y_dim_num=0, x_dim_num=1, **common_dset_opts
         )
 
     # Generate dummy feature dataset only on the first feature.
