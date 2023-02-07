@@ -3,18 +3,18 @@
 The individual features and associated area/volumes identified in
 each timestep have to be linked into trajectories to analyse
 the time evolution of their properties for a better understanding of
-the underlying physical processes. 
+the underlying physical processes.
 The implementations are structured in a way that allows for the future
 addition of more complex tracking methods recording a more complex
 network of relationships between features at different points in
-time. 
+time.
 
 References
 ----------
 .. Heikenfeld, M., Marinescu, P. J., Christensen, M.,
    Watson-Parris, D., Senf, F., van den Heever, S. C.
-   & Stier, P. (2019). tobac 1.2: towards a flexible 
-   framework for tracking and analysis of clouds in 
+   & Stier, P. (2019). tobac 1.2: towards a flexible
+   framework for tracking and analysis of clouds in
    diverse datasets. Geoscientific Model Development,
    12(11), 4551-4570.
 """
@@ -280,6 +280,7 @@ def linking_trackpy(
 
     # deep copy to preserve features field:
     features_linking = deepcopy(features)
+
     # check if we are 3D or not
     if is_3D:
         # If we are 3D, we need to convert the vertical
@@ -302,7 +303,7 @@ def linking_trackpy(
     if method_linking == "random":
         #     link features into trajectories:
         trajectories_unfiltered = tp.link(
-            features_linking,
+            features,
             search_range=search_range,
             memory=memory,
             t_column="frame",
@@ -319,15 +320,14 @@ def linking_trackpy(
                 "3D Predictive Tracking Only Supported with trackpy versions newer than 0.6.0."
             )
 
-        # avoid setting pos_columns by renaimng to default values to avoid trackpy bug
-        if not is_3D:
-            features_linking.rename(
-                columns={"hdim_1": "y", "hdim_2": "x"}, inplace=True
-            )
-        else:
-            features_linking.rename(
-                columns={"hdim_1": "y", "hdim_2": "x", "vdim_adj": "z"}, inplace=True
-            )
+        # avoid setting pos_columns by renaming to default values to avoid trackpy bug
+        features.rename(
+            columns={"y": "__temp_y_coord", "x": "__temp_x_coord", "z": "__temp_z_coord"}, inplace=True
+        )
+
+        features_linking.rename(
+            columns={"hdim_1": "y", "hdim_2": "x", "vdim_adj": "z"}, inplace=True
+        )
 
         # generate list of features as input for df_link_iter to avoid bug in df_link
         features_linking_list = [
@@ -355,20 +355,12 @@ def linking_trackpy(
         trajectories_unfiltered = pd.concat(trajectories_unfiltered)
 
         # change to column names back
-        if not is_3D:
-            trajectories_unfiltered.rename(
-                columns={"y": "hdim_1", "x": "hdim_2"}, inplace=True
-            )
-            features_linking.rename(
-                columns={"y": "hdim_1", "x": "hdim_2"}, inplace=True
-            )
-        else:
-            trajectories_unfiltered.rename(
-                columns={"y": "hdim_1", "x": "hdim_2", "z": "vdim_adj"}, inplace=True
-            )
-            features_linking.rename(
-                columns={"y": "hdim_1", "x": "hdim_2", "z": "vdim_adj"}, inplace=True
-            )
+        trajectories_unfiltered.rename(
+            columns={"y": "hdim_1", "x": "hdim_2", "z": "vdim_adj"}, inplace=True
+        )
+        trajectories_unfiltered.rename(
+            columns={"__temp_y_coord": "y", "__temp_x_coord": "x", "__temp_z_coord": "z"}, inplace=True
+        )
 
     else:
         raise ValueError("method_linking unknown")

@@ -1,5 +1,16 @@
 ### Tobac Changelog
 
+_**Version 1.4.1:**_
+
+**Bug fixes**
+
+- Fixed a bug with predictive tracking that would duplicate column names if the input dataset has coordinates x and/or y [#217](https://github.com/tobac-project/tobac/pull/217)
+- Set extrapolate parameter to 0 in example notebooks to prevent not implemented error [#217](https://github.com/tobac-project/tobac/pull/217)
+
+**Documentation**
+
+- Regenerated example notebooks so that they are up to date for the present version [#233](https://github.com/tobac-project/tobac/pull/233)
+
 _**Version 1.4.0:**_
 
 **Enhancements**
