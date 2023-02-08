@@ -1,7 +1,12 @@
 """General tobac utilities
 
 """
+import copy
 import logging
+from . import internal as internal_utils
+import numpy as np
+import sklearn
+import sklearn.neighbors
 
 
 def add_coordinates(t, variable_cube):
@@ -25,7 +30,6 @@ def add_coordinates(t, variable_cube):
 
     """
 
-    import numpy as np
     from scipy.interpolate import interp2d, interp1d
 
     logging.debug("start adding coordinates from cube")
@@ -71,7 +75,6 @@ def add_coordinates(t, variable_cube):
         logging.debug("adding coord: " + coord)
         # interpolate 2D coordinates:
         if variable_cube.coord(coord).ndim == 1:
-
             if variable_cube.coord_dims(coord) == (hdim_1,):
                 f = interp1d(
                     dimvec_1,
@@ -90,7 +93,6 @@ def add_coordinates(t, variable_cube):
 
         # interpolate 2D coordinates:
         elif variable_cube.coord(coord).ndim == 2:
-
             if variable_cube.coord_dims(coord) == (hdim_1, hdim_2):
                 f = interp2d(dimvec_2, dimvec_1, variable_cube.coord(coord).points)
                 coordinate_points = [f(a, b) for a, b in zip(t["hdim_2"], t["hdim_1"])]
@@ -103,7 +105,6 @@ def add_coordinates(t, variable_cube):
         # mainly workaround for wrf latitude and longitude (to be fixed in future)
 
         elif variable_cube.coord(coord).ndim == 3:
-
             if variable_cube.coord_dims(coord) == (ndim_time, hdim_1, hdim_2):
                 f = interp2d(
                     dimvec_2, dimvec_1, variable_cube[0, :, :].coord(coord).points
@@ -230,7 +231,6 @@ def get_spacings(field_in, grid_spacing=None, time_spacing=None):
 
     """
 
-    import numpy as np
     from copy import deepcopy
 
     # set horizontal grid spacing of input data
@@ -306,7 +306,6 @@ def spectral_filtering(
         return_transfer_function is True.
     """
 
-    import numpy as np
     from scipy import signal
     from scipy import fft
 
@@ -378,7 +377,6 @@ def combine_tobac_feats(list_of_feats, preserve_old_feat_nums=None):
         One combined DataFrame.
     """
     import pandas as pd
-    import numpy as np
 
     # first, let's just combine these.
     combined_df = pd.concat(list_of_feats)
@@ -402,3 +400,88 @@ def combine_tobac_feats(list_of_feats, preserve_old_feat_nums=None):
 
     combined_df = combined_df.reset_index(drop=True)
     return combined_df
+
+
+@internal_utils.irispandas_to_xarray
+def transform_feature_points(
+    features,
+    new_dataset,
+    latitude_name="auto",
+    longitude_name="auto",
+):
+    """Function to transform input feature dataset horizontal grid points to a different grid.
+    The typical use case for this function is to transform detected features to perform
+    segmentation on a different grid.
+
+    The existing feature dataset must have some latitude/longitude coordinates associated
+    with each feature, and the new_dataset must have latitude/longitude available with
+    the same name.
+
+    Parameters
+    ----------
+    features: pd.DataFrame
+        Input feature dataframe
+    new_dataset: iris.cube.Cube or xarray
+        The dataset to transform the
+    latitude_name: str
+        The name of the latitude coordinate. If "auto", tries to auto-detect.
+    longitude_name: str
+        The name of the longitude coordinate. If "auto", tries to auto-detect.
+
+    Returns
+    -------
+    transformed_features: pd.DataFrame
+        A new feature dataframe, with the coordinates transformed to
+        the new grid, suitable for use in segmentation
+
+    """
+
+    lat_coord, lon_coord = internal_utils.detect_latlon_coord_name(
+        new_dataset, latitude_name=latitude_name, longitude_name=longitude_name
+    )
+
+    if lat_coord not in features or lon_coord not in features:
+        raise ValueError("Cannot find latitude and/or longitude coordinate")
+
+    lat_vals_new = new_dataset[lat_coord].values
+    lon_vals_new = new_dataset[lon_coord].values
+
+    if len(lat_vals_new.shape) != len(lon_vals_new.shape):
+        raise ValueError(
+            "Cannot work with lat/lon coordinates of unequal dimensionality"
+        )
+
+    # the lat/lons must be a 2D grid, so if they aren't, make them one.
+    if len(lat_vals_new.shape) == 1:
+        lat_vals_new, lon_vals_new = np.meshgrid(lat_vals_new, lon_vals_new)
+
+    # we have to convert to radians because scikit-learn's haversine
+    # requires that the input be in radians.
+    flat_lats = np.deg2rad(lat_vals_new.flatten())
+    flat_lons = np.deg2rad(lon_vals_new.flatten())
+    ll_tree = sklearn.neighbors.BallTree(
+        np.array([flat_lats, flat_lons]).T, metric="haversine"
+    )
+    new_h1 = list()
+    new_h2 = list()
+    # there is almost certainly room for speedup in here.
+    for index in features["index"]:
+        dist, closest_pt = ll_tree.query(
+            [
+                [
+                    np.deg2rad(features["latitude"][index]),
+                    np.deg2rad(features["longitude"][index]),
+                ]
+            ]
+        )
+        unraveled_h2, unraveled_h1 = np.unravel_index(
+            closest_pt[0][0], np.shape(lat_vals_new)
+        )
+
+        new_h1.append(unraveled_h1)
+        new_h2.append(unraveled_h2)
+    ret_features = copy.deepcopy(features)
+    ret_features["hdim_1"] = ("index", new_h1)
+    ret_features["hdim_2"] = ("index", new_h2)
+
+    return ret_features

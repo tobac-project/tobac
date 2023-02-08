@@ -7,6 +7,7 @@ import pandas as pd
 import pandas.testing as pd_test
 import numpy as np
 from scipy import fft
+import xarray as xr
 
 
 def test_spectral_filtering():
@@ -92,3 +93,29 @@ def test_combine_tobac_feats():
     )
     assert np.all(list(combined_feat["old_feat_column"].values) == [1, 1])
     assert np.all(list(combined_feat["feature"].values) == [1, 2])
+
+
+def test_transform_feature_points():
+    """Tests tobac.utils.general.transform_feature_points"""
+
+    orig_feat_df_1 = tb_test.generate_single_feature(0, 95)
+    orig_feat_df_2 = tb_test.generate_single_feature(5, 105)
+
+    orig_feat_df = tb_utils.combine_tobac_feats([orig_feat_df_1, orig_feat_df_2])
+
+    orig_feat_df["latitude"] = orig_feat_df["hdim_1"]
+    orig_feat_df["longitude"] = orig_feat_df["hdim_2"]
+
+    test_lat = np.linspace(-25, 24, 50)
+    test_lon = np.linspace(90, 139, 50)
+    in_xr = xr.Dataset(
+        {"data": (("latitude", "longitude"), np.empty((50, 50)))},
+        coords={"latitude": test_lat, "longitude": test_lon},
+    )
+
+    new_feat_df = tb_utils.general.transform_feature_points(
+        orig_feat_df, in_xr["data"].to_iris()
+    )
+
+    assert np.all(new_feat_df["hdim_1"] == [25, 30])
+    assert np.all(new_feat_df["hdim_2"] == [5, 15])

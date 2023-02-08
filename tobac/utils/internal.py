@@ -407,3 +407,46 @@ def xarray_to_irispandas(func):
         return output
 
     return wrapper
+
+
+@irispandas_to_xarray
+def detect_latlon_coord_name(in_dataset, latitude_name="auto", longitude_name="auto"):
+    """Function to detect the name of latitude/longitude coordinates
+
+    Parameters
+    ----------
+    in_dataset: iris.cube.Cube, xarray.Dataset, or xarray.Dataarray
+        Input dataset to detect names from
+    latitude_name: str
+        The name of the latitude coordinate. If "auto", tries to auto-detect.
+    longitude_name: str
+        The name of the longitude coordinate. If "auto", tries to auto-detect.
+
+    Returns
+    -------
+    lat_name, lon_name: tuple(str)
+        the detected names of the latitude and longitude coordinates. If
+        coordinate is not detected, returns None for that coordinate.
+
+    """
+    out_lat = None
+    out_lon = None
+    test_lat_names = ["lat", "latitude"]
+    test_lon_names = ["lon", "long", "longitude"]
+    if latitude_name != "auto":
+        if latitude_name in in_dataset.coords:
+            out_lat = latitude_name
+    else:
+        for test_lat_name in test_lat_names:
+            if test_lat_name in in_dataset.coords:
+                out_lat = test_lat_name
+                break
+    if longitude_name != "auto":
+        if longitude_name in in_dataset.coords:
+            out_lon = longitude_name
+    else:
+        for test_lon_name in test_lon_names:
+            if test_lon_name in in_dataset.coords:
+                out_lon = test_lon_name
+                break
+    return out_lat, out_lon
