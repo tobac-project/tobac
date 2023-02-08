@@ -1,6 +1,7 @@
 .. _Refereed Publications:
+
 Refereed Publications
-==========
+=====================
 
 **List of peer-reviewed publications in which tobac has been used:**
 
