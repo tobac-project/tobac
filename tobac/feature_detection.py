@@ -90,12 +90,15 @@ def feature_position(
 
     Returns
     -------
-    float
-            (if 3D) feature position along vertical dimension
-    float
-            feature position along 1st horizontal dimension
-    float
-            feature position along 2nd horizontal dimension
+    2-element or 3-element tuple of floats
+        If input data is 2D, this will be a 2-element tuple of floats,
+        where the first element is the feature position along the first
+        horizontal dimension and the second element is the feature position
+        along the second horizontal dimension.
+        If input data is 3D, this will be a 3-element tuple of floats, where
+        the first element is the feature position along the vertical dimension
+        and the second two elements are the feature position on the first and
+        second horizontal dimensions.
     """
 
     # are we 3D? if so, True.
@@ -115,6 +118,8 @@ def feature_position(
             region_bbox[1] : region_bbox[4],
             region_bbox[2] : region_bbox[5],
         ]
+    else:
+        raise ValueError("region_bbox must have 4 or 6 elements.")
 
     if position_threshold == "center":
         # get position as geometrical centre of identified region:
@@ -255,7 +260,7 @@ def feature_detection_threshold(
     n_min_threshold=0,
     min_distance=0,
     idx_start=0,
-    vertical_axis=None,
+    vertical_axis=0,
 ):
     """Find features based on individual threshold value.
 
@@ -379,7 +384,7 @@ def feature_detection_threshold(
         list_features_threshold = list()
         # create empty dict to store regions for individual features for this threshold
         regions = dict()
-        # create emptry list of features to remove from parent threshold value
+        # create empty list of features to remove from parent threshold value
 
         region = np.empty(mask.shape, dtype=bool)
         # loop over individual regions:
@@ -441,15 +446,14 @@ def feature_detection_threshold(
             substantially faster. 
             """
             if is_3D:
-                region_i = list(
-                    zip(
-                        hdim1_indices * (x_max + 1) * (z_max + 1)
-                        + hdim2_indices * (z_max + 1)
-                        + vdim_indices
-                    )
+                region_i = np.ravel_multi_index(
+                    (hdim1_indices, hdim2_indices, vdim_indices),
+                    (y_max + 1, x_max + 1, z_max + 1),
                 )
             else:
-                region_i = list(hdim1_indices * x_max + hdim2_indices)
+                region_i = np.ravel_multi_index(
+                    (hdim1_indices, hdim2_indices), (y_max + 1, x_max + 1)
+                )
 
             regions[cur_idx + idx_start] = region_i
             # Determine feature position for region by one of the following methods:
@@ -601,7 +605,8 @@ def feature_detection_multithreshold_timestep(
 
     if min_num != 0:
         warnings.warn(
-            "min_num parameter has no effect and will be deprecated in a future version of tobac. Please use n_min_threshold instead",
+            "min_num parameter has no effect and will be deprecated in a future version of tobac. "
+            "Please use n_min_threshold instead",
             FutureWarning,
         )
 
@@ -726,7 +731,6 @@ def feature_detection_multithreshold(
     wavelength_filtering=None,
     dz=None,
 ):
-
     """Perform feature detection based on contiguous regions.
 
     The regions are above/below a threshold.
@@ -1049,9 +1053,9 @@ def filter_min_distance(
         )
 
     # create list of tuples with all combinations of features at the timestep:
-    indeces = combinations(features.index.values, 2)
+    indices = combinations(features.index.values, 2)
     # Loop over combinations to remove features that are closer together than min_distance and keep larger one (either higher threshold or larger area)
-    for index_1, index_2 in indeces:
+    for index_1, index_2 in indices:
         if index_1 is not index_2:
             if is_3D:
                 if dz is not None:
