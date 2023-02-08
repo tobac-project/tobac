@@ -55,7 +55,6 @@ def linking_trackpy(
     cell_number_unassigned=-1,
     vertical_coord="auto",
 ):
-
     """Perform Linking of features in trajectories.
 
     The linking determines which of the features detected in a specific
@@ -289,7 +288,6 @@ def linking_trackpy(
         if dz is not None:
             features_linking["vdim_adj"] = features_linking["vdim"] * dz / dxy
         else:
-            vertical_coord = found_vertical_coord
             features_linking["vdim_adj"] = features_linking[found_vertical_coord] / dxy
 
         pos_columns_tp = ["vdim_adj", "hdim_1", "hdim_2"]
@@ -303,7 +301,7 @@ def linking_trackpy(
     if method_linking == "random":
         #     link features into trajectories:
         trajectories_unfiltered = tp.link(
-            features,
+            features_linking,
             search_range=search_range,
             memory=memory,
             t_column="frame",
@@ -322,7 +320,12 @@ def linking_trackpy(
 
         # avoid setting pos_columns by renaming to default values to avoid trackpy bug
         features.rename(
-            columns={"y": "__temp_y_coord", "x": "__temp_x_coord", "z": "__temp_z_coord"}, inplace=True
+            columns={
+                "y": "__temp_y_coord",
+                "x": "__temp_x_coord",
+                "z": "__temp_z_coord",
+            },
+            inplace=True,
         )
 
         features_linking.rename(
@@ -359,7 +362,12 @@ def linking_trackpy(
             columns={"y": "hdim_1", "x": "hdim_2", "z": "vdim_adj"}, inplace=True
         )
         trajectories_unfiltered.rename(
-            columns={"__temp_y_coord": "y", "__temp_x_coord": "x", "__temp_z_coord": "z"}, inplace=True
+            columns={
+                "__temp_y_coord": "y",
+                "__temp_x_coord": "x",
+                "__temp_z_coord": "z",
+            },
+            inplace=True,
         )
 
     else:
@@ -483,7 +491,6 @@ def fill_gaps(
     # group by cell number and perform process for each cell individually:
     t_grouped = t.groupby("cell")
     for cell, track in t_grouped:
-
         # Setup interpolator from existing points (of order given as keyword)
         frame_in = track["frame"].values
         hdim_1_in = track["hdim_1"].values
