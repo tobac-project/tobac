@@ -33,6 +33,7 @@ References
 import logging
 
 import skimage
+import numpy as np
 
 from . import utils as tb_utils
 from .utils import internal as internal_utils
@@ -69,7 +70,8 @@ def add_markers(features, marker_arr, seed_3D_flag, seed_3D_size=5, level=None):
     2D or 3D array like (same type as `marker_arr`)
         The marker array
     """
-    import numpy as np
+    if seed_3D_flag not in ["column", "box"]:
+        raise ValueError('seed_3D_flag must be either "column" or "box"')
 
     # What marker number is the background? Assumed 0.
     bg_marker = 0
@@ -357,7 +359,6 @@ def segmentation_timestep(
     # from skimage.segmentation import random_walker
     from scipy.ndimage import distance_transform_edt
     from copy import deepcopy
-    import numpy as np
 
     # How many dimensions are we using?
     if field_in.ndim == 2:

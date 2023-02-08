@@ -319,7 +319,7 @@ def linking_trackpy(
             )
 
         # avoid setting pos_columns by renaming to default values to avoid trackpy bug
-        features.rename(
+        features_linking.rename(
             columns={
                 "y": "__temp_y_coord",
                 "x": "__temp_x_coord",
