@@ -405,8 +405,8 @@ def test_combine_tobac_feats():
 def test_transform_feature_points():
     """Tests tobac.utils.general.transform_feature_points"""
 
-    orig_feat_df_1 = tb_test.generate_single_feature(0, 95)
-    orig_feat_df_2 = tb_test.generate_single_feature(5, 105)
+    orig_feat_df_1 = tb_test.generate_single_feature(0, 95, max_h1=1000, max_h2=1000)
+    orig_feat_df_2 = tb_test.generate_single_feature(5, 105, max_h1=1000, max_h2=1000)
 
     orig_feat_df = tb_utils.combine_tobac_feats([orig_feat_df_1, orig_feat_df_2])
 
