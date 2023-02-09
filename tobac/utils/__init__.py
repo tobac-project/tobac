@@ -3,6 +3,7 @@ from .general import (
     get_spacings,
     get_bounding_box,
     combine_tobac_feats,
+    transform_feature_points,
 )
 from .mask import (
     mask_cell,
