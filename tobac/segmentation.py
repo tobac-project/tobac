@@ -31,6 +31,7 @@ References
 """
 
 import logging
+import numpy as np
 
 
 def segmentation_3D(
@@ -166,7 +167,6 @@ def segmentation_timestep(
     # from skimage.segmentation import random_walker
     from scipy.ndimage import distance_transform_edt
     from copy import deepcopy
-    import numpy as np
 
     # copy feature dataframe for output
     features_out = deepcopy(features_in)
@@ -370,7 +370,7 @@ def segmentation(
     field_time = field.slices_over("time")
     for i, field_i in enumerate(field_time):
         time_i = field_i.coord("time").units.num2date(field_i.coord("time").points[0])
-        features_i = features.loc[features["time"] == time_i]
+        features_i = features.loc[features["time"] == np.datetime64(time_i)]
         segmentation_out_i, features_out_i = segmentation_timestep(
             field_i,
             features_i,

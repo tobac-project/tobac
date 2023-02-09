@@ -7,6 +7,7 @@ from . import internal as internal_utils
 import numpy as np
 import sklearn
 import sklearn.neighbors
+import datetime
 
 
 def add_coordinates(t, variable_cube):
@@ -408,6 +409,8 @@ def transform_feature_points(
     new_dataset,
     latitude_name="auto",
     longitude_name="auto",
+    max_time_away=datetime.timedelta(minutes=1),
+    max_space_away=20000,
 ):
     """Function to transform input feature dataset horizontal grid points to a different grid.
     The typical use case for this function is to transform detected features to perform
@@ -427,6 +430,10 @@ def transform_feature_points(
         The name of the latitude coordinate. If "auto", tries to auto-detect.
     longitude_name: str
         The name of the longitude coordinate. If "auto", tries to auto-detect.
+    max_time_away: datetime.timedelta
+        The maximum time delta to associate feature points away from.
+    max_space_away: float
+        The maximum horizontal distance (in meters) to transform features to.
 
     Returns
     -------
@@ -435,6 +442,7 @@ def transform_feature_points(
         the new grid, suitable for use in segmentation
 
     """
+    from .. import analysis as tb_analysis
 
     lat_coord, lon_coord = internal_utils.detect_latlon_coord_name(
         new_dataset, latitude_name=latitude_name, longitude_name=longitude_name
@@ -492,5 +500,30 @@ def transform_feature_points(
     ret_features = copy.deepcopy(features)
     ret_features["hdim_1"] = ("index", new_h1)
     ret_features["hdim_2"] = ("index", new_h2)
+
+    # find where distances are too large and drop them.
+    new_lat = lat_vals_new[new_h1, new_h2]
+    new_lon = lon_vals_new[new_h1, new_h2]
+    dist_apart = (
+        tb_analysis.haversine(
+            new_lat, new_lon, features[lat_coord], features[lon_coord]
+        )
+        * 1000.0
+    )
+    ret_features = ret_features.where(dist_apart < max_space_away, drop=True)
+
+    # force times to match, where appropriate.
+    if "time" in new_dataset.coords:
+        # this is necessary due to the iris/xarray/pandas weirdness that we have.
+        old_feat_times = ret_features["time"].astype("datetime64[s]")
+        closest_times = np.min(np.abs(old_feat_times - new_dataset["time"]), axis=1)
+        closest_time_locs = np.abs(old_feat_times - new_dataset["time"]).argmin(axis=1)
+        # force to seconds to deal with iris not accepting ms
+        ret_features["time"] = new_dataset["time"][closest_time_locs].astype(
+            "datetime64[s]"
+        )
+        ret_features = ret_features.where(
+            closest_times < np.timedelta64(max_time_away), drop=True
+        )
 
     return ret_features

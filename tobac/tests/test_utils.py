@@ -119,3 +119,55 @@ def test_transform_feature_points():
 
     assert np.all(new_feat_df["hdim_1"] == [25, 30])
     assert np.all(new_feat_df["hdim_2"] == [5, 15])
+
+    # now test max space apart
+    test_lat = np.linspace(-49, 0, 50)
+    in_xr = xr.Dataset(
+        {"data": (("latitude", "longitude"), np.empty((50, 50)))},
+        coords={"latitude": test_lat, "longitude": test_lon},
+    )
+
+    new_feat_df = tb_utils.general.transform_feature_points(
+        orig_feat_df, in_xr["data"].to_iris(), max_space_away=20000
+    )
+
+    assert np.all(new_feat_df["hdim_1"] == [49])
+    assert np.all(new_feat_df["hdim_2"] == [5])
+
+    # now test max time apart
+    test_lat = np.linspace(-25, 24, 50)
+    in_xr = xr.Dataset(
+        {"data": (("time", "latitude", "longitude"), np.empty((2, 50, 50)))},
+        coords={
+            "latitude": test_lat,
+            "longitude": test_lon,
+            "time": [
+                datetime.datetime(2023, 1, 1, 0, 0),
+                datetime.datetime(2023, 1, 1, 0, 5),
+            ],
+        },
+    )
+
+    orig_feat_df["time"] = datetime.datetime(2023, 1, 1, 0, 0, 5)
+    new_feat_df = tb_utils.general.transform_feature_points(
+        orig_feat_df,
+        in_xr["data"].to_iris(),
+        max_time_away=datetime.timedelta(minutes=1),
+    )
+    # we should still have both features, but they should have the new time.
+    assert np.all(new_feat_df["hdim_1"] == [25, 30])
+    assert np.all(new_feat_df["hdim_2"] == [5, 15])
+    assert np.all(
+        new_feat_df["time"]
+        == [datetime.datetime(2023, 1, 1, 0, 0), datetime.datetime(2023, 1, 1, 0, 0)]
+    )
+
+    orig_feat_df["time"] = datetime.datetime(2023, 1, 2, 0, 0)
+    new_feat_df = tb_utils.general.transform_feature_points(
+        orig_feat_df,
+        in_xr["data"].to_iris(),
+        max_time_away=datetime.timedelta(minutes=1),
+    )
+
+    assert np.all(new_feat_df["hdim_1"] == [])
+    assert np.all(new_feat_df["hdim_2"] == [])
