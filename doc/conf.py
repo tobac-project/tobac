@@ -54,6 +54,7 @@ autodoc_mock_imports = [
     "cartopy",
     "trackpy",
     "numba",
+    "skimage",
 ]
 
 sys.path.insert(0, os.path.abspath("../"))
