@@ -453,14 +453,23 @@ def transform_feature_points(
 
     # the lat/lons must be a 2D grid, so if they aren't, make them one.
     if len(lat_vals_new.shape) == 1:
-        lat_vals_new, lon_vals_new = np.meshgrid(lat_vals_new, lon_vals_new)
+        lon_vals_new, lat_vals_new = np.meshgrid(lon_vals_new, lat_vals_new)
 
     # we have to convert to radians because scikit-learn's haversine
     # requires that the input be in radians.
     flat_lats = np.deg2rad(lat_vals_new.flatten())
     flat_lons = np.deg2rad(lon_vals_new.flatten())
+
+    # we have to drop NaN values.
+    either_nan = np.logical_or(np.isnan(flat_lats), np.isnan(flat_lons))
+    # we need to remember where these values are in the array so that we can
+    # appropriately unravel them.
+    loc_arr = np.arange(0, len(flat_lats), 1)
+    loc_arr_trimmed = loc_arr[~either_nan]
+    flat_lats_nona = flat_lats[~either_nan]
+    flat_lons_nona = flat_lons[~either_nan]
     ll_tree = sklearn.neighbors.BallTree(
-        np.array([flat_lats, flat_lons]).T, metric="haversine"
+        np.array([flat_lats_nona, flat_lons_nona]).T, metric="haversine"
     )
     new_h1 = list()
     new_h2 = list()
@@ -474,8 +483,8 @@ def transform_feature_points(
                 ]
             ]
         )
-        unraveled_h2, unraveled_h1 = np.unravel_index(
-            closest_pt[0][0], np.shape(lat_vals_new)
+        unraveled_h1, unraveled_h2 = np.unravel_index(
+            loc_arr_trimmed[closest_pt[0][0]], np.shape(lat_vals_new)
         )
 
         new_h1.append(unraveled_h1)
