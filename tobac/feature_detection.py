@@ -941,7 +941,8 @@ def feature_detection_multithreshold(
                     dxy=dxy,
                     dz=dz,
                     min_distance=min_distance,
-                    z_coordinate_name=vertical_coord,
+                    z_coordinate_name=vertical_coord, 
+                    target=target,
                 )
         list_features_timesteps.append(features_thresholds)
 
@@ -978,6 +979,7 @@ def filter_min_distance(
     x_coordinate_name=None,
     y_coordinate_name=None,
     z_coordinate_name=None,
+    target="maximum",
 ):
     """Function to remove features that are too close together.
     If two features are closer than `min_distance`, it keeps the
@@ -1008,6 +1010,9 @@ def filter_min_distance(
     z_coordinate_name: str or None
         The name of the z coordinate to calculate distance based on in meters.
         This is typically `altitude`. If `auto`, tries to auto-detect.
+    target: {'maximum', 'minimum'}, optional
+        Flag to determine if tracking is targetting minima or maxima in
+        the data. Default is 'maximum'.
 
     Returns
     -------
@@ -1051,6 +1056,9 @@ def filter_min_distance(
             + " and dz available to filter_min_distance; using constant dz. "
             "Set dz to none if you want to use altitude or set `z_coordinate_name` to None to use constant dz."
         )
+    
+    if target not in ["minimum", "maximum"]:
+        raise ValueError("target parameter must be set to either 'minimum' or 'maximum'")
 
     # create list of tuples with all combinations of features at the timestep:
     indices = combinations(features.index.values, 2)
@@ -1092,25 +1100,50 @@ def filter_min_distance(
             if distance <= min_distance:
                 # print(distance, min_distance, index_1, index_2, features.size)
                 #                        logging.debug('distance<= min_distance: ' + str(distance))
-                if (
-                    features.loc[index_1, "threshold_value"]
-                    > features.loc[index_2, "threshold_value"]
-                ):
-                    remove_list_distance.append(index_2)
-                elif (
-                    features.loc[index_1, "threshold_value"]
-                    < features.loc[index_2, "threshold_value"]
-                ):
-                    remove_list_distance.append(index_1)
-                elif (
-                    features.loc[index_1, "threshold_value"]
-                    == features.loc[index_2, "threshold_value"]
-                ):
-                    if features.loc[index_1, "num"] > features.loc[index_2, "num"]:
+                if target == "maximum":
+                    if (
+                        features.loc[index_1, "threshold_value"]
+                        > features.loc[index_2, "threshold_value"]
+                    ):
                         remove_list_distance.append(index_2)
-                    elif features.loc[index_1, "num"] < features.loc[index_2, "num"]:
+                    elif (
+                        features.loc[index_1, "threshold_value"]
+                        < features.loc[index_2, "threshold_value"]
+                    ):
                         remove_list_distance.append(index_1)
-                    elif features.loc[index_1, "num"] == features.loc[index_2, "num"]:
+                    elif (
+                        features.loc[index_1, "threshold_value"]
+                        == features.loc[index_2, "threshold_value"]
+                    ):
+                        if features.loc[index_1, "num"] > features.loc[index_2, "num"]:
+                            remove_list_distance.append(index_2)
+                        elif features.loc[index_1, "num"] < features.loc[index_2, "num"]:
+                            remove_list_distance.append(index_1)
+                        elif features.loc[index_1, "num"] == features.loc[index_2, "num"]:
+                            remove_list_distance.append(index_2)
+                elif target == "minimum":
+                    if (
+                        features.loc[index_1, "threshold_value"]
+                        < features.loc[index_2, "threshold_value"]
+                    ):
                         remove_list_distance.append(index_2)
+                    elif (
+                        features.loc[index_1, "threshold_value"]
+                        > features.loc[index_2, "threshold_value"]
+                    ):
+                        remove_list_distance.append(index_1)
+                    elif (
+                        features.loc[index_1, "threshold_value"]
+                        == features.loc[index_2, "threshold_value"]
+                    ):
+                        if features.loc[index_1, "num"] > features.loc[index_2, "num"]:
+                            remove_list_distance.append(index_2)
+                        elif features.loc[index_1, "num"] < features.loc[index_2, "num"]:
+                            remove_list_distance.append(index_1)
+                        elif features.loc[index_1, "num"] == features.loc[index_2, "num"]:
+                            remove_list_distance.append(index_2)
+                else:
+                    #This should be caught before now, but just in case...
+                    raise ValueError("target parameter must be set to either 'minimum' or 'maximum'")
     features = features[~features.index.isin(remove_list_distance)]
     return features
