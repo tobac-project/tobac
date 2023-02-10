@@ -941,7 +941,7 @@ def feature_detection_multithreshold(
                     dxy=dxy,
                     dz=dz,
                     min_distance=min_distance,
-                    z_coordinate_name=vertical_coord, 
+                    z_coordinate_name=vertical_coord,
                     target=target,
                 )
         list_features_timesteps.append(features_thresholds)
@@ -1056,9 +1056,11 @@ def filter_min_distance(
             + " and dz available to filter_min_distance; using constant dz. "
             "Set dz to none if you want to use altitude or set `z_coordinate_name` to None to use constant dz."
         )
-    
+
     if target not in ["minimum", "maximum"]:
-        raise ValueError("target parameter must be set to either 'minimum' or 'maximum'")
+        raise ValueError(
+            "target parameter must be set to either 'minimum' or 'maximum'"
+        )
 
     # create list of tuples with all combinations of features at the timestep:
     indices = combinations(features.index.values, 2)
@@ -1117,9 +1119,13 @@ def filter_min_distance(
                     ):
                         if features.loc[index_1, "num"] > features.loc[index_2, "num"]:
                             remove_list_distance.append(index_2)
-                        elif features.loc[index_1, "num"] < features.loc[index_2, "num"]:
+                        elif (
+                            features.loc[index_1, "num"] < features.loc[index_2, "num"]
+                        ):
                             remove_list_distance.append(index_1)
-                        elif features.loc[index_1, "num"] == features.loc[index_2, "num"]:
+                        elif (
+                            features.loc[index_1, "num"] == features.loc[index_2, "num"]
+                        ):
                             remove_list_distance.append(index_2)
                 elif target == "minimum":
                     if (
@@ -1138,12 +1144,18 @@ def filter_min_distance(
                     ):
                         if features.loc[index_1, "num"] > features.loc[index_2, "num"]:
                             remove_list_distance.append(index_2)
-                        elif features.loc[index_1, "num"] < features.loc[index_2, "num"]:
+                        elif (
+                            features.loc[index_1, "num"] < features.loc[index_2, "num"]
+                        ):
                             remove_list_distance.append(index_1)
-                        elif features.loc[index_1, "num"] == features.loc[index_2, "num"]:
+                        elif (
+                            features.loc[index_1, "num"] == features.loc[index_2, "num"]
+                        ):
                             remove_list_distance.append(index_2)
                 else:
-                    #This should be caught before now, but just in case...
-                    raise ValueError("target parameter must be set to either 'minimum' or 'maximum'")
+                    # This should be caught before now, but just in case...
+                    raise ValueError(
+                        "target parameter must be set to either 'minimum' or 'maximum'"
+                    )
     features = features[~features.index.isin(remove_list_distance)]
     return features
