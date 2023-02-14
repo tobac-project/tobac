@@ -56,198 +56,6 @@ def test_feature_detection_multithreshold_timestep(
     assert fd_output.iloc[0]["hdim_1"] == pytest.approx(test_hdim_1_pt)
     assert fd_output.iloc[0]["hdim_2"] == pytest.approx(test_hdim_2_pt)
 
-
-@pytest.mark.parametrize(
-    "test_threshs, min_distance, dxy, target, feature_1_size, feature_2_size, feature_1_amp, feature_2_amp",
-    [
-        ([1, 2, 3], 10000, 10000, "maximum", 5, 2, 3, 2),  # No filtering, keep both
-        ([1, 2, 3], 100000, 10000, "maximum", 5, 2, 3, 2),  # Keep 1 by amplitude
-        ([1, 2, 3], 100000, 10000, "maximum", 5, 2, 2, 3),  # Keep 2 by amplitude
-        ([1, 2, 3], 100000, 10000, "maximum", 5, 2, 3, 3),  # Keep 1 by area
-        ([1, 2, 3], 100000, 10000, "maximum", 2, 5, 3, 3),  # Keep 2 by area
-        ([1, 2, 3], 100000, 10000, "maximum", 3, 3, 3, 3),  # Keep 1 by order
-        ([-1, -2, -3], 100000, 10000, "minimum", 5, 2, -3, -2),  # Keep 1 by amplitude
-        ([-1, -2, -3], 100000, 10000, "minimum", 5, 2, -2, -3),  # Keep 2 by amplitude
-        ([-1, -2, -3], 100000, 10000, "minimum", 5, 2, -3, -3),  # Keep 1 by area
-        ([-1, -2, -3], 100000, 10000, "minimum", 2, 5, -3, -3),  # Keep 2 by area
-        ([-1, -2, -3], 100000, 10000, "minimum", 3, 3, -3, -3),  # Keep 1 by order
-    ],
-)
-def test_filter_min_distance(
-    test_threshs,
-    min_distance,
-    dxy,
-    target,
-    feature_1_size,
-    feature_2_size,
-    feature_1_amp,
-    feature_2_amp,
-):
-    """
-    Tests ```tobac.feature_detection.filter_min_distance```
-    """
-    # start by building a simple dataset with two features close to each other
-
-    test_dset_size = (50, 50)
-    test_hdim_1_pt = 20.0
-    test_hdim_2_pt = 20.0
-    test_hdim_1_sz = feature_1_size
-    test_hdim_2_sz = feature_1_size
-    test_amp = feature_1_amp
-
-    test_data = np.zeros(test_dset_size)
-
-    test_data = tbtest.make_feature_blob(
-        test_data,
-        test_hdim_1_pt,
-        test_hdim_2_pt,
-        h1_size=test_hdim_1_sz,
-        h2_size=test_hdim_2_sz,
-        amplitude=test_amp,
-    )
-
-    ## add another blob with smaller value
-    test_hdim_1_pt2 = 25.0
-    test_hdim_2_pt2 = 25.0
-    test_hdim_1_sz2 = feature_2_size
-    test_hdim_2_sz2 = feature_2_size
-    test_amp2 = feature_2_amp
-
-    test_data = tbtest.make_feature_blob(
-        test_data,
-        test_hdim_1_pt2,
-        test_hdim_2_pt2,
-        h1_size=test_hdim_1_sz2,
-        h2_size=test_hdim_2_sz2,
-        amplitude=test_amp2,
-    )
-
-    test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type="iris")
-
-    # identify these features
-    fd_output = feat_detect.feature_detection_multithreshold_timestep(
-        test_data_iris,
-        0,
-        threshold=test_threshs,
-        target=target,
-        n_min_threshold=1,
-        min_distance=min_distance,
-        dxy=dxy,
-    )
-
-    # check if it function to filter
-    fd_filtered = feat_detect.filter_min_distance(
-        fd_output, dxy=dxy, min_distance=min_distance, target=target
-    )
-
-    # Make sure we have only one feature (small feature in minimum distance should be removed )
-    assert len(fd_output.index) == 2
-
-    if min_distance / dxy < 50**0.5:
-        # If spacing is greater than min_distance keep both:
-        assert len(fd_filtered.index) == 2
-    else:
-        # Else find which one to remove
-        if target == "maximum":
-            if (
-                fd_output.iloc[0]["threshold_value"]
-                > fd_output.iloc[0]["threshold_value"]
-            ):
-                # Keep first feature
-                assert fd_filtered.iloc[0]["hdim_1"] == pytest.approx(test_hdim_1_pt)
-                assert fd_filtered.iloc[0]["hdim_2"] == pytest.approx(test_hdim_2_pt)
-            elif (
-                fd_output.iloc[0]["threshold_value"]
-                < fd_output.iloc[0]["threshold_value"]
-            ):
-                # Keep second feature
-                assert fd_filtered.iloc[0]["hdim_1"] == pytest.approx(test_hdim_1_pt2)
-                assert fd_filtered.iloc[0]["hdim_2"] == pytest.approx(test_hdim_2_pt2)
-            elif (
-                fd_output.iloc[0]["threshold_value"]
-                == fd_output.iloc[0]["threshold_value"]
-            ):
-                # If both equal fall back to area
-                if fd_output.iloc[0]["num"] > fd_output.iloc[0]["num"]:
-                    # Keep first feature
-                    assert fd_filtered.iloc[0]["hdim_1"] == pytest.approx(
-                        test_hdim_1_pt
-                    )
-                    assert fd_filtered.iloc[0]["hdim_2"] == pytest.approx(
-                        test_hdim_2_pt
-                    )
-                elif fd_output.iloc[0]["num"] < fd_output.iloc[0]["num"]:
-                    # Keep second feature
-                    assert fd_filtered.iloc[0]["hdim_1"] == pytest.approx(
-                        test_hdim_1_pt2
-                    )
-                    assert fd_filtered.iloc[0]["hdim_2"] == pytest.approx(
-                        test_hdim_2_pt2
-                    )
-                elif fd_output.iloc[0]["num"] == fd_output.iloc[0]["num"]:
-                    # fallback option: keep first feature
-                    assert fd_filtered.iloc[0]["hdim_1"] == pytest.approx(
-                        test_hdim_1_pt
-                    )
-                    assert fd_filtered.iloc[0]["hdim_2"] == pytest.approx(
-                        test_hdim_2_pt
-                    )
-            else:
-                raise RuntimeError(
-                    "Failed to categorise filtering in 'test_filter_min_distance"
-                )
-        elif target == "minimum":
-            if (
-                fd_output.iloc[0]["threshold_value"]
-                < fd_output.iloc[0]["threshold_value"]
-            ):
-                # Keep first feature
-                assert fd_filtered.iloc[0]["hdim_1"] == pytest.approx(test_hdim_1_pt)
-                assert fd_filtered.iloc[0]["hdim_2"] == pytest.approx(test_hdim_2_pt)
-            elif (
-                fd_output.iloc[0]["threshold_value"]
-                > fd_output.iloc[0]["threshold_value"]
-            ):
-                # Keep second feature
-                assert fd_filtered.iloc[0]["hdim_1"] == pytest.approx(test_hdim_1_pt2)
-                assert fd_filtered.iloc[0]["hdim_2"] == pytest.approx(test_hdim_2_pt2)
-            elif (
-                fd_output.iloc[0]["threshold_value"]
-                == fd_output.iloc[0]["threshold_value"]
-            ):
-                # If both equal fall back to area
-                if fd_output.iloc[0]["num"] > fd_output.iloc[0]["num"]:
-                    # Keep first feature
-                    assert fd_filtered.iloc[0]["hdim_1"] == pytest.approx(
-                        test_hdim_1_pt
-                    )
-                    assert fd_filtered.iloc[0]["hdim_2"] == pytest.approx(
-                        test_hdim_2_pt
-                    )
-                elif fd_output.iloc[0]["num"] < fd_output.iloc[0]["num"]:
-                    # Keep second feature
-                    assert fd_filtered.iloc[0]["hdim_1"] == pytest.approx(
-                        test_hdim_1_pt2
-                    )
-                    assert fd_filtered.iloc[0]["hdim_2"] == pytest.approx(
-                        test_hdim_2_pt2
-                    )
-                elif fd_output.iloc[0]["num"] == fd_output.iloc[0]["num"]:
-                    # fallback option: keep first feature
-                    assert fd_filtered.iloc[0]["hdim_1"] == pytest.approx(
-                        test_hdim_1_pt
-                    )
-                    assert fd_filtered.iloc[0]["hdim_2"] == pytest.approx(
-                        test_hdim_2_pt
-                    )
-            else:
-                raise RuntimeError(
-                    "Failed to categorise filtering in 'test_filter_min_distance"
-                )
-        else:
-            raise ValueError("target parameter must be either 'maximum' or 'minimum")
-
-
 @pytest.mark.parametrize(
     "position_threshold", [("center"), ("extreme"), ("weighted_diff"), ("weighted_abs")]
 )
@@ -281,39 +89,146 @@ def test_feature_detection_position(position_threshold):
 
 @pytest.mark.parametrize(
     "feature_1_loc, feature_2_loc, dxy, dz, min_distance,"
-    " add_x_coords, add_y_coords,"
+    "target, add_x_coords, add_y_coords,"
     "add_z_coords, expect_feature_1, expect_feature_2",
     [
-        (
+        ( #If separation greater than min_distance, keep both features
             (0, 0, 0, 4, 1),
             (1, 1, 1, 4, 1),
             1000,
             100,
             1,
+            "maximum",
             False,
             False,
             False,
             True,
             True,
         ),
-        (
+        ( # Keep feature 1 by area
             (0, 0, 0, 4, 1),
             (1, 1, 1, 3, 1),
             1000,
             100,
             5000,
+            "maximum",
             False,
             False,
             False,
             True,
             False,
         ),
-        (
+        ( # Keep feature 2 by area
+            (0, 0, 0, 4, 1),
+            (1, 1, 1, 6, 1),
+            1000,
+            100,
+            5000,
+            "maximum",
+            False,
+            False,
+            False,
+            False,
+            True,
+        ),
+        ( # Keep feature 1 by area
+            (0, 0, 0, 4, 1),
+            (1, 1, 1, 3, 1),
+            1000,
+            100,
+            5000,
+            "minimum",
+            False,
+            False,
+            False,
+            True,
+            False,
+        ),
+        ( # Keep feature 2 by area
+            (0, 0, 0, 4, 1),
+            (1, 1, 1, 6, 1),
+            1000,
+            100,
+            5000,
+            "minimum",
+            False,
+            False,
+            False,
+            False,
+            True,
+        ),
+        ( # Keep feature 1 by maximum threshold
             (0, 0, 0, 4, 2),
             (1, 1, 1, 10, 1),
             1000,
             100,
             5000,
+            "maximum",
+            False,
+            False,
+            False,
+            True,
+            False,
+        ),
+        ( # Keep feature 2 by maximum threshold
+            (0, 0, 0, 4, 2),
+            (1, 1, 1, 10, 3),
+            1000,
+            100,
+            5000,
+            "maximum",
+            False,
+            False,
+            False,
+            False,
+            True,
+        ),
+        ( # Keep feature 1 by minimum threshold
+            (0, 0, 0, 4, -1),
+            (1, 1, 1, 10, 1),
+            1000,
+            100,
+            5000,
+            "minimum",
+            False,
+            False,
+            False,
+            True,
+            False,
+        ),
+        ( # Keep feature 2 by minimum threshold
+            (0, 0, 0, 4, 2),
+            (1, 1, 1, 10, 1),
+            1000,
+            100,
+            5000,
+            "minimum",
+            False,
+            False,
+            False,
+            False,
+            True,
+        ),
+        ( # Keep feature 1 by tie-break
+            (0, 0, 0, 4, 2),
+            (1, 1, 1, 4, 2),
+            1000,
+            100,
+            5000,
+            "maximum",
+            False,
+            False,
+            False,
+            True,
+            False,
+        ),
+        ( # Keep feature 1 by tie-break
+            (0, 0, 0, 4, 2),
+            (1, 1, 1, 4, 2),
+            1000,
+            100,
+            5000,
+            "minimum",
             False,
             False,
             False,
@@ -328,6 +243,7 @@ def test_filter_min_distance(
     dxy,
     dz,
     min_distance,
+    target, 
     add_x_coords,
     add_y_coords,
     add_z_coords,
@@ -350,6 +266,8 @@ def test_filter_min_distance(
         Vertical grid spacing (constant)
     min_distance: float
         Minimum distance between features (m)
+    target: str ["maximum" | "minimum"]
+        Target maxima or minima threshold for selecting which feature to keep
     add_x_coords: bool
         Whether or not to add x coordinates
     add_y_coords: bool
@@ -374,6 +292,9 @@ def test_filter_min_distance(
     x_coord_name = "projection_coord_x"
     y_coord_name = "projection_coord_y"
     z_coord_name = "projection_coord_z"
+
+    if target not in ["maximum", "minimum"]:
+        raise ValueError("target parameter must be either 'maximum' or 'minimum'")
 
     is_3D = len(feature_1_loc) == 5
     start_size_loc = 3 if is_3D else 2
@@ -422,7 +343,8 @@ def test_filter_min_distance(
         "features": feat_combined,
         "dxy": dxy,
         "dz": dz,
-        "min_distance": min_distance,
+        "min_distance": min_distance, 
+        "target": target,
     }
 
     out_feats = feat_detect.filter_min_distance(**filter_dist_opts)
