@@ -56,6 +56,7 @@ def test_feature_detection_multithreshold_timestep(
     assert fd_output.iloc[0]["hdim_1"] == pytest.approx(test_hdim_1_pt)
     assert fd_output.iloc[0]["hdim_2"] == pytest.approx(test_hdim_2_pt)
 
+
 @pytest.mark.parametrize(
     "position_threshold", [("center"), ("extreme"), ("weighted_diff"), ("weighted_abs")]
 )
@@ -92,7 +93,7 @@ def test_feature_detection_position(position_threshold):
     "target, add_x_coords, add_y_coords,"
     "add_z_coords, expect_feature_1, expect_feature_2",
     [
-        ( #If separation greater than min_distance, keep both features
+        (  # If separation greater than min_distance, keep both features
             (0, 0, 0, 4, 1),
             (1, 1, 1, 4, 1),
             1000,
@@ -105,7 +106,7 @@ def test_feature_detection_position(position_threshold):
             True,
             True,
         ),
-        ( # Keep feature 1 by area
+        (  # Keep feature 1 by area
             (0, 0, 0, 4, 1),
             (1, 1, 1, 3, 1),
             1000,
@@ -118,7 +119,7 @@ def test_feature_detection_position(position_threshold):
             True,
             False,
         ),
-        ( # Keep feature 2 by area
+        (  # Keep feature 2 by area
             (0, 0, 0, 4, 1),
             (1, 1, 1, 6, 1),
             1000,
@@ -131,7 +132,7 @@ def test_feature_detection_position(position_threshold):
             False,
             True,
         ),
-        ( # Keep feature 1 by area
+        (  # Keep feature 1 by area
             (0, 0, 0, 4, 1),
             (1, 1, 1, 3, 1),
             1000,
@@ -144,7 +145,7 @@ def test_feature_detection_position(position_threshold):
             True,
             False,
         ),
-        ( # Keep feature 2 by area
+        (  # Keep feature 2 by area
             (0, 0, 0, 4, 1),
             (1, 1, 1, 6, 1),
             1000,
@@ -157,7 +158,7 @@ def test_feature_detection_position(position_threshold):
             False,
             True,
         ),
-        ( # Keep feature 1 by maximum threshold
+        (  # Keep feature 1 by maximum threshold
             (0, 0, 0, 4, 2),
             (1, 1, 1, 10, 1),
             1000,
@@ -170,7 +171,7 @@ def test_feature_detection_position(position_threshold):
             True,
             False,
         ),
-        ( # Keep feature 2 by maximum threshold
+        (  # Keep feature 2 by maximum threshold
             (0, 0, 0, 4, 2),
             (1, 1, 1, 10, 3),
             1000,
@@ -183,7 +184,7 @@ def test_feature_detection_position(position_threshold):
             False,
             True,
         ),
-        ( # Keep feature 1 by minimum threshold
+        (  # Keep feature 1 by minimum threshold
             (0, 0, 0, 4, -1),
             (1, 1, 1, 10, 1),
             1000,
@@ -196,7 +197,7 @@ def test_feature_detection_position(position_threshold):
             True,
             False,
         ),
-        ( # Keep feature 2 by minimum threshold
+        (  # Keep feature 2 by minimum threshold
             (0, 0, 0, 4, 2),
             (1, 1, 1, 10, 1),
             1000,
@@ -209,7 +210,7 @@ def test_feature_detection_position(position_threshold):
             False,
             True,
         ),
-        ( # Keep feature 1 by tie-break
+        (  # Keep feature 1 by tie-break
             (0, 0, 0, 4, 2),
             (1, 1, 1, 4, 2),
             1000,
@@ -222,7 +223,7 @@ def test_feature_detection_position(position_threshold):
             True,
             False,
         ),
-        ( # Keep feature 1 by tie-break
+        (  # Keep feature 1 by tie-break
             (0, 0, 0, 4, 2),
             (1, 1, 1, 4, 2),
             1000,
@@ -243,7 +244,7 @@ def test_filter_min_distance(
     dxy,
     dz,
     min_distance,
-    target, 
+    target,
     add_x_coords,
     add_y_coords,
     add_z_coords,
@@ -343,7 +344,7 @@ def test_filter_min_distance(
         "features": feat_combined,
         "dxy": dxy,
         "dz": dz,
-        "min_distance": min_distance, 
+        "min_distance": min_distance,
         "target": target,
     }
 
