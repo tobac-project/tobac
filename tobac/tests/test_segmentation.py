@@ -1,7 +1,5 @@
-import tobac.testing as testing
-import tobac.segmentation as seg
-import tobac.feature_detection as feat_detect
 import numpy as np
+from tobac import segmentation, feature_detection, testing
 
 
 def test_segmentation_timestep_level():
@@ -62,7 +60,7 @@ def test_segmentation_timestep_level():
     # Generate dummy feature dataset
     test_feature_ds = testing.generate_single_feature(start_h1=20.0, start_h2=20.0)
 
-    out_seg_mask, out_df = seg.segmentation_timestep(
+    out_seg_mask, out_df = segmentation.segmentation_timestep(
         field_in=test_data_iris,
         features_in=test_feature_ds,
         dxy=test_dxy,
@@ -88,7 +86,7 @@ def test_segmentation_timestep_level():
     )
 
     # now set specific levels
-    out_seg_mask, out_df = seg.segmentation_timestep(
+    out_seg_mask, out_df = segmentation.segmentation_timestep(
         field_in=test_data_iris,
         features_in=test_feature_ds,
         dxy=test_dxy,
@@ -159,7 +157,7 @@ def test_segmentation_multiple_features():
     test_data_iris = testing.make_dataset_from_arr(test_data, data_type="iris")
 
     # detect both features
-    fd_output = feat_detect.feature_detection_multithreshold_timestep(
+    fd_output = feature_detection.feature_detection_multithreshold_timestep(
         test_data_iris,
         i_time=0,
         dxy=1,
@@ -172,7 +170,7 @@ def test_segmentation_multiple_features():
     fd_output["feature"] = [1, 2]
 
     # perform segmentation
-    out_seg_mask, out_df = seg.segmentation_timestep(
+    out_seg_mask, out_df = segmentation.segmentation_timestep(
         field_in=test_data_iris, features_in=fd_output, dxy=test_dxy, threshold=1.5
     )
     out_seg_mask_arr = out_seg_mask.core_data()
