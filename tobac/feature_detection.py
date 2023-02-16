@@ -1152,10 +1152,6 @@ def filter_min_distance(
                             features.loc[index_1, "num"] == features.loc[index_2, "num"]
                         ):
                             remove_list_distance.append(index_2)
-                else:
-                    # This should be caught before now, but just in case...
-                    raise ValueError(
-                        "target parameter must be set to either 'minimum' or 'maximum'"
-                    )
+
     features = features[~features.index.isin(remove_list_distance)]
     return features
