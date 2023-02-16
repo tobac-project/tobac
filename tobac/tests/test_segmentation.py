@@ -114,70 +114,67 @@ def test_segmentation_timestep_level():
     )
 
 
-
-
 def test_segmentation_multiple_features():
-        """Tests `tobac.segmentation.segmentation_timestep` with a 2D input containing multiple features with different areas. 
+    """Tests `tobac.segmentation.segmentation_timestep` with a 2D input containing multiple features with different areas. 
         Tests specifically whether their area (ncells) is correctly calculate and assigned to the different features.
         """
-        test_dset_size = (50, 50)
-        test_hdim_1_pt = 20.0
-        test_hdim_2_pt = 20.0
-        test_hdim_1_sz = 5
-        test_hdim_2_sz = 5
-        size_feature1= test_hdim_1_sz* test_hdim_2_sz
-        test_amp = 2
-        test_min_num = 2
+    test_dset_size = (50, 50)
+    test_hdim_1_pt = 20.0
+    test_hdim_2_pt = 20.0
+    test_hdim_1_sz = 5
+    test_hdim_2_sz = 5
+    size_feature1 = test_hdim_1_sz * test_hdim_2_sz
+    test_amp = 2
+    test_min_num = 2
 
-        test_data = np.zeros(test_dset_size)
-        test_data = tbtest.make_feature_blob(
-            test_data,
-            test_hdim_1_pt,
-            test_hdim_2_pt,
-            h1_size=test_hdim_1_sz,
-            h2_size=test_hdim_2_sz,
-            amplitude=test_amp,
-        )
+    test_data = np.zeros(test_dset_size)
+    test_data = tbtest.make_feature_blob(
+        test_data,
+        test_hdim_1_pt,
+        test_hdim_2_pt,
+        h1_size=test_hdim_1_sz,
+        h2_size=test_hdim_2_sz,
+        amplitude=test_amp,
+    )
 
-        # add feature of different size
-        test_hdim_1_pt = 40.0
-        test_hdim_2_pt = 40.0
-        test_hdim_1_sz = 10
-        test_hdim_2_sz = 10
-        size_feature2= test_hdim_1_sz* test_hdim_2_sz
-        test_amp = 10
+    # add feature of different size
+    test_hdim_1_pt = 40.0
+    test_hdim_2_pt = 40.0
+    test_hdim_1_sz = 10
+    test_hdim_2_sz = 10
+    size_feature2 = test_hdim_1_sz * test_hdim_2_sz
+    test_amp = 10
 
-        test_data = tbtest.make_feature_blob(
-            test_data,
-            test_hdim_1_pt,
-            test_hdim_2_pt,
-            h1_size=test_hdim_1_sz,
-            h2_size=test_hdim_2_sz,
-            amplitude=test_amp,
-        )
+    test_data = tbtest.make_feature_blob(
+        test_data,
+        test_hdim_1_pt,
+        test_hdim_2_pt,
+        h1_size=test_hdim_1_sz,
+        h2_size=test_hdim_2_sz,
+        amplitude=test_amp,
+    )
 
-        test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type="iris")
-        
-        # detect both features 
-        fd_output = feat_detect.feature_detection_multithreshold_timestep(
-            test_data_iris,i_time = 0,
-            dxy=1,
-            threshold=[1,2,3],
-            n_min_threshold=test_min_num,
-            target = 'maximum')
+    test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type="iris")
 
-        # add feature IDs to data frame for one time step
-        fd_output['feature'] = [1,2]
+    # detect both features
+    fd_output = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        i_time=0,
+        dxy=1,
+        threshold=[1, 2, 3],
+        n_min_threshold=test_min_num,
+        target="maximum",
+    )
 
-        # perform segmentation
-        out_seg_mask, out_df = seg.segmentation_timestep(
-            field_in=test_data_iris,
-            features_in=fd_output,
-            dxy=test_dxy,
-            threshold=1.5,
-        )
-        out_seg_mask_arr = out_seg_mask.core_data()
+    # add feature IDs to data frame for one time step
+    fd_output["feature"] = [1, 2]
 
-        # assure that the number of grid cells belonging to each feature (ncells) are consistent with segmentation mask 
-        assert int(out_df[out_df.feature== 1].ncells.values)== size_feature1
-        assert int(out_df[out_df.feature== 2].ncells.values) == size_feature2
+    # perform segmentation
+    out_seg_mask, out_df = seg.segmentation_timestep(
+        field_in=test_data_iris, features_in=fd_output, dxy=test_dxy, threshold=1.5
+    )
+    out_seg_mask_arr = out_seg_mask.core_data()
+
+    # assure that the number of grid cells belonging to each feature (ncells) are consistent with segmentation mask
+    assert int(out_df[out_df.feature == 1].ncells.values) == size_feature1
+    assert int(out_df[out_df.feature == 2].ncells.values) == size_feature2

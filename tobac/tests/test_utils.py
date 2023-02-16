@@ -22,7 +22,7 @@ def test_spectral_filtering():
     Ni = matrix.shape[-2]
     Nj = matrix.shape[-1]
     m, n = np.meshgrid(np.arange(Ni), np.arange(Nj), indexing="ij")
-    alpha = np.sqrt(m**2 / Ni**2 + n**2 / Nj**2)
+    alpha = np.sqrt(m ** 2 / Ni ** 2 + n ** 2 / Nj ** 2)
     # turn off warning for zero divide here, because it is not avoidable with normalized wavenumbers
     with np.errstate(divide="ignore", invalid="ignore"):
         lambda_mn = 2 * dxy / alpha

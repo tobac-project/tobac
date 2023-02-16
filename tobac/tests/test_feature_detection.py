@@ -130,9 +130,7 @@ def test_feature_detection_position(position_threshold):
     test_data = np.zeros(test_dset_size)
 
     test_data[0:5, 0:5] = 3
-    test_threshs = [
-        1.5,
-    ]
+    test_threshs = [1.5]
     test_min_num = 2
 
     test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type="iris")
