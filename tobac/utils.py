@@ -862,12 +862,12 @@ def spectral_filtering(
 
     # if domain is squared:
     if Ni == Nj:
-        wavenumber = np.sqrt(m ** 2 + n ** 2)
+        wavenumber = np.sqrt(m**2 + n**2)
         lambda_mn = (2 * Ni * (dxy)) / wavenumber
     else:
         # if domain is a rectangle:
         # alpha is the normalized wavenumber in wavenumber space
-        alpha = np.sqrt(m ** 2 / Ni ** 2 + n ** 2 / Nj ** 2)
+        alpha = np.sqrt(m**2 / Ni**2 + n**2 / Nj**2)
         # compute wavelengths for target grid in m
         lambda_mn = 2 * dxy / alpha
 

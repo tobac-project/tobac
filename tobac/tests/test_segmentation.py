@@ -115,9 +115,9 @@ def test_segmentation_timestep_level():
 
 
 def test_segmentation_multiple_features():
-    """Tests `tobac.segmentation.segmentation_timestep` with a 2D input containing multiple features with different areas. 
-        Tests specifically whether their area (ncells) is correctly calculate and assigned to the different features.
-        """
+    """Tests `tobac.segmentation.segmentation_timestep` with a 2D input containing multiple features with different areas.
+    Tests specifically whether their area (ncells) is correctly calculate and assigned to the different features.
+    """
     test_dset_size = (50, 50)
     test_hdim_1_pt = 20.0
     test_hdim_2_pt = 20.0
