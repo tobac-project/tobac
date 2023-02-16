@@ -1,6 +1,7 @@
 import tobac.testing as testing
 import tobac.segmentation as seg
-import numpy as np 
+import numpy as np
+
 
 def test_segmentation_timestep_level():
     """Tests `tobac.segmentation.segmentation_timestep` with a 2D
@@ -9,7 +10,6 @@ def test_segmentation_timestep_level():
     # Before we can run segmentation, we must run feature detection.
 
     # start by building a simple dataset with a single feature
-
 
     test_dset_size = (20, 50, 50)
     test_hdim_1_pt = 20.0
