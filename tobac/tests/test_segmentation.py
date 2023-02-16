@@ -128,7 +128,7 @@ def test_segmentation_multiple_features():
     test_min_num = 2
 
     test_data = np.zeros(test_dset_size)
-    test_data = tbtest.make_feature_blob(
+    test_data = testing.make_feature_blob(
         test_data,
         test_hdim_1_pt,
         test_hdim_2_pt,
@@ -145,7 +145,7 @@ def test_segmentation_multiple_features():
     size_feature2 = test_hdim_1_sz * test_hdim_2_sz
     test_amp = 10
 
-    test_data = tbtest.make_feature_blob(
+    test_data = testing.make_feature_blob(
         test_data,
         test_hdim_1_pt,
         test_hdim_2_pt,
@@ -154,7 +154,7 @@ def test_segmentation_multiple_features():
         amplitude=test_amp,
     )
 
-    test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type="iris")
+    test_data_iris = testing.make_dataset_from_arr(test_data, data_type="iris")
 
     # detect both features
     fd_output = feat_detect.feature_detection_multithreshold_timestep(
