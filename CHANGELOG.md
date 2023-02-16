@@ -1,5 +1,12 @@
 ### Tobac Changelog
 
+_**Version 1.4.2:**_
+
+
+**Bug fix**
+
+- Fixed a bug in the segmentation procedure that assigned the wrong grid cell areas to features in data frame  [#245](https://github.com/tobac-project/tobac/pull/245)
+
 _**Version 1.4.1:**_
 
 **Bug fixes**
