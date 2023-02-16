@@ -145,7 +145,7 @@ def test_segmentation_multiple_features():
     test_hdim_2_sz = 10
     size_feature2 = test_hdim_1_sz * test_hdim_2_sz
     test_amp = 10
-    test_dxy=1 
+    test_dxy = 1
 
     test_data = testing.make_feature_blob(
         test_data,
