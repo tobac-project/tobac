@@ -236,6 +236,19 @@ def test_feature_detection_position(position_threshold):
             True,
             False,
         ),
+        (  # If target is not maximum or minimum raise ValueError
+            (0, 0, 0, 4, 1),
+            (1, 1, 1, 4, 1),
+            1000,
+            100,
+            1,
+            "chaos",
+            False,
+            False,
+            False,
+            False,
+            False,
+        ),
     ],
 )
 def test_filter_min_distance(
@@ -294,9 +307,6 @@ def test_filter_min_distance(
     y_coord_name = "projection_coord_y"
     z_coord_name = "projection_coord_z"
 
-    if target not in ["maximum", "minimum"]:
-        raise ValueError("target parameter must be either 'maximum' or 'minimum'")
-
     is_3D = len(feature_1_loc) == 5
     start_size_loc = 3 if is_3D else 2
     start_h1_loc = 1 if is_3D else 0
@@ -347,11 +357,15 @@ def test_filter_min_distance(
         "min_distance": min_distance,
         "target": target,
     }
+    if target not in ["maximum", "minimum"]:
+        with pytest.raises(ValueError):
+            out_feats = feat_detect.filter_min_distance(**filter_dist_opts)
 
-    out_feats = feat_detect.filter_min_distance(**filter_dist_opts)
+    else:
+        out_feats = feat_detect.filter_min_distance(**filter_dist_opts)
 
-    assert expect_feature_1 == (np.sum(out_feats["feature"] == 1) == 1)
-    assert expect_feature_2 == (np.sum(out_feats["feature"] == 2) == 1)
+        assert expect_feature_1 == (np.sum(out_feats["feature"] == 1) == 1)
+        assert expect_feature_2 == (np.sum(out_feats["feature"] == 2) == 1)
 
 
 @pytest.mark.parametrize(
