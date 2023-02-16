@@ -5,7 +5,7 @@ _**Version 1.4.2:**_
 
 **Bug fix**
 
-- Fixed a bug in the segmentation procedure that assigned the wrong grid cell areas to features in data frame  [#245](https://github.com/tobac-project/tobac/pull/245)
+- Fixed a bug in the segmentation procedure that assigned the wrong grid cell areas to features in data frame  [#246](https://github.com/tobac-project/tobac/pull/246)
 
 _**Version 1.4.1:**_
 
