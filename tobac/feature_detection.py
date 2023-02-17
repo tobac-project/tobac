@@ -18,7 +18,6 @@ References
 """
 
 import logging
-from operator import is_
 import numpy as np
 import pandas as pd
 from scipy.spatial import KDTree
