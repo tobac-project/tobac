@@ -18,9 +18,11 @@ References
 """
 
 import logging
+from operator import is_
 import numpy as np
 import pandas as pd
-from .utils import internal as internal_utils
+from scipy.spatial import KDTree
+from tobac.utils import internal as internal_utils
 from tobac.utils.general import spectral_filtering
 import warnings
 
@@ -985,8 +987,6 @@ def filter_min_distance(
     If two features are closer than `min_distance`, it keeps the
     larger feature.
 
-    TODO: does this function work with minima?
-
     Parameters
     ----------
     features:      pandas DataFrame
@@ -1057,101 +1057,77 @@ def filter_min_distance(
             "Set dz to none if you want to use altitude or set `z_coordinate_name` to None to use constant dz."
         )
 
+    # As optional coordinate names are not yet implemented, set to defaults here:
+    z_coordinate_name = "vdim"
+    y_coordinate_name = "hdim_1"
+    x_coordinate_name = "hdim_2"
+
     if target not in ["minimum", "maximum"]:
         raise ValueError(
             "target parameter must be set to either 'minimum' or 'maximum'"
         )
 
-    # create list of tuples with all combinations of features at the timestep:
-    indices = combinations(features.index.values, 2)
-    # Loop over combinations to remove features that are closer together than min_distance and keep larger one (either higher threshold or larger area)
-    for index_1, index_2 in indices:
-        if index_1 is not index_2:
-            if is_3D:
-                if dz is not None:
-                    z_coord_1 = dz * features.loc[index_1, "vdim"]
-                    z_coord_2 = dz * features.loc[index_2, "vdim"]
-                else:
-                    z_coord_1 = features.loc[index_1, z_coordinate_name]
-                    z_coord_2 = features.loc[index_2, z_coordinate_name]
+    # Calculate feature locations in cartesian coordinates
+    if is_3D:
+        feature_locations = features[
+            [z_coordinate_name, y_coordinate_name, x_coordinate_name]
+        ].to_numpy()
+        feature_locations[0] *= dz
+        feature_locations[1:] *= dxy
+    else:
+        feature_locations = (
+            features[[y_coordinate_name, x_coordinate_name]].to_numpy() * dxy
+        )
 
-                coord_1 = (
-                    z_coord_1,
-                    dxy * features.loc[index_1, "hdim_1"],
-                    dxy * features.loc[index_1, "hdim_2"],
-                )
-                coord_2 = (
-                    z_coord_2,
-                    dxy * features.loc[index_2, "hdim_1"],
-                    dxy * features.loc[index_2, "hdim_2"],
-                )
+    # Create array of flags for features to remove
+    removal_flag = np.zeros(len(features), dtype=bool)
+
+    # Create KDTree of feature locations in cartesian coordinates
+    # TODO: Add periodic BCs
+    features_tree = KDTree(feature_locations)
+
+    # Find neighbours for each point
+    neighbours = features_tree.query_ball_tree(features_tree, r=min_distance)
+
+    # Iterate over list of neighbours to find which features to remove
+    for i, neighbour_list in enumerate(neighbours):
+        if len(neighbour_list) > 1:
+            # Remove the feature we're interested in as it's always included
+            neighbour_list.remove(i)
+            # If maximum target check if any neighbours have a larger threshold value
+            if target == "maximum" and np.any(
+                features["threshold_value"][neighbour_list]
+                > features["threshold_value"][i]
+            ):
+                removal_flag[i] = True
+            # If minimum target check if any neighbours have a smaller threshold value
+            elif target == "minimum" and np.any(
+                features["threshold_value"][neighbour_list]
+                < features["threshold_value"][i]
+            ):
+                removal_flag[i] = True
+            # Else check if any neighbours have an equal threshold value
             else:
-                coord_1 = (
-                    dxy * features.loc[index_1, "hdim_1"],
-                    dxy * features.loc[index_1, "hdim_2"],
+                wh_equal_threshold = (
+                    features["threshold_value"][neighbour_list]
+                    == features["threshold_value"][i]
                 )
-                coord_2 = (
-                    dxy * features.loc[index_2, "hdim_1"],
-                    dxy * features.loc[index_2, "hdim_2"],
-                )
+                if np.any(wh_equal_threshold):
+                    # Check if any have a larger number of points
+                    if np.any(
+                        features["num"][neighbour_list][wh_equal_threshold]
+                        > features["num"][i]
+                    ):
+                        removal_flag[i] = True
+                    # Check if any have the same number of points and a lower index value
+                    else:
+                        wh_equal_area = (
+                            features["num"][neighbour_list][wh_equal_threshold]
+                            == features["num"][i]
+                        )
+                        if np.any(wh_equal_area):
+                            if np.any(wh_equal_area.index[wh_equal_area] < i):
+                                removal_flag[i] = True
 
-            distance = internal_utils.calc_distance_coords(
-                coords_1=np.array(coord_1), coords_2=np.array(coord_2)
-            )
-
-            if distance <= min_distance:
-                # print(distance, min_distance, index_1, index_2, features.size)
-                #                        logging.debug('distance<= min_distance: ' + str(distance))
-                if target == "maximum":
-                    if (
-                        features.loc[index_1, "threshold_value"]
-                        > features.loc[index_2, "threshold_value"]
-                    ):
-                        remove_list_distance.append(index_2)
-                    elif (
-                        features.loc[index_1, "threshold_value"]
-                        < features.loc[index_2, "threshold_value"]
-                    ):
-                        remove_list_distance.append(index_1)
-                    elif (
-                        features.loc[index_1, "threshold_value"]
-                        == features.loc[index_2, "threshold_value"]
-                    ):
-                        if features.loc[index_1, "num"] > features.loc[index_2, "num"]:
-                            remove_list_distance.append(index_2)
-                        elif (
-                            features.loc[index_1, "num"] < features.loc[index_2, "num"]
-                        ):
-                            remove_list_distance.append(index_1)
-                        elif (
-                            features.loc[index_1, "num"] == features.loc[index_2, "num"]
-                        ):
-                            remove_list_distance.append(index_2)
-                elif target == "minimum":
-                    if (
-                        features.loc[index_1, "threshold_value"]
-                        < features.loc[index_2, "threshold_value"]
-                    ):
-                        remove_list_distance.append(index_2)
-                    elif (
-                        features.loc[index_1, "threshold_value"]
-                        > features.loc[index_2, "threshold_value"]
-                    ):
-                        remove_list_distance.append(index_1)
-                    elif (
-                        features.loc[index_1, "threshold_value"]
-                        == features.loc[index_2, "threshold_value"]
-                    ):
-                        if features.loc[index_1, "num"] > features.loc[index_2, "num"]:
-                            remove_list_distance.append(index_2)
-                        elif (
-                            features.loc[index_1, "num"] < features.loc[index_2, "num"]
-                        ):
-                            remove_list_distance.append(index_1)
-                        elif (
-                            features.loc[index_1, "num"] == features.loc[index_2, "num"]
-                        ):
-                            remove_list_distance.append(index_2)
-
-    features = features[~features.index.isin(remove_list_distance)]
-    return features
+    # Return the features that are not flagged for removal
+    return features[~removal_flag]
