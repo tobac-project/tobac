@@ -1095,38 +1095,38 @@ def filter_min_distance(
             neighbour_list.remove(i)
             # If maximum target check if any neighbours have a larger threshold value
             if target == "maximum" and np.any(
-                features["threshold_value"][neighbour_list]
-                > features["threshold_value"][i]
+                features["threshold_value"].iloc[neighbour_list]
+                > features["threshold_value"].iloc[i]
             ):
                 removal_flag[i] = True
             # If minimum target check if any neighbours have a smaller threshold value
             elif target == "minimum" and np.any(
-                features["threshold_value"][neighbour_list]
-                < features["threshold_value"][i]
+                features["threshold_value"].iloc[neighbour_list]
+                < features["threshold_value"].iloc[i]
             ):
                 removal_flag[i] = True
             # Else check if any neighbours have an equal threshold value
             else:
                 wh_equal_threshold = (
-                    features["threshold_value"][neighbour_list]
-                    == features["threshold_value"][i]
+                    features["threshold_value"].iloc[neighbour_list]
+                    == features["threshold_value"].iloc[i]
                 )
                 if np.any(wh_equal_threshold):
                     # Check if any have a larger number of points
                     if np.any(
-                        features["num"][neighbour_list][wh_equal_threshold]
-                        > features["num"][i]
+                        features["num"].iloc[neighbour_list][wh_equal_threshold]
+                        > features["num"].iloc[i]
                     ):
                         removal_flag[i] = True
                     # Check if any have the same number of points and a lower index value
                     else:
                         wh_equal_area = (
-                            features["num"][neighbour_list][wh_equal_threshold]
-                            == features["num"][i]
+                            features["num"].iloc[neighbour_list][wh_equal_threshold]
+                            == features["num"].iloc[i]
                         )
                         if np.any(wh_equal_area):
                             if np.any(wh_equal_area.index[wh_equal_area] < i):
                                 removal_flag[i] = True
 
     # Return the features that are not flagged for removal
-    return features[~removal_flag]
+    return features.iloc[~removal_flag]
