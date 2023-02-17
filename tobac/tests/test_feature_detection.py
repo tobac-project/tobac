@@ -83,8 +83,8 @@ def test_filter_min_distance(test_threshs, min_distance, dxy):
     ## add another blob with smaller value
     test_hdim_1_pt2 = 25.0
     test_hdim_2_pt2 = 25.0
-    test_hdim_1_sz2 = 2
-    test_hdim_2_sz2 = 2
+    test_hdim_1_sz2 = 3
+    test_hdim_2_sz2 = 3
     test_amp2 = 3
     test_data = tbtest.make_feature_blob(
         test_data,
@@ -107,7 +107,9 @@ def test_filter_min_distance(test_threshs, min_distance, dxy):
     )
 
     # check if it function to filter
-    fd_filtered = feat_detect.filter_min_distance(fd_output, dxy, min_distance)
+    fd_filtered = feat_detect.filter_min_distance(
+        fd_output, dxy, min_distance, target="maximum"
+    )
 
     # Make sure we have only one feature (small feature in minimum distance should be removed )
     assert len(fd_output.index) == 2
@@ -115,6 +117,18 @@ def test_filter_min_distance(test_threshs, min_distance, dxy):
     # Make sure that the locations of the features is correct (should correspond to locations of first feature)
     assert fd_filtered.iloc[0]["hdim_1"] == pytest.approx(test_hdim_1_pt)
     assert fd_filtered.iloc[0]["hdim_2"] == pytest.approx(test_hdim_2_pt)
+
+    # check if it function to filter
+    fd_filtered = feat_detect.filter_min_distance(
+        fd_output, dxy, min_distance, target="minimum"
+    )
+
+    # Make sure we have only one feature (small feature in minimum distance should be removed )
+    assert len(fd_output.index) == 2
+    assert len(fd_filtered.index) == 1
+    # Make sure that the locations of the features is correct (should correspond to locations of second feature)
+    assert fd_filtered.iloc[0]["hdim_1"] == pytest.approx(test_hdim_1_pt2)
+    assert fd_filtered.iloc[0]["hdim_2"] == pytest.approx(test_hdim_2_pt2)
 
 
 @pytest.mark.parametrize(
