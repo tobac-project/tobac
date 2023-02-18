@@ -7,6 +7,11 @@ _**Version 1.4.2:**_
 
 - Fixed a bug in the segmentation procedure that assigned the wrong grid cell areas to features in data frame  [#246](https://github.com/tobac-project/tobac/pull/246)
 
+- Fixed a bug in feature_detection.filter_min_distance() that always selected the feature with the largest threshold, even if the feature detection is targeting minima. The target is now an optional input parameter for the distance filtering [#251](https://github.com/tobac-project/tobac/pull/251)
+
+- Fixed an issue in the 2D coordinate interpolation that produced object dtypes in feature detection and made the feature input data frame incompatible with the merge and split function [#251](https://github.com/tobac-project/tobac/pull/251)
+
+
 _**Version 1.4.1:**_
 
 **Bug fixes**
