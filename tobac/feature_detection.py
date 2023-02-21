@@ -677,7 +677,7 @@ def feature_detection_multithreshold(
             # Loop over DataFrame to remove features that are closer than distance_min to each other:
             if min_distance > 0:
                 features_thresholds = filter_min_distance(
-                    features_thresholds, dxy, min_distance
+                    features_thresholds, dxy, min_distance, target=target
                 )
         list_features_timesteps.append(features_thresholds)
 
@@ -701,7 +701,7 @@ def feature_detection_multithreshold(
     return features
 
 
-def filter_min_distance(features, dxy, min_distance):
+def filter_min_distance(features, dxy, min_distance, target="maximum"):
     """Perform feature detection based on contiguous regions.
 
     Regions are above/below a threshold.
@@ -716,6 +716,10 @@ def filter_min_distance(features, dxy, min_distance):
     min_distance : float, optional
         Minimum distance (in meter) between detected features.
 
+    target : str {maximum | minimum}, optional
+        Whether the threshod target is a maxima or minima (defaults to
+        maximum)
+
     Returns
     -------
     features : pandas.DataFrame
@@ -723,6 +727,11 @@ def filter_min_distance(features, dxy, min_distance):
     """
 
     from itertools import combinations
+
+    if target not in ["minimum", "maximum"]:
+        raise ValueError(
+            "target parameter must be set to either 'minimum' or 'maximum'"
+        )
 
     remove_list_distance = []
     # create list of tuples with all combinations of features at the timestep:
@@ -737,18 +746,8 @@ def filter_min_distance(features, dxy, min_distance):
                 ** 2
             )
             if distance <= min_distance:
-                #                        logging.debug('distance<= min_distance: ' + str(distance))
+                # If same threshold value, remove based on number of pixels
                 if (
-                    features.loc[index_1, "threshold_value"]
-                    > features.loc[index_2, "threshold_value"]
-                ):
-                    remove_list_distance.append(index_2)
-                elif (
-                    features.loc[index_1, "threshold_value"]
-                    < features.loc[index_2, "threshold_value"]
-                ):
-                    remove_list_distance.append(index_1)
-                elif (
                     features.loc[index_1, "threshold_value"]
                     == features.loc[index_2, "threshold_value"]
                 ):
@@ -756,7 +755,33 @@ def filter_min_distance(features, dxy, min_distance):
                         remove_list_distance.append(index_2)
                     elif features.loc[index_1, "num"] < features.loc[index_2, "num"]:
                         remove_list_distance.append(index_1)
+                    # Tie break if both have the same number of pixels
                     elif features.loc[index_1, "num"] == features.loc[index_2, "num"]:
                         remove_list_distance.append(index_2)
+                # Else remove based on comparison of thresholds and target
+                elif target == "maximum":
+                    if (
+                        features.loc[index_1, "threshold_value"]
+                        > features.loc[index_2, "threshold_value"]
+                    ):
+                        remove_list_distance.append(index_2)
+                    elif (
+                        features.loc[index_1, "threshold_value"]
+                        < features.loc[index_2, "threshold_value"]
+                    ):
+                        remove_list_distance.append(index_1)
+
+                elif target == "minimum":
+                    if (
+                        features.loc[index_1, "threshold_value"]
+                        < features.loc[index_2, "threshold_value"]
+                    ):
+                        remove_list_distance.append(index_2)
+                    elif (
+                        features.loc[index_1, "threshold_value"]
+                        > features.loc[index_2, "threshold_value"]
+                    ):
+                        remove_list_distance.append(index_1)
+
     features = features[~features.index.isin(remove_list_distance)]
     return features
