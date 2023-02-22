@@ -84,9 +84,9 @@ def test_feature_detection_position(position_threshold):
         n_min_threshold=test_min_num,
         position_threshold=position_threshold,
     )
-    
+
     pass
- 
+
 
 @pytest.mark.parametrize(
     "feature_1_loc, feature_2_loc, dxy, dz, min_distance,"
@@ -432,7 +432,7 @@ def test_feature_detection_multiple_z_coords(
         test_data_iris = tbtest.make_dataset_from_arr(
             time_dim_num=0, z_dim_num=3, y_dim_num=1, x_dim_num=2, **common_dset_opts
         )
-        
+
     if not expected_raise:
         out_df = feat_detect.feature_detection_multithreshold(
             field_in=test_data_iris,
@@ -456,7 +456,7 @@ def test_feature_detection_multiple_z_coords(
                 ],
                 vertical_coord=vertical_coord_opt,
             )
- 
+
 
 def test_feature_detection_setting_multiple():
     """Tests that an error is raised when vertical_axis and vertical_coord

@@ -942,8 +942,9 @@ def feature_detection_multithreshold(
                     dz=dz,
                     min_distance=min_distance,
                     z_coordinate_name=vertical_coord,
-                    target=target,               )
-                
+                    target=target,
+                )
+
         list_features_timesteps.append(features_thresholds)
 
         logging.debug(
@@ -969,6 +970,7 @@ def feature_detection_multithreshold(
         logging.debug("No features detected")
     logging.debug("feature detection completed")
     return features
+
 
 def filter_min_distance(
     features,
@@ -1022,7 +1024,6 @@ def filter_min_distance(
     """
 
     from itertools import combinations
-
 
     if dxy is None:
         raise NotImplementedError("dxy currently must be set.")

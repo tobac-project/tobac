@@ -199,7 +199,7 @@ def test_segmentation_timestep_3d_seed_box_nopbcs(
 
     The best way to do this I think is to create two blobs near (but not touching)
     each other, varying the seed_3D_size so that they are either segmented together
-    or not segmented together. 
+    or not segmented together.
     """
     test_dset_size = (20, 50, 50)
     test_hdim_1_pt_1 = 20.0
