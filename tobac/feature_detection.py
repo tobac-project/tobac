@@ -1109,10 +1109,7 @@ def filter_min_distance(
                 ):
                     if features.loc[index_1, "num"] > features.loc[index_2, "num"]:
                         remove_list_distance.append(index_2)
-                    elif (
-                        features.loc[index_1, "threshold_value"]
-                        < features.loc[index_2, "threshold_value"]
-                    ):
+                    elif features.loc[index_1, "num"] < features.loc[index_2, "num"]:
                         remove_list_distance.append(index_1)
                     # Tie break if both have the same number of pixels
                     elif features.loc[index_1, "num"] == features.loc[index_2, "num"]:
