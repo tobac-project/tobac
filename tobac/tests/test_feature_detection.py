@@ -69,12 +69,29 @@ def test_feature_detection_position(position_threshold):
 
     test_data = np.zeros(test_dset_size)
 
+<<<<<<< HEAD
     test_data[0:5, 0:5] = 3
     test_threshs = [
         1.5,
     ]
     test_min_num = 2
 
+=======
+    ## add another blob with smaller value
+    test_hdim_1_pt2 = 25.0
+    test_hdim_2_pt2 = 25.0
+    test_hdim_1_sz2 = 3
+    test_hdim_2_sz2 = 3
+    test_amp2 = 3
+    test_data = tbtest.make_feature_blob(
+        test_data,
+        test_hdim_1_pt2,
+        test_hdim_2_pt2,
+        h1_size=test_hdim_1_sz2,
+        h2_size=test_hdim_2_sz2,
+        amplitude=test_amp2,
+    )
+>>>>>>> remotes/origin/main
     test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type="iris")
 
     fd_output = feat_detect.feature_detection_multithreshold_timestep(
@@ -85,7 +102,33 @@ def test_feature_detection_position(position_threshold):
         position_threshold=position_threshold,
     )
 
+<<<<<<< HEAD
     pass
+=======
+    # check if it function to filter
+    fd_filtered = feat_detect.filter_min_distance(
+        fd_output, dxy, min_distance, target="maximum"
+    )
+
+    # Make sure we have only one feature (small feature in minimum distance should be removed )
+    assert len(fd_output.index) == 2
+    assert len(fd_filtered.index) == 1
+    # Make sure that the locations of the features is correct (should correspond to locations of first feature)
+    assert fd_filtered.iloc[0]["hdim_1"] == pytest.approx(test_hdim_1_pt)
+    assert fd_filtered.iloc[0]["hdim_2"] == pytest.approx(test_hdim_2_pt)
+>>>>>>> remotes/origin/main
+
+    # check if it function to filter
+    fd_filtered = feat_detect.filter_min_distance(
+        fd_output, dxy, min_distance, target="minimum"
+    )
+
+    # Make sure we have only one feature (small feature in minimum distance should be removed )
+    assert len(fd_output.index) == 2
+    assert len(fd_filtered.index) == 1
+    # Make sure that the locations of the features is correct (should correspond to locations of second feature)
+    assert fd_filtered.iloc[0]["hdim_1"] == pytest.approx(test_hdim_1_pt2)
+    assert fd_filtered.iloc[0]["hdim_2"] == pytest.approx(test_hdim_2_pt2)
 
 
 @pytest.mark.parametrize(
@@ -433,6 +476,7 @@ def test_feature_detection_multiple_z_coords(
             time_dim_num=0, z_dim_num=3, y_dim_num=1, x_dim_num=2, **common_dset_opts
         )
 
+<<<<<<< HEAD
     if not expected_raise:
         out_df = feat_detect.feature_detection_multithreshold(
             field_in=test_data_iris,
@@ -456,6 +500,11 @@ def test_feature_detection_multiple_z_coords(
                 ],
                 vertical_coord=vertical_coord_opt,
             )
+=======
+    test_data[0:5, 0:5] = 3
+    test_threshs = [1.5]
+    test_min_num = 2
+>>>>>>> remotes/origin/main
 
 
 def test_feature_detection_setting_multiple():
