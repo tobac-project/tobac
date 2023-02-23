@@ -944,6 +944,7 @@ def feature_detection_multithreshold(
                     z_coordinate_name=vertical_coord,
                     target=target,
                 )
+
         list_features_timesteps.append(features_thresholds)
 
         logging.debug(
@@ -985,8 +986,6 @@ def filter_min_distance(
     If two features are closer than `min_distance`, it keeps the
     larger feature.
 
-    TODO: does this function work with minima?
-
     Parameters
     ----------
     features:      pandas DataFrame
@@ -1013,6 +1012,10 @@ def filter_min_distance(
     target: {'maximum', 'minimum'}, optional
         Flag to determine if tracking is targetting minima or maxima in
         the data. Default is 'maximum'.
+
+    target : str {maximum | minimum}, optional
+        Whether the threshod target is a maxima or minima (defaults to
+        maximum)
 
     Returns
     -------
@@ -1100,9 +1103,20 @@ def filter_min_distance(
             )
 
             if distance <= min_distance:
-                # print(distance, min_distance, index_1, index_2, features.size)
-                #                        logging.debug('distance<= min_distance: ' + str(distance))
-                if target == "maximum":
+                # If same threshold value, remove based on number of pixels
+                if (
+                    features.loc[index_1, "threshold_value"]
+                    == features.loc[index_2, "threshold_value"]
+                ):
+                    if features.loc[index_1, "num"] > features.loc[index_2, "num"]:
+                        remove_list_distance.append(index_2)
+                    elif features.loc[index_1, "num"] < features.loc[index_2, "num"]:
+                        remove_list_distance.append(index_1)
+                    # Tie break if both have the same number of pixels
+                    elif features.loc[index_1, "num"] == features.loc[index_2, "num"]:
+                        remove_list_distance.append(index_2)
+                # Else remove based on comparison of thresholds and target
+                elif target == "maximum":
                     if (
                         features.loc[index_1, "threshold_value"]
                         > features.loc[index_2, "threshold_value"]
@@ -1113,20 +1127,7 @@ def filter_min_distance(
                         < features.loc[index_2, "threshold_value"]
                     ):
                         remove_list_distance.append(index_1)
-                    elif (
-                        features.loc[index_1, "threshold_value"]
-                        == features.loc[index_2, "threshold_value"]
-                    ):
-                        if features.loc[index_1, "num"] > features.loc[index_2, "num"]:
-                            remove_list_distance.append(index_2)
-                        elif (
-                            features.loc[index_1, "num"] < features.loc[index_2, "num"]
-                        ):
-                            remove_list_distance.append(index_1)
-                        elif (
-                            features.loc[index_1, "num"] == features.loc[index_2, "num"]
-                        ):
-                            remove_list_distance.append(index_2)
+
                 elif target == "minimum":
                     if (
                         features.loc[index_1, "threshold_value"]
@@ -1138,20 +1139,6 @@ def filter_min_distance(
                         > features.loc[index_2, "threshold_value"]
                     ):
                         remove_list_distance.append(index_1)
-                    elif (
-                        features.loc[index_1, "threshold_value"]
-                        == features.loc[index_2, "threshold_value"]
-                    ):
-                        if features.loc[index_1, "num"] > features.loc[index_2, "num"]:
-                            remove_list_distance.append(index_2)
-                        elif (
-                            features.loc[index_1, "num"] < features.loc[index_2, "num"]
-                        ):
-                            remove_list_distance.append(index_1)
-                        elif (
-                            features.loc[index_1, "num"] == features.loc[index_2, "num"]
-                        ):
-                            remove_list_distance.append(index_2)
 
     features = features[~features.index.isin(remove_list_distance)]
     return features
