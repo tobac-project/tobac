@@ -37,10 +37,10 @@ def feature_position(
     position_threshold="center",
     target=None,
     PBC_flag="none",
-    x_min=0,
-    x_max=0,
-    y_min=0,
-    y_max=0,
+    hdim1_min=0,
+    hdim1_max=0,
+    hdim2_min=0,
+    hdim2_max=0,
 ):
     """Determine feature position with regard to the horizontal
     dimensions in pixels from the identified region above
@@ -101,17 +101,21 @@ def feature_position(
         'hdim_2' means that we are periodic along hdim2
         'both' means that we are periodic along both horizontal dimensions
 
-    x_min : int
-        Minimum real x coordinate (for PBCs)
+    hdim1_min : int
+        Minimum real coordinate of the first horizontal dimension (for PBCs)
 
-    x_max: int
-        Maximum real x coordinate (for PBCs)
+    hdim1_max: int
+        Maximum real coordinate of the first horizontal dimension (for PBCs)
+        Note that this coordinate is INCLUSIVE, meaning that this is
+        the maximum coordinate value, and it is not a length.
 
-    y_min : int
-        Minimum real y coordinate (for PBCs)
+    hdim2_min : int
+        Minimum real coordinate of the first horizontal dimension (for PBCs)
 
-    y_max : int
-        Maximum real y coordinate (for PBCs)
+    hdim2_max : int
+        Maximum real coordinate of the first horizontal dimension (for PBCs)
+        Note that this coordinate is INCLUSIVE, meaning that this is
+        the maximum coordinate value, and it is not a length.
 
     Returns
     -------
@@ -141,35 +145,35 @@ def feature_position(
     if PBC_flag == "hdim_1":
         # ONLY periodic in y
 
-        if ((np.max(hdim1_indices)) == y_max) and ((np.min(hdim1_indices) == y_min)):
+        if ((np.max(hdim1_indices)) == hdim1_max) and ((np.min(hdim1_indices) == hdim1_min)):
             for y2 in range(0, len(hdim1_indices_2)):
                 h1_ind = hdim1_indices_2[y2]
-                if h1_ind < (y_max / 2):
-                    hdim1_indices_2[y2] = h1_ind + y_max
+                if h1_ind < (hdim1_max / 2):
+                    hdim1_indices_2[y2] = h1_ind + hdim1_max
 
     elif PBC_flag == "hdim_2":
         # ONLY periodic in x
 
-        if ((np.max(hdim2_indices)) == x_max) and ((np.min(hdim2_indices) == x_min)):
+        if ((np.max(hdim2_indices)) == hdim2_max) and ((np.min(hdim2_indices) == hdim2_min)):
             for x2 in range(0, len(hdim2_indices_2)):
                 h2_ind = hdim2_indices_2[x2]
-                if h2_ind < (x_max / 2):
-                    hdim2_indices_2[x2] = h2_ind + x_max
+                if h2_ind < (hdim2_max / 2):
+                    hdim2_indices_2[x2] = h2_ind + hdim2_max
 
     elif PBC_flag == "both":
         # DOUBLY periodic boundaries
 
-        if ((np.max(hdim1_indices)) == y_max) and ((np.min(hdim1_indices) == y_min)):
+        if ((np.max(hdim1_indices)) == hdim1_max) and ((np.min(hdim1_indices) == hdim1_min)):
             for y2 in range(0, len(hdim1_indices_2)):
                 h1_ind = hdim1_indices_2[y2]
-                if h1_ind < (y_max / 2):
-                    hdim1_indices_2[y2] = h1_ind + y_max
+                if h1_ind < (hdim1_max / 2):
+                    hdim1_indices_2[y2] = h1_ind + hdim1_max
 
-        if ((np.max(hdim2_indices)) == x_max) and ((np.min(hdim2_indices) == x_min)):
+        if ((np.max(hdim2_indices)) == hdim2_max) and ((np.min(hdim2_indices) == hdim2_min)):
             for x2 in range(0, len(hdim2_indices_2)):
                 h2_ind = hdim2_indices_2[x2]
-                if h2_ind < (x_max / 2):
-                    hdim2_indices_2[x2] = h2_ind + x_max
+                if h2_ind < (hdim2_max / 2):
+                    hdim2_indices_2[x2] = h2_ind + hdim2_max
 
     hdim1_indices = hdim1_indices_2
     hdim2_indices = hdim2_indices_2
@@ -237,11 +241,11 @@ def feature_position(
     # re-transform of any coords beyond the boundaries - (should be) general enough to work for any variety of PBC
     # as no x or y points will be beyond the boundaries if we haven't transformed them in the first place
     if PBC_flag in pbc_options:
-        if hdim1_index > y_max:
-            hdim1_index = hdim1_index - y_max
+        if hdim1_index > hdim1_max:
+            hdim1_index = hdim1_index - hdim1_max
 
-        if hdim2_index > x_max:
-            hdim2_index = hdim2_index - x_max
+        if hdim2_index > hdim2_max:
+            hdim2_index = hdim2_index - hdim2_max
 
     if is_3D:
         return vdim_index, hdim1_index, hdim2_index
@@ -777,10 +781,10 @@ def feature_detection_threshold(
                 position_threshold=position_threshold,
                 target=target,
                 PBC_flag=PBC_flag,
-                x_min=x_min,
-                x_max=x_max,
-                y_min=y_min,
-                y_max=y_max,
+                hdim2_min=x_min,
+                hdim2_max=x_max,
+                hdim1_min=y_min,
+                hdim1_max=y_max,
             )
             if is_3D:
                 vdim_index, hdim1_index, hdim2_index = single_indices

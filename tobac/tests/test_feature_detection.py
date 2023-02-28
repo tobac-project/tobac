@@ -511,3 +511,40 @@ def test_feature_detection_coords():
 
     for coord in test_data_iris.coords():
         assert coord.name() in fd_output_first
+
+
+@pytest.mark.parametrize(
+    "h1_indices, h2_indices, max_h1, max_h2, PBC_flag, position_threshold, expected_output",
+    (
+        ([1], [1], 10, 10, "both", "center", (1, 1)),
+        ([1, 2], [1, 2], 10, 10, "both", "center", (1.5, 1.5)),
+        ([0, 1], [1, 2], 10, 10, "both", "center", (0.5, 1.5)),
+    ),
+)
+def test_feature_position_pbc(
+    h1_indices,
+    h2_indices,
+    max_h1,
+    max_h2,
+    PBC_flag,
+    position_threshold,
+    expected_output,
+):
+    """Tests to make sure that tobac.feature_detection.feature_position
+    works properly with periodic boundaries.
+    """
+
+    in_data = np.zeros((max_h1 + 1, max_h2 + 1))
+    region = (0, 0, max_h1 + 1, max_h2 + 1)
+
+    feat_pos_output = feat_detect.feature_position(
+        h1_indices,
+        h2_indices,
+        hdim1_max=max_h1,
+        hdim2_max=max_h2,
+        PBC_flag=PBC_flag,
+        position_threshold=position_threshold,
+        track_data=in_data,
+        region_bbox=region,
+    )
+    assert feat_pos_output == expected_output
