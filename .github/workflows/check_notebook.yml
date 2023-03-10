@@ -31,5 +31,5 @@ jobs:
         run: |
           while IFS= read -r nbpath; do
             jupyter nbconvert --inplace --ClearMetadataPreprocessor.enabled=True --clear-output $nbpath
-            jupyter nbconvert --to notebook --inplace --execute $nbpath || true
+            jupyter nbconvert --to notebook --inplace --execute $nbpath
           done < nbfiles.txt
