@@ -1,6 +1,8 @@
 import pytest
 import tobac.testing as testing
 import tobac.segmentation as seg
+import numpy as np
+from tobac import segmentation, feature_detection, testing
 
 
 def test_segmentation_timestep_2D_feature_2D_seg():
@@ -40,7 +42,7 @@ def test_segmentation_timestep_2D_feature_2D_seg():
         start_h1=20.0, start_h2=20.0, max_h1=1000, max_h2=1000
     )
 
-    out_seg_mask, out_df = seg.segmentation_timestep(
+    out_seg_mask, out_df = segmentation.segmentation_timestep(
         field_in=test_data_iris,
         features_in=test_feature_ds,
         dxy=test_dxy,
@@ -315,7 +317,7 @@ def test_segmentation_timestep_level():
         start_h1=20.0, start_h2=20.0, max_h1=1000, max_h2=1000
     )
 
-    out_seg_mask, out_df = seg.segmentation_timestep(
+    out_seg_mask, out_df = segmentation.segmentation_timestep(
         field_in=test_data_iris,
         features_in=test_feature_ds,
         dxy=test_dxy,
@@ -342,7 +344,7 @@ def test_segmentation_timestep_level():
     )
 
     # now set specific levels
-    out_seg_mask, out_df = seg.segmentation_timestep(
+    out_seg_mask, out_df = segmentation.segmentation_timestep(
         field_in=test_data_iris,
         features_in=test_feature_ds,
         dxy=test_dxy,
@@ -397,15 +399,9 @@ def test_segmentation_timestep_3d_seed_box_nopbcs(
         True if we expect both features to be segmented, false
         if we don't expect them both to be segmented
 
-    """
-
-    import numpy as np
-
-    # For now, just testing this for no PBCs.
-    """
     The best way to do this I think is to create two blobs near (but not touching)
     each other, varying the seed_3D_size so that they are either segmented together
-    or not segmented together. 
+    or not segmented together.
     """
     test_dset_size = (20, 50, 50)
     test_hdim_1_pt_1 = 20.0
@@ -452,7 +448,7 @@ def test_segmentation_timestep_3d_seed_box_nopbcs(
         max_h2=1000,
     )
 
-    out_seg_mask, out_df = seg.segmentation_timestep(
+    out_seg_mask, out_df = segmentation.segmentation_timestep(
         field_in=test_data_iris,
         features_in=test_feature_ds,
         dxy=test_dxy,
@@ -547,7 +543,7 @@ def test_different_z_axes(
         max_h2=1000,
     )
     if not expected_raise:
-        out_seg_mask, out_df = seg.segmentation_timestep(
+        out_seg_mask, out_df = segmentation.segmentation_timestep(
             field_in=test_data_iris,
             features_in=test_feature_ds,
             dxy=test_dxy,
@@ -560,12 +556,79 @@ def test_different_z_axes(
     else:
         # Expecting a raise
         with pytest.raises(ValueError):
-            out_seg_mask, out_df = seg.segmentation_timestep(
+            out_seg_mask, out_df = segmentation.segmentation_timestep(
                 field_in=test_data_iris,
                 features_in=test_feature_ds,
                 dxy=test_dxy,
                 threshold=1.5,
             )
+
+
+def test_segmentation_multiple_features():
+    """Tests `tobac.segmentation.segmentation_timestep` with a 2D input containing multiple features with different areas.
+    Tests specifically whether their area (ncells) is correctly calculate and assigned to the different features.
+    """
+    test_dset_size = (50, 50)
+    test_hdim_1_pt = 20.0
+    test_hdim_2_pt = 20.0
+    test_hdim_1_sz = 5
+    test_hdim_2_sz = 5
+    size_feature1 = test_hdim_1_sz * test_hdim_2_sz
+    test_amp = 2
+    test_min_num = 2
+
+    test_data = np.zeros(test_dset_size)
+    test_data = testing.make_feature_blob(
+        test_data,
+        test_hdim_1_pt,
+        test_hdim_2_pt,
+        h1_size=test_hdim_1_sz,
+        h2_size=test_hdim_2_sz,
+        amplitude=test_amp,
+    )
+
+    # add feature of different size
+    test_hdim_1_pt = 40.0
+    test_hdim_2_pt = 40.0
+    test_hdim_1_sz = 10
+    test_hdim_2_sz = 10
+    size_feature2 = test_hdim_1_sz * test_hdim_2_sz
+    test_amp = 10
+    test_dxy = 1
+
+    test_data = testing.make_feature_blob(
+        test_data,
+        test_hdim_1_pt,
+        test_hdim_2_pt,
+        h1_size=test_hdim_1_sz,
+        h2_size=test_hdim_2_sz,
+        amplitude=test_amp,
+    )
+
+    test_data_iris = testing.make_dataset_from_arr(test_data, data_type="iris")
+
+    # detect both features
+    fd_output = feature_detection.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        i_time=0,
+        dxy=1,
+        threshold=[1, 2, 3],
+        n_min_threshold=test_min_num,
+        target="maximum",
+    )
+
+    # add feature IDs to data frame for one time step
+    fd_output["feature"] = [1, 2]
+
+    # perform segmentation
+    out_seg_mask, out_df = segmentation.segmentation_timestep(
+        field_in=test_data_iris, features_in=fd_output, dxy=test_dxy, threshold=1.5
+    )
+    out_seg_mask_arr = out_seg_mask.core_data()
+
+    # assure that the number of grid cells belonging to each feature (ncells) are consistent with segmentation mask
+    assert int(out_df[out_df.feature == 1].ncells.values) == size_feature1
+    assert int(out_df[out_df.feature == 2].ncells.values) == size_feature2
 
 
 # TODO: add more tests to make sure buddy box code is run.
