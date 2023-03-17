@@ -480,6 +480,53 @@ def test_feature_detection_threshold_sort(test_threshs, target):
         assert_frame_equal(fd_output_first, fd_output_test)
 
 
+@pytest.mark.parametrize(
+    "hdim_1_pt,"
+    "hdim_2_pt,"
+    "hdim_1_size,"
+    "hdim_2_size,"
+    "PBC_flag,"
+    "expected_center,",
+    [
+        (10, 10, 3, 3, "both", (10, 10)),
+        (0, 0, 3, 3, "both", (0, 0)),
+        (0, 0, 3, 3, "hdim_1", (0, 0.5)),
+        (0, 0, 3, 3, "hdim_2", (0.5, 0)),
+        (0, 10, 3, 3, "hdim_1", (0, 10)),
+    ],
+)
+def test_feature_detection_threshold_pbc(
+    hdim_1_pt, hdim_2_pt, hdim_1_size, hdim_2_size, PBC_flag, expected_center
+):
+    """Tests that feature detection works with periodic boundaries"""
+    test_dset_size = (50, 50)
+    test_amp = 2
+    test_min_num = 2
+
+    test_data = np.zeros(test_dset_size)
+    test_data = tbtest.make_feature_blob(
+        test_data,
+        hdim_1_pt,
+        hdim_2_pt,
+        h1_size=hdim_1_size,
+        h2_size=hdim_2_size,
+        amplitude=test_amp,
+        PBC_flag=PBC_flag,
+    )
+    # test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type="iris")
+    fd_output_df, fd_output_reg = feat_detect.feature_detection_threshold(
+        test_data,
+        0,
+        threshold=1,
+        n_min_threshold=test_min_num,
+        target="maximum",
+        PBC_flag=PBC_flag,
+    )
+    assert len(fd_output_df) == 1
+    assert fd_output_df["hdim_1"].values[0] == expected_center[0]
+    assert fd_output_df["hdim_2"].values[0] == expected_center[1]
+
+
 def test_feature_detection_coords():
     """Tests that the output features dataframe contains all the coords of the input iris cube"""
     test_dset_size = (50, 50)
@@ -519,6 +566,11 @@ def test_feature_detection_coords():
         ([1], [1], 10, 10, "both", "center", (1, 1)),
         ([1, 2], [1, 2], 10, 10, "both", "center", (1.5, 1.5)),
         ([0, 1], [1, 2], 10, 10, "both", "center", (0.5, 1.5)),
+        ([0, 10], [1, 1], 10, 10, "hdim_1", "center", (10.5, 1)),
+        ([1, 1], [0, 10], 10, 10, "hdim_2", "center", (1, 10.5)),
+        ([0, 10], [1, 1], 10, 10, "both", "center", (10.5, 1)),
+        ([1, 1], [0, 10], 10, 10, "both", "center", (1, 10.5)),
+        ([0, 10], [0, 10], 10, 10, "both", "center", (10.5, 10.5)),
     ),
 )
 def test_feature_position_pbc(

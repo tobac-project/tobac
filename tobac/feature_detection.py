@@ -128,52 +128,44 @@ def feature_position(
         the first element is the feature position along the vertical dimension
         and the second two elements are the feature position on the first and
         second horizontal dimensions.
+        Note for PBCs: this point *can* be >hdim1_max or hdim2_max if the
+        point is between hdim1_max and hdim1_min. For example, if a feature
+        lies exactly between hdim1_max and hdim1_min, the output could be
+        between hdim1_max and hdim1_max+1. While a value between hdim1_min-1
+        and hdim1_min would also be valid, we choose to overflow on the max side of things.
     """
 
     # First, if necessary, run PBC processing.
     # processing of PBC indices
     # checks to see if minimum and maximum values are present in dimensional array
-    # then if true, adds max value to any indices past the halfway point of their respective dimension
-    # are we 3D? if so, True.
-    is_3D = False
-
+    # then if true, adds max value to any indices past the halfway point of their respective dimension.
+    # this, in essence, shifts the set of points to the high side.
     pbc_options = ["hdim_1", "hdim_2", "both"]
 
     hdim1_indices_2 = hdim1_indices
     hdim2_indices_2 = hdim2_indices
 
-    if PBC_flag == "hdim_1":
+    if PBC_flag == "hdim_1" or PBC_flag == "both":
         # ONLY periodic in y
 
-        if ((np.max(hdim1_indices)) == hdim1_max) and ((np.min(hdim1_indices) == hdim1_min)):
+        if ((np.max(hdim1_indices)) == hdim1_max) and (
+            (np.min(hdim1_indices) == hdim1_min)
+        ):
             for y2 in range(0, len(hdim1_indices_2)):
                 h1_ind = hdim1_indices_2[y2]
                 if h1_ind < (hdim1_max / 2):
-                    hdim1_indices_2[y2] = h1_ind + hdim1_max
+                    hdim1_indices_2[y2] = h1_ind + hdim1_max + 1
 
-    elif PBC_flag == "hdim_2":
+    if PBC_flag == "hdim_2" or PBC_flag == "both":
         # ONLY periodic in x
 
-        if ((np.max(hdim2_indices)) == hdim2_max) and ((np.min(hdim2_indices) == hdim2_min)):
+        if ((np.max(hdim2_indices)) == hdim2_max) and (
+            (np.min(hdim2_indices) == hdim2_min)
+        ):
             for x2 in range(0, len(hdim2_indices_2)):
                 h2_ind = hdim2_indices_2[x2]
                 if h2_ind < (hdim2_max / 2):
-                    hdim2_indices_2[x2] = h2_ind + hdim2_max
-
-    elif PBC_flag == "both":
-        # DOUBLY periodic boundaries
-
-        if ((np.max(hdim1_indices)) == hdim1_max) and ((np.min(hdim1_indices) == hdim1_min)):
-            for y2 in range(0, len(hdim1_indices_2)):
-                h1_ind = hdim1_indices_2[y2]
-                if h1_ind < (hdim1_max / 2):
-                    hdim1_indices_2[y2] = h1_ind + hdim1_max
-
-        if ((np.max(hdim2_indices)) == hdim2_max) and ((np.min(hdim2_indices) == hdim2_min)):
-            for x2 in range(0, len(hdim2_indices_2)):
-                h2_ind = hdim2_indices_2[x2]
-                if h2_ind < (hdim2_max / 2):
-                    hdim2_indices_2[x2] = h2_ind + hdim2_max
+                    hdim2_indices_2[x2] = h2_ind + hdim2_max + 1
 
     hdim1_indices = hdim1_indices_2
     hdim2_indices = hdim2_indices_2
@@ -241,11 +233,11 @@ def feature_position(
     # re-transform of any coords beyond the boundaries - (should be) general enough to work for any variety of PBC
     # as no x or y points will be beyond the boundaries if we haven't transformed them in the first place
     if PBC_flag in pbc_options:
-        if hdim1_index > hdim1_max:
-            hdim1_index = hdim1_index - hdim1_max
+        if hdim1_index >= hdim1_max + 1:
+            hdim1_index = hdim1_index - (hdim1_max + 1)
 
-        if hdim2_index > hdim2_max:
-            hdim2_index = hdim2_index - hdim2_max
+        if hdim2_index >= hdim2_max + 1:
+            hdim2_index = hdim2_index - (hdim2_max + 1)
 
     if is_3D:
         return vdim_index, hdim1_index, hdim2_index
@@ -530,7 +522,6 @@ def feature_detection_threshold(
                         np.any(label_y == [y_min, y_max])
                         and np.any(label_x == [x_min, x_max])
                     ):
-
                         # adjust x and y points to the other side
                         y_val_alt = pbc_utils.adjust_pbc_point(label_y, y_min, y_max)
                         x_val_alt = pbc_utils.adjust_pbc_point(label_x, x_min, x_max)
