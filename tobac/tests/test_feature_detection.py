@@ -58,70 +58,6 @@ def test_feature_detection_multithreshold_timestep(
 
 
 @pytest.mark.parametrize(
-    "test_threshs, min_distance, dxy", [([1, 2, 3], 100000, 10000)]
-)
-def test_filter_min_distance(test_threshs, min_distance, dxy):
-    """
-    Tests ```tobac.feature_detection.filter_min_distance```
-    """
-    # start by building a simple dataset with two features close to each other
-
-    test_dset_size = (50, 50)
-    test_hdim_1_pt = 20.0
-    test_hdim_2_pt = 20.0
-    test_hdim_1_sz = 5
-    test_hdim_2_sz = 5
-    test_amp = 5
-    test_min_num = 2
-
-    test_data = np.zeros(test_dset_size)
-    test_data = tbtest.make_feature_blob(
-        test_data,
-        test_hdim_1_pt,
-        test_hdim_2_pt,
-        h1_size=test_hdim_1_sz,
-        h2_size=test_hdim_2_sz,
-        amplitude=test_amp,
-    )
-
-    ## add another blob with smaller value
-    test_hdim_1_pt2 = 25.0
-    test_hdim_2_pt2 = 25.0
-    test_hdim_1_sz2 = 2
-    test_hdim_2_sz2 = 2
-    test_amp2 = 3
-    test_data = tbtest.make_feature_blob(
-        test_data,
-        test_hdim_1_pt2,
-        test_hdim_2_pt2,
-        h1_size=test_hdim_1_sz2,
-        h2_size=test_hdim_2_sz2,
-        amplitude=test_amp2,
-    )
-    test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type="iris")
-
-    # identify these features
-    fd_output = feat_detect.feature_detection_multithreshold_timestep(
-        test_data_iris,
-        0,
-        threshold=test_threshs,
-        n_min_threshold=test_min_num,
-        min_distance=min_distance,
-        dxy=dxy,
-    )
-
-    # check if it function to filter
-    fd_filtered = feat_detect.filter_min_distance(fd_output, dxy, min_distance)
-
-    # Make sure we have only one feature (small feature in minimum distance should be removed )
-    assert len(fd_output.index) == 2
-    assert len(fd_filtered.index) == 1
-    # Make sure that the locations of the features is correct (should correspond to locations of first feature)
-    assert fd_filtered.iloc[0]["hdim_1"] == pytest.approx(test_hdim_1_pt)
-    assert fd_filtered.iloc[0]["hdim_2"] == pytest.approx(test_hdim_2_pt)
-
-
-@pytest.mark.parametrize(
     "position_threshold", [("center"), ("extreme"), ("weighted_diff"), ("weighted_abs")]
 )
 def test_feature_detection_position(position_threshold):
@@ -154,43 +90,163 @@ def test_feature_detection_position(position_threshold):
 
 @pytest.mark.parametrize(
     "feature_1_loc, feature_2_loc, dxy, dz, min_distance,"
-    " add_x_coords, add_y_coords,"
+    "target, add_x_coords, add_y_coords,"
     "add_z_coords, expect_feature_1, expect_feature_2",
     [
-        (
+        (  # If separation greater than min_distance, keep both features
             (0, 0, 0, 4, 1),
             (1, 1, 1, 4, 1),
             1000,
             100,
             1,
+            "maximum",
             False,
             False,
             False,
             True,
             True,
         ),
-        (
+        (  # Keep feature 1 by area
             (0, 0, 0, 4, 1),
             (1, 1, 1, 3, 1),
             1000,
             100,
             5000,
+            "maximum",
             False,
             False,
             False,
             True,
             False,
         ),
-        (
+        (  # Keep feature 2 by area
+            (0, 0, 0, 4, 1),
+            (1, 1, 1, 6, 1),
+            1000,
+            100,
+            5000,
+            "maximum",
+            False,
+            False,
+            False,
+            False,
+            True,
+        ),
+        (  # Keep feature 1 by area
+            (0, 0, 0, 4, 1),
+            (1, 1, 1, 3, 1),
+            1000,
+            100,
+            5000,
+            "minimum",
+            False,
+            False,
+            False,
+            True,
+            False,
+        ),
+        (  # Keep feature 2 by area
+            (0, 0, 0, 4, 1),
+            (1, 1, 1, 6, 1),
+            1000,
+            100,
+            5000,
+            "minimum",
+            False,
+            False,
+            False,
+            False,
+            True,
+        ),
+        (  # Keep feature 1 by maximum threshold
             (0, 0, 0, 4, 2),
             (1, 1, 1, 10, 1),
             1000,
             100,
             5000,
+            "maximum",
             False,
             False,
             False,
             True,
+            False,
+        ),
+        (  # Keep feature 2 by maximum threshold
+            (0, 0, 0, 4, 2),
+            (1, 1, 1, 10, 3),
+            1000,
+            100,
+            5000,
+            "maximum",
+            False,
+            False,
+            False,
+            False,
+            True,
+        ),
+        (  # Keep feature 1 by minimum threshold
+            (0, 0, 0, 4, -1),
+            (1, 1, 1, 10, 1),
+            1000,
+            100,
+            5000,
+            "minimum",
+            False,
+            False,
+            False,
+            True,
+            False,
+        ),
+        (  # Keep feature 2 by minimum threshold
+            (0, 0, 0, 4, 2),
+            (1, 1, 1, 10, 1),
+            1000,
+            100,
+            5000,
+            "minimum",
+            False,
+            False,
+            False,
+            False,
+            True,
+        ),
+        (  # Keep feature 1 by tie-break
+            (0, 0, 0, 4, 2),
+            (1, 1, 1, 4, 2),
+            1000,
+            100,
+            5000,
+            "maximum",
+            False,
+            False,
+            False,
+            True,
+            False,
+        ),
+        (  # Keep feature 1 by tie-break
+            (0, 0, 0, 4, 2),
+            (1, 1, 1, 4, 2),
+            1000,
+            100,
+            5000,
+            "minimum",
+            False,
+            False,
+            False,
+            True,
+            False,
+        ),
+        (  # If target is not maximum or minimum raise ValueError
+            (0, 0, 0, 4, 1),
+            (1, 1, 1, 4, 1),
+            1000,
+            100,
+            1,
+            "chaos",
+            False,
+            False,
+            False,
+            False,
             False,
         ),
     ],
@@ -201,6 +257,7 @@ def test_filter_min_distance(
     dxy,
     dz,
     min_distance,
+    target,
     add_x_coords,
     add_y_coords,
     add_z_coords,
@@ -223,6 +280,8 @@ def test_filter_min_distance(
         Vertical grid spacing (constant)
     min_distance: float
         Minimum distance between features (m)
+    target: str ["maximum" | "minimum"]
+        Target maxima or minima threshold for selecting which feature to keep
     add_x_coords: bool
         Whether or not to add x coordinates
     add_y_coords: bool
@@ -296,12 +355,17 @@ def test_filter_min_distance(
         "dxy": dxy,
         "dz": dz,
         "min_distance": min_distance,
+        "target": target,
     }
+    if target not in ["maximum", "minimum"]:
+        with pytest.raises(ValueError):
+            out_feats = feat_detect.filter_min_distance(**filter_dist_opts)
 
-    out_feats = feat_detect.filter_min_distance(**filter_dist_opts)
+    else:
+        out_feats = feat_detect.filter_min_distance(**filter_dist_opts)
 
-    assert expect_feature_1 == (np.sum(out_feats["feature"] == 1) == 1)
-    assert expect_feature_2 == (np.sum(out_feats["feature"] == 2) == 1)
+        assert expect_feature_1 == (np.sum(out_feats["feature"] == 1) == 1)
+        assert expect_feature_2 == (np.sum(out_feats["feature"] == 2) == 1)
 
 
 @pytest.mark.parametrize(

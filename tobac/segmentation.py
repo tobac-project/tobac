@@ -467,14 +467,16 @@ def segmentation_timestep(
     # Write resulting mask into cube for output
     segmentation_out.data = segmentation_mask
 
-    # count number of grid cells asoociated to each tracked cell and write that into DataFrame:
+    # count number of grid cells associated to each tracked cell and write that into DataFrame:
     values, count = np.unique(segmentation_mask, return_counts=True)
     counts = dict(zip(values, count))
     ncells = np.zeros(len(features_out))
     for i, (index, row) in enumerate(features_out.iterrows()):
         if row["feature"] in counts.keys():
-            ncells = counts[row["feature"]]
-    features_out["ncells"] = ncells
+            # assign a value for ncells for the respective feature in data frame
+            features_out.loc[features_out.feature == row["feature"], "ncells"] = counts[
+                row["feature"]
+            ]
 
     return segmentation_out, features_out
 

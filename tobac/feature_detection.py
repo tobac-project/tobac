@@ -942,7 +942,9 @@ def feature_detection_multithreshold(
                     dz=dz,
                     min_distance=min_distance,
                     z_coordinate_name=vertical_coord,
+                    target=target,
                 )
+
         list_features_timesteps.append(features_thresholds)
 
         logging.debug(
@@ -978,12 +980,11 @@ def filter_min_distance(
     x_coordinate_name=None,
     y_coordinate_name=None,
     z_coordinate_name=None,
+    target="maximum",
 ):
     """Function to remove features that are too close together.
     If two features are closer than `min_distance`, it keeps the
     larger feature.
-
-    TODO: does this function work with minima?
 
     Parameters
     ----------
@@ -1008,6 +1009,13 @@ def filter_min_distance(
     z_coordinate_name: str or None
         The name of the z coordinate to calculate distance based on in meters.
         This is typically `altitude`. If `auto`, tries to auto-detect.
+    target: {'maximum', 'minimum'}, optional
+        Flag to determine if tracking is targetting minima or maxima in
+        the data. Default is 'maximum'.
+
+    target : str {maximum | minimum}, optional
+        Whether the threshod target is a maxima or minima (defaults to
+        maximum)
 
     Returns
     -------
@@ -1052,6 +1060,11 @@ def filter_min_distance(
             "Set dz to none if you want to use altitude or set `z_coordinate_name` to None to use constant dz."
         )
 
+    if target not in ["minimum", "maximum"]:
+        raise ValueError(
+            "target parameter must be set to either 'minimum' or 'maximum'"
+        )
+
     # create list of tuples with all combinations of features at the timestep:
     indices = combinations(features.index.values, 2)
     # Loop over combinations to remove features that are closer together than min_distance and keep larger one (either higher threshold or larger area)
@@ -1090,19 +1103,8 @@ def filter_min_distance(
             )
 
             if distance <= min_distance:
-                # print(distance, min_distance, index_1, index_2, features.size)
-                #                        logging.debug('distance<= min_distance: ' + str(distance))
+                # If same threshold value, remove based on number of pixels
                 if (
-                    features.loc[index_1, "threshold_value"]
-                    > features.loc[index_2, "threshold_value"]
-                ):
-                    remove_list_distance.append(index_2)
-                elif (
-                    features.loc[index_1, "threshold_value"]
-                    < features.loc[index_2, "threshold_value"]
-                ):
-                    remove_list_distance.append(index_1)
-                elif (
                     features.loc[index_1, "threshold_value"]
                     == features.loc[index_2, "threshold_value"]
                 ):
@@ -1110,7 +1112,33 @@ def filter_min_distance(
                         remove_list_distance.append(index_2)
                     elif features.loc[index_1, "num"] < features.loc[index_2, "num"]:
                         remove_list_distance.append(index_1)
+                    # Tie break if both have the same number of pixels
                     elif features.loc[index_1, "num"] == features.loc[index_2, "num"]:
                         remove_list_distance.append(index_2)
+                # Else remove based on comparison of thresholds and target
+                elif target == "maximum":
+                    if (
+                        features.loc[index_1, "threshold_value"]
+                        > features.loc[index_2, "threshold_value"]
+                    ):
+                        remove_list_distance.append(index_2)
+                    elif (
+                        features.loc[index_1, "threshold_value"]
+                        < features.loc[index_2, "threshold_value"]
+                    ):
+                        remove_list_distance.append(index_1)
+
+                elif target == "minimum":
+                    if (
+                        features.loc[index_1, "threshold_value"]
+                        < features.loc[index_2, "threshold_value"]
+                    ):
+                        remove_list_distance.append(index_2)
+                    elif (
+                        features.loc[index_1, "threshold_value"]
+                        > features.loc[index_2, "threshold_value"]
+                    ):
+                        remove_list_distance.append(index_1)
+
     features = features[~features.index.isin(remove_list_distance)]
     return features
