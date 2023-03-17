@@ -1,5 +1,28 @@
 ### Tobac Changelog
 
+_**Version 1.4.2:**_
+
+
+**Bug fix**
+
+- Fixed a bug in the segmentation procedure that assigned the wrong grid cell areas to features in data frame  [#246](https://github.com/tobac-project/tobac/pull/246)
+
+- Fixed a bug in feature_detection.filter_min_distance() that always selected the feature with the largest threshold, even if the feature detection is targeting minima. The target is now an optional input parameter for the distance filtering [#251](https://github.com/tobac-project/tobac/pull/251)
+
+- Fixed an issue in the 2D coordinate interpolation that produced object dtypes in feature detection and made the feature input data frame incompatible with the merge and split function [#251](https://github.com/tobac-project/tobac/pull/251)
+
+
+_**Version 1.4.1:**_
+
+**Bug fixes**
+
+- Fixed a bug with predictive tracking that would duplicate column names if the input dataset has coordinates x and/or y [#217](https://github.com/tobac-project/tobac/pull/217)
+- Set extrapolate parameter to 0 in example notebooks to prevent not implemented error [#217](https://github.com/tobac-project/tobac/pull/217)
+
+**Documentation**
+
+- Regenerated example notebooks so that they are up to date for the present version [#233](https://github.com/tobac-project/tobac/pull/233)
+
 _**Version 1.4.0:**_
 
 **Enhancements**

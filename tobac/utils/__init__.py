@@ -1,5 +1,6 @@
 from .general import (
     add_coordinates,
+    add_coordinates_3D,
     get_spacings,
     get_bounding_box,
     combine_tobac_feats,

@@ -182,18 +182,22 @@ def test_converting(
     elif input_types[0] == Cube:
         data = tobac.testing.make_simple_sample_data_2D()
     elif input_types[0] == xarray.Dataset:
-        data = tobac.testing.generate_single_feature(1, 1).to_xarray()
+        data = tobac.testing.generate_single_feature(
+            1, 1, max_h1=100, max_h2=100
+        ).to_xarray()
     elif input_types[0] == pd.DataFrame:
-        data = tobac.testing.generate_single_feature(1, 1)
+        data = tobac.testing.generate_single_feature(1, 1, max_h1=100, max_h2=100)
 
     if input_types[1] == xarray.DataArray:
         kwarg = xarray.DataArray.from_iris(tobac.testing.make_simple_sample_data_2D())
     elif input_types[1] == Cube:
         kwarg = tobac.testing.make_simple_sample_data_2D()
     elif input_types[1] == xarray.Dataset:
-        kwarg = tobac.testing.generate_single_feature(1, 1).to_xarray()
+        kwarg = tobac.testing.generate_single_feature(
+            1, 1, max_h1=100, max_h2=100
+        ).to_xarray()
     elif input_types[1] == pd.DataFrame:
-        kwarg = tobac.testing.generate_single_feature(1, 1)
+        kwarg = tobac.testing.generate_single_feature(1, 1, max_h1=100, max_h2=100)
 
     output = decorated_function_kwarg(data, kwarg=kwarg)
     tuple_output = decorated_function_tuple(data, kwarg=kwarg)
@@ -234,16 +238,18 @@ def test_xarray_workflow():
     feature_detection_xarray = xarray_to_iris(
         tobac.feature_detection.feature_detection_multithreshold
     )
-    features = tobac.feature_detection.feature_detection_multithreshold(data, dxy, 1.0)
-    features_xarray = feature_detection_xarray(data_xarray, dxy_xarray, 1.0)
+    features = tobac.feature_detection.feature_detection_multithreshold(
+        data, dxy, threshold=1.0
+    )
+    features_xarray = feature_detection_xarray(data_xarray, dxy_xarray, threshold=1.0)
 
     assert_frame_equal(features, features_xarray)
 
     # Testing the segmentation
     segmentation_xarray = xarray_to_iris(tobac.segmentation.segmentation)
-    mask, features = tobac.segmentation.segmentation(features, data, dxy, 1.0)
+    mask, features = tobac.segmentation.segmentation(features, data, dxy, threshold=1.0)
     mask_xarray, features_xarray = segmentation_xarray(
-        features_xarray, data_xarray, dxy_xarray, 1.0
+        features_xarray, data_xarray, dxy_xarray, threshold=1.0
     )
 
     assert (mask.data == mask_xarray.to_iris().data).all()
