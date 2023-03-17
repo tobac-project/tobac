@@ -1310,7 +1310,6 @@ def filter_min_distance(
     PBC_flag="none",
     max_h1=0,
     max_h2=0,
-
 ):
     """Function to remove features that are too close together.
     If two features are closer than `min_distance`, it keeps the
