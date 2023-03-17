@@ -1,7 +1,12 @@
-name: (Draft) Generate Jupyter Notebooks
-on: workflow_dispatch
+name: Generate Jupyter Notebooks
+on:
+  pull_request:
+    types:
+      - closed
+  workflow_dispatch:
 jobs:
   Generate-Notebooks:
+    if: (github.event.pull_request.merged == true) || (github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     permissions:
       contents: write
