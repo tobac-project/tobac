@@ -102,18 +102,18 @@ def feature_position(
         'both' means that we are periodic along both horizontal dimensions
 
     hdim1_min : int
-        Minimum real coordinate of the first horizontal dimension (for PBCs)
+        Minimum real array index of the first horizontal dimension (for PBCs)
 
     hdim1_max: int
-        Maximum real coordinate of the first horizontal dimension (for PBCs)
+        Maximum real array index of the first horizontal dimension (for PBCs)
         Note that this coordinate is INCLUSIVE, meaning that this is
         the maximum coordinate value, and it is not a length.
 
     hdim2_min : int
-        Minimum real coordinate of the first horizontal dimension (for PBCs)
+        Minimum real array index of the first horizontal dimension (for PBCs)
 
     hdim2_max : int
-        Maximum real coordinate of the first horizontal dimension (for PBCs)
+        Maximum real array index of the first horizontal dimension (for PBCs)
         Note that this coordinate is INCLUSIVE, meaning that this is
         the maximum coordinate value, and it is not a length.
 
@@ -142,19 +142,16 @@ def feature_position(
     # this, in essence, shifts the set of points to the high side.
     pbc_options = ["hdim_1", "hdim_2", "both"]
 
-    hdim1_indices_2 = hdim1_indices
-    hdim2_indices_2 = hdim2_indices
-
     if PBC_flag == "hdim_1" or PBC_flag == "both":
         # ONLY periodic in y
 
         if ((np.max(hdim1_indices)) == hdim1_max) and (
             (np.min(hdim1_indices) == hdim1_min)
         ):
-            for y2 in range(0, len(hdim1_indices_2)):
-                h1_ind = hdim1_indices_2[y2]
+            for y2 in range(0, len(hdim1_indices)):
+                h1_ind = hdim1_indices[y2]
                 if h1_ind < (hdim1_max / 2):
-                    hdim1_indices_2[y2] = h1_ind + hdim1_max + 1
+                    hdim1_indices[y2] = h1_ind + hdim1_max + 1
 
     if PBC_flag == "hdim_2" or PBC_flag == "both":
         # ONLY periodic in x
@@ -162,13 +159,10 @@ def feature_position(
         if ((np.max(hdim2_indices)) == hdim2_max) and (
             (np.min(hdim2_indices) == hdim2_min)
         ):
-            for x2 in range(0, len(hdim2_indices_2)):
-                h2_ind = hdim2_indices_2[x2]
+            for x2 in range(0, len(hdim2_indices)):
+                h2_ind = hdim2_indices[x2]
                 if h2_ind < (hdim2_max / 2):
-                    hdim2_indices_2[x2] = h2_ind + hdim2_max + 1
-
-    hdim1_indices = hdim1_indices_2
-    hdim2_indices = hdim2_indices_2
+                    hdim2_indices[x2] = h2_ind + hdim2_max + 1
 
     if len(region_bbox) == 4:
         # 2D case
