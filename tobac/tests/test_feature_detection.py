@@ -673,3 +673,79 @@ def test_feature_position_pbc(
         region_bbox=region,
     )
     assert feat_pos_output == expected_output
+
+
+def test_pbc_snake_feature_detection():
+    """
+    Test that a "snake" feature that crosses PBCs multiple times is recognized as a single feature
+    """
+
+    test_arr = np.zeros((50, 50))
+    test_arr[::4, 0] = 2
+    test_arr[1::4, 0] = 2
+    test_arr[3::4, 0] = 2
+
+    test_arr[1::4, 49] = 2
+    test_arr[2::4, 49] = 2
+    test_arr[3::4, 49] = 2
+
+    test_data_iris = tbtest.make_dataset_from_arr(test_arr, data_type="iris")
+    fd_output = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        threshold=[1, 2, 3],
+        n_min_threshold=2,
+        dxy=1,
+        target="maximum",
+        PBC_flag="hdim_2",
+    )
+    assert len(fd_output) == 1
+    # test hdim_1
+    test_data_iris = tbtest.make_dataset_from_arr(test_arr.T, data_type="iris")
+    fd_output = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        threshold=[1, 2, 3],
+        n_min_threshold=2,
+        dxy=1,
+        target="maximum",
+        PBC_flag="hdim_1",
+    )
+    print(fd_output)
+    assert len(fd_output) == 1
+
+
+def test_banded_feature():
+    """
+    Test that a feature that spans the length of the array is detected as one feature, and in the center.
+    """
+
+    test_arr = np.zeros((50, 50))
+    test_arr[20:22, :] = 2
+    test_data_iris = tbtest.make_dataset_from_arr(test_arr, data_type="iris")
+    fd_output = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        threshold=[1, 2, 3],
+        n_min_threshold=2,
+        dxy=1,
+        target="maximum",
+        PBC_flag="hdim_2",
+    )
+    assert len(fd_output) == 1
+    assert fd_output.iloc[0]["hdim_1"] == 20.5
+    assert fd_output.iloc[0]["hdim_2"] == 23.5
+
+    test_data_iris = tbtest.make_dataset_from_arr(test_arr.T, data_type="iris")
+    fd_output = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        threshold=[1, 2, 3],
+        n_min_threshold=2,
+        dxy=1,
+        target="maximum",
+        PBC_flag="hdim_1",
+    )
+    assert len(fd_output) == 1
+    assert fd_output.iloc[0]["hdim_2"] == 20.5
+    assert fd_output.iloc[0]["hdim_1"] == 23.5

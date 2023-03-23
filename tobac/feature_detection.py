@@ -143,25 +143,26 @@ def feature_position(
     pbc_options = ["hdim_1", "hdim_2", "both"]
 
     if PBC_flag == "hdim_1" or PBC_flag == "both":
-        # ONLY periodic in y
+        # periodic in y
 
         if ((np.max(hdim1_indices)) == hdim1_max) and (
             (np.min(hdim1_indices) == hdim1_min)
         ):
+            # we have boundary points on each side of hdim1. Shift all points to the hdim1_max side.
             for y2 in range(0, len(hdim1_indices)):
                 h1_ind = hdim1_indices[y2]
-                if h1_ind < (hdim1_max / 2):
+                if h1_ind != hdim1_max:
                     hdim1_indices[y2] = h1_ind + hdim1_max + 1
 
     if PBC_flag == "hdim_2" or PBC_flag == "both":
-        # ONLY periodic in x
+        # periodic in x
 
         if ((np.max(hdim2_indices)) == hdim2_max) and (
             (np.min(hdim2_indices) == hdim2_min)
         ):
             for x2 in range(0, len(hdim2_indices)):
                 h2_ind = hdim2_indices[x2]
-                if h2_ind < (hdim2_max / 2):
+                if h2_ind != hdim2_max:
                     hdim2_indices[x2] = h2_ind + hdim2_max + 1
 
     if len(region_bbox) == 4:
@@ -453,7 +454,7 @@ def feature_detection_threshold(
         # points we've already edited
         skip_list = np.array([])
         # labels that touch the PBC walls
-        wall_labels = np.array([])
+        wall_labels = np.array([], dtype=np.int32)
 
         if num_labels > 0:
             all_label_props = internal_utils.get_label_props_in_dict(labels)
@@ -489,8 +490,9 @@ def feature_detection_threshold(
             wall_labels = np.unique(wall_labels)
 
             for label_ind in wall_labels:
+                new_label_ind = label_ind
                 # create list for skip labels for this wall label only
-                skip_list_thisind = []
+                skip_list_thisind = list()
                 # 0 isn't a real index
                 if label_ind == 0:
                     continue
@@ -579,7 +581,7 @@ def feature_detection_threshold(
                                 all_label_locs_v[label_alt],
                                 all_label_locs_h1[label_alt],
                                 all_label_locs_h2[label_alt],
-                            ] = label_ind
+                            ] = new_label_ind
                             # we have already dealt with this label.
                             skip_list = np.append(skip_list, label_alt)
                             skip_list_thisind = np.append(skip_list_thisind, label_alt)
@@ -603,8 +605,9 @@ def feature_detection_threshold(
                             labels_2[
                                 label_locs_v, label_locs_h1, label_locs_h2
                             ] = labels_2_alt
+                            new_label_ind = labels_2_alt
                             skip_list = np.append(skip_list, label_ind)
-                            break
+                            # break
 
                     if (PBC_flag == "hdim_2" or PBC_flag == "both") and np.any(
                         label_x == [x_min, x_max]
@@ -621,7 +624,7 @@ def feature_detection_threshold(
                                 all_label_locs_v[label_alt],
                                 all_label_locs_h1[label_alt],
                                 all_label_locs_h2[label_alt],
-                            ] = label_ind
+                            ] = new_label_ind
                             # we have already dealt with this label.
                             skip_list = np.append(skip_list, label_alt)
                             skip_list_thisind = np.append(skip_list_thisind, label_alt)
@@ -645,8 +648,9 @@ def feature_detection_threshold(
                             labels_2[
                                 label_locs_v, label_locs_h1, label_locs_h2
                             ] = labels_2_alt
+                            new_label_ind = labels_2_alt
                             skip_list = np.append(skip_list, label_ind)
-                            break
+                            # break
 
         # copy over new labels after we have adjusted everything
         labels = labels_2
