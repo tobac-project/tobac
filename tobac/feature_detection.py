@@ -336,7 +336,7 @@ def feature_detection_threshold(
     min_distance=0,
     idx_start=0,
     PBC_flag="none",
-    vertical_axis=None,
+    vertical_axis=0,
 ):
     """Find features based on individual threshold value.
 
@@ -666,7 +666,6 @@ def feature_detection_threshold(
 
     # END PBC treatment
     # we need to get label properties again after we handle PBCs.
-    label_props = internal_utils.get_label_props_in_dict(labels)
 
     label_props = internal_utils.get_label_props_in_dict(labels)
     if len(label_props) > 0:

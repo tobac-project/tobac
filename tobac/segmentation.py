@@ -549,7 +549,6 @@ def segmentation_timestep(
     pbc_options = ["hdim_1", "hdim_2", "both"]
     # Only run this if we need to deal with PBCs
     if PBC_flag in pbc_options:
-
         # read in labeling/masks and region-finding functions
         reg_props_dict = internal_utils.get_label_props_in_dict(seg_m_data)
 
@@ -595,7 +594,6 @@ def segmentation_timestep(
             for vdim_ind in range(0, segmentation_mask.shape[0]):
                 for hdim1_ind in [hdim1_min, hdim1_max]:
                     for hdim2_ind in range(hdim2_min, hdim2_max):
-
                         if labels_unseeded[vdim_ind, hdim1_ind, hdim2_ind] == 0:
                             continue
                         else:
@@ -628,7 +626,6 @@ def segmentation_timestep(
             for vdim_ind in range(0, segmentation_mask.shape[0]):
                 for hdim1_ind in range(hdim1_min, hdim1_max):
                     for hdim2_ind in [hdim2_min, hdim2_max]:
-
                         if labels_unseeded[vdim_ind, hdim1_ind, hdim2_ind] == 0:
                             continue
                         else:
@@ -743,7 +740,6 @@ def segmentation_timestep(
 
         # Loop through all segmentation mask labels on the wall
         for cur_idx in wall_labels:
-
             vdim_indices = z_reg_inds[cur_idx]
             hdim1_indices = y_reg_inds[cur_idx]
             hdim2_indices = x_reg_inds[cur_idx]
@@ -754,7 +750,6 @@ def segmentation_timestep(
             for label_z, label_y, label_x in zip(
                 vdim_indices, hdim1_indices, hdim2_indices
             ):
-
                 # check if this is the special case of being a corner point.
                 # if it's doubly periodic AND on both x and y boundaries, it's a corner point
                 # and we have to look at the other corner.
@@ -763,7 +758,6 @@ def segmentation_timestep(
                     np.any(label_y == [hdim1_min, hdim1_max])
                     and np.any(label_x == [hdim2_min, hdim2_max])
                 ):
-
                     # adjust x and y points to the other side
                     y_val_alt = pbc_utils.adjust_pbc_point(
                         label_y, hdim1_min, hdim1_max
@@ -854,7 +848,6 @@ def segmentation_timestep(
 
             # loop thru buddies
             for buddy in buddies:
-
                 # isolate feature from set of buddies
                 buddy_feat = features_in[features_in["feature"] == buddy]
 
@@ -883,7 +876,6 @@ def segmentation_timestep(
                 for z, y, x in zip(
                     z_reg_inds[buddy], y_reg_inds[buddy], x_reg_inds[buddy]
                 ):
-
                     buddy_z = np.append(buddy_z, z)
                     buddy_y = np.append(buddy_y, y)
                     buddy_x = np.append(buddy_x, x)
@@ -1140,8 +1132,6 @@ def segmentation(
         dxy : float
             Grid spacing of the input data.
 
-    <<<<<<< HEAD
-
         Output:
         segmentation_out: iris.cube.Cube
                        Cloud mask, 0 outside and integer numbers according to track inside the cloud
@@ -1204,7 +1194,6 @@ def segmentation(
         ValueError
             If field_in.ndim is neither 3 nor 4 and 'time' is not included
             in coords.
-    >>>>>>> RC_v1.5.0
     """
     import pandas as pd
     from iris.cube import CubeList
