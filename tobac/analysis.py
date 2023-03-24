@@ -487,7 +487,7 @@ def calculate_distance(feature_1, feature_2, method_distance=None):
     -------
     distance : float or pandas.Series
         Float with the distance between the two features in meters if
-        the input are two pandas. Series containing one feature,
+        the input are two pandas.Series containing one feature,
         pandas.Series of the distances if one of the inputs contains
         multiple features.
 

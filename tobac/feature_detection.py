@@ -263,12 +263,13 @@ def feature_position(
 
     # re-transform of any coords beyond the boundaries - (should be) general enough to work for any variety of PBC
     # as no x or y points will be beyond the boundaries if we haven't transformed them in the first place
-    if PBC_flag in pbc_options:
-        if hdim1_index >= hdim1_max + 1:
-            hdim1_index = hdim1_index - (hdim1_max + 1)
+    # Note: New method should mean this is unnecessary
+    # if PBC_flag in pbc_options:
+    #     if hdim1_index >= hdim1_max + 1:
+    #         hdim1_index = hdim1_index - (hdim1_max + 1)
 
-        if hdim2_index >= hdim2_max + 1:
-            hdim2_index = hdim2_index - (hdim2_max + 1)
+    #     if hdim2_index >= hdim2_max + 1:
+    #         hdim2_index = hdim2_index - (hdim2_max + 1)
 
     if is_3D:
         return vdim_index, hdim1_index, hdim2_index

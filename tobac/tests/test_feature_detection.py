@@ -722,7 +722,7 @@ def test_banded_feature():
     """
 
     test_arr = np.zeros((50, 50))
-    test_arr[20:22, :] = 2
+    test_arr[20:22, :] = 2.5
     # Remove some values so that the distribution is not symmetric
     test_arr[20, 0] = 0
     test_arr[21, -1] = 0
@@ -753,3 +753,60 @@ def test_banded_feature():
     assert len(fd_output) == 1
     assert fd_output.iloc[0]["hdim_2"] == 20.5
     assert fd_output.iloc[0]["hdim_1"] == 24.5
+
+    # Test different options for position_threshold
+    test_data_iris = tbtest.make_dataset_from_arr(test_arr, data_type="iris")
+    fd_output = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        threshold=[1, 2, 3],
+        n_min_threshold=2,
+        dxy=1,
+        target="maximum",
+        position_threshold="weighted_abs",
+        PBC_flag="hdim_2",
+    )
+    assert len(fd_output) == 1
+    assert fd_output.iloc[0]["hdim_1"] == pytest.approx(20.5)
+    assert fd_output.iloc[0]["hdim_2"] == pytest.approx(24.5)
+
+    # Test different options for position_threshold
+    test_data_iris = tbtest.make_dataset_from_arr(test_arr, data_type="iris")
+    fd_output = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        threshold=[1, 2, 3],
+        n_min_threshold=2,
+        dxy=1,
+        target="maximum",
+        position_threshold="weighted_diff",
+        PBC_flag="hdim_2",
+    )
+    assert len(fd_output) == 1
+    assert fd_output.iloc[0]["hdim_1"] == pytest.approx(20.5)
+    assert fd_output.iloc[0]["hdim_2"] == pytest.approx(24.5)
+
+    # Make a test case with a diagonal object to test corners
+    test_arr = (
+        np.zeros((50, 50))
+        + np.diag(np.ones([50]))
+        + np.diag(np.ones([49]), -1)
+        + np.diag(np.ones([49]), 1)
+    ) * 2.5
+    # Remove some values so that the distribution is not symmetric
+    test_arr[1, 0] = 0
+    test_arr[-2, -1] = 0
+    test_data_iris = tbtest.make_dataset_from_arr(test_arr, data_type="iris")
+    fd_output = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        threshold=[1, 2, 3],
+        n_min_threshold=2,
+        dxy=1,
+        target="maximum",
+        position_threshold="weighted_diff",
+        PBC_flag="both",
+    )
+    assert len(fd_output) == 1
+    assert fd_output.iloc[0]["hdim_1"] == pytest.approx(24.5)
+    assert fd_output.iloc[0]["hdim_2"] == pytest.approx(24.5)
