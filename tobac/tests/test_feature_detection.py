@@ -644,6 +644,7 @@ def test_feature_detection_coords():
         ([0, 10], [1, 1], 10, 10, "both", "center", (10.5, 1)),
         ([1, 1], [0, 10], 10, 10, "both", "center", (1, 10.5)),
         ([0, 10], [0, 10], 10, 10, "both", "center", (10.5, 10.5)),
+        ([0, 1, 9, 10], [0, 0, 10, 10], 10, 10, "both", "center", (10.5, 10.5)),
     ),
 )
 def test_feature_position_pbc(
@@ -722,6 +723,9 @@ def test_banded_feature():
 
     test_arr = np.zeros((50, 50))
     test_arr[20:22, :] = 2
+    # Remove some values so that the distribution is not symmetric
+    test_arr[20, 0] = 0
+    test_arr[21, -1] = 0
     test_data_iris = tbtest.make_dataset_from_arr(test_arr, data_type="iris")
     fd_output = feat_detect.feature_detection_multithreshold_timestep(
         test_data_iris,
@@ -734,7 +738,7 @@ def test_banded_feature():
     )
     assert len(fd_output) == 1
     assert fd_output.iloc[0]["hdim_1"] == 20.5
-    assert fd_output.iloc[0]["hdim_2"] == 23.5
+    assert fd_output.iloc[0]["hdim_2"] == 24.5
 
     test_data_iris = tbtest.make_dataset_from_arr(test_arr.T, data_type="iris")
     fd_output = feat_detect.feature_detection_multithreshold_timestep(
@@ -748,4 +752,4 @@ def test_banded_feature():
     )
     assert len(fd_output) == 1
     assert fd_output.iloc[0]["hdim_2"] == 20.5
-    assert fd_output.iloc[0]["hdim_1"] == 23.5
+    assert fd_output.iloc[0]["hdim_1"] == 24.5

@@ -253,3 +253,48 @@ def calc_distance_coords_pbc(
     deltas = np.abs(coords_1 - coords_2)
     deltas = np.where(deltas > 0.5 * max_dims, deltas - max_dims, deltas)
     return np.sqrt(np.sum(deltas**2))
+
+
+def weighted_circmean(
+    values: np.ndarray,
+    weights: np.ndarray,
+    high: float = 2 * np.pi,
+    low: float = 0,
+    axis: int | None = None,
+) -> np.ndarray:
+    """
+    Calculate the weighted circular mean over a set of values. If all the
+    weights are equal, this function is equivalent to scipy.stats.circmean
+
+    Parameters
+    ----------
+    values: array-like
+        Array of values to calculate the mean over
+    weights: array-like
+        Array of weights corresponding to each value
+    high: float, optional
+        Upper bound of the range of values. Defaults to 2*pi
+    low: float, optional
+        Lower bound of the range of values. Defaults to 0
+    axis: int | None, optional
+        Axis over which to take the average. If None, the average will be taken
+        over the entire array. Defaults to None
+
+    Returns
+    -------
+    rescaled_average: numpy.ndarray
+        The weighted, circular mean over the given values
+
+    """
+    scaling_factor = (high - low) / (2 * np.pi)
+    scaled_values = (np.asarray(values) - low) / scaling_factor
+    sin_average = np.average(np.sin(scaled_values), axis=axis, weights=weights)
+    cos_average = np.average(np.cos(scaled_values), axis=axis, weights=weights)
+    # If the values are evenly spaced throughout the range rounding errors have a big impact. Default to np.pi (half way between low and high) if this is the case
+    if np.isclose(sin_average, 0) and np.isclose(cos_average, 0):
+        angle_average = np.pi
+    else:
+        angle_average = np.arctan2(sin_average, cos_average) % (2 * np.pi)
+    rescaled_average = (angle_average * scaling_factor) + low
+    # Round return value to try and supress rounding errors
+    return np.round(rescaled_average, 12)

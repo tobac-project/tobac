@@ -1,4 +1,5 @@
 import pytest
+import numpy as np
 import tobac.utils.periodic_boundaries as pbc_utils
 import tobac.testing as tb_test
 from collections import Counter
@@ -297,3 +298,39 @@ def test_get_pbc_coordinates():
         pbc_utils.get_pbc_coordinates(0, 10, 0, 10, -3, 3, 7, 15, "both"),
         [(0, 3, 7, 10), (0, 3, 0, 5), (7, 10, 0, 5), (7, 10, 7, 10)],
     )
+
+
+def test_weighted_circmean() -> None:
+    """
+    Test that weighted_circmean gives the expected results compared to scipy.stats.circmean
+    """
+    from scipy.stats import circmean
+
+    values = np.arange(0, 12)
+    weights = np.ones([12])
+    high, low = 5, 0
+    assert pbc_utils.weighted_circmean(
+        values, weights, high=high, low=low
+    ) == pytest.approx(circmean(values, high=high, low=low))
+
+    # Test if weights are set to values other than 1
+    assert pbc_utils.weighted_circmean(
+        values, weights / 5, high=high, low=low
+    ) == pytest.approx(circmean(values, high=high, low=low))
+    assert pbc_utils.weighted_circmean(
+        values, weights * 7, high=high, low=low
+    ) == pytest.approx(circmean(values, high=high, low=low))
+
+    # set some weights to zero
+    weights[[4, 7, 9]] = 0
+    assert pbc_utils.weighted_circmean(
+        values, weights, high=high, low=low
+    ) == pytest.approx(circmean(values[weights.astype(bool)], high=high, low=low))
+
+    # Set some non-zero weights
+    weights[[4, 7]] = 2
+    weights[9] = 3
+    duplicated_values = np.concatenate([values, [4, 7, 9, 9]])
+    assert pbc_utils.weighted_circmean(
+        values, weights, high=high, low=low
+    ) == pytest.approx(circmean(duplicated_values, high=high, low=low))

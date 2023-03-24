@@ -142,28 +142,28 @@ def feature_position(
     # this, in essence, shifts the set of points to the high side.
     pbc_options = ["hdim_1", "hdim_2", "both"]
 
-    if PBC_flag == "hdim_1" or PBC_flag == "both":
-        # periodic in y
+    # if PBC_flag == "hdim_1" or PBC_flag == "both":
+    #     # periodic in y
 
-        if ((np.max(hdim1_indices)) == hdim1_max) and (
-            (np.min(hdim1_indices) == hdim1_min)
-        ):
-            # we have boundary points on each side of hdim1. Shift all points to the hdim1_max side.
-            for y2 in range(0, len(hdim1_indices)):
-                h1_ind = hdim1_indices[y2]
-                if h1_ind != hdim1_max:
-                    hdim1_indices[y2] = h1_ind + hdim1_max + 1
+    #     if ((np.max(hdim1_indices)) == hdim1_max) and (
+    #         (np.min(hdim1_indices) == hdim1_min)
+    #     ):
+    #         # we have boundary points on each side of hdim1. Shift all points to the hdim1_max side.
+    #         for y2 in range(0, len(hdim1_indices)):
+    #             h1_ind = hdim1_indices[y2]
+    #             if h1_ind != hdim1_max:
+    #                 hdim1_indices[y2] = h1_ind + hdim1_max + 1
 
-    if PBC_flag == "hdim_2" or PBC_flag == "both":
-        # periodic in x
+    # if PBC_flag == "hdim_2" or PBC_flag == "both":
+    #     # periodic in x
 
-        if ((np.max(hdim2_indices)) == hdim2_max) and (
-            (np.min(hdim2_indices) == hdim2_min)
-        ):
-            for x2 in range(0, len(hdim2_indices)):
-                h2_ind = hdim2_indices[x2]
-                if h2_ind != hdim2_max:
-                    hdim2_indices[x2] = h2_ind + hdim2_max + 1
+    #     if ((np.max(hdim2_indices)) == hdim2_max) and (
+    #         (np.min(hdim2_indices) == hdim2_min)
+    #     ):
+    #         for x2 in range(0, len(hdim2_indices)):
+    #             h2_ind = hdim2_indices[x2]
+    #             if h2_ind != hdim2_max:
+    #                 hdim2_indices[x2] = h2_ind + hdim2_max + 1
 
     if len(region_bbox) == 4:
         # 2D case
@@ -184,8 +184,24 @@ def feature_position(
 
     if position_threshold == "center":
         # get position as geometrical centre of identified region:
-        hdim1_index = np.mean(hdim1_indices)
-        hdim2_index = np.mean(hdim2_indices)
+        if PBC_flag == "hdim_1" or PBC_flag == "both":
+            hdim1_index = pbc_utils.weighted_circmean(
+                hdim1_indices,
+                weights=np.ones(np.size(hdim1_indices)),
+                high=hdim1_max + 1,
+                low=hdim1_min,
+            )
+        else:
+            hdim1_index = np.mean(hdim1_indices)
+        if PBC_flag == "hdim_2" or PBC_flag == "both":
+            hdim2_index = pbc_utils.weighted_circmean(
+                hdim2_indices,
+                weights=np.ones(np.size(hdim2_indices)),
+                high=hdim2_max + 1,
+                low=hdim2_min,
+            )
+        else:
+            hdim2_index = np.mean(hdim2_indices)
         if is_3D:
             vdim_index = np.mean(vdim_indices)
 
@@ -205,8 +221,18 @@ def feature_position(
         weights = abs(track_data_region[region_small] - threshold_i)
         if sum(weights) == 0:
             weights = None
-        hdim1_index = np.average(hdim1_indices, weights=weights)
-        hdim2_index = np.average(hdim2_indices, weights=weights)
+        if PBC_flag == "hdim_1" or PBC_flag == "both":
+            hdim1_index = pbc_utils.weighted_circmean(
+                hdim1_indices, weights=weights, high=hdim1_max + 1, low=hdim1_min
+            )
+        else:
+            hdim1_index = np.average(hdim1_indices, weights=weights)
+        if PBC_flag == "hdim_2" or PBC_flag == "both":
+            hdim2_index = pbc_utils.weighted_circmean(
+                hdim2_indices, weights=weights, high=hdim2_max + 1, low=hdim2_min
+            )
+        else:
+            hdim2_index = np.average(hdim2_indices, weights=weights)
         if is_3D:
             vdim_index = np.average(vdim_indices, weights=weights)
 
@@ -215,8 +241,18 @@ def feature_position(
         weights = abs(track_data_region[region_small])
         if sum(weights) == 0:
             weights = None
-        hdim1_index = np.average(hdim1_indices, weights=weights)
-        hdim2_index = np.average(hdim2_indices, weights=weights)
+        if PBC_flag == "hdim_1" or PBC_flag == "both":
+            hdim1_index = pbc_utils.weighted_circmean(
+                hdim1_indices, weights=weights, high=hdim1_max + 1, low=hdim1_min
+            )
+        else:
+            hdim1_index = np.average(hdim1_indices, weights=weights)
+        if PBC_flag == "hdim_2" or PBC_flag == "both":
+            hdim2_index = pbc_utils.weighted_circmean(
+                hdim2_indices, weights=weights, high=hdim2_max + 1, low=hdim2_min
+            )
+        else:
+            hdim2_index = np.average(hdim2_indices, weights=weights)
         if is_3D:
             vdim_index = np.average(vdim_indices, weights=weights)
 
