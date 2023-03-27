@@ -947,3 +947,74 @@ def test_empty_segmentation(PBC_flag):
     )
 
     assert np.all(out_seg_mask.core_data() == -1)
+
+
+def test_pbc_snake_segmentation():
+    """
+    Test that a "snake" feature that crosses PBCs multiple times is recognized as a single feature
+    """
+
+    test_arr = np.zeros((50, 50))
+    test_arr[::4, 0] = 2
+    test_arr[1::4, 0] = 2
+    test_arr[3::4, 0] = 2
+
+    test_arr[1::4, 49] = 2
+    test_arr[2::4, 49] = 2
+    test_arr[3::4, 49] = 2
+
+    test_data_iris = testing.make_dataset_from_arr(test_arr, data_type="iris")
+    fd_output = feature_detection.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        threshold=[1, 2, 3],
+        n_min_threshold=2,
+        dxy=1,
+        target="maximum",
+        PBC_flag="hdim_2",
+    )
+    fd_output["feature"] = [1]
+
+    seg_output, seg_feats = segmentation.segmentation_timestep(
+        test_data_iris,
+        fd_output,
+        1,
+        threshold=1,
+        PBC_flag="hdim_2",
+        seed_3D_flag="box",
+        seed_3D_size=3,
+    )
+
+    correct_seg_arr = np.full((50, 50), -1, dtype=np.int32)
+    feat_num = 1
+    correct_seg_arr[::4, 0] = feat_num
+    correct_seg_arr[1::4, 0] = feat_num
+    correct_seg_arr[3::4, 0] = feat_num
+
+    correct_seg_arr[1::4, 49] = feat_num
+    correct_seg_arr[2::4, 49] = feat_num
+    correct_seg_arr[3::4, 49] = feat_num
+    np.where(correct_seg_arr == 0)
+    seg_out_arr = seg_output.core_data()
+    assert np.all(correct_seg_arr == seg_out_arr)
+    """
+    # test hdim_1
+    test_data_iris = testing.make_dataset_from_arr(test_arr.T, data_type="iris")
+    fd_output = feature_detection.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        threshold=[1, 2, 3],
+        n_min_threshold=2,
+        dxy=1,
+        target="maximum",
+        PBC_flag="hdim_1",
+        seed_3D_flag="box",
+        seed_3D_size=3,
+    )
+    fd_output["feature"] = [1]
+
+    seg_output, seg_feats = segmentation.segmentation_timestep(
+        test_data_iris, fd_output, 1, threshold=1, PBC_flag="hdim_1"
+    )
+    assert np.all(correct_seg_arr.T == seg_output)
+    """

@@ -712,7 +712,6 @@ def test_pbc_snake_feature_detection():
         target="maximum",
         PBC_flag="hdim_1",
     )
-    print(fd_output)
     assert len(fd_output) == 1
 
 

@@ -164,7 +164,9 @@ def add_markers(
             if is_3D:
                 z_seed_start = int(np.max([0, np.ceil(row["vdim"] - seed_z / 2)]))
                 z_seed_end = int(np.min([z_len, np.ceil(row["vdim"] + seed_z / 2)]))
-
+            else:
+                z_seed_start = 0
+                z_seed_end = 1
             # For the horizontal dimensions, it's more complicated if we have
             # PBCs.
             hdim_1_min = int(np.ceil(row["hdim_1"] - seed_h1 / 2))
@@ -535,7 +537,8 @@ def segmentation_timestep(
     # mask all segmentation_mask points below threshold as -1
     # to differentiate from those unmasked points NOT filled by watershedding
     # TODO: allow user to specify
-    segmentation_mask[~unmasked] = -1
+    points_below_threshold_val = -1
+    segmentation_mask[~unmasked] = points_below_threshold_val
 
     # saves/prints below for testing
     seg_m_data = segmentation_mask[:]
@@ -715,7 +718,8 @@ def segmentation_timestep(
         """
         Now, start the second round of watershedding- the "buddy box" approach.
         'buddies' array contains features of interest and any neighbors that are across the boundary or 
-        otherwise have lateral and/or diagonal physical contact with that label
+        otherwise have lateral and/or diagonal physical contact with that label.
+        The "buddy box" is also used for multiple crossings of the boundaries with segmented features.
         """
         reg_props_dict = internal_utils.get_label_props_in_dict(segmentation_mask_3)
 
@@ -767,7 +771,7 @@ def segmentation_timestep(
                     )
                     label_on_corner = segmentation_mask_3[label_z, y_val_alt, x_val_alt]
 
-                    if label_on_corner > 0:
+                    if label_on_corner >= 0:
                         # add opposite-corner buddy if it exists
                         buddies = np.append(buddies, label_on_corner)
 
@@ -783,7 +787,7 @@ def segmentation_timestep(
                     label_alt = segmentation_mask_3[label_z, y_val_alt, label_x]
 
                     # if it's labeled and not already been dealt with
-                    if label_alt > 0:
+                    if label_alt >= 0:
                         # add above/below buddy if it exists
                         buddies = np.append(buddies, label_alt)
 
@@ -798,7 +802,7 @@ def segmentation_timestep(
                     label_alt = segmentation_mask_3[label_z, label_y, x_val_alt]
 
                     # if it's labeled and not already been dealt with
-                    if label_alt > 0:
+                    if label_alt >= 0:
                         # add left/right buddy if it exists
                         buddies = np.append(buddies, label_alt)
 
@@ -840,14 +844,13 @@ def segmentation_timestep(
 
             # NOTE: We may not need this, as we already do this editing the buddy_features df
             # and an iterrows call through this is what's used to actually seed the buddy box
-            buddy_zf = np.array([], dtype=int)
-            buddy_yf = np.array([], dtype=int)
-            buddy_xf = np.array([], dtype=int)
 
             buddy_looper = 0
 
             # loop thru buddies
             for buddy in buddies:
+                if buddy == 0:
+                    continue
                 # isolate feature from set of buddies
                 buddy_feat = features_in[features_in["feature"] == buddy]
 
@@ -863,12 +866,6 @@ def segmentation_timestep(
                 buddy_features.hdim_2.values[buddy_looper] = transfm_pbc_point(
                     float(buddy_feat.hdim_2), hdim2_min, hdim2_max
                 )
-
-                # again, this may be redundant as I don't think we use buddy_zf/yf/xf after this
-                # in favor of iterrows thru the updated buddy_features
-                buddy_zf = np.append(buddy_zf, int(buddy_feat.vdim))
-                buddy_yf = np.append(buddy_yf, yf2)
-                buddy_xf = np.append(buddy_xf, xf2)
 
                 buddy_looper = buddy_looper + 1
                 # Create 1:1 map through actual domain points and continuous/contiguous points
@@ -924,11 +921,14 @@ def segmentation_timestep(
                             x_a1 = x - (hdim2_max + 1)
                         else:
                             x_a1 = x
-
-                        buddy_rgn[
-                            z - bbox_zstart, y - bbox_ystart, x - bbox_xstart
-                        ] = field_in.data[z_a1, y_a1, x_a1]
-
+                        if is_3D_seg:
+                            buddy_rgn[
+                                z - bbox_zstart, y - bbox_ystart, x - bbox_xstart
+                            ] = field_in.data[z_a1, y_a1, x_a1]
+                        else:
+                            buddy_rgn[
+                                z - bbox_zstart, y - bbox_ystart, x - bbox_xstart
+                            ] = field_in.data[y_a1, x_a1]
             # construction of iris cube corresponding to buddy box and its data
             # for marker seeding and watershedding of buddy box
 
@@ -937,10 +937,13 @@ def segmentation_timestep(
 
             # Update buddy_features feature positions to correspond to buddy box space
             # rather than domain space or continuous/contiguous point space
+            if "vdim" not in buddy_features:
+                buddy_features["vdim"] = np.zeros(len(buddy_features), dtype=int)
             for buddy_looper in range(0, len(buddy_features)):
                 buddy_features.vdim.values[buddy_looper] = (
                     buddy_features.vdim.values[buddy_looper] - bbox_zstart
                 )
+
                 buddy_features.hdim_1.values[buddy_looper] = (
                     buddy_features.hdim_1.values[buddy_looper] - bbox_ystart
                 )
