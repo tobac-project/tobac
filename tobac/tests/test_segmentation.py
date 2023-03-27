@@ -997,7 +997,7 @@ def test_pbc_snake_segmentation():
     np.where(correct_seg_arr == 0)
     seg_out_arr = seg_output.core_data()
     assert np.all(correct_seg_arr == seg_out_arr)
-    """
+
     # test hdim_1
     test_data_iris = testing.make_dataset_from_arr(test_arr.T, data_type="iris")
     fd_output = feature_detection.feature_detection_multithreshold_timestep(
@@ -1008,13 +1008,18 @@ def test_pbc_snake_segmentation():
         dxy=1,
         target="maximum",
         PBC_flag="hdim_1",
-        seed_3D_flag="box",
-        seed_3D_size=3,
     )
     fd_output["feature"] = [1]
 
     seg_output, seg_feats = segmentation.segmentation_timestep(
-        test_data_iris, fd_output, 1, threshold=1, PBC_flag="hdim_1"
+        test_data_iris,
+        fd_output,
+        1,
+        threshold=1,
+        PBC_flag="hdim_1",
+        seed_3D_flag="box",
+        seed_3D_size=3,
     )
-    assert np.all(correct_seg_arr.T == seg_output)
-    """
+    seg_out_arr = seg_output.core_data()
+
+    assert np.all(correct_seg_arr.T == seg_out_arr)
