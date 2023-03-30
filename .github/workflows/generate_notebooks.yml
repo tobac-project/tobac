@@ -30,9 +30,9 @@ jobs:
       - name: Install tobac
         run: |
           pip install .
-      - name: Find all example notebook files
+      - name: Find all notebook files
         run: |
-          find examples/ -type f -name '*.ipynb' > nbfiles.txt
+          find . -type f -name '*.ipynb' > nbfiles.txt
           cat nbfiles.txt
       - name: Execute all notebook files
         run: |
@@ -44,6 +44,6 @@ jobs:
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
-          find examples/ -type f -name "*.ipynb" -exec git add {} +
+          find . -type f -name "*.ipynb" -exec git add {} +
           git commit -m "Generated Notebooks"
           git push
