@@ -721,6 +721,9 @@ def segmentation_timestep(
         otherwise have lateral and/or diagonal physical contact with that label.
         The "buddy box" is also used for multiple crossings of the boundaries with segmented features.
         """
+
+        # TODO: this is a very inelegant way of handling this problem. We should wrap up the pure
+        # segmentation routines and simply call them again here with the same parameters.
         reg_props_dict = internal_utils.get_label_props_in_dict(segmentation_mask_3)
 
         if len(reg_props_dict) != 0:
