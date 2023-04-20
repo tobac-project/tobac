@@ -489,12 +489,15 @@ def find_axis_from_coord(variable_cube, coord_name):
     -------
     axis_number: int
         the number of the axis of the given coordinate, or None if the coordinate
-        is not found in the cube
+        is not found in the cube or not a dimensional coordinate
     """
 
     list_coord_names = [coord.name() for coord in variable_cube.coords()]
     all_matching_axes = list(set(list_coord_names) & set((coord_name,)))
-    if len(all_matching_axes) == 1:
+    if (
+        len(all_matching_axes) == 1
+        and len(variable_cube.coord_dims(all_matching_axes[0])) > 0
+    ):
         return variable_cube.coord_dims(all_matching_axes[0])[0]
     elif len(all_matching_axes) > 1:
         raise ValueError("Too many axes matched.")
