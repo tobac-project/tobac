@@ -142,29 +142,6 @@ def feature_position(
     # this, in essence, shifts the set of points to the high side.
     pbc_options = ["hdim_1", "hdim_2", "both"]
 
-    # if PBC_flag == "hdim_1" or PBC_flag == "both":
-    #     # periodic in y
-
-    #     if ((np.max(hdim1_indices)) == hdim1_max) and (
-    #         (np.min(hdim1_indices) == hdim1_min)
-    #     ):
-    #         # we have boundary points on each side of hdim1. Shift all points to the hdim1_max side.
-    #         for y2 in range(0, len(hdim1_indices)):
-    #             h1_ind = hdim1_indices[y2]
-    #             if h1_ind != hdim1_max:
-    #                 hdim1_indices[y2] = h1_ind + hdim1_max + 1
-
-    # if PBC_flag == "hdim_2" or PBC_flag == "both":
-    #     # periodic in x
-
-    #     if ((np.max(hdim2_indices)) == hdim2_max) and (
-    #         (np.min(hdim2_indices) == hdim2_min)
-    #     ):
-    #         for x2 in range(0, len(hdim2_indices)):
-    #             h2_ind = hdim2_indices[x2]
-    #             if h2_ind != hdim2_max:
-    #                 hdim2_indices[x2] = h2_ind + hdim2_max + 1
-
     if len(region_bbox) == 4:
         # 2D case
         is_3D = False
@@ -264,12 +241,6 @@ def feature_position(
     # re-transform of any coords beyond the boundaries - (should be) general enough to work for any variety of PBC
     # as no x or y points will be beyond the boundaries if we haven't transformed them in the first place
     # Note: New method should mean this is unnecessary
-    # if PBC_flag in pbc_options:
-    #     if hdim1_index >= hdim1_max + 1:
-    #         hdim1_index = hdim1_index - (hdim1_max + 1)
-
-    #     if hdim2_index >= hdim2_max + 1:
-    #         hdim2_index = hdim2_index - (hdim2_max + 1)
 
     if is_3D:
         return vdim_index, hdim1_index, hdim2_index
@@ -1294,6 +1265,11 @@ def feature_detection_multithreshold(
         # check if list of features is not empty, then merge features from different threshold values
         # into one DataFrame and append to list for individual timesteps:
         if not features_thresholds.empty:
+            hdim1_ax, hdim2_ax = internal_utils.find_hdim_axes_3D(
+                field_in, vertical_coord=vertical_coord
+            )
+            hdim1_max = field_in.shape[hdim1_ax] - 1
+            hdim2_max = field_in.shape[hdim2_ax] - 1
             # Loop over DataFrame to remove features that are closer than distance_min to each other:
             if min_distance > 0:
                 features_thresholds = filter_min_distance(
@@ -1303,6 +1279,9 @@ def feature_detection_multithreshold(
                     min_distance=min_distance,
                     z_coordinate_name=vertical_coord,
                     target=target,
+                    PBC_flag=PBC_flag,
+                    max_h1=hdim1_max,
+                    max_h2=hdim2_max,
                 )
 
         list_features_timesteps.append(features_thresholds)
