@@ -9,13 +9,14 @@ from pandas.testing import assert_frame_equal
     "test_threshs, n_min_threshold, dxy, wavelength_filtering, data_type",
     [
         ([1.5], 2, -1, None, "iris"),
+        ([1.5], 2, -1, None, "xarray"),
         ([1, 1.5, 2], 2, 10000, (100 * 1000, 500 * 1000), "iris"),
         ([1, 2, 1.5], [3, 1, 2], -1, None, "iris"),
         ([1, 1.5, 2], {1.5: 2, 1: 3, 2: 1}, -1, None, "iris"),
     ],
 )
 def test_feature_detection_multithreshold_timestep(
-    test_threshs, n_min_threshold, dxy, wavelength_filtering
+    test_threshs, n_min_threshold, dxy, wavelength_filtering, data_type,
 ):
     """
     Tests ```tobac.feature_detection.feature_detection_multithreshold_timestep```
