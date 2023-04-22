@@ -6,11 +6,13 @@ from pandas.testing import assert_frame_equal
 
 
 @pytest.mark.parametrize(
-    "test_threshs, dxy, wavelength_filtering",
-    [([1.5], -1, None), ([1.5], 10000, (100 * 1000, 500 * 1000))],
+    "test_threshs, dxy, wavelength_filtering, data_type",
+    [   ([1.5], -1, None, "iris"), 
+        ([1.5], -1, None, "xarray"),
+        ([1.5], 10000, (100 * 1000, 500 * 1000), "iris")],
 )
 def test_feature_detection_multithreshold_timestep(
-    test_threshs, dxy, wavelength_filtering
+    test_threshs, dxy, wavelength_filtering, data_type
 ):
     """
     Tests ```tobac.feature_detection.feature_detection_multithreshold_timestep```
@@ -36,7 +38,7 @@ def test_feature_detection_multithreshold_timestep(
         h2_size=test_hdim_2_sz,
         amplitude=test_amp,
     )
-    test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type="iris")
+    test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type)
     fd_output = feat_detect.feature_detection_multithreshold_timestep(
         test_data_iris,
         0,
