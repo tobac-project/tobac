@@ -16,7 +16,11 @@ from pandas.testing import assert_frame_equal
     ],
 )
 def test_feature_detection_multithreshold_timestep(
-    test_threshs, n_min_threshold, dxy, wavelength_filtering, data_type,
+    test_threshs,
+    n_min_threshold,
+    dxy,
+    wavelength_filtering,
+    data_type,
 ):
     """
     Tests ```tobac.feature_detection.feature_detection_multithreshold_timestep```

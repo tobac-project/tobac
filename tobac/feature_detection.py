@@ -22,6 +22,14 @@ import numpy as np
 import pandas as pd
 from .utils import internal as internal_utils
 from tobac.utils.general import spectral_filtering
+from tobac.utils.internal import (
+    xarray_to_iris,
+    iris_to_xarray,
+    xarray_to_irispandas,
+    irispandas_to_xarray,
+)
+
+
 import warnings
 
 
@@ -522,7 +530,7 @@ def feature_detection_threshold(
 
     return features_threshold, regions
 
-
+@xarray_to_iris
 def feature_detection_multithreshold_timestep(
     data_i,
     i_time,
