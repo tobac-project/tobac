@@ -72,7 +72,6 @@ def add_coordinates(t, variable_cube):
         logging.debug("adding coord: " + coord)
         # interpolate 2D coordinates:
         if variable_cube.coord(coord).ndim == 1:
-
             if variable_cube.coord_dims(coord) == (hdim_1,):
                 f = interp1d(
                     dimvec_1,
@@ -91,7 +90,6 @@ def add_coordinates(t, variable_cube):
 
         # interpolate 2D coordinates:
         elif variable_cube.coord(coord).ndim == 2:
-
             if variable_cube.coord_dims(coord) == (hdim_1, hdim_2):
                 f = interp2d(dimvec_2, dimvec_1, variable_cube.coord(coord).points)
                 coordinate_points = np.asarray(
@@ -108,7 +106,6 @@ def add_coordinates(t, variable_cube):
         # mainly workaround for wrf latitude and longitude (to be fixed in future)
 
         elif variable_cube.coord(coord).ndim == 3:
-
             if variable_cube.coord_dims(coord) == (ndim_time, hdim_1, hdim_2):
                 f = interp2d(
                     dimvec_2, dimvec_1, variable_cube[0, :, :].coord(coord).points
@@ -159,7 +156,6 @@ def add_coordinates_3D(
     vertical_axis=None,
     assume_coords_fixed_in_time=True,
 ):
-
     """Function adding coordinates from the tracking cube to the trajectories
         for the 3D case: time, longitude&latitude, x&y dimensions, and altitude
 
@@ -545,21 +541,13 @@ def combine_tobac_feats(list_of_feats, preserve_old_feat_nums=None):
     combined_df = pd.concat(list_of_feats)
     # Then, sort by time first, then by feature number
     combined_df = combined_df.sort_values(["time", "feature"])
-    all_times = sorted(combined_df["time"].unique())
-    # Loop through current times
-    start_feat_num = combined_df["feature"].min()
     # Save the old feature numbers if requested.
     if preserve_old_feat_nums is not None:
         combined_df[preserve_old_feat_nums] = combined_df["feature"]
 
-    for frame_num, curr_time in enumerate(all_times):
-        # renumber the frame number
-        combined_df.loc[combined_df["time"] == curr_time, "frame"] = frame_num
-        # renumber the features
-        curr_row_count = len(combined_df.loc[combined_df["time"] == curr_time])
-        feat_num_arr = np.arange(start_feat_num, start_feat_num + curr_row_count)
-        combined_df.loc[combined_df["time"] == curr_time, "feature"] = feat_num_arr
-        start_feat_num = np.max(feat_num_arr) + 1
-
-    combined_df = combined_df.reset_index(drop=True)
-    return combined_df
+    # count_per_time = combined_feats.groupby('time')['index'].count()
+    combined_df["frame"] = combined_df["time"].rank(method="dense").astype(int) - 1
+    combined_sorted = combined_df.sort_values(["frame", "idx"], ignore_index=True)
+    combined_sorted["feature"] = np.arange(1, len(combined_sorted) + 1)
+    combined_sorted = combined_sorted.reset_index(drop=True)
+    return combined_sorted

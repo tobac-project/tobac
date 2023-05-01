@@ -1078,6 +1078,7 @@ def generate_single_feature(
         curr_dict["hdim_1"] = curr_h1
         curr_dict["hdim_2"] = curr_h2
         curr_dict["frame"] = frame_start + i
+        curr_dict["idx"] = 0
         if curr_v is not None:
             curr_dict["vdim"] = curr_v
             curr_v += spd_v
