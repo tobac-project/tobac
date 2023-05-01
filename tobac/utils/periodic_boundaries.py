@@ -1,8 +1,9 @@
+from __future__ import annotations
 import numpy as np
 from .internal import njit_if_available
 
 
-def adjust_pbc_point(in_dim, dim_min, dim_max):
+def adjust_pbc_point(in_dim: int, dim_min: int, dim_max: int) -> int:
     """Function to adjust a point to the other boundary for PBCs
 
     Parameters
@@ -33,16 +34,16 @@ def adjust_pbc_point(in_dim, dim_min, dim_max):
 
 
 def get_pbc_coordinates(
-    h1_min,
-    h1_max,
-    h2_min,
-    h2_max,
-    h1_start_coord,
-    h1_end_coord,
-    h2_start_coord,
-    h2_end_coord,
-    PBC_flag="none",
-):
+    h1_min: int,
+    h1_max: int,
+    h2_min: int,
+    h2_max: int,
+    h1_start_coord: int,
+    h1_end_coord: int,
+    h2_start_coord: int,
+    h2_end_coord: int,
+    PBC_flag: str = "none",
+) -> list[tuple[int, int, int, int]]:
     """Function to get the *actual* coordinate boxes of interest given a set of shifted
     coordinates with periodic boundaries.
 
