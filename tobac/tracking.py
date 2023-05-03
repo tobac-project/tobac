@@ -440,7 +440,9 @@ def linking_trackpy(
     #     add time coordinate relative to cell initiation:
     #    logging.debug('start adding cell time to trajectories')
     trajectories_filtered_filled = trajectories_filtered_unfilled
-    trajectories_final = add_cell_time(trajectories_filtered_filled)
+    trajectories_final = add_cell_time(
+        trajectories_filtered_filled, cell_number_unassigned=cell_number_unassigned
+    )
     # Add metadata
     trajectories_final.attrs["cell_number_unassigned"] = cell_number_unassigned
 
@@ -532,13 +534,15 @@ def fill_gaps(
     return t_out
 
 
-def add_cell_time(t):
+def add_cell_time(t: pd.DataFrame, cell_number_unassigned: int):
     """add cell time as time since the initiation of each cell
 
     Parameters
     ----------
     t : pandas.DataFrame
         trajectories with added coordinates
+    cell_number_unassigned: int
+        unassigned cell value
 
     Returns
     -------
@@ -551,6 +555,7 @@ def add_cell_time(t):
 
     t["time_cell"] = t["time"] - t.groupby("cell")["time"].transform("min")
     t["time_cell"] = pd.to_timedelta(t["time_cell"])
+    t.loc[t["cell"] == cell_number_unassigned, "time_cell"] = pd.Timedelta("nat")
     return t
 
 
