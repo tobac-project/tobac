@@ -520,3 +520,40 @@ def test_argument_logic():
         output = tobac.linking_trackpy(
             cell_1, None, 1, 1, d_min=None, d_max=None, v_max=None
         )
+
+
+def test_untracked_nat():
+    """
+    Tests to make sure that the untracked cells don't have timedelta assigned.
+    """
+    features = tobac.testing.generate_single_feature(
+        1,
+        1,
+        min_h1=0,
+        max_h1=101,
+        min_h2=0,
+        max_h2=101,
+        frame_start=0,
+        num_frames=2,
+        spd_h1=50,
+        spd_h2=50,
+    )
+
+    output = tobac.linking_trackpy(
+        features,
+        None,
+        1,
+        1,
+        d_max=40,
+        method_linking="random",
+        cell_number_unassigned=-1,
+        time_cell_min=2,
+    )
+
+    assert np.all(output["cell"].values == np.array([-1, -1]))
+    # NaT values cannot be compared, so instead we check for null values
+    # and check for the data type
+    assert np.all(pd.isnull(output["time_cell"]))
+    # the exact data type depends on architecture, so
+    # instead just check by name
+    assert output["time_cell"].dtype.name == "timedelta64[ns]"
