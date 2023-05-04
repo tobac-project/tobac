@@ -15,12 +15,14 @@ Note that you can run the watershedding segmentation algorithm on any variable t
 Segmentation can be run on 2D or 3D input data, but segmentation on 3D data using a 2D feature detection field requires careful consideration of where the vertical seeding will occur (see `Level`_).
 
 .. _Target:
+
 ======
 Target
 ======
 The :code:`target` parameter works similarly to how it works in feature detection (see :doc:`threshold_detection_parameters`). To segment areas that are greater than :code:`threshold`, use :code:`target='maximum'`. To segment areas that are less than :code:`threshold`, use :code:`target='minimum'`. 
 
 .. _Threshold:
+
 =========
 Threshold
 =========
@@ -28,6 +30,7 @@ Unlike in multiple threshold detection in Feature Detection, Watershedding Segme
 
 
 .. _Level:
+
 ======================================================
 Where the 3D seeds are placed for 2D feature detection
 ======================================================
@@ -36,6 +39,7 @@ When running feature detection on a 2D dataset and then using these detected fea
 :code:`level` can also be set to a `slice <https://docs.python.org/3/c-api/slice.html>`, which determines where in the vertical dimension (see `Vertical Coordinate`_) the features are seeded from. Note that :code:`level` operates in *array* coordinates rather than physical coordinates.
 
 .. _Max Distance:
+
 ================
 Maximum Distance
 ================

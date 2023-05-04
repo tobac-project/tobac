@@ -32,6 +32,183 @@ References
 
 import logging
 
+import skimage
+import numpy as np
+
+from . import utils as tb_utils
+from .utils import internal as internal_utils
+
+
+def add_markers(features, marker_arr, seed_3D_flag, seed_3D_size=5, level=None):
+    """Adds markers for watershedding using the `features` dataframe
+    to the marker_arr.
+
+    Parameters
+    ----------
+    features: pandas.DataFrame
+        Features for one point in time to add as markers.
+    marker_arr: 2D or 3D array-like
+        Array to add the markers to. Assumes a (z, h1, h2) or (h1, h2) configuration.
+    seed_3D_flag: str('column', 'box')
+        Seed 3D field at feature positions with either the full column
+         or a box of user-set size
+    seed_3D_size: int or tuple (dimensions equal to dimensions of `field`)
+        This sets the size of the seed box when `seed_3D_flag` is 'box'. If it's an
+        integer, the seed box is identical in all dimensions. If it's a tuple, it specifies the
+        seed area for each dimension separately.
+        Note: we recommend the use of odd numbers for this. If you give
+        an even number, your seed box will be biased and not centered
+        around the feature.
+        Note: if two seed boxes overlap, the feature that is seeded will be the
+        closer feature.
+    level: slice or None
+        If `seed_3D_flag` is 'column', the levels at which to seed the
+        cells for the watershedding algorithm. If None, seeds all levels.
+
+    Returns
+    -------
+    2D or 3D array like (same type as `marker_arr`)
+        The marker array
+    """
+    if seed_3D_flag not in ["column", "box"]:
+        raise ValueError('seed_3D_flag must be either "column" or "box"')
+
+    # What marker number is the background? Assumed 0.
+    bg_marker = 0
+
+    if level is None:
+        level = slice(None)
+
+    if len(marker_arr.shape) == 3:
+        is_3D = True
+        z_len = marker_arr.shape[0]
+
+    else:
+        is_3D = False
+        z_len = 0
+        # transpose to 3D array to make things easier.
+        marker_arr = marker_arr[np.newaxis, :, :]
+
+    if seed_3D_flag == "column":
+        for index, row in features.iterrows():
+            marker_arr[level, int(row["hdim_1"]), int(row["hdim_2"])] = row["feature"]
+
+    elif seed_3D_flag == "box":
+        # Get the size of the seed box from the input parameter
+        try:
+            if is_3D:
+                seed_z = seed_3D_size[0]
+                start_num = 1
+            else:
+                start_num = 0
+            seed_h1 = seed_3D_size[start_num]
+            seed_h2 = seed_3D_size[start_num + 1]
+        except TypeError:
+            # Not iterable, assume int.
+            seed_z = seed_3D_size
+            seed_h1 = seed_3D_size
+            seed_h2 = seed_3D_size
+
+        for index, row in features.iterrows():
+            if is_3D:
+                # If we have a 3D input and we need to do box seeding
+                # we need to have 3D features.
+                try:
+                    row["vdim"]
+                except KeyError:
+                    raise ValueError(
+                        "For Box seeding on 3D segmentation,"
+                        " you must have a 3D input source."
+                    )
+
+            # this is simple- just go in the seed_z/2 points around the
+            # vdim of the feature, up to the limits of the array.
+            if is_3D:
+                z_seed_start = int(np.max([0, np.ceil(row["vdim"] - seed_z / 2)]))
+                z_seed_end = int(np.min([z_len, np.ceil(row["vdim"] + seed_z / 2)]))
+
+            hdim_1_min = int(np.ceil(row["hdim_1"] - seed_h1 / 2))
+            hdim_1_max = int(np.ceil(row["hdim_1"] + seed_h1 / 2))
+            hdim_2_min = int(np.ceil(row["hdim_2"] - seed_h2 / 2))
+            hdim_2_max = int(np.ceil(row["hdim_2"] + seed_h2 / 2))
+            seed_box = [hdim_1_min, hdim_1_max, hdim_2_min, hdim_2_max]
+            # Need to see if there are any other points seeded
+            # in this seed box first.
+            curr_box_markers = marker_arr[
+                z_seed_start:z_seed_end,
+                seed_box[0] : seed_box[1],
+                seed_box[2] : seed_box[3],
+            ]
+            all_feats_in_box = np.unique(curr_box_markers)
+            if np.any(curr_box_markers != bg_marker):
+                # If we have non-background points already seeded,
+                # we need to find the best way to seed them.
+                # Currently seeding with the closest point.
+                # Loop through all points in the box
+                with np.nditer(curr_box_markers, flags=["multi_index"]) as it:
+                    for curr_box_pt in it:
+                        # Get its global index so that we can calculate
+                        # distance and set the array.
+                        local_index = it.multi_index
+                        global_index = (
+                            local_index[0] + z_seed_start,
+                            local_index[1] + seed_box[0],
+                            local_index[2] + seed_box[2],
+                        )
+                        # If it's a background marker, we can just set it
+                        # with the feature we're working on.
+                        if curr_box_pt == bg_marker:
+                            marker_arr[global_index] = row["feature"]
+                            continue
+                        # it has another feature in it. Calculate the distance
+                        # from its current set feature and the new feature.
+                        if is_3D:
+                            curr_coord = (row["vdim"], row["hdim_1"], row["hdim_2"])
+                        else:
+                            curr_coord = (0, row["hdim_1"], row["hdim_2"])
+
+                        dist_from_curr_pt = internal_utils.calc_distance_coords(
+                            np.array(global_index),
+                            np.array(curr_coord),
+                        )
+
+                        # This is technically an O(N^2) operation, but
+                        # hopefully performance isn't too bad as this should
+                        # be rare.
+                        orig_row = features[features["feature"] == curr_box_pt].iloc[0]
+                        if is_3D:
+                            orig_coord = (
+                                orig_row["vdim"],
+                                orig_row["hdim_1"],
+                                orig_row["hdim_2"],
+                            )
+                        else:
+                            orig_coord = (0, orig_row["hdim_1"], orig_row["hdim_2"])
+                        dist_from_orig_pt = internal_utils.calc_distance_coords(
+                            np.array(global_index),
+                            np.array(orig_coord),
+                        )
+                        # The current point center is further away
+                        # than the original point center, so do nothing
+                        if dist_from_curr_pt > dist_from_orig_pt:
+                            continue
+                        else:
+                            # the current point center is closer.
+                            marker_arr[global_index] = row["feature"]
+            # completely unseeded region so far.
+            else:
+                marker_arr[
+                    z_seed_start:z_seed_end,
+                    seed_box[0] : seed_box[1],
+                    seed_box[2] : seed_box[3],
+                ] = row["feature"]
+
+    # If we aren't 3D, transpose back.
+    if not is_3D:
+        marker_arr = marker_arr[0, :, :]
+
+    return marker_arr
+
 
 def segmentation_3D(
     features,
@@ -42,6 +219,7 @@ def segmentation_3D(
     level=None,
     method="watershed",
     max_distance=None,
+    seed_3D_flag="column",
 ):
     """Wrapper for the segmentation()-function."""
 
@@ -54,6 +232,7 @@ def segmentation_3D(
         level=level,
         method=method,
         max_distance=max_distance,
+        seed_3D_flag=seed_3D_flag,
     )
 
 
@@ -66,6 +245,7 @@ def segmentation_2D(
     level=None,
     method="watershed",
     max_distance=None,
+    seed_3D_flag="column",
 ):
     """Wrapper for the segmentation()-function."""
     return segmentation(
@@ -77,6 +257,7 @@ def segmentation_2D(
         level=level,
         method=method,
         max_distance=max_distance,
+        seed_3D_flag=seed_3D_flag,
     )
 
 
@@ -90,6 +271,8 @@ def segmentation_timestep(
     method="watershed",
     max_distance=None,
     vertical_coord="auto",
+    seed_3D_flag="column",
+    seed_3D_size=5,
 ):
     """Perform watershedding for an individual time step of the data. Works
     for both 2D and 3D data
@@ -131,6 +314,16 @@ def segmentation_timestep(
         Vertical coordinate in 3D input data. If 'auto', input is checked for
         one of {'z', 'model_level_number', 'altitude','geopotential_height'}
         as a likely coordinate name
+    seed_3D_flag: str('column', 'box')
+        Seed 3D field at feature positions with either the full column (default)
+         or a box of user-set size
+    seed_3D_size: int or tuple (dimensions equal to dimensions of `field`)
+        This sets the size of the seed box when `seed_3D_flag` is 'box'. If it's an
+        integer, the seed box is identical in all dimensions. If it's a tuple, it specifies the
+        seed area for each dimension separately. Note: we recommend the use
+        of odd numbers for this. If you give an even number, your seed box will be
+        biased and not centered around the feature.
+
 
     Returns
     -------
@@ -166,7 +359,31 @@ def segmentation_timestep(
     # from skimage.segmentation import random_walker
     from scipy.ndimage import distance_transform_edt
     from copy import deepcopy
-    import numpy as np
+
+    # How many dimensions are we using?
+    if field_in.ndim == 2:
+        hdim_1_axis = 0
+        hdim_2_axis = 1
+    elif field_in.ndim == 3:
+        vertical_axis = internal_utils.find_vertical_axis_from_coord(
+            field_in, vertical_coord=vertical_coord
+        )
+        ndim_vertical = field_in.coord_dims(vertical_axis)
+        if len(ndim_vertical) > 1:
+            raise ValueError("please specify 1 dimensional vertical coordinate")
+        vertical_coord_axis = ndim_vertical[0]
+        # Once we know the vertical coordinate, we can resolve the
+        # horizontal coordinates
+        # To make things easier, we will transpose the axes
+        # so that they are consistent.
+
+        hdim_1_axis, hdim_2_axis = internal_utils.find_hdim_axes_3D(
+            field_in, vertical_axis=vertical_coord_axis
+        )
+    else:
+        raise ValueError(
+            "Segmentation routine only possible with 2 or 3 spatial dimensions"
+        )
 
     # copy feature dataframe for output
     features_out = deepcopy(features_in)
@@ -175,8 +392,20 @@ def segmentation_timestep(
     segmentation_out.rename("segmentation_mask")
     segmentation_out.units = 1
 
-    # Create dask array from input data:
+    # Get raw array from input data:
     data = field_in.core_data()
+    is_3D_seg = len(data.shape) == 3
+    # To make things easier, we will transpose the axes
+    # so that they are consistent: z, hdim_1, hdim_2
+    # We only need to do this for 3D.
+    transposed_data = False
+    if is_3D_seg:
+        if vertical_coord_axis == 1:
+            data = np.transpose(data, axes=(1, 0, 2))
+            transposed_data = True
+        elif vertical_coord_axis == 2:
+            data = np.transpose(data, axes=(2, 0, 1))
+            transposed_data = True
 
     # Set level at which to create "Seed" for each feature in the case of 3D watershedding:
     # If none, use all levels (later reduced to the ones fulfilling the theshold conditions)
@@ -199,45 +428,10 @@ def segmentation_timestep(
 
     # set markers at the positions of the features:
     markers = np.zeros(unmasked.shape).astype(np.int32)
-    if field_in.ndim == 2:  # 2D watershedding
-        for index, row in features_in.iterrows():
-            markers[int(row["hdim_1"]), int(row["hdim_2"])] = row["feature"]
-
-    elif field_in.ndim == 3:  # 3D watershedding
-        list_coord_names = [coord.name() for coord in field_in.coords()]
-        # determine vertical axis:
-        if vertical_coord == "auto":
-            list_vertical = [
-                "z",
-                "model_level_number",
-                "altitude",
-                "geopotential_height",
-            ]
-            for coord_name in list_vertical:
-                if coord_name in list_coord_names:
-                    vertical_axis = coord_name
-                    break
-        elif vertical_coord in list_coord_names:
-            vertical_axis = vertical_coord
-        else:
-            raise ValueError("Plese specify vertical coordinate")
-        ndim_vertical = field_in.coord_dims(vertical_axis)
-        if len(ndim_vertical) > 1:
-            raise ValueError("please specify 1 dimensional vertical coordinate")
-        for index, row in features_in.iterrows():
-            if ndim_vertical[0] == 0:
-                markers[level, int(row["hdim_1"]), int(row["hdim_2"])] = row["feature"]
-            elif ndim_vertical[0] == 1:
-                markers[int(row["hdim_1"]), level, int(row["hdim_2"])] = row["feature"]
-            elif ndim_vertical[0] == 2:
-                markers[int(row["hdim_1"]), int(row["hdim_2"]), level] = row["feature"]
-    else:
-        raise ValueError(
-            "Segmentations routine only possible with 2 or 3 spatial dimensions"
-        )
-
+    markers = add_markers(features_in, markers, seed_3D_flag, seed_3D_size, level)
     # set markers in cells not fulfilling threshold condition to zero:
     markers[~unmasked] = 0
+    # marker_vals = np.unique(markers)
 
     # Turn into np arrays (not necessary for markers) as dask arrays don't yet seem to work for watershedding algorithm
     data_segmentation = np.array(data_segmentation)
@@ -248,9 +442,6 @@ def segmentation_timestep(
         segmentation_mask = watershed(
             np.array(data_segmentation), markers.astype(np.int32), mask=unmasked
         )
-    #    elif method=='random_walker':
-    #        segmentation_mask=random_walker(data_segmentation, markers.astype(np.int32),
-    #                                          beta=130, mode='bf', tol=0.001, copy=True, multichannel=False, return_full_prob=False, spacing=None)
     else:
         raise ValueError("unknown method, must be watershed")
 
@@ -260,6 +451,17 @@ def segmentation_timestep(
         segmentation_mask[
             np.bitwise_and(segmentation_mask > 0, D > max_distance_pixel)
         ] = 0
+
+    # mask all segmentation_mask points below threshold as -1
+    # to differentiate from those unmasked points NOT filled by watershedding
+    # TODO: allow user to specify
+    segmentation_mask[~unmasked] = -1
+
+    if transposed_data:
+        if vertical_coord_axis == 1:
+            segmentation_mask = np.transpose(segmentation_mask, axes=(1, 0, 2))
+        elif vertical_coord_axis == 2:
+            segmentation_mask = np.transpose(segmentation_mask, axes=(1, 2, 0))
 
     # Write resulting mask into cube for output
     segmentation_out.data = segmentation_mask
@@ -288,6 +490,8 @@ def segmentation(
     method="watershed",
     max_distance=None,
     vertical_coord="auto",
+    seed_3D_flag="column",
+    seed_3D_size=5,
 ):
     """Use watershedding to determine region above a threshold
     value around initial seeding position for all time steps of
@@ -333,6 +537,18 @@ def segmentation(
                       'geopotential_height'}, optional
         Name of the vertical coordinate for use in 3D segmentation case
 
+    seed_3D_flag: str('column', 'box')
+        Seed 3D field at feature positions with either the full column (default)
+         or a box of user-set size
+
+    seed_3D_size: int or tuple (dimensions equal to dimensions of `field`)
+        This sets the size of the seed box when `seed_3D_flag` is 'box'. If it's an
+        integer, the seed box is identical in all dimensions. If it's a tuple, it specifies the
+        seed area for each dimension separately. Note: we recommend the use
+        of odd numbers for this. If you give an even number, your seed box will be
+        biased and not centered around the feature.
+
+
     Returns
     -------
     segmentation_out : iris.cube.Cube
@@ -369,7 +585,9 @@ def segmentation(
     features_out_list = []
 
     # loop over individual input timesteps for segmentation:
+    # OR do segmentation on single timestep
     field_time = field.slices_over("time")
+
     for i, field_i in enumerate(field_time):
         time_i = field_i.coord("time").units.num2date(field_i.coord("time").points[0])
         features_i = features.loc[features["time"] == time_i]
@@ -383,6 +601,8 @@ def segmentation(
             method=method,
             max_distance=max_distance,
             vertical_coord=vertical_coord,
+            seed_3D_flag=seed_3D_flag,
+            seed_3D_size=seed_3D_size,
         )
         segmentation_out_list.append(segmentation_out_i)
         features_out_list.append(features_out_i)

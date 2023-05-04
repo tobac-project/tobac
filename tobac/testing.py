@@ -477,6 +477,7 @@ def make_dataset_from_arr(
     data_type="xarray",
     time_dim_num=None,
     z_dim_num=None,
+    z_dim_name="altitude",
     y_dim_num=0,
     x_dim_num=1,
 ):
@@ -498,9 +499,9 @@ def make_dataset_from_arr(
 
     z_dim_num: int or None, optional
         What axis is the z dimension on, None for a 2D array
-        Default is None
-
-    y_dim_num: int, optional
+    z_dim_name: str
+        What the z dimension name is named
+    y_dim_num: int
         What axis is the y dimension on, typically 0 for a 2D array
         Default is 0
 
@@ -517,22 +518,37 @@ def make_dataset_from_arr(
     import xarray as xr
     import iris
 
-    if time_dim_num is not None:
-        raise NotImplementedError("Time dimension not yet implemented in this function")
+    has_time = time_dim_num is not None
 
     is_3D = z_dim_num is not None
     output_arr = xr.DataArray(in_arr)
     if is_3D:
         z_max = in_arr.shape[z_dim_num]
 
+    if has_time:
+        time_min = datetime.datetime(2022, 1, 1)
+        time_num = in_arr.shape[time_dim_num]
+
     if data_type == "xarray":
         return output_arr
     elif data_type == "iris":
         out_arr_iris = output_arr.to_iris()
+
         if is_3D:
             out_arr_iris.add_dim_coord(
-                iris.coords.DimCoord(np.arange(0, z_max), standard_name="altitude"),
+                iris.coords.DimCoord(np.arange(0, z_max), standard_name=z_dim_name),
                 z_dim_num,
+            )
+        if has_time:
+            out_arr_iris.add_dim_coord(
+                iris.coords.DimCoord(
+                    pd.date_range(start=time_min, periods=time_num)
+                    .values.astype("datetime64[s]")
+                    .astype(int),
+                    standard_name="time",
+                    units="seconds since epoch",
+                ),
+                time_dim_num,
             )
         return out_arr_iris
     else:
@@ -633,10 +649,19 @@ def make_feature_blob(
 
     start_h2 = int(np.ceil(h2_loc - h2_size / 2))
     end_h2 = int(np.ceil(h2_loc + h2_size / 2))
-    in_arr = set_arr_2D_3D(
-        in_arr, amplitude, start_h1, end_h1, start_h2, end_h2, start_v, end_v
-    )
-    return in_arr
+
+    if shape == "rectangle":
+        in_arr = set_arr_2D_3D(
+            in_arr,
+            amplitude,
+            start_h1,
+            end_h1,
+            start_h2,
+            end_h2,
+            start_v,
+            end_v,
+        )
+        return in_arr
 
 
 def set_arr_2D_3D(
@@ -697,14 +722,16 @@ def generate_single_feature(
     spd_h2=1,
     spd_v=1,
     min_h1=0,
-    max_h1=1000,
+    max_h1=None,
     min_h2=0,
-    max_h2=1000,
+    max_h2=None,
     num_frames=1,
     dt=datetime.timedelta(minutes=5),
     start_date=datetime.datetime(2022, 1, 1, 0),
-    frame_start=1,
+    frame_start=0,
     feature_num=1,
+    feature_size=None,
+    threshold_val=None,
 ):
     """Function to generate a dummy feature dataframe to test the tracking functionality
 
@@ -733,10 +760,7 @@ def generate_single_feature(
         Default is 1
 
     min_h1: int, optional
-        Minimum value of hdim_1 allowed. If PBC_flag is not 'none', then
-        this will be used to know when to wrap around periodic boundaries.
-        If PBC_flag is 'none', features will disappear if they are above/below
-        these bounds.
+        Minimum value of hdim_1 allowed.
         Default is 0
 
     max_h1: int, optional
@@ -763,14 +787,22 @@ def generate_single_feature(
         Start datetime
         Default is datetime.datetime(2022, 1, 1, 0)
 
-    frame_start: int, optional
+    frame_start: int
         Number to start the frame at
         Default is 1
 
     feature_num: int, optional
         What number to start the feature at
         Default is 1
+    feature_size: int or None
+        'num' column in output; feature size
+        If None, doesn't set this column
+    threshold_val: float or None
+        Threshold value of this feature
     """
+
+    if max_h1 is None or max_h2 is None:
+        raise ValueError("Max coords must be specified.")
 
     out_list_of_dicts = list()
     curr_h1 = start_h1
@@ -783,15 +815,100 @@ def generate_single_feature(
         curr_dict["hdim_1"] = curr_h1
         curr_dict["hdim_2"] = curr_h2
         curr_dict["frame"] = frame_start + i
+        curr_dict["idx"] = 0
         if curr_v is not None:
             curr_dict["vdim"] = curr_v
             curr_v += spd_v
         curr_dict["time"] = curr_dt
         curr_dict["feature"] = feature_num + i
-
+        if feature_size is not None:
+            curr_dict["num"] = feature_size
+        if threshold_val is not None:
+            curr_dict["threshold_value"] = threshold_val
         curr_h1 += spd_h1
         curr_h2 += spd_h2
         curr_dt += dt
         out_list_of_dicts.append(curr_dict)
 
     return pd.DataFrame.from_dict(out_list_of_dicts)
+
+
+def get_start_end_of_feat(
+    center_point,
+    size,
+    axis_min,
+    axis_max,
+):
+    """Gets the start and ending points for a feature given a size
+
+    Parameters
+    ----------
+    center_point: float
+        The center point of the feature
+    size: float
+        The size of the feature in this dimension
+    axis_min: int
+        Minimum point on the axis (usually 0)
+    axis_max: int
+        Maximum point on the axis (exclusive). This is 1 after
+        the last real point on the axis, such that axis_max - axis_min
+        is the size of the axis
+
+    Returns
+    -------
+    tuple (start_point, end_point)
+    """
+    import numpy as np
+
+    min_pt = int(np.ceil(center_point - size / 2))
+    max_pt = int(np.ceil(center_point + size / 2))
+    # adjust points for boundaries, if needed.
+
+    return (min_pt, max_pt)
+
+
+def generate_grid_coords(min_max_coords, lengths):
+    """Generates a grid of coordinates, such as fake lat/lons for testing.
+
+    Parameters
+    ----------
+    min_max_coords: array-like, either length 2, length 4, or length 6.
+        The minimum and maximum values in each dimension as:
+        (min_dim1, max_dim1, min_dim2, max_dim2, min_dim3, max_dim3) to use
+        all 3 dimensions. You can omit any dimensions that you aren't using.
+    lengths: array-like, either length 1, 2, or 3.
+        The lengths of values in each dimension. Length must equal 1/2 the length
+        of min_max_coords.
+
+    Returns
+    -------
+    1, 2, or 3 array-likes
+        array-like of grid coordinates in the number of dimensions requested
+        and with the number of arrays specified (meshed coordinates)
+
+    """
+    import numpy as np
+
+    if len(min_max_coords) != len(lengths) * 2:
+        raise ValueError(
+            "The length of min_max_coords must be exactly 2 times"
+            " the length of lengths."
+        )
+
+    if len(lengths) == 1:
+        return np.mgrid[
+            min_max_coords[0] : min_max_coords[1] : complex(imag=lengths[0])
+        ]
+
+    if len(lengths) == 2:
+        return np.mgrid[
+            min_max_coords[0] : min_max_coords[1] : complex(imag=lengths[0]),
+            min_max_coords[2] : min_max_coords[3] : complex(imag=lengths[1]),
+        ]
+
+    if len(lengths) == 3:
+        return np.mgrid[
+            min_max_coords[0] : min_max_coords[1] : complex(imag=lengths[0]),
+            min_max_coords[2] : min_max_coords[3] : complex(imag=lengths[1]),
+            min_max_coords[4] : min_max_coords[5] : complex(imag=lengths[2]),
+        ]

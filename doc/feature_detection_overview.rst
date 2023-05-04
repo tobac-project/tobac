@@ -1,6 +1,7 @@
 .. _feature-detection-overview:
+
 Feature Detection Basics
----------------------
+------------------------
 
 The feature detection is the first step in using **tobac**.
 

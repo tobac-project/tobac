@@ -20,9 +20,17 @@ References
 """
 
 import logging
+from operator import is_
 import numpy as np
 import pandas as pd
 import warnings
+import math
+from . import utils as tb_utils
+from .utils import internal as internal_utils
+
+from packaging import version as pkgvsn
+import trackpy as tp
+from copy import deepcopy
 
 
 def linking_trackpy(
@@ -30,6 +38,7 @@ def linking_trackpy(
     field_in,
     dt,
     dxy,
+    dz=None,
     v_max=None,
     d_max=None,
     d_min=None,
@@ -44,8 +53,8 @@ def linking_trackpy(
     adaptive_stop=None,
     cell_number_start=1,
     cell_number_unassigned=-1,
+    vertical_coord="auto",
 ):
-
     """Perform Linking of features in trajectories.
 
     The linking determines which of the features detected in a specific
@@ -78,7 +87,14 @@ def linking_trackpy(
         Time resolution of tracked features.
 
     dxy : float
-        Grid spacing of the input data.
+        Horizontal grid spacing of the input data.
+
+    dz : float
+        Constant vertical grid spacing (m), optional. If not specified
+        and the input is 3D, this function requires that `vertical_coord` is available
+        in the `features` input. If you specify a value here, this function assumes
+        that it is the constant z spacing between points, even if ```vertical_coord```
+        is specified.
 
     d_max : float, optional
         Maximum search range
@@ -152,6 +168,13 @@ def linking_trackpy(
         to `np.nan`, the data type of 'cell' will change to float.
         Default is -1
 
+    vertical_coord: str
+        Name of the vertical coordinate. The vertical coordinate used
+        must be meters. If 'auto', tries to auto-detect.
+        It looks for the coordinate or the dimension name corresponding
+        to the string. To use `dz`, set this to `None`.
+
+
     Returns
     -------
     trajectories_final : pandas.DataFrame
@@ -172,15 +195,19 @@ def linking_trackpy(
         )
 
     #    from trackpy import link_df
-    import trackpy as tp
-    from copy import deepcopy
+    #    from trackpy import link_df
 
     #    from trackpy import filter_stubs
     #    from .utils import add_coordinates
 
+    if (v_max is None) and (d_min is None) and (d_max is None):
+        raise ValueError(
+            "Neither d_max nor v_max has been provided. Either one of these arguments must be specified."
+        )
+
     # calculate search range based on timestep and grid spacing
     if v_max is not None:
-        search_range = int(dt * v_max / dxy)
+        search_range = dt * v_max / dxy
 
     # calculate search range based on timestep and grid spacing
     if d_max is not None:
@@ -188,7 +215,7 @@ def linking_trackpy(
             raise ValueError(
                 "Multiple parameter inputs for v_max, d_max or d_min have been provided. Only use one of these parameters as they supercede each other leading to unexpected behaviour"
             )
-        search_range = int(d_max / dxy)
+        search_range = d_max / dxy
 
     # calculate search range based on timestep and grid spacing
     if d_min is not None:
@@ -196,11 +223,29 @@ def linking_trackpy(
             raise ValueError(
                 "Multiple parameter inputs for v_max, d_max or d_min have been provided. Only use one of these parameters as they supercede each other leading to unexpected behaviour"
             )
-        search_range = int(d_min / dxy)
+        search_range = d_min / dxy
         warnings.warn(
             "d_min parameter will be deprecated in a future version of tobac. Please use d_max instead",
             FutureWarning,
         )
+    # Check if we are 3D.
+    if "vdim" in features:
+        is_3D = True
+        if dz is not None and vertical_coord is not None:
+            raise ValueError(
+                "dz and vertical_coord both set, vertical"
+                " spacing is ambiguous. Set one to None."
+            )
+        if dz is None and vertical_coord is None:
+            raise ValueError(
+                "Neither dz nor vertical_coord are set. One" " must be set."
+            )
+        if vertical_coord is not None:
+            found_vertical_coord = internal_utils.find_dataframe_vertical_coord(
+                variable_dataframe=features, vertical_coord=vertical_coord
+            )
+    else:
+        is_3D = False
 
     # in case of adaptive search, check wether both parameters are specified
     if adaptive_stop is not None:
@@ -233,32 +278,63 @@ def linking_trackpy(
             tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE = subnetwork_size
 
     # deep copy to preserve features field:
-    features = deepcopy(features)
+    features_linking = deepcopy(features)
+
+    # check if we are 3D or not
+    if is_3D:
+        # If we are 3D, we need to convert the vertical
+        # coordinates so that 1 unit is equal to dxy.
+
+        if dz is not None:
+            features_linking["vdim_adj"] = features_linking["vdim"] * dz / dxy
+        else:
+            features_linking["vdim_adj"] = features_linking[found_vertical_coord] / dxy
+
+        pos_columns_tp = ["vdim_adj", "hdim_1", "hdim_2"]
+
+    else:
+        pos_columns_tp = ["hdim_1", "hdim_2"]
+
+    neighbor_strategy = "KDTree"
+    dist_func = None
 
     if method_linking == "random":
         #     link features into trajectories:
         trajectories_unfiltered = tp.link(
-            features,
+            features_linking,
             search_range=search_range,
             memory=memory,
             t_column="frame",
-            pos_columns=["hdim_2", "hdim_1"],
+            pos_columns=pos_columns_tp,
             adaptive_step=adaptive_step,
             adaptive_stop=adaptive_stop,
-            neighbor_strategy="KDTree",
+            neighbor_strategy=neighbor_strategy,
             link_strategy="auto",
+            dist_func=dist_func,
         )
     elif method_linking == "predict":
+        if is_3D and pkgvsn.parse(tp.__version__) < pkgvsn.parse("0.6.0"):
+            raise ValueError(
+                "3D Predictive Tracking Only Supported with trackpy versions newer than 0.6.0."
+            )
 
-        # avoid setting pos_columns by renaimng to default values to avoid trackpy bug
-        features.rename(
-            columns={"y": "__temp_y_coord", "x": "__temp_x_coord"}, inplace=True
+        # avoid setting pos_columns by renaming to default values to avoid trackpy bug
+        features_linking.rename(
+            columns={
+                "y": "__temp_y_coord",
+                "x": "__temp_x_coord",
+                "z": "__temp_z_coord",
+            },
+            inplace=True,
         )
-        features.rename(columns={"hdim_1": "y", "hdim_2": "x"}, inplace=True)
+
+        features_linking.rename(
+            columns={"hdim_1": "y", "hdim_2": "x", "vdim_adj": "z"}, inplace=True
+        )
 
         # generate list of features as input for df_link_iter to avoid bug in df_link
         features_linking_list = [
-            frame for i, frame in features.groupby("frame", sort=True)
+            frame for i, frame in features_linking.groupby("frame", sort=True)
         ]
 
         pred = tp.predict.NearestVelocityPredict(span=1)
@@ -268,24 +344,32 @@ def linking_trackpy(
             memory=memory,
             # pos_columns=["hdim_1", "hdim_2"], # not working atm
             t_column="frame",
-            neighbor_strategy="KDTree",
+            neighbor_strategy=neighbor_strategy,
             link_strategy="auto",
             adaptive_step=adaptive_step,
-            adaptive_stop=adaptive_stop
+            adaptive_stop=adaptive_stop,
+            # dist_func=dist_func
             #                                 copy_features=False, diagnostics=False,
             #                                 hash_size=None, box_size=None, verify_integrity=True,
             #                                 retain_index=False
         )
         # recreate a single dataframe from the list
+
         trajectories_unfiltered = pd.concat(trajectories_unfiltered)
 
         # change to column names back
         trajectories_unfiltered.rename(
-            columns={"y": "hdim_1", "x": "hdim_2"}, inplace=True
+            columns={"y": "hdim_1", "x": "hdim_2", "z": "vdim_adj"}, inplace=True
         )
         trajectories_unfiltered.rename(
-            columns={"__temp_y_coord": "y", "__temp_x_coord": "x"}, inplace=True
+            columns={
+                "__temp_y_coord": "y",
+                "__temp_x_coord": "x",
+                "__temp_z_coord": "z",
+            },
+            inplace=True,
         )
+
     else:
         raise ValueError("method_linking unknown")
 
@@ -300,6 +384,10 @@ def linking_trackpy(
     #    trajectories_filtered = filter_stubs(trajectories_unfiltered,threshold=stubs)
     #    trajectories_filtered=trajectories_filtered.reset_index(drop=True)
 
+    # clean up our temporary filters
+    if is_3D:
+        trajectories_unfiltered = trajectories_unfiltered.drop("vdim_adj", axis=1)
+
     # Reset particle numbers from the arbitray numbers at the end of the feature detection and linking to consecutive cell numbers
     # keep 'particle' for reference to the feature detection step.
     trajectories_unfiltered["cell"] = None
@@ -309,10 +397,7 @@ def linking_trackpy(
     ):
         cell = int(i_particle + cell_number_start)
         particle_num_to_cell_num[particle] = int(cell)
-
-    remap_particle_to_cell_vec = np.vectorize(
-        lambda particle_cell_map, input_particle: particle_cell_map[input_particle]
-    )
+    remap_particle_to_cell_vec = np.vectorize(remap_particle_to_cell_nv)
     trajectories_unfiltered["cell"] = remap_particle_to_cell_vec(
         particle_num_to_cell_num, trajectories_unfiltered["particle"]
     )
@@ -335,9 +420,11 @@ def linking_trackpy(
                 + "), setting cell number to "
                 + str(cell_number_unassigned)
             )
-            trajectories_unfiltered.loc[
-                trajectories_unfiltered["cell"] == cell, "cell"
-            ] = cell_number_unassigned
+            stub_cell_nums.append(cell)
+
+    trajectories_unfiltered.loc[
+        trajectories_unfiltered["cell"].isin(stub_cell_nums), "cell"
+    ] = cell_number_unassigned
 
     trajectories_filtered = trajectories_unfiltered
 
@@ -353,7 +440,9 @@ def linking_trackpy(
     #     add time coordinate relative to cell initiation:
     #    logging.debug('start adding cell time to trajectories')
     trajectories_filtered_filled = trajectories_filtered_unfilled
-    trajectories_final = add_cell_time(trajectories_filtered_filled)
+    trajectories_final = add_cell_time(
+        trajectories_filtered_filled, cell_number_unassigned=cell_number_unassigned
+    )
     # Add metadata
     trajectories_final.attrs["cell_number_unassigned"] = cell_number_unassigned
 
@@ -404,7 +493,6 @@ def fill_gaps(
     # group by cell number and perform process for each cell individually:
     t_grouped = t.groupby("cell")
     for cell, track in t_grouped:
-
         # Setup interpolator from existing points (of order given as keyword)
         frame_in = track["frame"].values
         hdim_1_in = track["hdim_1"].values
@@ -446,13 +534,15 @@ def fill_gaps(
     return t_out
 
 
-def add_cell_time(t):
+def add_cell_time(t: pd.DataFrame, cell_number_unassigned: int):
     """add cell time as time since the initiation of each cell
 
     Parameters
     ----------
     t : pandas.DataFrame
         trajectories with added coordinates
+    cell_number_unassigned: int
+        unassigned cell value
 
     Returns
     -------
@@ -465,4 +555,20 @@ def add_cell_time(t):
 
     t["time_cell"] = t["time"] - t.groupby("cell")["time"].transform("min")
     t["time_cell"] = pd.to_timedelta(t["time_cell"])
+    t.loc[t["cell"] == cell_number_unassigned, "time_cell"] = pd.Timedelta("nat")
     return t
+
+
+def remap_particle_to_cell_nv(particle_cell_map, input_particle):
+    """Remaps the particles to new cells given an input map and the current particle.
+    Helper function that is designed to be vectorized with np.vectorize
+
+    Parameters
+    ----------
+    particle_cell_map: dict-like
+        The dictionary mapping particle number to cell number
+    input_particle: key for particle_cell_map
+        The particle number to remap
+
+    """
+    return particle_cell_map[input_particle]
