@@ -59,6 +59,16 @@ The project is currently being extended by several contributors to include addit
 
    merge_split
 
+
+.. toctree::
+   :caption: Developer guide
+   :maxdepth: 2
+
+   code_structure
+   contributing
+   code_reviews
+   mentoring
+
 .. toctree::
    :caption: API Reference
    :maxdepth: 3
