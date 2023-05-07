@@ -556,7 +556,7 @@ def feature_detection_multithreshold_timestep(
     Parameters
     ----------
 
-    data_i : iris.cube.Cube
+    data_i : xarray.Dataset (or for legacy: iris.cube.Cube)
         2D field to perform the feature detection (single timestep) on.
 
     threshold : float, optional
@@ -721,7 +721,7 @@ def feature_detection_multithreshold_timestep(
         )
     return features_thresholds
 
-
+@xarray_to_iris
 def feature_detection_multithreshold(
     field_in,
     dxy=None,
