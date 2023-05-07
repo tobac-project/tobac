@@ -530,7 +530,7 @@ def feature_detection_threshold(
 
     return features_threshold, regions
 
-@xarray_to_iris
+@irispandas_to_xarray
 def feature_detection_multithreshold_timestep(
     data_i,
     i_time,
@@ -619,7 +619,8 @@ def feature_detection_multithreshold_timestep(
         )
 
     # get actual numpy array
-    track_data = data_i.core_data()
+#     track_data = data_i.core_data()
+    track_data = data_i.data
 
     track_data = gaussian_filter(
         track_data, sigma=sigma_threshold
