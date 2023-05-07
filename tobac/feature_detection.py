@@ -274,7 +274,7 @@ def feature_detection_threshold(
 
     Parameters
     ----------
-    data_i : iris.cube.Cube
+    data_i : numpy array
         2D field to perform the feature detection (single timestep) on.
 
     i_time : int
