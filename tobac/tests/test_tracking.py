@@ -170,7 +170,7 @@ def test_linking_trackpy():
     )
     # Just want to remove the time_cell column here.
     actual_out_feature = actual_out_feature[
-        ["hdim_1", "hdim_2", "vdim", "frame", "feature", "time", "cell"]
+        ["hdim_1", "hdim_2", "vdim", "frame", "feature", "time", "cell", "idx"]
     ]
     expected_out_feature = convert_cell_dtype_if_appropriate(
         actual_out_feature, expected_out_feature
@@ -217,7 +217,7 @@ def test_linking_trackpy():
     )
     # Just want to remove the time_cell column here.
     actual_out_feature = actual_out_feature[
-        ["hdim_1", "hdim_2", "vdim", "frame", "feature", "time", "cell"]
+        ["hdim_1", "hdim_2", "vdim", "frame", "feature", "time", "cell", "idx"]
     ]
     expected_out_feature = convert_cell_dtype_if_appropriate(
         actual_out_feature, expected_out_feature
@@ -264,7 +264,7 @@ def test_linking_trackpy():
     )
     # Just want to remove the time_cell column here.
     actual_out_feature = actual_out_feature[
-        ["hdim_1", "hdim_2", "vdim", "frame", "feature", "time", "cell"]
+        ["hdim_1", "hdim_2", "vdim", "frame", "feature", "time", "cell", "idx"]
     ]
     expected_out_feature = convert_cell_dtype_if_appropriate(
         actual_out_feature, expected_out_feature
