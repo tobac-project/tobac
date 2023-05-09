@@ -1,0 +1,41 @@
+name: Linting
+on:
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.9'
+      - name: Install tobac and pylint 
+        run: |
+          pip install .
+          pip install --upgrade pylint
+
+      - name: Lint with pylint
+        # omit conventions, for minimum score use: --fail-under=
+        run: |
+          # use shell script to save only tail of output  
+          OUTPUT_PART=$(pylint tobac --disable=C | tail -n 3)
+          # but post entire output in the action details 
+          pylint tobac --disable=C --exit-zero
+          # define random delimiter for multiline string
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "MESSAGE<<$EOF" >> "$GITHUB_ENV"
+          echo "$OUTPUT_PART" >> "$GITHUB_ENV"
+          echo "$EOF" >> "$GITHUB_ENV"
+
+      - name: Post result to PR
+        uses: mshick/add-pr-comment@v1
+        with:
+          message: ${{ env.MESSAGE }} 
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token-user-login: 'github-actions[bot]' # The user.login for temporary GitHub token
+          allow-repeats: false # This is the default
