@@ -379,22 +379,22 @@ def test_filter_min_distance(
     "vertical_coord_opt, expected_raise, "
     "data_type",
     [
-        ((1, 20, 30, 40), 1, "altitude", "auto", False, 'iris'),
-        ((1, 20, 30, 40), 2, "altitude", "auto", False, 'iris'),
-        ((1, 20, 30, 40), 3, "altitude", "auto", False, 'iris'),
-        ((1, 20, 30, 40), 1, "air_pressure", "air_pressure", False, 'iris'),
-        ((1, 20, 30, 40), 1, "air_pressure", "auto", True, 'iris'),
-        ((1, 20, 30, 40), 1, "model_level_number", "auto", False, 'iris'),
-        ((1, 20, 30, 40), 1, "altitude", "auto", False, 'iris'),
-        ((1, 20, 30, 40), 1, "geopotential_height", "auto", False, 'iris'),
-        ((1, 20, 30, 40), 1, "altitude", "auto", False, 'xarray'),
-        ((1, 20, 30, 40), 2, "altitude", "auto", False, 'xarray'),
-        ((1, 20, 30, 40), 3, "altitude", "auto", False, 'xarray'),
-        ((1, 20, 30, 40), 1, "air_pressure", "air_pressure", False, 'xarray'),
-        ((1, 20, 30, 40), 1, "air_pressure", "auto", True, 'xarray'),
-        ((1, 20, 30, 40), 1, "model_level_number", "auto", False, 'xarray'),
-        ((1, 20, 30, 40), 1, "altitude", "auto", False, 'xarray'),
-        ((1, 20, 30, 40), 1, "geopotential_height", "auto", False, 'xarray'),
+        ((1, 20, 30, 40), 1, "altitude", "auto", False, "iris"),
+        ((1, 20, 30, 40), 2, "altitude", "auto", False, "iris"),
+        ((1, 20, 30, 40), 3, "altitude", "auto", False, "iris"),
+        ((1, 20, 30, 40), 1, "air_pressure", "air_pressure", False, "iris"),
+        ((1, 20, 30, 40), 1, "air_pressure", "auto", True, "iris"),
+        ((1, 20, 30, 40), 1, "model_level_number", "auto", False, "iris"),
+        ((1, 20, 30, 40), 1, "altitude", "auto", False, "iris"),
+        ((1, 20, 30, 40), 1, "geopotential_height", "auto", False, "iris"),
+        ((1, 20, 30, 40), 1, "altitude", "auto", False, "xarray"),
+        ((1, 20, 30, 40), 2, "altitude", "auto", False, "xarray"),
+        ((1, 20, 30, 40), 3, "altitude", "auto", False, "xarray"),
+        ((1, 20, 30, 40), 1, "air_pressure", "air_pressure", False, "xarray"),
+        ((1, 20, 30, 40), 1, "air_pressure", "auto", True, "xarray"),
+        ((1, 20, 30, 40), 1, "model_level_number", "auto", False, "xarray"),
+        ((1, 20, 30, 40), 1, "altitude", "auto", False, "xarray"),
+        ((1, 20, 30, 40), 1, "geopotential_height", "auto", False, "xarray"),
     ],
 )
 def test_feature_detection_multiple_z_coords(
@@ -403,7 +403,7 @@ def test_feature_detection_multiple_z_coords(
     vertical_coord_name,
     vertical_coord_opt,
     expected_raise,
-    data_type
+    data_type,
 ):
     """Tests ```tobac.feature_detection.feature_detection_multithreshold```
     with different axes

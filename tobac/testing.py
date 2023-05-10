@@ -521,22 +521,19 @@ def make_dataset_from_arr(
     # dimension handling
     has_time = time_dim_num is not None
     is_3D = z_dim_num is not None
-    
-    
+
     dims = []
-    for idim in range( in_arr.ndim ): 
-        dims += [f'dim{idim}']
-        
-    
+    for idim in range(in_arr.ndim):
+        dims += [f"dim{idim}"]
+
     t_dim_name = "time"
 
     if has_time:
         dims[time_dim_num] = t_dim_name
-        
+
     if is_3D:
         dims[z_dim_num] = z_dim_name
-    
-    
+
     # coordinates handling
     if is_3D:
         z_max = in_arr.shape[z_dim_num]
@@ -555,7 +552,7 @@ def make_dataset_from_arr(
             standard_name=t_dim_name,
             units="seconds since epoch",
         )
-        
+
     # setup data structures
     if data_type == "xarray":
         coords = {}
@@ -565,13 +562,13 @@ def make_dataset_from_arr(
 
         if has_time:
             coords[t_dim_name] = ([t_dim_name], time_coordinate, time_attrs)
-        
-        output_xarray = xr.DataArray(data = in_arr, coords = coords, dims = dims)
+
+        output_xarray = xr.DataArray(data=in_arr, coords=coords, dims=dims)
 
         return output_xarray
 
     elif data_type == "iris":
-        out_arr_iris = xr.DataArray(data = in_arr).to_iris()
+        out_arr_iris = xr.DataArray(data=in_arr).to_iris()
 
         if is_3D:
             out_arr_iris.add_dim_coord(
