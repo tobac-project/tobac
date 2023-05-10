@@ -31,11 +31,7 @@ References
 """
 
 import logging
-
-import skimage
 import numpy as np
-
-from . import utils as tb_utils
 from .utils import internal as internal_utils
 
 

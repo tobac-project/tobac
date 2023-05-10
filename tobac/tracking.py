@@ -20,12 +20,9 @@ References
 """
 
 import logging
-from operator import is_
 import numpy as np
 import pandas as pd
 import warnings
-import math
-from . import utils as tb_utils
 from .utils import internal as internal_utils
 
 from packaging import version as pkgvsn

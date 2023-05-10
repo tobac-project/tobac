@@ -316,7 +316,7 @@ def feature_detection_threshold(
 
     from skimage.measure import label
     from skimage.morphology import binary_erosion
-    from copy import deepcopy
+
 
     if min_num != 0:
         warnings.warn(
