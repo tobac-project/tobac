@@ -518,39 +518,73 @@ def make_dataset_from_arr(
     import xarray as xr
     import iris
 
+    # dimension handling
     has_time = time_dim_num is not None
-
     is_3D = z_dim_num is not None
-    output_arr = xr.DataArray(in_arr)
+    
+    
+    dims = []
+    for idim in range( in_arr.ndim ): 
+        dims += [f'dim{idim}']
+        
+    
+    t_dim_name = "time"
+
+    if has_time:
+        dims[time_dim_num] = t_dim_name
+        
+    if is_3D:
+        dims[z_dim_num] = z_dim_name
+    
+    
+    # coordinates handling
     if is_3D:
         z_max = in_arr.shape[z_dim_num]
+        z_coordinate = np.arange(0, z_max)
+        z_attrs = dict(standard_name=z_dim_name)
 
     if has_time:
         time_min = datetime.datetime(2022, 1, 1)
         time_num = in_arr.shape[time_dim_num]
-
+        time_coordinate = (
+            pd.date_range(start=time_min, periods=time_num)
+            .values.astype("datetime64[s]")
+            .astype(int)
+        )
+        time_attrs = dict(
+            standard_name=t_dim_name,
+            units="seconds since epoch",
+        )
+        
+    # setup data structures
     if data_type == "xarray":
-        return output_arr
+        coords = {}
+
+        if is_3D:
+            coords[z_dim_name] = ([z_dim_name], z_coordinate, z_attrs)
+
+        if has_time:
+            coords[t_dim_name] = ([t_dim_name], time_coordinate, time_attrs)
+        
+        output_xarray = xr.DataArray(data = in_arr, coords = coords, dims = dims)
+
+        return output_xarray
+
     elif data_type == "iris":
-        out_arr_iris = output_arr.to_iris()
+        out_arr_iris = xr.DataArray(data = in_arr).to_iris()
 
         if is_3D:
             out_arr_iris.add_dim_coord(
-                iris.coords.DimCoord(np.arange(0, z_max), standard_name=z_dim_name),
+                iris.coords.DimCoord(z_coordinate, **z_attrs),
                 z_dim_num,
             )
         if has_time:
             out_arr_iris.add_dim_coord(
-                iris.coords.DimCoord(
-                    pd.date_range(start=time_min, periods=time_num)
-                    .values.astype("datetime64[s]")
-                    .astype(int),
-                    standard_name="time",
-                    units="seconds since epoch",
-                ),
+                iris.coords.DimCoord(time_coordinate, **time_attrs),
                 time_dim_num,
             )
         return out_arr_iris
+
     else:
         raise ValueError("data_type must be 'xarray' or 'iris'")
 
