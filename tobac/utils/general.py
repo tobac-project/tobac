@@ -27,7 +27,7 @@ def add_coordinates(t, variable_cube):
 
     """
 
-    from scipy.interpolate import interp2d, interp1d
+    from scipy.interpolate import interp2d, interp1d, interpn
 
     logging.debug("start adding coordinates from cube")
 
@@ -91,16 +91,16 @@ def add_coordinates(t, variable_cube):
         # interpolate 2D coordinates:
         elif variable_cube.coord(coord).ndim == 2:
             if variable_cube.coord_dims(coord) == (hdim_1, hdim_2):
-                f = interp2d(dimvec_2, dimvec_1, variable_cube.coord(coord).points)
-                coordinate_points = np.asarray(
-                    [f(a, b) for a, b in zip(t["hdim_2"], t["hdim_1"])]
-                )
+                points = (dimvec_1, dimvec_2)
+                values = variable_cube.coord(coord).points
+                xi = np.column_stack((t["hdim_1"], t["hdim_2"]))
+                coordinate_points = interpn(points, values, xi)
 
             if variable_cube.coord_dims(coord) == (hdim_2, hdim_1):
-                f = interp2d(dimvec_1, dimvec_2, variable_cube.coord(coord).points)
-                coordinate_points = np.asarray(
-                    [f(a, b) for a, b in zip(t["hdim_1"], t["hdim_2"])]
-                )
+                points = (dimvec_2, dimvec_1)
+                values = variable_cube.coord(coord).points
+                xi = np.column_stack((t["hdim_2"], t["hdim_1"]))
+                coordinate_points = interpn(points, values, xi)
 
         # interpolate 3D coordinates:
         # mainly workaround for wrf latitude and longitude (to be fixed in future)
