@@ -516,7 +516,9 @@ def make_dataset_from_arr(
     """
 
     import xarray as xr
+    from iris.cube import Cube
     import iris
+
 
     # dimension handling
     has_time = time_dim_num is not None
@@ -554,36 +556,29 @@ def make_dataset_from_arr(
         )
 
     # setup data structures
+    sample_data = Cube( in_arr, )
+
+     #   out_arr_iris = xr.DataArray(data=in_arr).to_iris()
+
+    if is_3D:
+        sample_data.add_dim_coord(
+            iris.coords.DimCoord(z_coordinate, **z_attrs),
+            z_dim_num,
+        )
+    if has_time:
+        sample_data.add_dim_coord(
+            iris.coords.DimCoord(time_coordinate, **time_attrs),
+            time_dim_num,
+        )
+
     if data_type == "xarray":
-        coords = {}
-
-        if is_3D:
-            coords[z_dim_name] = ([z_dim_name], z_coordinate, z_attrs)
-
-        if has_time:
-            coords[t_dim_name] = ([t_dim_name], time_coordinate, time_attrs)
-
-        output_xarray = xr.DataArray(data=in_arr, coords=coords, dims=dims)
-
-        return output_xarray
-
-    elif data_type == "iris":
-        out_arr_iris = xr.DataArray(data=in_arr).to_iris()
-
-        if is_3D:
-            out_arr_iris.add_dim_coord(
-                iris.coords.DimCoord(z_coordinate, **z_attrs),
-                z_dim_num,
-            )
-        if has_time:
-            out_arr_iris.add_dim_coord(
-                iris.coords.DimCoord(time_coordinate, **time_attrs),
-                time_dim_num,
-            )
-        return out_arr_iris
-
-    else:
+        sample_data = DataArray.from_iris(sample_data)
+        
+    elif not data_type == "iris":
         raise ValueError("data_type must be 'xarray' or 'iris'")
+
+
+    return sample_data
 
 
 def make_feature_blob(
