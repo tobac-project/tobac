@@ -258,10 +258,10 @@ def add_coordinates_3D(
         elif var_coord.ndim == 2:
             first_dim = coord_to_ax[variable_cube.coord_dims(coord)[1]]
             second_dim = coord_to_ax[variable_cube.coord_dims(coord)[0]]
-            f = interp2d(first_dim[0], second_dim[0], var_coord.points)
-            coordinate_points = [
-                f(a, b) for a, b in zip(t[first_dim[1]], t[second_dim[1]])
-            ]
+            points = (second_dim[0], first_dim[0])
+            values = var_coord.points
+            xi = np.column_stack((t[second_dim[1]], t[first_dim[1]]))
+            coordinate_points = interpn(points, values, xi)
 
         # Deal with the special case where the coordinate is 3D but
         # one of the dimensions is time and we assume the coordinates
@@ -276,10 +276,10 @@ def add_coordinates_3D(
             hdim2_pos = 1 if time_pos == 2 else 2
             first_dim = coord_to_ax[variable_cube.coord_dims(coord)[hdim2_pos]]
             second_dim = coord_to_ax[variable_cube.coord_dims(coord)[hdim1_pos]]
-            f = interp2d(first_dim[0], second_dim[0], var_coord.points)
-            coordinate_points = [
-                f(a, b) for a, b in zip(t[first_dim[1]], t[second_dim[1]])
-            ]
+            points = (second_dim[0], second_dim[1])
+            values = var_coord.points
+            xi = np.column_stack((t[second_dim[1]], t[first_dim[1]]))
+            coordinate_points = interpn(points, values, xi)
 
         # interpolate 3D coordinates:
         elif var_coord.ndim == 3:
