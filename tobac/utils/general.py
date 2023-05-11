@@ -27,7 +27,7 @@ def add_coordinates(t, variable_cube):
 
     """
 
-    from scipy.interpolate import interp2d, interp1d, interpn
+    from scipy.interpolate import interp1d, interpn
 
     logging.debug("start adding coordinates from cube")
 
