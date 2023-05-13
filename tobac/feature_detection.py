@@ -945,6 +945,7 @@ def feature_detection_multithreshold(
                     z_coordinate_name=vertical_coord,
                     target=target,
                 )
+
         list_features_timesteps.append(features_thresholds)
 
         logging.debug(
@@ -1012,6 +1013,10 @@ def filter_min_distance(
     target: {'maximum', 'minimum'}, optional
         Flag to determine if tracking is targetting minima or maxima in
         the data. Default is 'maximum'.
+
+    target : str {maximum | minimum}, optional
+        Whether the threshod target is a maxima or minima (defaults to
+        maximum)
 
     Returns
     -------

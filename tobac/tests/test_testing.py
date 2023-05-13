@@ -111,6 +111,7 @@ def test_generate_single_feature():
                 "vdim": 1,
                 "frame": 0,
                 "feature": 1,
+                "idx": 0,
                 "time": datetime.datetime(2022, 1, 1, 0, 0),
             }
         ]
@@ -131,6 +132,7 @@ def test_generate_single_feature():
                 "hdim_2": 1,
                 "frame": 0,
                 "feature": 1,
+                "idx": 0,
                 "time": datetime.datetime(2022, 1, 1, 0, 0),
             }
         ]
@@ -150,6 +152,7 @@ def test_generate_single_feature():
                 "hdim_2": 1,
                 "frame": 0,
                 "feature": 1,
+                "idx": 0,
                 "time": datetime.datetime(2022, 1, 1, 0, 0),
             },
             {
@@ -157,6 +160,7 @@ def test_generate_single_feature():
                 "hdim_2": 2,
                 "frame": 1,
                 "feature": 2,
+                "idx": 0,
                 "time": datetime.datetime(2022, 1, 1, 0, 5),
             },
             {
@@ -164,6 +168,7 @@ def test_generate_single_feature():
                 "hdim_2": 3,
                 "frame": 2,
                 "feature": 3,
+                "idx": 0,
                 "time": datetime.datetime(2022, 1, 1, 0, 10),
             },
             {
@@ -171,6 +176,7 @@ def test_generate_single_feature():
                 "hdim_2": 4,
                 "frame": 3,
                 "feature": 4,
+                "idx": 0,
                 "time": datetime.datetime(2022, 1, 1, 0, 15),
             },
         ]
@@ -198,6 +204,7 @@ def test_generate_single_feature():
                 "vdim": 1,
                 "frame": 0,
                 "feature": 1,
+                "idx": 0,
                 "time": datetime.datetime(2022, 1, 1, 0, 0),
             },
             {
@@ -206,6 +213,7 @@ def test_generate_single_feature():
                 "vdim": 2,
                 "frame": 1,
                 "feature": 2,
+                "idx": 0,
                 "time": datetime.datetime(2022, 1, 1, 0, 5),
             },
             {
@@ -214,6 +222,7 @@ def test_generate_single_feature():
                 "vdim": 3,
                 "frame": 2,
                 "feature": 3,
+                "idx": 0,
                 "time": datetime.datetime(2022, 1, 1, 0, 10),
             },
             {
@@ -222,6 +231,7 @@ def test_generate_single_feature():
                 "vdim": 4,
                 "frame": 3,
                 "feature": 4,
+                "idx": 0,
                 "time": datetime.datetime(2022, 1, 1, 0, 15),
             },
         ]
