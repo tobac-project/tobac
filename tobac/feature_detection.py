@@ -594,7 +594,6 @@ def feature_detection_threshold(
                         ] = labels_2_alt
                         new_label_ind = labels_2_alt
                         skip_list = np.append(skip_list, label_ind)
-                        # break
 
                 if (PBC_flag == "hdim_2" or PBC_flag == "both") and np.any(
                     label_x == [x_min, x_max]
@@ -637,7 +636,6 @@ def feature_detection_threshold(
                         ] = labels_2_alt
                         new_label_ind = labels_2_alt
                         skip_list = np.append(skip_list, label_ind)
-                        # break
 
         # copy over new labels after we have adjusted everything
         labels = labels_2
