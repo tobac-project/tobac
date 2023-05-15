@@ -786,18 +786,29 @@ def get_single_pbc_coordinate(
     for point_query, dim_min, dim_max, dim_pbc in zip(
         [h1_coord, h2_coord], [h1_min, h2_min], [h1_max, h2_max], is_pbc
     ):
+        dim_size = dim_max - dim_min
         if point_query >= dim_min and point_query < dim_max:
             out_coords.append(point_query)
-            continue
         # off at least one domain
         elif point_query < dim_min:
             if not dim_pbc:
                 raise ValueError("Point invalid!")
-            out_coords.append(point_query + (dim_max - dim_min))
+            if abs(point_query // dim_size) > 1:
+                # we are more than one interval length away from the periodic boundary
+                point_query = point_query + (
+                    dim_size * (abs(point_query // dim_size) - 1)
+                )
+
+            out_coords.append(point_query + dim_size)
         elif point_query >= dim_max:
             if not dim_pbc:
                 raise ValueError("Point invalid!")
-            out_coords.append(point_query - (dim_max - dim_min))
+            if abs(point_query // dim_size) > 1:
+                # we are more than one interval length away from the periodic boundary
+                point_query = point_query - (
+                    dim_size * (abs(point_query // dim_size) - 1)
+                )
+            out_coords.append(point_query - dim_size)
 
     return tuple(out_coords)
 

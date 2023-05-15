@@ -181,6 +181,8 @@ def test_get_single_pbc_coordinate():
         assert get_single_pbc_coordinate(0, 10, 0, 10, -3, 3, PBC_condition) == (7, 3)
         assert get_single_pbc_coordinate(0, 10, 0, 10, 12, 3, PBC_condition) == (2, 3)
         assert get_single_pbc_coordinate(0, 10, 0, 10, 10, 3, PBC_condition) == (0, 3)
+        assert get_single_pbc_coordinate(0, 10, 0, 10, 20, 3, PBC_condition) == (0, 3)
+        assert get_single_pbc_coordinate(0, 10, 0, 10, -30, 3, PBC_condition) == (0, 3)
 
     # Now test points off min/max of hdim_1 for the two that don't allow it (expect raise error)
     for PBC_condition in ["none", "hdim_2"]:
