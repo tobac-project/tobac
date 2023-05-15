@@ -3,6 +3,7 @@ import tobac.testing as testing
 import tobac.segmentation as seg
 import numpy as np
 from tobac import segmentation, feature_detection, testing
+from tobac.utils import periodic_boundaries as pbc_utils
 
 
 def test_segmentation_timestep_2D_feature_2D_seg():
@@ -94,7 +95,7 @@ def test_segmentation_timestep_2D_feature_2D_seg():
             PBC_flag=pbc_option,
         )
         # This will automatically give the appropriate box, and it's tested separately.
-        segmented_box_expected = testing.get_pbc_coordinates(
+        segmented_box_expected = pbc_utils.get_pbc_coordinates(
             0,
             test_dset_size[0],
             0,
@@ -162,7 +163,7 @@ def test_segmentation_timestep_2D_feature_2D_seg():
             PBC_flag=pbc_option,
         )
         # This will automatically give the appropriate box(es), and it's tested separately.
-        segmented_box_expected = testing.get_pbc_coordinates(
+        segmented_box_expected = pbc_utils.get_pbc_coordinates(
             0,
             test_dset_size[0],
             0,
@@ -230,7 +231,7 @@ def test_segmentation_timestep_2D_feature_2D_seg():
             PBC_flag=pbc_option,
         )
         # This will automatically give the appropriate box(es), and it's tested separately.
-        segmented_box_expected = testing.get_pbc_coordinates(
+        segmented_box_expected = pbc_utils.get_pbc_coordinates(
             0,
             test_dset_size[0],
             0,
