@@ -1321,7 +1321,9 @@ def filter_min_distance(
     z_coordinate_name=None,
     target="maximum",
     PBC_flag="none",
+    min_h1=0,
     max_h1=0,
+    min_h2=0,
     max_h2=0,
 ):
     """Function to remove features that are too close together.
@@ -1379,8 +1381,8 @@ def filter_min_distance(
 
     remove_list_distance = []
 
-    if PBC_flag != "none":
-        raise NotImplementedError("We haven't yet implemented PBCs into this.")
+    # if PBC_flag != "none":
+    #    raise NotImplementedError("We haven't yet implemented PBCs into this.")
 
     # if we are 3D, the vertical dimension is in features. if we are 2D, there
     # is no vertical dimension in features.
@@ -1453,10 +1455,10 @@ def filter_min_distance(
             distance = pbc_utils.calc_distance_coords_pbc(
                 coords_1=np.array(coord_1),
                 coords_2=np.array(coord_2),
-                min_h1=0,
-                max_h1=max_h1,
-                min_h2=0,
-                max_h2=max_h2,
+                min_h1=min_h1 * dxy,
+                max_h1=max_h1 * dxy,
+                min_h2=min_h2 * dxy,
+                max_h2=max_h2 * dxy,
                 PBC_flag=PBC_flag,
             )
 
