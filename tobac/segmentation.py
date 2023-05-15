@@ -464,7 +464,7 @@ def segmentation_timestep(
 
     # Set level at which to create "Seed" for each feature in the case of 3D watershedding:
     # If none, use all levels (later reduced to the ones fulfilling the theshold conditions)
-    if level == None:
+    if level is None:
         level = slice(None)
 
     # transform max_distance in metres to distance in pixels:
@@ -504,7 +504,7 @@ def segmentation_timestep(
 
     # remove everything from the individual masks that is more than max_distance_pixel away from the markers
     if max_distance is not None:
-        D = distance_transform_edt((markers == 0).astype(int))
+        D = distance_transform_edt((markers == 0))
         segmentation_mask[
             np.bitwise_and(segmentation_mask > 0, D > max_distance_pixel)
         ] = 0
@@ -515,9 +515,6 @@ def segmentation_timestep(
     points_below_threshold_val = -1
     segmentation_mask[~unmasked] = points_below_threshold_val
 
-    # saves/prints below for testing
-    seg_m_data = segmentation_mask[:]
-
     hdim1_min = 0
     hdim1_max = segmentation_mask.shape[hdim_1_axis] - 1
     hdim2_min = 0
@@ -527,9 +524,6 @@ def segmentation_timestep(
     pbc_options = ["hdim_1", "hdim_2", "both"]
     # Only run this if we need to deal with PBCs
     if PBC_flag in pbc_options:
-        # read in labeling/masks and region-finding functions
-        reg_props_dict = internal_utils.get_label_props_in_dict(seg_m_data)
-
         if not is_3D_seg:
             # let's transpose segmentation_mask to a 1,y,x array to make calculations etc easier.
             segmentation_mask = segmentation_mask[np.newaxis, :, :]
@@ -552,7 +546,7 @@ def segmentation_timestep(
             seg_mask_unseeded, return_num=True
         )
 
-        markers_2 = np.zeros(data_segmentation.shape).astype(np.int32)
+        markers_2 = np.zeros(data_segmentation.shape, dtype=np.int32)
 
         # PBC marker seeding approach
         # loop thru LB points, then check if fillable region (labels_unseeded > 0) and seed
@@ -625,7 +619,7 @@ def segmentation_timestep(
 
         # remove everything from the individual masks that is more than max_distance_pixel away from the markers
         if max_distance is not None:
-            D = distance_transform_edt((markers == 0).astype(int))
+            D = distance_transform_edt((markers == 0))
             segmentation_mask_2[
                 np.bitwise_and(segmentation_mask_2 > 0, D > max_distance_pixel)
             ] = 0
@@ -868,11 +862,6 @@ def segmentation_timestep(
                             buddy_rgn[
                                 z - bbox_zstart, y - bbox_ystart, x - bbox_xstart
                             ] = field_in.data[y_a1, x_a1]
-            # construction of iris cube corresponding to buddy box and its data
-            # for marker seeding and watershedding of buddy box
-
-            # print(rgn_cube)
-            # print(rgn_cube.vdim)
 
             # Update buddy_features feature positions to correspond to buddy box space
             # rather than domain space or continuous/contiguous point space
@@ -891,18 +880,12 @@ def segmentation_timestep(
                 )
 
             # Create dask array from input data:
-            # data=rgn_cube.core_data()
             buddy_data = buddy_rgn
 
             # All of the below is the same overarching segmentation procedure as in the original
             # segmentation approach until the line which states
             # "#transform segmentation_mask_4 data back to original mask after PBC first-pass ("segmentation_mask_3")"
             # It's just performed on the buddy box and its data rather than our full domain
-
-            # Set level at which to create "Seed" for each feature in the case of 3D watershedding:
-            # If none, use all levels (later reduced to the ones fulfilling the theshold conditions)
-            if level is None:
-                level = slice(None)
 
             # transform max_distance in metres to distance in pixels:
             if max_distance is not None:
@@ -932,7 +915,6 @@ def segmentation_timestep(
             )
 
             # set markers in cells not fulfilling threshold condition to zero:
-            print(np.unique(buddy_markers))
             buddy_markers[~unmasked_buddies] = 0
 
             marker_vals = np.unique(buddy_markers)
@@ -954,18 +936,16 @@ def segmentation_timestep(
 
             # remove everything from the individual masks that is more than max_distance_pixel away from the markers
             if max_distance is not None:
-                D = distance_transform_edt((markers == 0).astype(int))
+                D = distance_transform_edt((markers == 0))
                 segmentation_mask_4[
                     np.bitwise_and(segmentation_mask_4 > 0, D > max_distance_pixel)
                 ] = 0
 
             # mask all segmentation_mask points below threshold as -1
             # to differentiate from those unmasked points NOT filled by watershedding
-            print(np.unique(segmentation_mask_4))
             segmentation_mask_4[~unmasked_buddies] = -1
 
             # transform segmentation_mask_4 data back to mask created after PBC first-pass ("segmentation_mask_3")
-            # print(np.unique(test_mask3.data))
 
             # loop through buddy box inds and analogous seg mask inds
             for z_val in range(bbox_zstart, bbox_zend):
@@ -985,8 +965,6 @@ def segmentation_timestep(
                             x_val_o = x_val - (hdim2_max + 1)
                         else:
                             x_val_o = x_val
-                            # print(z_seg,y_seg,x_seg)
-                            # print(z_val,y_val,x_val)
 
                         # fix to
                         # overwrite IF:
@@ -1010,7 +988,6 @@ def segmentation_timestep(
                                 segmentation_mask_3[
                                     z_val_o, y_val_o, x_val_o
                                 ] = segmentation_mask_4.data[z_seg, y_seg, x_seg]
-                                # print("updated")
         if not is_3D_seg:
             segmentation_mask_3 = segmentation_mask_3[0]
 
