@@ -298,3 +298,27 @@ def weighted_circmean(
     rescaled_average = (angle_average * scaling_factor) + low
     # Round return value to try and supress rounding errors
     return np.round(rescaled_average, 12)
+
+
+def transfm_pbc_point(in_dim, dim_min, dim_max):
+    """Function to transform a PBC-feature point for contiguity
+
+    Parameters
+    ----------
+    in_dim : int
+        Input coordinate to adjust
+    dim_min : int
+        Minimum point for the dimension
+    dim_max : int
+        Maximum point for the dimension (inclusive)
+
+    Returns
+    -------
+    int
+        The transformed point
+
+    """
+    if in_dim < ((dim_min + dim_max) / 2):
+        return in_dim + dim_max + 1
+    else:
+        return in_dim

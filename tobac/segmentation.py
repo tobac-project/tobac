@@ -29,7 +29,7 @@ References
    diverse datasets. Geoscientific Model Development,
    12(11), 4551-4570.
 """
-
+import copy
 import logging
 
 import skimage
@@ -38,30 +38,6 @@ import numpy as np
 from . import utils as tb_utils
 from .utils import periodic_boundaries as pbc_utils
 from .utils import internal as internal_utils
-
-
-def transfm_pbc_point(in_dim, dim_min, dim_max):
-    """Function to transform a PBC-feature point for contiguity
-
-    Parameters
-    ----------
-    in_dim : int
-        Input coordinate to adjust
-    dim_min : int
-        Minimum point for the dimension
-    dim_max : int
-        Maximum point for the dimension (inclusive)
-
-    Returns
-    -------
-    int
-        The transformed point
-
-    """
-    if in_dim < ((dim_min + dim_max) / 2):
-        return in_dim + dim_max + 1
-    else:
-        return in_dim
 
 
 def add_markers(
@@ -437,7 +413,6 @@ def segmentation_timestep(
     # from skimage.segmentation import random_walker
     from scipy.ndimage import distance_transform_edt
     from copy import deepcopy
-    import numpy as np
     import iris
 
     # How many dimensions are we using?
@@ -591,71 +566,24 @@ def segmentation_timestep(
         Later, we will run the second pass or "buddy box" approach that handles cases where points across the boundary
         have been watershedded already. 
         """
-
-        # TODO: clean up code.
         if PBC_flag == "hdim_1" or PBC_flag == "both":
-            for vdim_ind in range(0, segmentation_mask.shape[0]):
-                for hdim1_ind in [hdim1_min, hdim1_max]:
-                    for hdim2_ind in range(hdim2_min, hdim2_max):
-                        if labels_unseeded[vdim_ind, hdim1_ind, hdim2_ind] == 0:
-                            continue
-                        else:
-                            if hdim1_ind == 0:
-                                if (
-                                    segmentation_mask[vdim_ind, hdim1_max, hdim2_ind]
-                                    <= 0
-                                ):
-                                    continue
-                                else:
-                                    markers_2[
-                                        vdim_ind, hdim1_ind, hdim2_ind
-                                    ] = segmentation_mask[
-                                        vdim_ind, hdim1_max, hdim2_ind
-                                    ]
-                            elif hdim1_ind == hdim1_max:
-                                if (
-                                    segmentation_mask[vdim_ind, hdim1_min, hdim2_ind]
-                                    <= 0
-                                ):
-                                    continue
-                                else:
-                                    markers_2[
-                                        vdim_ind, hdim1_ind, hdim2_ind
-                                    ] = segmentation_mask[
-                                        vdim_ind, hdim1_min, hdim2_ind
-                                    ]
+            check_add_unseeded_across_bdrys(
+                "hdim_1",
+                segmentation_mask,
+                labels_unseeded,
+                hdim1_min,
+                hdim1_max,
+                markers_2,
+            )
         if PBC_flag == "hdim_2" or PBC_flag == "both":
-            # TODO: This seems quite slow, is there scope for further speedup?
-            for vdim_ind in range(0, segmentation_mask.shape[0]):
-                for hdim1_ind in range(hdim1_min, hdim1_max):
-                    for hdim2_ind in [hdim2_min, hdim2_max]:
-                        if labels_unseeded[vdim_ind, hdim1_ind, hdim2_ind] == 0:
-                            continue
-                        else:
-                            if hdim2_ind == hdim2_min:
-                                if (
-                                    segmentation_mask[vdim_ind, hdim1_ind, hdim2_max]
-                                    <= 0
-                                ):
-                                    continue
-                                else:
-                                    markers_2[
-                                        vdim_ind, hdim1_ind, hdim2_ind
-                                    ] = segmentation_mask[
-                                        vdim_ind, hdim1_ind, hdim2_max
-                                    ]
-                            elif hdim2_ind == hdim2_max:
-                                if (
-                                    segmentation_mask[vdim_ind, hdim1_ind, hdim2_min]
-                                    <= 0
-                                ):
-                                    continue
-                                else:
-                                    markers_2[
-                                        vdim_ind, hdim1_ind, hdim2_ind
-                                    ] = segmentation_mask[
-                                        vdim_ind, hdim1_ind, hdim2_min
-                                    ]
+            check_add_unseeded_across_bdrys(
+                "hdim_2",
+                segmentation_mask,
+                labels_unseeded,
+                hdim2_min,
+                hdim2_max,
+                markers_2,
+            )
 
         # Deal with the opposite corner only
         if PBC_flag == "both":
@@ -859,14 +787,22 @@ def segmentation_timestep(
 
                 # transform buddy feature position if needed for positioning in z2/y2/x2 space
                 # MAY be redundant with what is done just below here
-                yf2 = transfm_pbc_point(int(buddy_feat.hdim_1), hdim1_min, hdim1_max)
-                xf2 = transfm_pbc_point(int(buddy_feat.hdim_2), hdim2_min, hdim2_max)
+                yf2 = pbc_utils.transfm_pbc_point(
+                    int(buddy_feat.hdim_1), hdim1_min, hdim1_max
+                )
+                xf2 = pbc_utils.transfm_pbc_point(
+                    int(buddy_feat.hdim_2), hdim2_min, hdim2_max
+                )
 
                 # edit value in buddy_features dataframe
-                buddy_features.hdim_1.values[buddy_looper] = transfm_pbc_point(
+                buddy_features.hdim_1.values[
+                    buddy_looper
+                ] = pbc_utils.transfm_pbc_point(
                     float(buddy_feat.hdim_1), hdim1_min, hdim1_max
                 )
-                buddy_features.hdim_2.values[buddy_looper] = transfm_pbc_point(
+                buddy_features.hdim_2.values[
+                    buddy_looper
+                ] = pbc_utils.transfm_pbc_point(
                     float(buddy_feat.hdim_2), hdim2_min, hdim2_max
                 )
 
@@ -880,8 +816,8 @@ def segmentation_timestep(
                     buddy_y = np.append(buddy_y, y)
                     buddy_x = np.append(buddy_x, x)
 
-                    y2 = transfm_pbc_point(y, hdim1_min, hdim1_max)
-                    x2 = transfm_pbc_point(x, hdim2_min, hdim2_max)
+                    y2 = pbc_utils.transfm_pbc_point(y, hdim1_min, hdim1_max)
+                    x2 = pbc_utils.transfm_pbc_point(x, hdim2_min, hdim2_max)
 
                     buddy_z2 = np.append(buddy_z2, z)
                     buddy_y2 = np.append(buddy_y2, y2)
@@ -1102,6 +1038,70 @@ def segmentation_timestep(
             ]
 
     return segmentation_out, features_out
+
+
+def check_add_unseeded_across_bdrys(
+    dim_to_run: str,
+    segmentation_mask: np.array,
+    unseeded_labels: np.array,
+    border_min: int,
+    border_max: int,
+    markers_arr: np.array,
+    inplace: bool = True,
+):
+    """Add new markers to unseeded but eligible regions when they are bordering
+    an appropriate boundary.
+
+    Parameters
+    ----------
+    dim_to_run:  {'hdim_1', 'hdim_2'}
+        what dimension to run
+    segmentation_mask: np.array
+        the incomming segmentation mask
+    unseeded_labels: np.array
+        The list of labels that are unseeded
+    border_min: int
+        minimum real point in the dimension we are running on
+    border_max: int
+        maximum real point in the dimension we are running on (inclusive)
+    markers_arr: np.array
+        The array of markers to re-run segmentation with
+    inplace: bool
+        whether or not to modify markers_arr in place
+
+    Returns
+    -------
+    markers_arr with new markers added
+
+    """
+
+    # if we are okay modifying the marker array inplace, do that
+    if inplace:
+        markers_out = markers_arr
+    else:
+        # If we can't modify the marker array inplace, make a deep copy.
+        markers_out = copy.deepcopy(markers_arr)
+
+    # identify border points and the loop points depending on what we want to run
+    if dim_to_run == "hdim_1":
+        border_axnum = 1
+    elif dim_to_run == "hdim_2":
+        border_axnum = 2
+    # loop through vertical levels
+    for border_ind, border_opposite in [
+        (border_min, border_max),
+        (border_max, border_min),
+    ]:
+        label_border_pts = np.take(unseeded_labels, border_ind, axis=border_axnum)
+        seg_opp_pts = np.take(segmentation_mask, border_opposite, axis=border_axnum)
+        if dim_to_run == "hdim_1":
+            cond_to_check = np.logical_and(label_border_pts != 0, seg_opp_pts > 0)
+            markers_out[:, border_ind, :][cond_to_check] = seg_opp_pts[cond_to_check]
+
+        elif dim_to_run == "hdim_2":
+            cond_to_check = np.logical_and(label_border_pts != 0, seg_opp_pts > 0)
+            markers_out[:, :, border_ind][cond_to_check] = seg_opp_pts[cond_to_check]
+    return markers_out
 
 
 def segmentation(
