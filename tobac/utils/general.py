@@ -168,12 +168,12 @@ def add_coordinates_3D(
         Typically, 'longitude','latitude','x_projection_coordinate','y_projection_coordinate',
         and 'altitude' (if 3D) are the coordinates that we expect, although this function
         will happily interpolate along any dimension coordinates you give.
-    vertical_coord: str or None
-        Name  of the vertical coordinate. If 'auto', tries to auto-detect.
+    vertical_coord: str or int
+        Name or axis number of the vertical coordinate. If 'auto', tries to auto-detect.
         If it is a string, it looks for the coordinate or the dimension name corresponding
-        to the string. Note that only one of vertical_coord or vertical_axis can be set, unless
-        vertical_coord is set to 'auto'. If vertical_coord is 'auto' and vertical_axis
-        is not None,
+        to the string. If it is an int, it assumes that it is the vertical axis.
+        Note that if you only have a 2D or 3D coordinate for altitude, you must
+        pass in an int.
     vertical_axis: int or None
         Axis number of the vertical.
     assume_coords_fixed_in_time: bool

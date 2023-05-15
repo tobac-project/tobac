@@ -216,9 +216,7 @@ def test_linking_trackpy():
         PBC_flag="hdim_2",
     )
     # Just want to remove the time_cell column here.
-    actual_out_feature = actual_out_feature[
-        ["hdim_1", "hdim_2", "vdim", "frame", "feature", "time", "cell", "idx"]
-    ]
+    actual_out_feature = actual_out_feature.drop("time_cell", axis=1)
     expected_out_feature = convert_cell_dtype_if_appropriate(
         actual_out_feature, expected_out_feature
     )

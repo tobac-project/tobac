@@ -51,8 +51,6 @@ def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
         property dict.
     """
 
-    import numpy as np
-
     if len(region_property_dict) == 0:
         raise ValueError("No regions!")
 
