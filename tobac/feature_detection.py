@@ -380,12 +380,12 @@ def feature_detection_threshold(
     idx_start : int, optional
         Feature id to start with. Default is 0.
 
-    PBC_flag: str('none', 'hdim_1', 'hdim_2', 'both')
-        flag sets how to treat boundaries (i.e., whether they are periodic or not)
-        'none' - no PBCs
-        'hdim_1' - periodic in hdim1 ONLY
-        'hdim_2' - periodic in hdim2 ONLY
-        'both' - DOUBLY periodic
+    PBC_flag : {'none', 'hdim_1', 'hdim_2', 'both'}
+         Sets whether to use periodic boundaries, and if so in which directions.
+         'none' means that we do not have periodic boundaries
+         'hdim_1' means that we are periodic along hdim1
+         'hdim_2' means that we are periodic along hdim2
+         'both' means that we are periodic along both horizontal dimensions
     vertical_axis: int
         The vertical axis number of the data.
 
@@ -477,36 +477,29 @@ def feature_detection_threshold(
 
             # along hdim_1 or both horizontal boundaries
             if PBC_flag == "hdim_1" or PBC_flag == "both":
-                # north wall
-                n_wall = np.unique(labels[:, y_max, :])
-                wall_labels = np.append(wall_labels, n_wall)
-
-                # south wall
-                s_wall = np.unique(labels[:, y_min, :])
-                wall_labels = np.append(wall_labels, s_wall)
+                # north and south wall
+                ns_wall = np.unique(labels[:, (y_min, y_max), :])
+                wall_labels = np.append(wall_labels, ns_wall)
 
             # along hdim_2 or both horizontal boundaries
             if PBC_flag == "hdim_2" or PBC_flag == "both":
-                # east wall
-                e_wall = np.unique(labels[:, :, x_max])
-                wall_labels = np.append(wall_labels, e_wall)
-
-                # west wall
-                w_wall = np.unique(labels[:, :, x_min])
-                wall_labels = np.append(wall_labels, w_wall)
+                # east/west wall
+                ew_wall = np.unique(labels[:, :, (x_min, x_max)])
+                wall_labels = np.append(wall_labels, ew_wall)
 
             wall_labels = np.unique(wall_labels)
 
             for label_ind in wall_labels:
                 new_label_ind = label_ind
-                # create list for skip labels for this wall label only
-                skip_list_thisind = list()
                 # 0 isn't a real index
                 if label_ind == 0:
                     continue
                 # skip this label if we have already dealt with it.
                 if np.any(label_ind == skip_list):
                     continue
+
+                # create list for skip labels for this wall label only
+                skip_list_thisind = list()
 
                 # get all locations of this label.
                 # TODO: harmonize x/y/z vs hdim1/hdim2/vdim.

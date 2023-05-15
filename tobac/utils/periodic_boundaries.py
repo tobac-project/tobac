@@ -44,8 +44,10 @@ def get_pbc_coordinates(
     h2_end_coord: int,
     PBC_flag: str = "none",
 ) -> list[tuple[int, int, int, int]]:
-    """Function to get the *actual* coordinate boxes of interest given a set of shifted
-    coordinates with periodic boundaries.
+    """Function to get the real (i.e., shifted away from periodic boundaries) coordinate
+    boxes of interest given a set of coordinates that may cross periodic boundaries. This computes,
+    for example, multiple bounding boxes to encompass the real coordinates when given periodic
+    coordinates that loop around to the other boundary.
 
     For example, if you pass in [as h1_start_coord, h1_end_coord, h2_start_coord, h2_end_coord]
     (-3, 5, 2,6) with PBC_flag of 'both' or 'hdim_1', h1_max of 10, and h1_min of 0
@@ -55,9 +57,6 @@ def get_pbc_coordinates(
     requested box. For example, if you pass in [as h1_start_coord, h1_end_coord, h2_start_coord, h2_end_coord]
     (-3, 5, 2,6) with PBC_flag of 'none' or 'hdim_2', this function will return:
     [(0,5,2,6)], assuming h1_min is 0.
-
-    For cases where PBC_flag is 'both' and we have a corner case, it is possible
-    to get overlapping boundaries. For example, if you pass in (-6, 5, -6, 5)
 
     Parameters
     ----------
