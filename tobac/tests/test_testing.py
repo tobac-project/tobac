@@ -16,19 +16,6 @@ import datetime
 import numpy as np
 
 
-def lists_equal_without_order(a, b):
-    """
-    This will make sure the inner list contain the same,
-    but doesn't account for duplicate groups.
-    from: https://stackoverflow.com/questions/31501909/assert-list-of-list-equality-without-order-in-python/31502000
-    """
-    for l1 in a:
-        check_counter = Counter(l1)
-        if not any(Counter(l2) == check_counter for l2 in b):
-            return False
-    return True
-
-
 def test_make_feature_blob():
     """Tests ```tobac.testing.make_feature_blob```
     Currently runs the following tests:
@@ -348,22 +335,22 @@ def test_get_pbc_coordinates():
         (0, 10, 0, 10),
     ]
     # min in hdim_1 and hdim_2
-    assert lists_equal_without_order(
+    assert tbtest.lists_equal_without_order(
         get_pbc_coordinates(0, 10, 0, 10, -3, 3, -4, 2, "both"),
         [(0, 3, 0, 2), (0, 3, 6, 10), (7, 10, 6, 10), (7, 10, 0, 2)],
     )
     # max in hdim_1, min in hdim_2
-    assert lists_equal_without_order(
+    assert tbtest.lists_equal_without_order(
         get_pbc_coordinates(0, 10, 0, 10, 5, 12, -4, 2, "both"),
         [(5, 10, 0, 2), (5, 10, 6, 10), (0, 2, 6, 10), (0, 2, 0, 2)],
     )
     # max in hdim_1 and hdim_2
-    assert lists_equal_without_order(
+    assert tbtest.lists_equal_without_order(
         get_pbc_coordinates(0, 10, 0, 10, 5, 12, 7, 15, "both"),
         [(5, 10, 7, 10), (5, 10, 0, 5), (0, 2, 0, 5), (0, 2, 7, 10)],
     )
     # min in hdim_1, max in hdim_2
-    assert lists_equal_without_order(
+    assert tbtest.lists_equal_without_order(
         get_pbc_coordinates(0, 10, 0, 10, -3, 3, 7, 15, "both"),
         [(0, 3, 7, 10), (0, 3, 0, 5), (7, 10, 0, 5), (7, 10, 7, 10)],
     )

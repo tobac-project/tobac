@@ -6,6 +6,7 @@ import datetime
 import numpy as np
 from xarray import DataArray
 import pandas as pd
+from collections import Counter
 
 
 def make_simple_sample_data_2D(data_type="iris"):
@@ -1180,3 +1181,16 @@ def generate_grid_coords(min_max_coords, lengths):
             min_max_coords[2] : min_max_coords[3] : complex(imag=lengths[1]),
             min_max_coords[4] : min_max_coords[5] : complex(imag=lengths[2]),
         ]
+
+
+def lists_equal_without_order(a, b):
+    """
+    This will make sure the inner list contain the same,
+    but doesn't account for duplicate groups.
+    from: https://stackoverflow.com/questions/31501909/assert-list-of-list-equality-without-order-in-python/31502000
+    """
+    for l1 in a:
+        check_counter = Counter(l1)
+        if not any(Counter(l2) == check_counter for l2 in b):
+            return False
+    return True

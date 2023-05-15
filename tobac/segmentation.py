@@ -824,8 +824,8 @@ def segmentation_timestep(
                     buddy_x2 = np.append(buddy_x2, x2)
 
             # Buddy Box!
-            # Indentify mins and maxes of Buddy Box continuous points range
-            # so that box of correct size can be constructred
+            # Identify mins and maxes of Buddy Box continuous points range
+            # so that box of correct size can be constructed
             bbox_zstart = int(np.min(buddy_z2))
             bbox_ystart = int(np.min(buddy_y2))
             bbox_xstart = int(np.min(buddy_x2))

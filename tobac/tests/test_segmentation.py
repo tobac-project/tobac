@@ -12,7 +12,6 @@ def test_segmentation_timestep_2D_feature_2D_seg():
     # Before we can run segmentation, we must run feature detection.
 
     # start by building a simple dataset with a single feature
-    import numpy as np
 
     test_dset_size = (50, 50)
     test_hdim_1_pt = 20.0
@@ -263,7 +262,6 @@ def test_segmentation_timestep_level():
     # Before we can run segmentation, we must run feature detection.
 
     # start by building a simple dataset with a single feature
-    import numpy as np
 
     test_dset_size = (20, 50, 50)
     test_hdim_1_pt = 20.0
@@ -508,7 +506,6 @@ def test_different_z_axes(
     expected_raise: bool
         True if we expect a ValueError to be raised, false otherwise
     """
-    import numpy as np
 
     # First, just check that input and output shapes are the same.
     test_dxy = 1000
@@ -686,7 +683,6 @@ def test_segmentation_timestep_3d_buddy_box(
         Seed size to pass to tobac. If None, passes in a column seed
     """
 
-    import numpy as np
     import pandas as pd
 
     """
@@ -827,7 +823,6 @@ def test_add_markers_pbcs(
         Seed size to pass to tobac. If None, passes in a column seed
     """
 
-    import numpy as np
     import pandas as pd
 
     if len(dset_size) == 2:
@@ -916,7 +911,6 @@ def test_empty_segmentation(PBC_flag):
     empty/zeroed out array
 
     """
-    import numpy as np
 
     h1_size = 100
     h2_size = 100
