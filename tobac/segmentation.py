@@ -413,7 +413,9 @@ def segmentation_timestep(
     # from skimage.segmentation import random_walker
     from scipy.ndimage import distance_transform_edt
     from copy import deepcopy
-    import iris
+
+    if max_distance is not None and PBC_flag in ["hdim_1", "hdim_2", "both"]:
+        raise NotImplementedError("max_distance not yet implemented for PBCs")
 
     # How many dimensions are we using?
     if field_in.ndim == 2:
@@ -616,13 +618,6 @@ def segmentation_timestep(
             )
         else:
             raise ValueError("unknown method, must be watershed")
-
-        # remove everything from the individual masks that is more than max_distance_pixel away from the markers
-        if max_distance is not None:
-            D = distance_transform_edt((markers == 0))
-            segmentation_mask_2[
-                np.bitwise_and(segmentation_mask_2 > 0, D > max_distance_pixel)
-            ] = 0
 
         # Sum up original mask and secondary PBC-mask for full PBC segmentation
         segmentation_mask_3 = segmentation_mask + segmentation_mask_2
@@ -887,11 +882,6 @@ def segmentation_timestep(
             # "#transform segmentation_mask_4 data back to original mask after PBC first-pass ("segmentation_mask_3")"
             # It's just performed on the buddy box and its data rather than our full domain
 
-            # transform max_distance in metres to distance in pixels:
-            if max_distance is not None:
-                max_distance_pixel = np.ceil(max_distance / dxy)
-                # note - this doesn't consider vertical distance in pixels
-
             # mask data outside region above/below threshold and invert data if tracking maxima:
             if target == "maximum":
                 unmasked_buddies = buddy_data > threshold
@@ -935,11 +925,6 @@ def segmentation_timestep(
                 raise ValueError("unknown method, must be watershed")
 
             # remove everything from the individual masks that is more than max_distance_pixel away from the markers
-            if max_distance is not None:
-                D = distance_transform_edt((markers == 0))
-                segmentation_mask_4[
-                    np.bitwise_and(segmentation_mask_4 > 0, D > max_distance_pixel)
-                ] = 0
 
             # mask all segmentation_mask points below threshold as -1
             # to differentiate from those unmasked points NOT filled by watershedding

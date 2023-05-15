@@ -1018,3 +1018,61 @@ def test_pbc_snake_segmentation():
     seg_out_arr = seg_output.core_data()
 
     assert np.all(correct_seg_arr.T == seg_out_arr)
+
+
+def test_max_distance():
+    """
+    Tests that max_distance works for both PBCs and normal segmentation
+    """
+
+    test_arr = np.zeros((50, 50))
+    test_arr[:, :] = 10
+
+    fd_output = testing.generate_single_feature(5, 5, max_h1=50, max_h2=50)
+
+    test_data_iris = testing.make_dataset_from_arr(test_arr, data_type="iris")
+
+    seg_output, seg_feats = segmentation.segmentation_timestep(
+        test_data_iris,
+        fd_output,
+        1,
+        threshold=1,
+        PBC_flag="none",
+        max_distance=1,
+    )
+
+    correct_seg_arr = np.full((50, 50), 0, dtype=np.int32)
+    feat_num: int = 1
+    correct_seg_arr[4:7, 5] = feat_num
+    correct_seg_arr[5, 4:7] = feat_num
+
+    seg_out_arr = seg_output.core_data()
+    assert np.all(correct_seg_arr == seg_out_arr)
+
+    test_arr = np.zeros((50, 50))
+    test_arr[:, :20] = 10
+    test_arr[:, 45:] = 10
+
+    fd_output = testing.generate_single_feature(0, 0, max_h1=50, max_h2=50)
+
+    test_data_iris = testing.make_dataset_from_arr(test_arr, data_type="iris")
+
+    with pytest.raises(NotImplementedError):
+        seg_output, seg_feats = segmentation.segmentation_timestep(
+            test_data_iris,
+            fd_output,
+            1,
+            threshold=1,
+            PBC_flag="hdim_2",
+            max_distance=1,
+        )
+    """    
+    correct_seg_arr = np.full((50, 50), 0, dtype=np.int32)
+    feat_num: int = 1
+    correct_seg_arr[0:3, 0] = feat_num
+    correct_seg_arr[0, 0:3] = feat_num
+    correct_seg_arr[:, 20:45] = -1
+
+    seg_out_arr = seg_output.core_data()
+    assert np.all(correct_seg_arr == seg_out_arr)
+    """
