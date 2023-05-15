@@ -158,29 +158,17 @@ def feature_position(
         ]
     else:
         raise ValueError("region_bbox must have 4 or 6 elements.")
-
+    # whether or not to run the means at the end
+    run_mean = False
     if position_threshold == "center":
         # get position as geometrical centre of identified region:
-        if PBC_flag == "hdim_1" or PBC_flag == "both":
-            hdim1_index = pbc_utils.weighted_circmean(
-                hdim1_indices,
-                weights=np.ones(np.size(hdim1_indices)),
-                high=hdim1_max + 1,
-                low=hdim1_min,
-            )
-        else:
-            hdim1_index = np.mean(hdim1_indices)
-        if PBC_flag == "hdim_2" or PBC_flag == "both":
-            hdim2_index = pbc_utils.weighted_circmean(
-                hdim2_indices,
-                weights=np.ones(np.size(hdim2_indices)),
-                high=hdim2_max + 1,
-                low=hdim2_min,
-            )
-        else:
-            hdim2_index = np.mean(hdim2_indices)
+
+        hdim1_weights = np.ones(np.size(hdim1_indices))
+        hdim2_weights = np.ones(np.size(hdim2_indices))
         if is_3D:
-            vdim_index = np.mean(vdim_indices)
+            vdim_weights = np.ones(np.size(hdim2_indices))
+
+        run_mean = True
 
     elif position_threshold == "extreme":
         # get position as max/min position inside the identified region:
@@ -198,49 +186,44 @@ def feature_position(
         weights = abs(track_data_region[region_small] - threshold_i)
         if sum(weights) == 0:
             weights = None
-        if PBC_flag == "hdim_1" or PBC_flag == "both":
-            hdim1_index = pbc_utils.weighted_circmean(
-                hdim1_indices, weights=weights, high=hdim1_max + 1, low=hdim1_min
-            )
-        else:
-            hdim1_index = np.average(hdim1_indices, weights=weights)
-        if PBC_flag == "hdim_2" or PBC_flag == "both":
-            hdim2_index = pbc_utils.weighted_circmean(
-                hdim2_indices, weights=weights, high=hdim2_max + 1, low=hdim2_min
-            )
-        else:
-            hdim2_index = np.average(hdim2_indices, weights=weights)
+        hdim1_weights = weights
+        hdim2_weights = weights
         if is_3D:
-            vdim_index = np.average(vdim_indices, weights=weights)
+            vdim_weights = weights
+
+        run_mean = True
 
     elif position_threshold == "weighted_abs":
         # get position as centre of identified region, weighted by absolute values if the field:
         weights = abs(track_data_region[region_small])
         if sum(weights) == 0:
             weights = None
-        if PBC_flag == "hdim_1" or PBC_flag == "both":
-            hdim1_index = pbc_utils.weighted_circmean(
-                hdim1_indices, weights=weights, high=hdim1_max + 1, low=hdim1_min
-            )
-        else:
-            hdim1_index = np.average(hdim1_indices, weights=weights)
-        if PBC_flag == "hdim_2" or PBC_flag == "both":
-            hdim2_index = pbc_utils.weighted_circmean(
-                hdim2_indices, weights=weights, high=hdim2_max + 1, low=hdim2_min
-            )
-        else:
-            hdim2_index = np.average(hdim2_indices, weights=weights)
+        hdim1_weights = weights
+        hdim2_weights = weights
         if is_3D:
-            vdim_index = np.average(vdim_indices, weights=weights)
+            vdim_weights = weights
+        run_mean = True
 
     else:
         raise ValueError(
             "position_threshold must be center,extreme,weighted_diff or weighted_abs"
         )
 
-    # re-transform of any coords beyond the boundaries - (should be) general enough to work for any variety of PBC
-    # as no x or y points will be beyond the boundaries if we haven't transformed them in the first place
-    # Note: New method should mean this is unnecessary
+    if run_mean:
+        if PBC_flag == "hdim_1" or PBC_flag == "both":
+            hdim1_index = pbc_utils.weighted_circmean(
+                hdim1_indices, weights=hdim1_weights, high=hdim1_max + 1, low=hdim1_min
+            )
+        else:
+            hdim1_index = np.average(hdim1_indices, weights=hdim1_weights)
+        if PBC_flag == "hdim_2" or PBC_flag == "both":
+            hdim2_index = pbc_utils.weighted_circmean(
+                hdim2_indices, weights=hdim2_weights, high=hdim2_max + 1, low=hdim2_min
+            )
+        else:
+            hdim2_index = np.average(hdim2_indices, weights=hdim2_weights)
+        if is_3D:
+            vdim_index = np.average(vdim_indices, weights=vdim_weights)
 
     if is_3D:
         return vdim_index, hdim1_index, hdim2_index
@@ -453,9 +436,13 @@ def feature_detection_threshold(
     # deal with PBCs
     # all options that involve dealing with periodic boundaries
     pbc_options = ["hdim_1", "hdim_2", "both"]
+    if PBC_flag not in pbc_options and PBC_flag != "none":
+        raise ValueError(
+            "Options for periodic are currently: none, " + ", ".join(pbc_options)
+        )
 
     # we need to deal with PBCs in some way.
-    if PBC_flag in pbc_options:
+    if PBC_flag in pbc_options and num_labels > 0:
         #
         # create our copy of `labels` to edit
         labels_2 = deepcopy(labels)
@@ -464,204 +451,196 @@ def feature_detection_threshold(
         # labels that touch the PBC walls
         wall_labels = np.array([], dtype=np.int32)
 
-        if num_labels > 0:
-            all_label_props = internal_utils.get_label_props_in_dict(labels)
-            [
-                all_labels_max_size,
-                all_label_locs_v,
-                all_label_locs_h1,
-                all_label_locs_h2,
-            ] = internal_utils.get_indices_of_labels_from_reg_prop_dict(all_label_props)
+        all_label_props = internal_utils.get_label_props_in_dict(labels)
+        [
+            all_labels_max_size,
+            all_label_locs_v,
+            all_label_locs_h1,
+            all_label_locs_h2,
+        ] = internal_utils.get_indices_of_labels_from_reg_prop_dict(all_label_props)
 
-            # find the points along the boundaries
+        # find the points along the boundaries
 
-            # along hdim_1 or both horizontal boundaries
-            if PBC_flag == "hdim_1" or PBC_flag == "both":
-                # north and south wall
-                ns_wall = np.unique(labels[:, (y_min, y_max), :])
-                wall_labels = np.append(wall_labels, ns_wall)
+        # along hdim_1 or both horizontal boundaries
+        if PBC_flag == "hdim_1" or PBC_flag == "both":
+            # north and south wall
+            ns_wall = np.unique(labels[:, (y_min, y_max), :])
+            wall_labels = np.append(wall_labels, ns_wall)
 
-            # along hdim_2 or both horizontal boundaries
-            if PBC_flag == "hdim_2" or PBC_flag == "both":
-                # east/west wall
-                ew_wall = np.unique(labels[:, :, (x_min, x_max)])
-                wall_labels = np.append(wall_labels, ew_wall)
+        # along hdim_2 or both horizontal boundaries
+        if PBC_flag == "hdim_2" or PBC_flag == "both":
+            # east/west wall
+            ew_wall = np.unique(labels[:, :, (x_min, x_max)])
+            wall_labels = np.append(wall_labels, ew_wall)
 
-            wall_labels = np.unique(wall_labels)
+        wall_labels = np.unique(wall_labels)
 
-            for label_ind in wall_labels:
-                new_label_ind = label_ind
-                # 0 isn't a real index
-                if label_ind == 0:
-                    continue
-                # skip this label if we have already dealt with it.
-                if np.any(label_ind == skip_list):
-                    continue
+        for label_ind in wall_labels:
+            new_label_ind = label_ind
+            # 0 isn't a real index
+            if label_ind == 0:
+                continue
+            # skip this label if we have already dealt with it.
+            if np.any(label_ind == skip_list):
+                continue
 
-                # create list for skip labels for this wall label only
-                skip_list_thisind = list()
+            # create list for skip labels for this wall label only
+            skip_list_thisind = list()
 
-                # get all locations of this label.
-                # TODO: harmonize x/y/z vs hdim1/hdim2/vdim.
-                label_locs_v = all_label_locs_v[label_ind]
-                label_locs_h1 = all_label_locs_h1[label_ind]
-                label_locs_h2 = all_label_locs_h2[label_ind]
+            # get all locations of this label.
+            # TODO: harmonize x/y/z vs hdim1/hdim2/vdim.
+            label_locs_v = all_label_locs_v[label_ind]
+            label_locs_h1 = all_label_locs_h1[label_ind]
+            label_locs_h2 = all_label_locs_h2[label_ind]
 
-                # loop through every point in the label
-                for label_z, label_y, label_x in zip(
-                    label_locs_v, label_locs_h1, label_locs_h2
+            # loop through every point in the label
+            for label_z, label_y, label_x in zip(
+                label_locs_v, label_locs_h1, label_locs_h2
+            ):
+                # check if this is the special case of being a corner point.
+                # if it's doubly periodic AND on both x and y boundaries, it's a corner point
+                # and we have to look at the other corner.
+                # here, we will only look at the corner point and let the below deal with x/y only.
+                if PBC_flag == "both" and (
+                    np.any(label_y == [y_min, y_max])
+                    and np.any(label_x == [x_min, x_max])
                 ):
-                    # check if this is the special case of being a corner point.
-                    # if it's doubly periodic AND on both x and y boundaries, it's a corner point
-                    # and we have to look at the other corner.
-                    # here, we will only look at the corner point and let the below deal with x/y only.
-                    if PBC_flag == "both" and (
-                        np.any(label_y == [y_min, y_max])
-                        and np.any(label_x == [x_min, x_max])
+                    # adjust x and y points to the other side
+                    y_val_alt = pbc_utils.adjust_pbc_point(label_y, y_min, y_max)
+                    x_val_alt = pbc_utils.adjust_pbc_point(label_x, x_min, x_max)
+
+                    label_on_corner = labels[label_z, y_val_alt, x_val_alt]
+
+                    if (label_on_corner != 0) and (
+                        ~np.any(label_on_corner == skip_list)
                     ):
-                        # adjust x and y points to the other side
-                        y_val_alt = pbc_utils.adjust_pbc_point(label_y, y_min, y_max)
-                        x_val_alt = pbc_utils.adjust_pbc_point(label_x, x_min, x_max)
+                        # alt_inds = np.where(labels==alt_label_3)
+                        # get a list of indices where the label on the corner is so we can switch them
+                        # in the new list.
 
-                        label_on_corner = labels[label_z, y_val_alt, x_val_alt]
+                        labels_2[
+                            all_label_locs_v[label_on_corner],
+                            all_label_locs_h1[label_on_corner],
+                            all_label_locs_h2[label_on_corner],
+                        ] = label_ind
+                        skip_list = np.append(skip_list, label_on_corner)
+                        skip_list_thisind = np.append(
+                            skip_list_thisind, label_on_corner
+                        )
 
-                        if (label_on_corner != 0) and (
-                            ~np.any(label_on_corner == skip_list)
-                        ):
-                            # alt_inds = np.where(labels==alt_label_3)
-                            # get a list of indices where the label on the corner is so we can switch them
-                            # in the new list.
-
-                            labels_2[
-                                all_label_locs_v[label_on_corner],
-                                all_label_locs_h1[label_on_corner],
-                                all_label_locs_h2[label_on_corner],
-                            ] = label_ind
-                            skip_list = np.append(skip_list, label_on_corner)
-                            skip_list_thisind = np.append(
-                                skip_list_thisind, label_on_corner
-                            )
-
-                        # if it's labeled and has already been dealt with for this label
-                        elif (
-                            (label_on_corner != 0)
-                            and (np.any(label_on_corner == skip_list))
-                            and (np.any(label_on_corner == skip_list_thisind))
-                        ):
-                            # print("skip_list_thisind label - has already been treated this index")
-                            continue
-
-                        # if it's labeled and has already been dealt with via a previous label
-                        elif (
-                            (label_on_corner != 0)
-                            and (np.any(label_on_corner == skip_list))
-                            and (~np.any(label_on_corner == skip_list_thisind))
-                        ):
-                            # find the updated label, and overwrite all of label_ind indices with updated label
-                            labels_2_alt = labels_2[label_z, y_val_alt, x_val_alt]
-                            labels_2[
-                                label_locs_v, label_locs_h1, label_locs_h2
-                            ] = labels_2_alt
-                            skip_list = np.append(skip_list, label_ind)
-                            break
-
-                    # on the hdim1 boundary and periodic on hdim1
-                    if (PBC_flag == "hdim_1" or PBC_flag == "both") and np.any(
-                        label_y == [y_min, y_max]
+                    # if it's labeled and has already been dealt with for this label
+                    elif (
+                        (label_on_corner != 0)
+                        and (np.any(label_on_corner == skip_list))
+                        and (np.any(label_on_corner == skip_list_thisind))
                     ):
-                        y_val_alt = pbc_utils.adjust_pbc_point(label_y, y_min, y_max)
+                        # print("skip_list_thisind label - has already been treated this index")
+                        continue
 
-                        # get the label value on the opposite side
-                        label_alt = labels[label_z, y_val_alt, label_x]
-
-                        # if it's labeled and not already been dealt with
-                        if (label_alt != 0) and (~np.any(label_alt == skip_list)):
-                            # find the indices where it has the label value on opposite side and change their value to original side
-                            # print(all_label_locs_v[label_alt], alt_inds[0])
-                            labels_2[
-                                all_label_locs_v[label_alt],
-                                all_label_locs_h1[label_alt],
-                                all_label_locs_h2[label_alt],
-                            ] = new_label_ind
-                            # we have already dealt with this label.
-                            skip_list = np.append(skip_list, label_alt)
-                            skip_list_thisind = np.append(skip_list_thisind, label_alt)
-
-                        # if it's labeled and has already been dealt with for this label
-                        elif (
-                            (label_alt != 0)
-                            and (np.any(label_alt == skip_list))
-                            and (np.any(label_alt == skip_list_thisind))
-                        ):
-                            continue
-
-                        # if it's labeled and has already been dealt with
-                        elif (
-                            (label_alt != 0)
-                            and (np.any(label_alt == skip_list))
-                            and (~np.any(label_alt == skip_list_thisind))
-                        ):
-                            # find the updated label, and overwrite all of label_ind indices with updated label
-                            labels_2_alt = labels_2[label_z, y_val_alt, label_x]
-                            labels_2[
-                                label_locs_v, label_locs_h1, label_locs_h2
-                            ] = labels_2_alt
-                            new_label_ind = labels_2_alt
-                            skip_list = np.append(skip_list, label_ind)
-                            # break
-
-                    if (PBC_flag == "hdim_2" or PBC_flag == "both") and np.any(
-                        label_x == [x_min, x_max]
+                    # if it's labeled and has already been dealt with via a previous label
+                    elif (
+                        (label_on_corner != 0)
+                        and (np.any(label_on_corner == skip_list))
+                        and (~np.any(label_on_corner == skip_list_thisind))
                     ):
-                        x_val_alt = pbc_utils.adjust_pbc_point(label_x, x_min, x_max)
+                        # find the updated label, and overwrite all of label_ind indices with updated label
+                        labels_2_alt = labels_2[label_z, y_val_alt, x_val_alt]
+                        labels_2[
+                            label_locs_v, label_locs_h1, label_locs_h2
+                        ] = labels_2_alt
+                        skip_list = np.append(skip_list, label_ind)
+                        break
 
-                        # get the label value on the opposite side
-                        label_alt = labels[label_z, label_y, x_val_alt]
+                # on the hdim1 boundary and periodic on hdim1
+                if (PBC_flag == "hdim_1" or PBC_flag == "both") and np.any(
+                    label_y == [y_min, y_max]
+                ):
+                    y_val_alt = pbc_utils.adjust_pbc_point(label_y, y_min, y_max)
 
-                        # if it's labeled and not already been dealt with
-                        if (label_alt != 0) and (~np.any(label_alt == skip_list)):
-                            # find the indices where it has the label value on opposite side and change their value to original side
-                            labels_2[
-                                all_label_locs_v[label_alt],
-                                all_label_locs_h1[label_alt],
-                                all_label_locs_h2[label_alt],
-                            ] = new_label_ind
-                            # we have already dealt with this label.
-                            skip_list = np.append(skip_list, label_alt)
-                            skip_list_thisind = np.append(skip_list_thisind, label_alt)
+                    # get the label value on the opposite side
+                    label_alt = labels[label_z, y_val_alt, label_x]
 
-                        # if it's labeled and has already been dealt with for this label
-                        elif (
-                            (label_alt != 0)
-                            and (np.any(label_alt == skip_list))
-                            and (np.any(label_alt == skip_list_thisind))
-                        ):
-                            continue
+                    # if it's labeled and not already been dealt with
+                    if (label_alt != 0) and (~np.any(label_alt == skip_list)):
+                        # find the indices where it has the label value on opposite side and change their value to original side
+                        # print(all_label_locs_v[label_alt], alt_inds[0])
+                        labels_2[
+                            all_label_locs_v[label_alt],
+                            all_label_locs_h1[label_alt],
+                            all_label_locs_h2[label_alt],
+                        ] = new_label_ind
+                        # we have already dealt with this label.
+                        skip_list = np.append(skip_list, label_alt)
+                        skip_list_thisind = np.append(skip_list_thisind, label_alt)
 
-                        # if it's labeled and has already been dealt with
-                        elif (
-                            (label_alt != 0)
-                            and (np.any(label_alt == skip_list))
-                            and (~np.any(label_alt == skip_list_thisind))
-                        ):
-                            # find the updated label, and overwrite all of label_ind indices with updated label
-                            labels_2_alt = labels_2[label_z, label_y, x_val_alt]
-                            labels_2[
-                                label_locs_v, label_locs_h1, label_locs_h2
-                            ] = labels_2_alt
-                            new_label_ind = labels_2_alt
-                            skip_list = np.append(skip_list, label_ind)
-                            # break
+                    # if it's labeled and has already been dealt with for this label
+                    elif (
+                        (label_alt != 0)
+                        and (np.any(label_alt == skip_list))
+                        and (np.any(label_alt == skip_list_thisind))
+                    ):
+                        continue
+
+                    # if it's labeled and has already been dealt with
+                    elif (
+                        (label_alt != 0)
+                        and (np.any(label_alt == skip_list))
+                        and (~np.any(label_alt == skip_list_thisind))
+                    ):
+                        # find the updated label, and overwrite all of label_ind indices with updated label
+                        labels_2_alt = labels_2[label_z, y_val_alt, label_x]
+                        labels_2[
+                            label_locs_v, label_locs_h1, label_locs_h2
+                        ] = labels_2_alt
+                        new_label_ind = labels_2_alt
+                        skip_list = np.append(skip_list, label_ind)
+                        # break
+
+                if (PBC_flag == "hdim_2" or PBC_flag == "both") and np.any(
+                    label_x == [x_min, x_max]
+                ):
+                    x_val_alt = pbc_utils.adjust_pbc_point(label_x, x_min, x_max)
+
+                    # get the label value on the opposite side
+                    label_alt = labels[label_z, label_y, x_val_alt]
+
+                    # if it's labeled and not already been dealt with
+                    if (label_alt != 0) and (~np.any(label_alt == skip_list)):
+                        # find the indices where it has the label value on opposite side and change their value to original side
+                        labels_2[
+                            all_label_locs_v[label_alt],
+                            all_label_locs_h1[label_alt],
+                            all_label_locs_h2[label_alt],
+                        ] = new_label_ind
+                        # we have already dealt with this label.
+                        skip_list = np.append(skip_list, label_alt)
+                        skip_list_thisind = np.append(skip_list_thisind, label_alt)
+
+                    # if it's labeled and has already been dealt with for this label
+                    elif (
+                        (label_alt != 0)
+                        and (np.any(label_alt == skip_list))
+                        and (np.any(label_alt == skip_list_thisind))
+                    ):
+                        continue
+
+                    # if it's labeled and has already been dealt with
+                    elif (
+                        (label_alt != 0)
+                        and (np.any(label_alt == skip_list))
+                        and (~np.any(label_alt == skip_list_thisind))
+                    ):
+                        # find the updated label, and overwrite all of label_ind indices with updated label
+                        labels_2_alt = labels_2[label_z, label_y, x_val_alt]
+                        labels_2[
+                            label_locs_v, label_locs_h1, label_locs_h2
+                        ] = labels_2_alt
+                        new_label_ind = labels_2_alt
+                        skip_list = np.append(skip_list, label_ind)
+                        # break
 
         # copy over new labels after we have adjusted everything
         labels = labels_2
-
-    elif PBC_flag == "none":
-        pass
-    else:
-        raise ValueError(
-            "Options for periodic are currently: none, " + ", ".join(pbc_options)
-        )
 
     # END PBC treatment
     # we need to get label properties again after we handle PBCs.
