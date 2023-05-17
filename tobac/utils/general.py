@@ -276,7 +276,7 @@ def add_coordinates_3D(
             hdim2_pos = 1 if time_pos == 2 else 2
             first_dim = coord_to_ax[variable_cube.coord_dims(coord)[hdim2_pos]]
             second_dim = coord_to_ax[variable_cube.coord_dims(coord)[hdim1_pos]]
-            points = (second_dim[0], second_dim[1])
+            points = (second_dim[0], first_dim[0])
             values = var_coord.points
             xi = np.column_stack((t[second_dim[1]], t[first_dim[1]]))
             coordinate_points = interpn(points, values, xi)
