@@ -1250,7 +1250,9 @@ def feature_detection_multithreshold(
                     z_coordinate_name=vertical_coord,
                     target=target,
                     PBC_flag=PBC_flag,
+                    min_h1=0,
                     max_h1=hdim1_max,
+                    min_h2=0,
                     max_h2=hdim2_max,
                 )
 
@@ -1332,10 +1334,14 @@ def filter_min_distance(
         'hdim_1' means that we are periodic along hdim1
         'hdim_2' means that we are periodic along hdim2
         'both' means that we are periodic along both horizontal dimensions
-    max_h1: int
-        Maximum coordinate in the hdim_1 dimension if PBC_flag is not 'none'
-    max_h2: int
-        Maximum coordinate in the hdim_2 dimension if PBC_flag is not 'none'
+    min_h1: int, optional
+        Minimum real point in hdim_1, for use with periodic boundaries.
+    max_h1: int, optional
+        Maximum point in hdim_1, exclusive. max_h1-min_h1 should be the size.
+    min_h2: int, optional
+        Minimum real point in hdim_2, for use with periodic boundaries.
+    max_h2: int, optional
+        Maximum point in hdim_2, exclusive. max_h2-min_h2 should be the size.
 
 
     Returns
