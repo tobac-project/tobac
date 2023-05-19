@@ -538,6 +538,7 @@ def feature_detection_multithreshold_timestep(
     vertical_axis=None,
     dxy=-1,
     wavelength_filtering=None,
+    strict_thresholding=False,
 ):
     """Find features in each timestep.
 
@@ -591,6 +592,9 @@ def feature_detection_multithreshold_timestep(
     wavelength_filtering: tuple, optional
        Minimum and maximum wavelength for spectral filtering in meter. Default is None.
 
+    strict_tresholding: Bool, optional
+        If True, a feature can only be detected if all previous thresholds have been met.
+        Default is False.
 
     Returns
     -------
@@ -610,8 +614,8 @@ def feature_detection_multithreshold_timestep(
             FutureWarning,
         )
 
-    # get actual numpy array
-    track_data = data_i.core_data()
+    # get actual numpy array and make a copy so as not to change the data in the iris cube
+    track_data = data_i.core_data().copy()
 
     track_data = gaussian_filter(
         track_data, sigma=sigma_threshold
@@ -702,6 +706,24 @@ def feature_detection_multithreshold_timestep(
             features_thresholds = remove_parents(
                 features_thresholds, regions_i, regions_old
             )
+
+        if strict_thresholding:
+            if regions_i:
+                # remove data in regions where no features were detected
+                valid_regions: np.ndarray = np.zeros_like(track_data)
+                region_indices = list(regions_i.values())[0]  # linear indices
+                valid_regions.ravel()[region_indices] = 1
+                track_data = np.multiply(valid_regions, track_data)
+            else:
+                # since regions_i is empty no further features can be detected
+                logging.debug(
+                    "Finished feature detection for threshold "
+                    + str(i_threshold)
+                    + " : "
+                    + str(threshold_i)
+                )
+                return features_thresholds
+
         regions_old = regions_i
 
         logging.debug(
