@@ -155,7 +155,11 @@ def add_coordinates(t, variable_cube):
 
 
 def add_coordinates_3D(
-    t, variable_cube, vertical_coord="auto",     vertical_axis=None, assume_coords_fixed_in_time=True
+    t,
+    variable_cube,
+    vertical_coord="auto",
+    vertical_axis=None,
+    assume_coords_fixed_in_time=True,
 ):
     """Function adding coordinates from the tracking cube to the trajectories
         for the 3D case: time, longitude&latitude, x&y dimensions, and altitude
