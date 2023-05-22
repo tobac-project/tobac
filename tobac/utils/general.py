@@ -155,7 +155,7 @@ def add_coordinates(t, variable_cube):
 
 
 def add_coordinates_3D(
-    t, variable_cube, vertical_coord="auto", assume_coords_fixed_in_time=True
+    t, variable_cube, vertical_coord="auto",     vertical_axis=None, assume_coords_fixed_in_time=True
 ):
     """Function adding coordinates from the tracking cube to the trajectories
         for the 3D case: time, longitude&latitude, x&y dimensions, and altitude
@@ -175,6 +175,8 @@ def add_coordinates_3D(
         to the string. If it is an int, it assumes that it is the vertical axis.
         Note that if you only have a 2D or 3D coordinate for altitude, you must
         pass in an int.
+    vertical_axis: int or None
+        Axis number of the vertical.
     assume_coords_fixed_in_time: bool
         If true, it assumes that the coordinates are fixed in time, even if the
         coordinates say they vary in time. This is, by default, True, to preserve
@@ -540,24 +542,16 @@ def combine_tobac_feats(list_of_feats, preserve_old_feat_nums=None):
     combined_df = pd.concat(list_of_feats)
     # Then, sort by time first, then by feature number
     combined_df = combined_df.sort_values(["time", "feature"])
-    all_times = sorted(combined_df["time"].unique())
-    # Loop through current times
-    start_feat_num = combined_df["feature"].min()
     # Save the old feature numbers if requested.
     if preserve_old_feat_nums is not None:
         combined_df[preserve_old_feat_nums] = combined_df["feature"]
 
-    for frame_num, curr_time in enumerate(all_times):
-        # renumber the frame number
-        combined_df.loc[combined_df["time"] == curr_time, "frame"] = frame_num
-        # renumber the features
-        curr_row_count = len(combined_df.loc[combined_df["time"] == curr_time])
-        feat_num_arr = np.arange(start_feat_num, start_feat_num + curr_row_count)
-        combined_df.loc[combined_df["time"] == curr_time, "feature"] = feat_num_arr
-        start_feat_num = np.max(feat_num_arr) + 1
-
-    combined_df = combined_df.reset_index(drop=True)
-    return combined_df
+    # count_per_time = combined_feats.groupby('time')['index'].count()
+    combined_df["frame"] = combined_df["time"].rank(method="dense").astype(int) - 1
+    combined_sorted = combined_df.sort_values(["frame", "idx"], ignore_index=True)
+    combined_sorted["feature"] = np.arange(1, len(combined_sorted) + 1)
+    combined_sorted = combined_sorted.reset_index(drop=True)
+    return combined_sorted
 
 
 @internal_utils.irispandas_to_xarray

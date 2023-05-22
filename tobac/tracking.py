@@ -26,6 +26,7 @@ import pandas as pd
 import warnings
 import math
 from . import utils as tb_utils
+from .utils import periodic_boundaries as pbc_utils
 from .utils import internal as internal_utils
 
 from packaging import version as pkgvsn
@@ -54,6 +55,11 @@ def linking_trackpy(
     cell_number_start=1,
     cell_number_unassigned=-1,
     vertical_coord="auto",
+    min_h1=None,
+    max_h1=None,
+    min_h2=None,
+    max_h2=None,
+    PBC_flag="none",
 ):
     """Perform Linking of features in trajectories.
 
@@ -174,6 +180,24 @@ def linking_trackpy(
         It looks for the coordinate or the dimension name corresponding
         to the string. To use `dz`, set this to `None`.
 
+    min_h1: int
+        Minimum hdim_1 value, required when PBC_flag is 'hdim_1' or 'both'
+
+    max_h1: int
+        Maximum hdim_1 value, required when PBC_flag is 'hdim_1' or 'both'
+
+    min_h2: int
+        Minimum hdim_2 value, required when PBC_flag is 'hdim_2' or 'both'
+
+    max_h2: int
+        Maximum hdim_2 value, required when PBC_flag is 'hdim_2' or 'both'
+
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
 
     Returns
     -------
@@ -247,6 +271,13 @@ def linking_trackpy(
     else:
         is_3D = False
 
+    # make sure that we have min and max for h1 and h2 if we are PBC
+    if PBC_flag in ["hdim_1", "both"] and (min_h1 is None or max_h1 is None):
+        raise ValueError("For PBC tracking, must set min and max coordinates.")
+
+    if PBC_flag in ["hdim_2", "both"] and (min_h2 is None or max_h2 is None):
+        raise ValueError("For PBC tracking, must set min and max coordinates.")
+
     # in case of adaptive search, check wether both parameters are specified
     if adaptive_stop is not None:
         if adaptive_step is None:
@@ -295,8 +326,17 @@ def linking_trackpy(
     else:
         pos_columns_tp = ["hdim_1", "hdim_2"]
 
-    neighbor_strategy = "KDTree"
-    dist_func = None
+    # Check if we have PBCs.
+    if PBC_flag in ["hdim_1", "hdim_2", "both"]:
+        # Per the trackpy docs, to specify a custom distance function
+        # which we need for PBCs, neighbor_strategy must be 'BTree'.
+        # I think this shouldn't change results, but it will degrade performance.
+        neighbor_strategy = "BTree"
+        dist_func = build_distance_function(min_h1, max_h1, min_h2, max_h2, PBC_flag)
+
+    else:
+        neighbor_strategy = "KDTree"
+        dist_func = None
 
     if method_linking == "random":
         #     link features into trajectories:
@@ -440,7 +480,9 @@ def linking_trackpy(
     #     add time coordinate relative to cell initiation:
     #    logging.debug('start adding cell time to trajectories')
     trajectories_filtered_filled = trajectories_filtered_unfilled
-    trajectories_final = add_cell_time(trajectories_filtered_filled)
+    trajectories_final = add_cell_time(
+        trajectories_filtered_filled, cell_number_unassigned=cell_number_unassigned
+    )
     # Add metadata
     trajectories_final.attrs["cell_number_unassigned"] = cell_number_unassigned
 
@@ -532,13 +574,15 @@ def fill_gaps(
     return t_out
 
 
-def add_cell_time(t):
+def add_cell_time(t: pd.DataFrame, cell_number_unassigned: int):
     """add cell time as time since the initiation of each cell
 
     Parameters
     ----------
     t : pandas.DataFrame
         trajectories with added coordinates
+    cell_number_unassigned: int
+        unassigned cell value
 
     Returns
     -------
@@ -551,6 +595,7 @@ def add_cell_time(t):
 
     t["time_cell"] = t["time"] - t.groupby("cell")["time"].transform("min")
     t["time_cell"] = pd.to_timedelta(t["time_cell"])
+    t.loc[t["cell"] == cell_number_unassigned, "time_cell"] = pd.Timedelta("nat")
     return t
 
 
@@ -567,3 +612,43 @@ def remap_particle_to_cell_nv(particle_cell_map, input_particle):
 
     """
     return particle_cell_map[input_particle]
+
+
+def build_distance_function(min_h1, max_h1, min_h2, max_h2, PBC_flag):
+    """Function to build a partial ```calc_distance_coords_pbc``` function
+    suitable for use with trackpy
+
+    Parameters
+    ----------
+    min_h1: int
+        Minimum point in hdim_1
+    max_h1: int
+        Maximum point in hdim_1
+    min_h2: int
+        Minimum point in hdim_2
+    max_h2: int
+        Maximum point in hdim_2
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
+
+    Returns
+    -------
+    function object
+        A version of calc_distance_coords_pbc suitable to be called by
+        just f(coords_1, coords_2)
+
+    """
+    import functools
+
+    return functools.partial(
+        pbc_utils.calc_distance_coords_pbc,
+        min_h1=min_h1,
+        max_h1=max_h1,
+        min_h2=min_h2,
+        max_h2=max_h2,
+        PBC_flag=PBC_flag,
+    )

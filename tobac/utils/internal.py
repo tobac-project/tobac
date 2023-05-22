@@ -458,7 +458,12 @@ def find_vertical_axis_from_coord(variable_cube, vertical_coord="auto"):
     list_coord_names = [coord.name() for coord in variable_cube.coords()]
 
     if vertical_coord == "auto":
-        list_vertical = ["z", "model_level_number", "altitude", "geopotential_height"]
+        list_vertical = [
+            "z",
+            "model_level_number",
+            "altitude",
+            "geopotential_height",
+        ]
         # find the intersection
         all_vertical_axes = list(set(list_coord_names) & set(list_vertical))
         if len(all_vertical_axes) >= 1:
@@ -487,12 +492,15 @@ def find_axis_from_coord(variable_cube, coord_name):
     -------
     axis_number: int
         the number of the axis of the given coordinate, or None if the coordinate
-        is not found in the cube
+        is not found in the cube or not a dimensional coordinate
     """
 
     list_coord_names = [coord.name() for coord in variable_cube.coords()]
     all_matching_axes = list(set(list_coord_names) & set((coord_name,)))
-    if len(all_matching_axes) == 1:
+    if (
+        len(all_matching_axes) == 1
+        and len(variable_cube.coord_dims(all_matching_axes[0])) > 0
+    ):
         return variable_cube.coord_dims(all_matching_axes[0])[0]
     elif len(all_matching_axes) > 1:
         raise ValueError("Too many axes matched.")
@@ -645,7 +653,11 @@ def find_hdim_axes_3D_iris(field_in, vertical_coord=None, vertical_axis=None):
                     "please specify 1 dimensional vertical coordinate."
                     " Current vertical coordinates: {0}".format(ndim_vertical)
                 )
-            vertical_coord_axis = ndim_vertical[0]
+            if len(ndim_vertical) != 0:
+                vertical_coord_axis = ndim_vertical[0]
+            else:
+                # this means the vertical coordinate is an auxiliary coordinate of some kind.
+                vert_coord_found = False
 
     if not vert_coord_found:
         # if we don't have a vertical coordinate, and we are 3D or lower

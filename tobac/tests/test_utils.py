@@ -349,7 +349,6 @@ def test_spectral_filtering():
     assert (filtered_data.max() - filtered_data.min()) < (
         wave_data.max() - wave_data.min()
     )
-
     # because the randomly generated wave lies outside of range that is set for filtering,
     # make sure that the filtering results in the disappearance of this signal
     assert (
