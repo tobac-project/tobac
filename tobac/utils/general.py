@@ -3,7 +3,6 @@
 """
 import copy
 import logging
-import sklearn.neighbors
 from . import internal as internal_utils
 import numpy as np
 import sklearn
@@ -564,8 +563,8 @@ def transform_feature_points(
     new_dataset,
     latitude_name="auto",
     longitude_name="auto",
-    max_time_away=datetime.timedelta(minutes=1),
-    max_space_away=20000,
+    max_time_away=datetime.timedelta(minutes=0),
+    max_space_away=0,
 ):
     """Function to transform input feature dataset horizontal grid points to a different grid.
     The typical use case for this function is to transform detected features to perform

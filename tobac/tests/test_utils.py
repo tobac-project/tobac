@@ -420,7 +420,10 @@ def test_transform_feature_points():
     )
 
     new_feat_df = tb_utils.general.transform_feature_points(
-        orig_feat_df, in_xr["data"].to_iris()
+        orig_feat_df,
+        in_xr["data"].to_iris(),
+        max_time_away=datetime.timedelta(minutes=1),
+        max_space_away=20 * 1000,
     )
 
     assert np.all(new_feat_df["hdim_1"] == [25, 30])
@@ -434,7 +437,10 @@ def test_transform_feature_points():
     )
 
     new_feat_df = tb_utils.general.transform_feature_points(
-        orig_feat_df, in_xr["data"].to_iris(), max_space_away=20000
+        orig_feat_df,
+        in_xr["data"].to_iris(),
+        max_space_away=20000,
+        max_time_away=datetime.timedelta(minutes=1),
     )
 
     assert np.all(new_feat_df["hdim_1"] == [49])
@@ -458,7 +464,8 @@ def test_transform_feature_points():
     new_feat_df = tb_utils.general.transform_feature_points(
         orig_feat_df,
         in_xr["data"].to_iris(),
-        max_time_away=datetime.timedelta(minutes=1),
+        max_time_away=datetime.timedelta(minutes=10),
+        max_space_away=20 * 1000,
     )
     # we should still have both features, but they should have the new time.
     assert np.all(new_feat_df["hdim_1"] == [25, 30])
