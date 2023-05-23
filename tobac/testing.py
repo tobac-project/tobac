@@ -6,6 +6,8 @@ import datetime
 import numpy as np
 from xarray import DataArray
 import pandas as pd
+from collections import Counter
+from .utils import periodic_boundaries as pbc_utils
 
 
 def make_simple_sample_data_2D(data_type="iris"):
@@ -565,6 +567,7 @@ def make_feature_blob(
     v_size=1,
     shape="rectangle",
     amplitude=1,
+    PBC_flag="none",
 ):
     """Function to make a defined "blob" in location (zloc, yloc, xloc) with
     user-specified shape and amplitude. Note that this function will
@@ -606,6 +609,13 @@ def make_feature_blob(
     amplitude: float, optional
         Maximum amplitude of the blob
         Default is 1
+
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
 
     Returns
     -------
@@ -650,17 +660,30 @@ def make_feature_blob(
     start_h2 = int(np.ceil(h2_loc - h2_size / 2))
     end_h2 = int(np.ceil(h2_loc + h2_size / 2))
 
+    # get the coordinate sets
+    coords_to_fill = pbc_utils.get_pbc_coordinates(
+        h1_min,
+        h1_max,
+        h2_min,
+        h2_max,
+        start_h1,
+        end_h1,
+        start_h2,
+        end_h2,
+        PBC_flag=PBC_flag,
+    )
     if shape == "rectangle":
-        in_arr = set_arr_2D_3D(
-            in_arr,
-            amplitude,
-            start_h1,
-            end_h1,
-            start_h2,
-            end_h2,
-            start_v,
-            end_v,
-        )
+        for coord_box in coords_to_fill:
+            in_arr = set_arr_2D_3D(
+                in_arr,
+                amplitude,
+                coord_box[0],
+                coord_box[1],
+                coord_box[2],
+                coord_box[3],
+                start_v,
+                end_v,
+            )
         return in_arr
 
 
@@ -714,6 +737,83 @@ def set_arr_2D_3D(
     return in_arr
 
 
+def get_single_pbc_coordinate(
+    h1_min, h1_max, h2_min, h2_max, h1_coord, h2_coord, PBC_flag="none"
+):
+    """Function to get the PBC-adjusted coordinate for an original non-PBC adjusted
+    coordinate.
+
+    Parameters
+    ----------
+    h1_min: int
+        Minimum point in hdim_1
+    h1_max: int
+        Maximum point in hdim_1
+    h2_min: int
+        Minimum point in hdim_2
+    h2_max: int
+        Maximum point in hdim_2
+    h1_coord: int
+        hdim_1 query coordinate
+    h2_coord: int
+        hdim_2 query coordinate
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
+
+    Returns
+    -------
+    tuple
+        Returns a tuple of (hdim_1, hdim_2).
+
+    Raises
+    ------
+    ValueError
+        Raises a ValueError if the point is invalid (e.g., h1_coord < h1_min
+        when PBC_flag = 'none')
+    """
+    # Avoiding duplicating code here, so throwing this into a loop.
+    is_pbc = [False, False]
+    if PBC_flag in ["hdim_1", "both"]:
+        is_pbc[0] = True
+    if PBC_flag in ["hdim_2", "both"]:
+        is_pbc[1] = True
+
+    out_coords = list()
+
+    for point_query, dim_min, dim_max, dim_pbc in zip(
+        [h1_coord, h2_coord], [h1_min, h2_min], [h1_max, h2_max], is_pbc
+    ):
+        dim_size = dim_max - dim_min
+        if point_query >= dim_min and point_query < dim_max:
+            out_coords.append(point_query)
+        # off at least one domain
+        elif point_query < dim_min:
+            if not dim_pbc:
+                raise ValueError("Point invalid!")
+            if abs(point_query // dim_size) > 1:
+                # we are more than one interval length away from the periodic boundary
+                point_query = point_query + (
+                    dim_size * (abs(point_query // dim_size) - 1)
+                )
+
+            out_coords.append(point_query + dim_size)
+        elif point_query >= dim_max:
+            if not dim_pbc:
+                raise ValueError("Point invalid!")
+            if abs(point_query // dim_size) > 1:
+                # we are more than one interval length away from the periodic boundary
+                point_query = point_query - (
+                    dim_size * (abs(point_query // dim_size) - 1)
+                )
+            out_coords.append(point_query - dim_size)
+
+    return tuple(out_coords)
+
+
 def generate_single_feature(
     start_h1,
     start_h2,
@@ -728,6 +828,7 @@ def generate_single_feature(
     num_frames=1,
     dt=datetime.timedelta(minutes=5),
     start_date=datetime.datetime(2022, 1, 1, 0),
+    PBC_flag="none",
     frame_start=0,
     feature_num=1,
     feature_size=None,
@@ -760,7 +861,10 @@ def generate_single_feature(
         Default is 1
 
     min_h1: int, optional
-        Minimum value of hdim_1 allowed.
+        Minimum value of hdim_1 allowed. If PBC_flag is not 'none', then
+        this will be used to know when to wrap around periodic boundaries.
+        If PBC_flag is 'none', features will disappear if they are above/below
+        these bounds.
         Default is 0
 
     max_h1: int, optional
@@ -787,6 +891,12 @@ def generate_single_feature(
         Start datetime
         Default is datetime.datetime(2022, 1, 1, 0)
 
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
     frame_start: int
         Number to start the frame at
         Default is 1
@@ -812,6 +922,9 @@ def generate_single_feature(
     is_3D = not (start_v is None)
     for i in range(num_frames):
         curr_dict = dict()
+        curr_h1, curr_h2 = get_single_pbc_coordinate(
+            min_h1, max_h1, min_h2, max_h2, curr_h1, curr_h2, PBC_flag
+        )
         curr_dict["hdim_1"] = curr_h1
         curr_dict["hdim_2"] = curr_h2
         curr_dict["frame"] = frame_start + i
@@ -833,13 +946,9 @@ def generate_single_feature(
     return pd.DataFrame.from_dict(out_list_of_dicts)
 
 
-def get_start_end_of_feat(
-    center_point,
-    size,
-    axis_min,
-    axis_max,
-):
-    """Gets the start and ending points for a feature given a size
+def get_start_end_of_feat(center_point, size, axis_min, axis_max, is_pbc=False):
+    """Gets the start and ending points for a feature given a size and PBC
+    conditions
 
     Parameters
     ----------
@@ -853,16 +962,25 @@ def get_start_end_of_feat(
         Maximum point on the axis (exclusive). This is 1 after
         the last real point on the axis, such that axis_max - axis_min
         is the size of the axis
+    is_pbc: bool
+        True if we should give wrap around points, false if we shouldn't.
 
     Returns
     -------
     tuple (start_point, end_point)
+    Note that if is_pbc is True, start_point can be less than axis_min and
+    end_point can be greater than or equal to axis_max. This is designed to be used with
+    ```get_pbc_coordinates```
     """
     import numpy as np
 
     min_pt = int(np.ceil(center_point - size / 2))
     max_pt = int(np.ceil(center_point + size / 2))
     # adjust points for boundaries, if needed.
+    if min_pt < axis_min and not is_pbc:
+        min_pt = axis_min
+    if max_pt > axis_max and not is_pbc:
+        max_pt = axis_max
 
     return (min_pt, max_pt)
 
@@ -912,3 +1030,16 @@ def generate_grid_coords(min_max_coords, lengths):
             min_max_coords[2] : min_max_coords[3] : complex(imag=lengths[1]),
             min_max_coords[4] : min_max_coords[5] : complex(imag=lengths[2]),
         ]
+
+
+def lists_equal_without_order(a, b):
+    """
+    This will make sure the inner list contain the same,
+    but doesn't account for duplicate groups.
+    from: https://stackoverflow.com/questions/31501909/assert-list-of-list-equality-without-order-in-python/31502000
+    """
+    for l1 in a:
+        check_counter = Counter(l1)
+        if not any(Counter(l2) == check_counter for l2 in b):
+            return False
+    return True
