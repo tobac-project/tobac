@@ -320,6 +320,7 @@ def segmentation_timestep(
     PBC_flag="none",
     seed_3D_flag="column",
     seed_3D_size=5,
+        statistics = False,
 ):
     """Perform watershedding for an individual time step of the data. Works
     for both 2D and 3D data
@@ -378,6 +379,8 @@ def segmentation_timestep(
         of odd numbers for this. If you give an even number, your seed box will be
         biased and not centered around the feature.
 
+    statistics: boolean, optional
+        Default is False. If True, bulk statistics for the data points assigned to each feature are saved in output.
 
     Returns
     -------
@@ -998,7 +1001,17 @@ def segmentation_timestep(
             features_out.loc[features_out.feature == row["feature"], "ncells"] = counts[
                 row["feature"]
             ]
-
+            
+            if statistics:
+                feature_mean, feature_max, features_min, feature_percentiles, feature_sum, feature_axis = get_statistics(row["feature"], segmentation_mask, field_in.data())
+                # write the statistics to feature output dataframe 
+                feature_out.loc[features_out.feature == row["feature"], "mean"] = feature_mean
+                feature_out.loc[features_out.feature == row["feature"], "max"] = feature_max
+                feature_out.loc[features_out.feature == row["feature"], "min"] = feature_min
+                feature_out.loc[features_out.feature == row["feature"], "percentiles"] = feature_percentiles
+                feature_out.loc[features_out.feature == row["feature"], "sum"] = feature_sum
+                feature_out.loc[features_out.feature == row["feature"], "major_axis_length"] = feature_axis
+                
     return segmentation_out, features_out
 
 
@@ -1079,6 +1092,7 @@ def segmentation(
     PBC_flag="none",
     seed_3D_flag="column",
     seed_3D_size=5,
+    statistics = False,
 ):
     """Use watershedding to determine region above a threshold
         value around initial seeding position for all time steps of
@@ -1099,6 +1113,9 @@ def segmentation(
 
         dxy : float
             Grid spacing of the input data.
+
+        statistics : boolean, optional
+            Default is False. If True, bulk statistics for the data points assigned to each feature are saved in output.
 
         Output:
         segmentation_out: iris.cube.Cube
@@ -1202,6 +1219,7 @@ def segmentation(
             PBC_flag=PBC_flag,
             seed_3D_flag=seed_3D_flag,
             seed_3D_size=seed_3D_size,
+            statistics = statistics,
         )
         segmentation_out_list.append(segmentation_out_i)
         features_out_list.append(features_out_i)
@@ -1227,3 +1245,5 @@ def watershedding_2D(track, field_in, **kwargs):
     """Wrapper for the segmentation()-function."""
     kwargs.pop("method", None)
     return segmentation_2D(track, field_in, method="watershed", **kwargs)
+
+
