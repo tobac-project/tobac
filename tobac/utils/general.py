@@ -592,7 +592,7 @@ def get_statistics(feature_ID, segmentation_mask, field_in):
     feature_mean = np.nanmean(data_points)
     feature_max = np.nanmax(data_points)
     feature_min = np.nanmin(data_points)
-    feature_percentiles = np.percentiles(data_points, range(101))
+    feature_percentiles = np.percentile(data_points, range(101))
     feature_sum = np.nansum(data_points)
 
     # get other region properties

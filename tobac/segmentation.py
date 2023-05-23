@@ -34,6 +34,7 @@ import logging
 
 import skimage
 import numpy as np
+import pandas as pd
 
 from . import utils as tb_utils
 from .utils import periodic_boundaries as pbc_utils
@@ -1003,16 +1004,19 @@ def segmentation_timestep(
             ]
             
             if statistics:
-                feature_mean, feature_max, features_min, feature_percentiles, feature_sum, feature_axis = get_statistics(row["feature"], segmentation_mask, field_in.data())
+                feature_mean, feature_max, feature_min, feature_percentiles, feature_sum, feature_axis = tb_utils.general.get_statistics(row["feature"], segmentation_mask.copy(), field_in.data.copy())
                 # write the statistics to feature output dataframe 
-                feature_out.loc[features_out.feature == row["feature"], "mean"] = feature_mean
-                feature_out.loc[features_out.feature == row["feature"], "max"] = feature_max
-                feature_out.loc[features_out.feature == row["feature"], "min"] = feature_min
-                feature_out.loc[features_out.feature == row["feature"], "percentiles"] = feature_percentiles
-                feature_out.loc[features_out.feature == row["feature"], "sum"] = feature_sum
-                feature_out.loc[features_out.feature == row["feature"], "major_axis_length"] = feature_axis
-                
+                features_out.loc[features_out.feature == row["feature"], "mean"] = feature_mean
+                features_out.loc[features_out.feature == row["feature"], "max"] = feature_max
+                features_out.loc[features_out.feature == row["feature"], "min"] = feature_min
+                # store numpy array with percentiles as cell in data frame 
+                df = pd.DataFrame({"percentiles": [feature_percentiles]})
+                features_out["percentiles"] = np.nan
+                features_out.iloc[features_out.index[features_out.feature == row["feature"]], features_out.columns.get_loc("percentiles")] = df.apply(lambda r: tuple(r), axis=1)
+                features_out.loc[features_out.feature == row["feature"], "sum"] = feature_sum
+                features_out.loc[features_out.feature == row["feature"], "major_axis_length"] = feature_axis
     return segmentation_out, features_out
+
 
 
 def check_add_unseeded_across_bdrys(
