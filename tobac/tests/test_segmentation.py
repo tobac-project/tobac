@@ -932,8 +932,8 @@ def test_empty_segmentation(PBC_flag):
         "dxy": test_dxy,
         "threshold": 1.5,
         "PBC_flag": PBC_flag,
-        "above_threshold_unseg_num": 0,
-        "below_threshold_num": -1,
+        "segment_number_unassigned": 0,
+        "segment_number_below_threshold": -1,
     }
     test_data_iris = testing.make_dataset_from_arr(
         seg_arr, data_type="iris", z_dim_num=0, y_dim_num=1, x_dim_num=2
@@ -980,8 +980,8 @@ def test_pbc_snake_segmentation():
         PBC_flag="hdim_2",
         seed_3D_flag="box",
         seed_3D_size=3,
-        above_threshold_unseg_num=0,
-        below_threshold_num=-1,
+        segment_number_unassigned=0,
+        segment_number_below_threshold=-1,
     )
 
     correct_seg_arr = np.full((50, 50), -1, dtype=np.int32)
@@ -1018,8 +1018,8 @@ def test_pbc_snake_segmentation():
         PBC_flag="hdim_1",
         seed_3D_flag="box",
         seed_3D_size=3,
-        above_threshold_unseg_num=0,
-        below_threshold_num=-1,
+        segment_number_unassigned=0,
+        segment_number_below_threshold=-1,
     )
     seg_out_arr = seg_output.core_data()
 
@@ -1109,8 +1109,8 @@ def test_seg_alt_unseed_num(below_thresh, above_thresh, error):
                 1,
                 threshold=1,
                 PBC_flag="none",
-                below_threshold_num=below_thresh,
-                above_threshold_unseg_num=above_thresh,
+                segment_number_below_threshold=below_thresh,
+                segment_number_unassigned=above_thresh,
             )
     else:
         seg_output, seg_feats = segmentation.segmentation_timestep(
@@ -1119,8 +1119,8 @@ def test_seg_alt_unseed_num(below_thresh, above_thresh, error):
             1,
             threshold=1,
             PBC_flag="none",
-            below_threshold_num=below_thresh,
-            above_threshold_unseg_num=above_thresh,
+            segment_number_below_threshold=below_thresh,
+            segment_number_unassigned=above_thresh,
         )
 
         correct_seg_arr = np.full((50, 50), below_thresh, dtype=np.int32)

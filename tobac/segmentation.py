@@ -320,8 +320,8 @@ def segmentation_timestep(
     PBC_flag="none",
     seed_3D_flag="column",
     seed_3D_size=5,
-    below_threshold_num=0,
-    above_threshold_unseg_num=0,
+    segment_number_below_threshold=0,
+    segment_number_unassigned=0,
 ):
     """Perform watershedding for an individual time step of the data. Works
     for both 2D and 3D data
@@ -379,9 +379,9 @@ def segmentation_timestep(
         seed area for each dimension separately. Note: we recommend the use
         of odd numbers for this. If you give an even number, your seed box will be
         biased and not centered around the feature.
-    below_threshold_num: int
+    segment_number_below_threshold: int
         the marker to use to indicate a segmentation point is below the threshold.
-    above_threshold_unseg_num: int
+    segment_number_unassigned: int
         the marker to use to indicate a segmentation point is above the threshold but unsegmented.
 
     Returns
@@ -447,7 +447,7 @@ def segmentation_timestep(
             "Segmentation routine only possible with 2 or 3 spatial dimensions"
         )
 
-    if below_threshold_num > 0 or above_threshold_unseg_num > 0:
+    if segment_number_below_threshold > 0 or segment_number_unassigned > 0:
         raise ValueError("Below/above threshold markers must be <=0")
 
     # copy feature dataframe for output
@@ -994,9 +994,10 @@ def segmentation_timestep(
 
     # Finished PBC checks and new PBC updated segmentation now in segmentation_mask.
     # Write resulting mask into cube for output
-    segmentation_mask_cpy = copy.deepcopy(segmentation_mask)
-    segmentation_mask[segmentation_mask_cpy == 0] = above_threshold_unseg_num
-    segmentation_mask[segmentation_mask_cpy == -1] = below_threshold_num
+    wh_below_threshold = segmentation_mask == -1
+    wh_unsegmented = segmentation_mask == 0
+    segmentation_mask[wh_unsegmented] = segment_number_unassigned
+    segmentation_mask[wh_below_threshold] = segment_number_below_threshold
     segmentation_out.data = segmentation_mask
 
     # count number of grid cells associated to each tracked cell and write that into DataFrame:
@@ -1158,9 +1159,9 @@ def segmentation(
             seed area for each dimension separately. Note: we recommend the use
             of odd numbers for this. If you give an even number, your seed box will be
             biased and not centered around the feature.
-        below_threshold_num: int
+        segment_number_below_threshold: int
             the marker to use to indicate a segmentation point is below the threshold.
-        above_threshold_unseg_num: int
+        segment_number_unassigned: int
             the marker to use to indicate a segmentation point is above the threshold but unsegmented.
 
 
@@ -1219,8 +1220,8 @@ def segmentation(
             PBC_flag=PBC_flag,
             seed_3D_flag=seed_3D_flag,
             seed_3D_size=seed_3D_size,
-            above_threshold_unseg_num=above_threshold_unseg_num,
-            below_threshold_num=below_threshold_num,
+            segment_number_unassigned=above_threshold_unseg_num,
+            segment_number_below_threshold=below_threshold_num,
         )
         segmentation_out_list.append(segmentation_out_i)
         features_out_list.append(features_out_i)
