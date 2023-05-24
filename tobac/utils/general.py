@@ -633,31 +633,23 @@ def transform_feature_points(
     ll_tree = sklearn.neighbors.BallTree(
         np.array([flat_lats_nona, flat_lons_nona]).T, metric="haversine"
     )
-    new_h1 = list()
-    new_h2 = list()
-    # there is almost certainly room for speedup in here.
-    for index in features["index"]:
-        dist, closest_pt = ll_tree.query(
-            [
-                [
-                    np.deg2rad(features["latitude"][index]),
-                    np.deg2rad(features["longitude"][index]),
-                ]
-            ]
-        )
-        unraveled_h1, unraveled_h2 = np.unravel_index(
-            loc_arr_trimmed[closest_pt[0][0]], np.shape(lat_vals_new)
-        )
 
-        new_h1.append(unraveled_h1)
-        new_h2.append(unraveled_h2)
     ret_features = copy.deepcopy(features)
-    ret_features["hdim_1"] = ("index", new_h1)
-    ret_features["hdim_2"] = ("index", new_h2)
+
+    # there is almost certainly room for speedup in here.
+    rad_lats = np.deg2rad(features[lat_coord])
+    rad_lons = np.deg2rad(features[lon_coord])
+    dists, closest_pts = ll_tree.query(np.column_stack((rad_lats, rad_lons)))
+    unraveled_h1, unraveled_h2 = np.unravel_index(
+        loc_arr_trimmed[closest_pts[:, 0]], np.shape(lat_vals_new)
+    )
+
+    ret_features["hdim_1"] = ("index", unraveled_h1)
+    ret_features["hdim_2"] = ("index", unraveled_h2)
 
     # find where distances are too large and drop them.
-    new_lat = lat_vals_new[new_h1, new_h2]
-    new_lon = lon_vals_new[new_h1, new_h2]
+    new_lat = lat_vals_new[unraveled_h1, unraveled_h2]
+    new_lon = lon_vals_new[unraveled_h1, unraveled_h2]
     dist_apart = (
         tb_analysis.haversine(
             new_lat, new_lon, features[lat_coord], features[lon_coord]
