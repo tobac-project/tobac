@@ -3,6 +3,7 @@
 import numpy as np
 import skimage.measure
 import xarray as xr
+import iris
 
 
 def get_label_props_in_dict(labels):
@@ -454,16 +455,21 @@ def find_vertical_axis_from_coord(variable_cube, vertical_coord="auto"):
     ValueError
         Raised if the vertical coordinate isn't found in the cube.
     """
+    list_vertical = [
+        "z",
+        "model_level_number",
+        "altitude",
+        "geopotential_height",
+    ]
 
-    list_coord_names = [coord.name() for coord in variable_cube.coords()]
+    if isinstance(variable_cube, iris.cube.Cube):
+        list_coord_names = [coord.name() for coord in variable_cube.coords()]
+    elif isinstance(variable_cube, xr.Dataset) or isinstance(
+        variable_cube, xr.DataArray
+    ):
+        list_coord_names = variable_cube.coords
 
     if vertical_coord == "auto":
-        list_vertical = [
-            "z",
-            "model_level_number",
-            "altitude",
-            "geopotential_height",
-        ]
         # find the intersection
         all_vertical_axes = list(set(list_coord_names) & set(list_vertical))
         if len(all_vertical_axes) >= 1:

@@ -564,8 +564,10 @@ def transform_feature_points(
     new_dataset,
     latitude_name="auto",
     longitude_name="auto",
+    altitude_name="auto",
     max_time_away=datetime.timedelta(minutes=0),
     max_space_away=0,
+    max_vspace_away=0,
 ):
     """Function to transform input feature dataset horizontal grid points to a different grid.
     The typical use case for this function is to transform detected features to perform
@@ -600,6 +602,11 @@ def transform_feature_points(
     from .. import analysis as tb_analysis
 
     RADIUS_EARTH_M = 6371000
+    is_3D = "vdim" in features
+    if is_3D:
+        vert_coord = internal_utils.find_vertical_axis_from_coord(
+            new_dataset, altitude_name
+        )
 
     lat_coord, lon_coord = internal_utils.detect_latlon_coord_name(
         new_dataset, latitude_name=latitude_name, longitude_name=longitude_name
@@ -650,13 +657,26 @@ def transform_feature_points(
     ret_features["hdim_1"] = ("index", unraveled_h1)
     ret_features["hdim_2"] = ("index", unraveled_h2)
 
-    # find where distances are too large and drop them.
-    new_lat = lat_vals_new[unraveled_h1, unraveled_h2]
-    new_lon = lon_vals_new[unraveled_h1, unraveled_h2]
-
-    dist_cond = xr.DataArray(
-        (dists[:, 0] * RADIUS_EARTH_M) < max_space_away, dims="index"
-    )
+    # now interpolate vertical, if available.
+    if is_3D:
+        alt_tree = sklearn.neighbors.BallTree(
+            new_dataset[vert_coord].values[:, np.newaxis]
+        )
+        alt_dists, closest_alt_pts = alt_tree.query(
+            features[vert_coord].values[:, np.newaxis]
+        )
+        ret_features["vdim"] = ("index", closest_alt_pts[:, 0])
+        dist_cond = xr.DataArray(
+            np.logical_or(
+                (dists[:, 0] * RADIUS_EARTH_M) < max_space_away,
+                alt_dists[:, 0] < max_vspace_away,
+            ),
+            dims="index",
+        )
+    else:
+        dist_cond = xr.DataArray(
+            (dists[:, 0] * RADIUS_EARTH_M) < max_space_away, dims="index"
+        )
     ret_features = ret_features.where(dist_cond, drop=True)
 
     # force times to match, where appropriate.
