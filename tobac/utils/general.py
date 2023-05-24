@@ -687,8 +687,9 @@ def transform_feature_points(
     if "time" in new_dataset.coords:
         # this is necessary due to the iris/xarray/pandas weirdness that we have.
         old_feat_times = ret_features["time"].astype("datetime64[s]")
-        closest_times = np.min(np.abs(old_feat_times - new_dataset["time"]), axis=1)
-        closest_time_locs = np.abs(old_feat_times - new_dataset["time"]).argmin(axis=1)
+        new_dataset_times = new_dataset["time"].astype("datetime64[s]")
+        closest_times = np.min(np.abs(old_feat_times - new_dataset_times), axis=1)
+        closest_time_locs = np.abs(old_feat_times - new_dataset_times).argmin(axis=1)
         # force to seconds to deal with iris not accepting ms
         ret_features["time"] = new_dataset["time"][closest_time_locs].astype(
             "datetime64[s]"
