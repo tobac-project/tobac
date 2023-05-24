@@ -700,7 +700,7 @@ def detect_latlon_coord_name(in_dataset, latitude_name="auto", longitude_name="a
     out_lon = None
     test_lat_names = ["lat", "latitude"]
     test_lon_names = ["lon", "long", "longitude"]
-    if latitude_name != "auto":
+    if latitude_name.lower() != "auto":
         if latitude_name in in_dataset.coords:
             out_lat = latitude_name
     else:
@@ -708,7 +708,7 @@ def detect_latlon_coord_name(in_dataset, latitude_name="auto", longitude_name="a
             if test_lat_name in in_dataset.coords:
                 out_lat = test_lat_name
                 break
-    if longitude_name != "auto":
+    if longitude_name.lower() != "auto":
         if longitude_name in in_dataset.coords:
             out_lon = longitude_name
     else:
