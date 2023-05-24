@@ -575,7 +575,8 @@ def transform_feature_points(
 
     The existing feature dataset must have some latitude/longitude coordinates associated
     with each feature, and the new_dataset must have latitude/longitude available with
-    the same name.
+    the same name. Note that due to xarray/iris incompatibilities, we suggest that the
+    input coordinates match the standard_name from Iris.
 
     Parameters
     ----------
@@ -587,11 +588,14 @@ def transform_feature_points(
         The name of the latitude coordinate. If "auto", tries to auto-detect.
     longitude_name: str
         The name of the longitude coordinate. If "auto", tries to auto-detect.
+    longitude_name: str
+        The name of the altitude coordinate. If "auto", tries to auto-detect.
     max_time_away: datetime.timedelta
         The maximum time delta to associate feature points away from.
     max_space_away: float
         The maximum horizontal distance (in meters) to transform features to.
-
+    max_vspace_away: float
+        The maximum vertical distance (in meters) to transform features to.
     Returns
     -------
     transformed_features: pd.DataFrame
