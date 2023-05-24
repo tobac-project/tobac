@@ -8,6 +8,7 @@ import numpy as np
 import sklearn
 import sklearn.neighbors
 import datetime
+import xarray as xr
 
 
 def add_coordinates(t, variable_cube):
@@ -598,6 +599,8 @@ def transform_feature_points(
     """
     from .. import analysis as tb_analysis
 
+    RADIUS_EARTH_M = 6371000
+
     lat_coord, lon_coord = internal_utils.detect_latlon_coord_name(
         new_dataset, latitude_name=latitude_name, longitude_name=longitude_name
     )
@@ -650,13 +653,11 @@ def transform_feature_points(
     # find where distances are too large and drop them.
     new_lat = lat_vals_new[unraveled_h1, unraveled_h2]
     new_lon = lon_vals_new[unraveled_h1, unraveled_h2]
-    dist_apart = (
-        tb_analysis.haversine(
-            new_lat, new_lon, features[lat_coord], features[lon_coord]
-        )
-        * 1000.0
+
+    dist_cond = xr.DataArray(
+        (dists[:, 0] * RADIUS_EARTH_M) < max_space_away, dims="index"
     )
-    ret_features = ret_features.where(dist_apart < max_space_away, drop=True)
+    ret_features = ret_features.where(dist_cond, drop=True)
 
     # force times to match, where appropriate.
     if "time" in new_dataset.coords:
