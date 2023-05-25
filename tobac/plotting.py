@@ -356,7 +356,6 @@ def plot_tracks_mask_field(
     if np.any(
         ~np.isnan(field.data)
     ):  # check if field to plot is not only nan, which causes error:
-
         plot_field = iplt.contourf(
             field,
             coords=["longitude", "latitude"],
@@ -584,7 +583,6 @@ def plot_mask_cell_track_follow(
 
     track_cell = track[track["cell"] == cell]
     for i_row, row in track_cell.iterrows():
-
         constraint_time = Constraint(time=row["time"])
         constraint_x = Constraint(
             projection_x_coordinate=lambda cell: row["projection_x_coordinate"] - width
@@ -838,7 +836,6 @@ def plot_mask_cell_individual_follow(
         )
 
     if cog is not None:
-
         for i_row, row in cog.iterrows():
             cell = row["cell"]
 
@@ -857,7 +854,6 @@ def plot_mask_cell_individual_follow(
             )
 
     if features is not None:
-
         for i_row, row in features.iterrows():
             color = "purple"
             axes.plot(
@@ -934,7 +930,6 @@ def plot_mask_cell_track_static(
     )
     time_cell = time[slice(i_start, i_end)]
     for time_i in time_cell:
-
         #    for i_row,row in track_cell.iterrows():
         #        time_i=row['time']
         #        constraint_time = Constraint(time=row['time'])
@@ -1208,7 +1203,6 @@ def plot_mask_cell_individual_static(
             linewidth=1,
         )
     if cog is not None:
-
         for i_row, row in cog.iterrows():
             cell = row["cell"]
 
@@ -1227,7 +1221,6 @@ def plot_mask_cell_individual_static(
             )
 
     if features is not None:
-
         for i_row, row in features.iterrows():
             color = "purple"
             axes.plot(
@@ -1307,7 +1300,6 @@ def plot_mask_cell_track_2D3Dstatic(
     )
     time_cell = time[slice(i_start, i_end)]
     for time_i in time_cell:
-
         #    for i_row,row in track_cell.iterrows():
         #        time_i=row['time']
         #        constraint_time = Constraint(time=row['time'])
@@ -1485,7 +1477,6 @@ def plot_mask_cell_track_3Dstatic(
     )
     time_cell = time[slice(i_start, i_end)]
     for time_i in time_cell:
-
         #    for i_row,row in track_cell.iterrows():
         #        time_i=row['time']
         #        constraint_time = Constraint(time=row['time'])
@@ -1857,7 +1848,6 @@ def plot_mask_cell_track_static_timeseries(
     )
     time_cell = time[slice(i_start, i_end)]
     for time_i in time_cell:
-
         constraint_time = Constraint(time=time_i)
         constraint_x = Constraint(
             projection_x_coordinate=lambda cell: x_min < cell < x_max

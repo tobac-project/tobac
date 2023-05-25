@@ -21,6 +21,8 @@ import logging
 import numpy as np
 import pandas as pd
 from scipy.spatial import KDTree
+from sklearn.neighbors import BallTree
+from tobac.tracking import build_distance_function
 from tobac.utils import internal as internal_utils
 from tobac.utils import periodic_boundaries as pbc_utils
 from tobac.utils.general import spectral_filtering
@@ -1350,13 +1352,8 @@ def filter_min_distance(
     pandas DataFrame
         features after filtering
     """
-
-    from itertools import combinations
-
     if dxy is None:
         raise NotImplementedError("dxy currently must be set.")
-
-    remove_list_distance = []
 
     # if PBC_flag != "none":
     #    raise NotImplementedError("We haven't yet implemented PBCs into this.")
@@ -1416,17 +1413,26 @@ def filter_min_distance(
     # Create array of flags for features to remove
     removal_flag = np.zeros(len(features), dtype=bool)
 
-    # Create KDTree of feature locations in cartesian coordinates
-    # TODO: Add periodic BCs
-    features_tree = KDTree(feature_locations)
+    # Create Tree of feature locations in cartesian coordinates
+    # Check if we have PBCs.
+    if PBC_flag in ["hdim_1", "hdim_2", "both"]:
+        # Note that we multiply by dxy to get the distances in spatial coordinates
+        dist_func = build_distance_function(
+            min_h1 * dxy, max_h1 * dxy, min_h2 * dxy, max_h2 * dxy, PBC_flag
+        )
+        features_tree = BallTree(feature_locations, metric="pyfunc", func=dist_func)
+        neighbours = features_tree.query_radius(feature_locations, r=min_distance)
 
-    # Find neighbours for each point
-    neighbours = features_tree.query_ball_tree(features_tree, r=min_distance)
+    else:
+        features_tree = KDTree(feature_locations)
+        # Find neighbours for each point
+        neighbours = features_tree.query_ball_tree(features_tree, r=min_distance)
 
     # Iterate over list of neighbours to find which features to remove
     for i, neighbour_list in enumerate(neighbours):
         if len(neighbour_list) > 1:
             # Remove the feature we're interested in as it's always included
+            neighbour_list = list(neighbour_list)
             neighbour_list.remove(i)
             # If maximum target check if any neighbours have a larger threshold value
             if target == "maximum" and np.any(
