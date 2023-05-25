@@ -1009,14 +1009,18 @@ def segmentation_timestep(
                 features_out.loc[features_out.feature == row["feature"], "mean"] = feature_mean
                 features_out.loc[features_out.feature == row["feature"], "max"] = feature_max
                 features_out.loc[features_out.feature == row["feature"], "min"] = feature_min
-                # store numpy array with percentiles as cell in data frame 
-                df = pd.DataFrame({"percentiles": [feature_percentiles]})
-                features_out["percentiles"] = np.nan
-                features_out.iloc[features_out.index[features_out.feature == row["feature"]], features_out.columns.get_loc("percentiles")] = df.apply(lambda r: tuple(r), axis=1)
                 features_out.loc[features_out.feature == row["feature"], "sum"] = feature_sum
-                features_out.loc[features_out.feature == row["feature"], "major_axis_length"] = feature_axis
+                features_out.loc[features_out.feature == row["feature"], "major_axis_length"] = feature_axis 
+                
+                # save percentiles of data distribution within feature 
+                if index ==  features_out[features_out.ncells > 0 ].index[0]:
+                    # here, we need to initialize the column first since .loc indexing does not work with pd.Series 
+                    features_out["percentiles"] = np.nan
+                # store numpy array with percentiles as cell in data frame
+                df = pd.DataFrame({"percentiles": [feature_percentiles]})
+                features_out.iloc[features_out.index[features_out.feature == row["feature"]], features_out.columns.get_loc("percentiles")] = df.apply(lambda r: tuple(r), axis= 1)
+                
     return segmentation_out, features_out
-
 
 
 def check_add_unseeded_across_bdrys(
