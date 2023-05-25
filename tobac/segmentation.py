@@ -321,7 +321,7 @@ def segmentation_timestep(
     PBC_flag="none",
     seed_3D_flag="column",
     seed_3D_size=5,
-        statistics = False,
+    statistics=False,
 ):
     """Perform watershedding for an individual time step of the data. Works
     for both 2D and 3D data
@@ -1002,24 +1002,46 @@ def segmentation_timestep(
             features_out.loc[features_out.feature == row["feature"], "ncells"] = counts[
                 row["feature"]
             ]
-            
+
             if statistics:
-                feature_mean, feature_max, feature_min, feature_percentiles, feature_sum, feature_axis = tb_utils.general.get_statistics(row["feature"], segmentation_mask.copy(), field_in.data.copy())
-                # write the statistics to feature output dataframe 
-                features_out.loc[features_out.feature == row["feature"], "mean"] = feature_mean
-                features_out.loc[features_out.feature == row["feature"], "max"] = feature_max
-                features_out.loc[features_out.feature == row["feature"], "min"] = feature_min
-                features_out.loc[features_out.feature == row["feature"], "sum"] = feature_sum
-                features_out.loc[features_out.feature == row["feature"], "major_axis_length"] = feature_axis 
-                
-                # save percentiles of data distribution within feature 
-                if index ==  features_out[features_out.ncells > 0 ].index[0]:
-                    # here, we need to initialize the column first since .loc indexing does not work with pd.Series 
+                (
+                    feature_mean,
+                    feature_max,
+                    feature_min,
+                    feature_percentiles,
+                    feature_sum,
+                    feature_axis,
+                ) = tb_utils.general.get_statistics(
+                    row["feature"], segmentation_mask.copy(), field_in.data.copy()
+                )
+                # write the statistics to feature output dataframe
+                features_out.loc[
+                    features_out.feature == row["feature"], "mean"
+                ] = feature_mean
+                features_out.loc[
+                    features_out.feature == row["feature"], "max"
+                ] = feature_max
+                features_out.loc[
+                    features_out.feature == row["feature"], "min"
+                ] = feature_min
+                features_out.loc[
+                    features_out.feature == row["feature"], "sum"
+                ] = feature_sum
+                features_out.loc[
+                    features_out.feature == row["feature"], "major_axis_length"
+                ] = feature_axis
+
+                # save percentiles of data distribution within feature
+                if index == features_out[features_out.ncells > 0].index[0]:
+                    # here, we need to initialize the column first since .loc indexing does not work with pd.Series
                     features_out["percentiles"] = np.nan
                 # store numpy array with percentiles as cell in data frame
                 df = pd.DataFrame({"percentiles": [feature_percentiles]})
-                features_out.iloc[features_out.index[features_out.feature == row["feature"]], features_out.columns.get_loc("percentiles")] = df.apply(lambda r: tuple(r), axis= 1)
-                
+                features_out.iloc[
+                    features_out.index[features_out.feature == row["feature"]],
+                    features_out.columns.get_loc("percentiles"),
+                ] = df.apply(lambda r: tuple(r), axis=1)
+
     return segmentation_out, features_out
 
 
@@ -1100,7 +1122,7 @@ def segmentation(
     PBC_flag="none",
     seed_3D_flag="column",
     seed_3D_size=5,
-    statistics = False,
+    statistics=False,
 ):
     """Use watershedding to determine region above a threshold
         value around initial seeding position for all time steps of
@@ -1227,7 +1249,7 @@ def segmentation(
             PBC_flag=PBC_flag,
             seed_3D_flag=seed_3D_flag,
             seed_3D_size=seed_3D_size,
-            statistics = statistics,
+            statistics=statistics,
         )
         segmentation_out_list.append(segmentation_out_i)
         features_out_list.append(features_out_i)
@@ -1253,5 +1275,3 @@ def watershedding_2D(track, field_in, **kwargs):
     """Wrapper for the segmentation()-function."""
     kwargs.pop("method", None)
     return segmentation_2D(track, field_in, method="watershed", **kwargs)
-
-
