@@ -555,40 +555,41 @@ def combine_tobac_feats(list_of_feats, preserve_old_feat_nums=None):
 
 def get_statistics(feature_ID, segmentation_mask, field_in):
     """
-    Derive bulk statistics of all data point that are attributed to a certain feature
-    after segmentation. 
+     Derive bulk statistics of all data point that are attributed to a certain feature
+     after segmentation.
 
-    Parameters
-    ----------
-    feature_ID: int
-        The ID of a certain feature for which to extract the statistics. 
-    segmentation_mask: ndarray 
-        2D or 3D segmentation mask for the timestep wherein the feature occurs.
-    field_in: ndarray
-        2D or 3D field with data points for specific timestep (should have the same shape as the segmentation mask). 
+     Parameters
+     ----------
+     feature_ID: int
+         The ID of a certain feature for which to extract the statistics.
+     segmentation_mask: ndarray
+         2D or 3D segmentation mask for the timestep wherein the feature occurs.
+     field_in: ndarray
+         2D or 3D field with data points for specific timestep (should have the same shape as the segmentation mask).
 
-    Returns
-    -------
+     Returns
+     -------
 
-    feature_mean: float
-        mean value of data points within feature 
-    feature_max: float  
-        max value of data points within feature
-    feature_min: float  
-        min value of data points within feature 
-    feature_percentiles: ndarray
-        percentiles from 0 to 100 of data distribution within feature  
-   feature_sum: float
-        sum of all data points within feature (e.g. total precipitation)
-   feature_axis: float 
-        length of major axis of feature 
-  
+     feature_mean: float
+         mean value of data points within feature
+     feature_max: float
+         max value of data points within feature
+     feature_min: float
+         min value of data points within feature
+     feature_percentiles: ndarray
+         percentiles from 0 to 100 of data distribution within feature
+    feature_sum: float
+         sum of all data points within feature (e.g. total precipitation)
+    feature_axis: float
+         length of major axis of feature
+
     """
-    from skimage.measure import regionprops  
+    from skimage.measure import regionprops
+
     # get data points that belong to feature
     data_points = field_in[segmentation_mask == feature_ID]
 
-    # get statistics for these data points 
+    # get statistics for these data points
     feature_mean = np.nanmean(data_points)
     feature_max = np.nanmax(data_points)
     feature_min = np.nanmin(data_points)
@@ -596,11 +597,17 @@ def get_statistics(feature_ID, segmentation_mask, field_in):
     feature_sum = np.nansum(data_points)
 
     # get other region properties
-    segmentation_mask[segmentation_mask!= feature_ID] = 0 # set segmentation mask for other features to 0 
+    segmentation_mask[
+        segmentation_mask != feature_ID
+    ] = 0  # set segmentation mask for other features to 0
     regions = regionprops(segmentation_mask)
     feature_axis = regions[0].major_axis_length
-   
-    return feature_mean, feature_max, feature_min, feature_percentiles, feature_sum, feature_axis 
 
-
-
+    return (
+        feature_mean,
+        feature_max,
+        feature_min,
+        feature_percentiles,
+        feature_sum,
+        feature_axis,
+    )
