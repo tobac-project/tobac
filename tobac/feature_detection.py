@@ -592,7 +592,7 @@ def feature_detection_multithreshold_timestep(
     wavelength_filtering: tuple, optional
        Minimum and maximum wavelength for spectral filtering in meter. Default is None.
 
-    strict_tresholding: Bool, optional
+    strict_thresholding: Bool, optional
         If True, a feature can only be detected if all previous thresholds have been met.
         Default is False.
 
@@ -752,6 +752,7 @@ def feature_detection_multithreshold(
     detect_subset=None,
     wavelength_filtering=None,
     dz=None,
+    strict_thresholding=False,
 ):
     """Perform feature detection based on contiguous regions.
 
@@ -828,6 +829,10 @@ def feature_detection_multithreshold(
         in the `features` input. If you specify a value here, this function assumes
         that it is the constant z spacing between points, even if ```z_coordinate_name```
         is specified.
+
+    strict_thresholding: Bool, optional
+        If True, a feature can only be detected if all previous thresholds have been met.
+        Default is False.
 
     Returns
     -------
@@ -952,6 +957,7 @@ def feature_detection_multithreshold(
             vertical_axis=vertical_axis,
             dxy=dxy,
             wavelength_filtering=wavelength_filtering,
+            strict_thresholding=strict_thresholding,
         )
         # check if list of features is not empty, then merge features from different threshold values
         # into one DataFrame and append to list for individual timesteps:
