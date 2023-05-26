@@ -1091,8 +1091,8 @@ def segmentation(
     PBC_flag="none",
     seed_3D_flag="column",
     seed_3D_size=5,
-    below_threshold_num=0,
-    above_threshold_unseg_num=0,
+    segment_number_below_threshold=0,
+    segment_number_unassigned=0,
 ):
     """Use watershedding to determine region above a threshold
         value around initial seeding position for all time steps of
@@ -1220,8 +1220,8 @@ def segmentation(
             PBC_flag=PBC_flag,
             seed_3D_flag=seed_3D_flag,
             seed_3D_size=seed_3D_size,
-            segment_number_unassigned=above_threshold_unseg_num,
-            segment_number_below_threshold=below_threshold_num,
+            segment_number_unassigned=segment_number_unassigned,
+            segment_number_below_threshold=segment_number_below_threshold,
         )
         segmentation_out_list.append(segmentation_out_i)
         features_out_list.append(features_out_i)
