@@ -22,16 +22,20 @@ def get_version(pkg_name):
     else:
         raise RuntimeError("Unable to find version string.")
 
+
 def get_requirements(requirements_filename):
     requirements_file = Path(__file__).parent / requirements_filename
     assert requirements_file.exists()
     with open(requirements_file) as f:
-        requirements = [line.strip() for line in f.readlines() if not line.startswith("#")]
+        requirements = [
+            line.strip() for line in f.readlines() if not line.startswith("#")
+        ]
     # Iris has a different name on PyPI...
     if "iris" in requirements:
         requirements.remove("iris")
         requirements.append("scitools-iris")
     return requirements
+
 
 PACKAGE_NAME = "tobac"
 

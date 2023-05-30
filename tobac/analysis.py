@@ -245,7 +245,6 @@ def cell_statistics(
             cube_masked = mask_cube_cell(cube, mask_cell_i, cell, track_i)
             coords_remove = []
             for coordinate in cube_masked.coords(dim_coords=False):
-
                 if coordinate.name() not in dimensions:
                     for dim in dimensions:
                         if set(cube_masked.coord_dims(coordinate)).intersection(
