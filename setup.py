@@ -22,6 +22,12 @@ def get_version(pkg_name):
     else:
         raise RuntimeError("Unable to find version string.")
 
+def get_requirements(requirements_filename):
+    requirements_file = Path(__file__).parent / requirements_filename
+    assert requirements_file.exists()
+    with open(requirements_file) as f:
+        requirements = [line.strip() for line in f.readlines() if not line.startswith("#")]
+    return requirements
 
 PACKAGE_NAME = "tobac"
 
@@ -73,18 +79,7 @@ setup(
     ],
     license="BSD-3-Clause License",
     packages=[PACKAGE_NAME, PACKAGE_NAME + ".utils"],
-    install_requires=[
-        "numpy",
-        "scipy",
-        "scikit-image",
-        "scikit-learn",
-        "pandas",
-        "matplotlib",
-        "xarray",
-        "trackpy",
-    ],
-    test_requires=[
-        "pytest",
-    ],
+    install_requires=get_requirements("requirements.txt"),
+    test_requires=["pytest"],
     zip_safe=False,
 )
