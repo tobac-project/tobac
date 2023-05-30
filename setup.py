@@ -77,7 +77,7 @@ setup(
         "max.heikenfeld@physics.ox.ac.uk",
         "william.jones@physics.ox.ac.uk",
         "senf@tropos.de",
-        "sean.freeman@colostate.edu",
+        "sean.freeman@uah.edu",
         "julia.kukulies@gu.se",
         "peter.marinescu@colostate.edu",
     ],
