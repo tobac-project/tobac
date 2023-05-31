@@ -9,3 +9,7 @@ iris
 xarray
 cartopy
 trackpy
+jupyter
+notebook
+pytables
+pyart

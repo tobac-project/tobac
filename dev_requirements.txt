@@ -9,3 +9,7 @@ iris
 xarray
 cartopy
 trackpy
+pre-commit
+black
+pytest
+
