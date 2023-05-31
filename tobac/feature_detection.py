@@ -711,7 +711,9 @@ def feature_detection_multithreshold_timestep(
             if regions_i:
                 # remove data in regions where no features were detected
                 valid_regions: np.ndarray = np.zeros_like(track_data)
-                region_indices: list[int] = list(regions_i.values())[0]  # linear indices
+                region_indices: list[int] = list(regions_i.values())[
+                    0
+                ]  # linear indices
                 valid_regions.ravel()[region_indices] = 1
                 track_data: np.ndarray = np.multiply(valid_regions, track_data)
             else:
