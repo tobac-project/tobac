@@ -27,7 +27,7 @@ def add_coordinates(t, variable_cube):
 
     """
 
-    from scipy.interpolate import interp2d, interp1d
+    from scipy.interpolate import interp1d, interpn
 
     logging.debug("start adding coordinates from cube")
 
@@ -91,56 +91,56 @@ def add_coordinates(t, variable_cube):
         # interpolate 2D coordinates:
         elif variable_cube.coord(coord).ndim == 2:
             if variable_cube.coord_dims(coord) == (hdim_1, hdim_2):
-                f = interp2d(dimvec_2, dimvec_1, variable_cube.coord(coord).points)
-                coordinate_points = np.asarray(
-                    [f(a, b) for a, b in zip(t["hdim_2"], t["hdim_1"])]
-                )
+                points = (dimvec_1, dimvec_2)
+                values = variable_cube.coord(coord).points
+                xi = np.column_stack((t["hdim_1"], t["hdim_2"]))
+                coordinate_points = interpn(points, values, xi)
 
             if variable_cube.coord_dims(coord) == (hdim_2, hdim_1):
-                f = interp2d(dimvec_1, dimvec_2, variable_cube.coord(coord).points)
-                coordinate_points = np.asarray(
-                    [f(a, b) for a, b in zip(t["hdim_1"], t["hdim_2"])]
-                )
+                points = (dimvec_2, dimvec_1)
+                values = variable_cube.coord(coord).points
+                xi = np.column_stack((t["hdim_2"], t["hdim_1"]))
+                coordinate_points = interpn(points, values, xi)
 
         # interpolate 3D coordinates:
         # mainly workaround for wrf latitude and longitude (to be fixed in future)
 
         elif variable_cube.coord(coord).ndim == 3:
             if variable_cube.coord_dims(coord) == (ndim_time, hdim_1, hdim_2):
-                f = interp2d(
-                    dimvec_2, dimvec_1, variable_cube[0, :, :].coord(coord).points
-                )
-                coordinate_points = [f(a, b) for a, b in zip(t["hdim_2"], t["hdim_1"])]
+                points = (dimvec_1, dimvec_2)
+                values = variable_cube[0, :, :].coord(coord).points
+                xi = np.column_stack((t["hdim_1"], t["hdim_2"]))
+                coordinate_points = interpn(points, values, xi)
 
             if variable_cube.coord_dims(coord) == (ndim_time, hdim_2, hdim_1):
-                f = interp2d(
-                    dimvec_1, dimvec_2, variable_cube[0, :, :].coord(coord).points
-                )
-                coordinate_points = [f(a, b) for a, b in zip(t["hdim_1"], t["hdim_2"])]
+                points = (dimvec_2, dimvec_1)
+                values = variable_cube[0, :, :].coord(coord).points
+                xi = np.column_stack((t["hdim_2"], t["hdim_1"]))
+                coordinate_points = interpn(points, values, xi)
 
             if variable_cube.coord_dims(coord) == (hdim_1, ndim_time, hdim_2):
-                f = interp2d(
-                    dimvec_2, dimvec_1, variable_cube[:, 0, :].coord(coord).points
-                )
-                coordinate_points = [f(a, b) for a, b in zip(t["hdim_2"], t["hdim_1"])]
+                points = (dimvec_1, dimvec_2)
+                values = variable_cube[:, 0, :].coord(coord).points
+                xi = np.column_stack((t["hdim_1"], t["hdim_2"]))
+                coordinate_points = interpn(points, values, xi)
 
             if variable_cube.coord_dims(coord) == (hdim_1, hdim_2, ndim_time):
-                f = interp2d(
-                    dimvec_2, dimvec_1, variable_cube[:, :, 0].coord(coord).points
-                )
-                coordinate_points = [f(a, b) for a, b in zip(t["hdim_2"], t["hdim1"])]
+                points = (dimvec_1, dimvec_2)
+                values = variable_cube[:, :, 0].coord(coord).points
+                xi = np.column_stack((t["hdim_1"], t["hdim_2"]))
+                coordinate_points = interpn(points, values, xi)
 
             if variable_cube.coord_dims(coord) == (hdim_2, ndim_time, hdim_1):
-                f = interp2d(
-                    dimvec_1, dimvec_2, variable_cube[:, 0, :].coord(coord).points
-                )
-                coordinate_points = [f(a, b) for a, b in zip(t["hdim_1"], t["hdim_2"])]
+                points = (dimvec_2, dimvec_1)
+                values = variable_cube[:, 0, :].coord(coord).points
+                xi = np.column_stack((t["hdim_2"], t["hdim_1"]))
+                coordinate_points = interpn(points, values, xi)
 
             if variable_cube.coord_dims(coord) == (hdim_2, hdim_1, ndim_time):
-                f = interp2d(
-                    dimvec_1, dimvec_2, variable_cube[:, :, 0].coord(coord).points
-                )
-                coordinate_points = [f(a, b) for a, b in zip(t["hdim_1"], t["hdim_2"])]
+                points = (dimvec_2, dimvec_1)
+                values = variable_cube[:, :, 0].coord(coord).points
+                xi = np.column_stack((t["hdim_2"], t["hdim_1"]))
+                coordinate_points = interpn(points, values, xi)
 
         # write resulting array or list into DataFrame:
         t[coord] = coordinate_points
@@ -264,10 +264,10 @@ def add_coordinates_3D(
         elif var_coord.ndim == 2:
             first_dim = coord_to_ax[variable_cube.coord_dims(coord)[1]]
             second_dim = coord_to_ax[variable_cube.coord_dims(coord)[0]]
-            f = interp2d(first_dim[0], second_dim[0], var_coord.points)
-            coordinate_points = [
-                f(a, b) for a, b in zip(t[first_dim[1]], t[second_dim[1]])
-            ]
+            points = (second_dim[0], first_dim[0])
+            values = var_coord.points
+            xi = np.column_stack((t[second_dim[1]], t[first_dim[1]]))
+            coordinate_points = interpn(points, values, xi)
 
         # Deal with the special case where the coordinate is 3D but
         # one of the dimensions is time and we assume the coordinates
@@ -282,10 +282,10 @@ def add_coordinates_3D(
             hdim2_pos = 1 if time_pos == 2 else 2
             first_dim = coord_to_ax[variable_cube.coord_dims(coord)[hdim2_pos]]
             second_dim = coord_to_ax[variable_cube.coord_dims(coord)[hdim1_pos]]
-            f = interp2d(first_dim[0], second_dim[0], var_coord.points)
-            coordinate_points = [
-                f(a, b) for a, b in zip(t[first_dim[1]], t[second_dim[1]])
-            ]
+            points = (second_dim[0], first_dim[0])
+            values = var_coord.points
+            xi = np.column_stack((t[second_dim[1]], t[first_dim[1]]))
+            coordinate_points = interpn(points, values, xi)
 
         # interpolate 3D coordinates:
         elif var_coord.ndim == 3:

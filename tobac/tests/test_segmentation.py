@@ -935,6 +935,8 @@ def test_empty_segmentation(PBC_flag):
         "dxy": test_dxy,
         "threshold": 1.5,
         "PBC_flag": PBC_flag,
+        "segment_number_unassigned": 0,
+        "segment_number_below_threshold": -1,
     }
     test_data_iris = testing.make_dataset_from_arr(
         seg_arr, data_type="iris", z_dim_num=0, y_dim_num=1, x_dim_num=2
@@ -981,6 +983,8 @@ def test_pbc_snake_segmentation():
         PBC_flag="hdim_2",
         seed_3D_flag="box",
         seed_3D_size=3,
+        segment_number_unassigned=0,
+        segment_number_below_threshold=-1,
     )
 
     correct_seg_arr = np.full((50, 50), -1, dtype=np.int32)
@@ -1017,6 +1021,8 @@ def test_pbc_snake_segmentation():
         PBC_flag="hdim_1",
         seed_3D_flag="box",
         seed_3D_size=3,
+        segment_number_unassigned=0,
+        segment_number_below_threshold=-1,
     )
     seg_out_arr = seg_output.core_data()
 
@@ -1079,3 +1085,52 @@ def test_max_distance():
     seg_out_arr = seg_output.core_data()
     assert np.all(correct_seg_arr == seg_out_arr)
     """
+
+
+@pytest.mark.parametrize(
+    ("below_thresh", "above_thresh", "error"),
+    ((0, 0, False), (0, -1, False), (-5, -10, False), (20, 30, True)),
+)
+def test_seg_alt_unseed_num(below_thresh, above_thresh, error):
+    """
+    Tests ```segmentation.segmentation_timestep``` to
+    make sure that the unseeded regions are labeled appropriately.
+
+    """
+    test_arr = np.zeros((50, 50))
+    test_arr[0:10, 0:10] = 10
+    test_arr[40:50, 40:50] = 10
+
+    fd_output = testing.generate_single_feature(5, 5, max_h1=50, max_h2=50)
+
+    test_data_iris = testing.make_dataset_from_arr(test_arr, data_type="iris")
+    if error:
+        with pytest.raises(ValueError):
+            seg_output, seg_feats = segmentation.segmentation_timestep(
+                test_data_iris,
+                fd_output,
+                1,
+                threshold=1,
+                PBC_flag="none",
+                segment_number_below_threshold=below_thresh,
+                segment_number_unassigned=above_thresh,
+            )
+    else:
+        seg_output, seg_feats = segmentation.segmentation_timestep(
+            test_data_iris,
+            fd_output,
+            1,
+            threshold=1,
+            PBC_flag="none",
+            segment_number_below_threshold=below_thresh,
+            segment_number_unassigned=above_thresh,
+        )
+
+        correct_seg_arr = np.full((50, 50), below_thresh, dtype=np.int32)
+        feat_num: int = 1
+        correct_seg_arr[0:10, 0:10] = feat_num
+        correct_seg_arr[10:40, 10:40] = below_thresh
+        correct_seg_arr[40:50, 40:50] = above_thresh
+
+        seg_out_arr = seg_output.core_data()
+        assert np.all(correct_seg_arr == seg_out_arr)
