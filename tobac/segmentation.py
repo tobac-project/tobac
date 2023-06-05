@@ -264,7 +264,7 @@ def segmentation_3D(
     max_distance=None,
     PBC_flag="none",
     seed_3D_flag="column",
-        statistics=False
+    statistics=False,
 ):
     """Wrapper for the segmentation()-function."""
 
@@ -279,7 +279,7 @@ def segmentation_3D(
         max_distance=max_distance,
         PBC_flag=PBC_flag,
         seed_3D_flag=seed_3D_flag,
-        statistics=statistics
+        statistics=statistics,
     )
 
 
@@ -294,7 +294,7 @@ def segmentation_2D(
     max_distance=None,
     PBC_flag="none",
     seed_3D_flag="column",
-        statistics= False,
+    statistics=False,
 ):
     """Wrapper for the segmentation()-function."""
     return segmentation(
@@ -308,7 +308,7 @@ def segmentation_2D(
         max_distance=max_distance,
         PBC_flag=PBC_flag,
         seed_3D_flag=seed_3D_flag,
-        statistics=statistics
+        statistics=statistics,
     )
 
 
@@ -327,7 +327,8 @@ def segmentation_timestep(
     seed_3D_size=5,
     segment_number_below_threshold=0,
     segment_number_unassigned=0,
-        statistics = False) :
+    statistics=False,
+):
     """Perform watershedding for an individual time step of the data. Works
     for both 2D and 3D data
 
@@ -1056,7 +1057,7 @@ def segmentation_timestep(
                 # get row index rather than pd.Dataframe index value since we need to use .iloc indexing
                 row_idx = np.where(features_out.feature == row["feature"])[0]
                 features_out.iloc[
-                row_idx,
+                    row_idx,
                     features_out.columns.get_loc("feature_percentiles"),
                 ] = df.apply(lambda r: tuple(r), axis=1)
 
@@ -1142,7 +1143,7 @@ def segmentation(
     seed_3D_size=5,
     segment_number_below_threshold=0,
     segment_number_unassigned=0,
-            statistics=False
+    statistics=False,
 ):
     """Use watershedding to determine region above a threshold
         value around initial seeding position for all time steps of
@@ -1278,7 +1279,6 @@ def segmentation(
             segment_number_unassigned=segment_number_unassigned,
             segment_number_below_threshold=segment_number_below_threshold,
             statistics=statistics,
-        
         )
         segmentation_out_list.append(segmentation_out_i)
         features_out_list.append(features_out_i)
