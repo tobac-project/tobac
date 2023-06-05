@@ -398,3 +398,59 @@ def test_combine_tobac_feats():
     )
     assert np.all(list(combined_feat["old_feat_column"].values) == [1, 1])
     assert np.all(list(combined_feat["feature"].values) == [1, 2])
+
+
+
+def test_get_statistics():
+    """
+    Test to assure that bulk statistics for identified features are computed as expected.
+ 
+    """
+    featureID = 1
+    
+    ### Test 2D data
+    data_2D = tb_test.make_simple_sample_data_2D()[10].data
+    data_2D[data_2D > 8 ] = 10 
+    data_2D[data_2D < 8 ] = 0 
+    segmentation_mask = data_2D.copy()
+    segmentation_mask[segmentation_mask > 8 ] = 1 
+    segmentation_mask = segmentation_mask.astype(int)
+
+    # get bulk statistics of identified features
+    feature_mean, feature_max, feature_min, feature_percentiles, feature_sum, feature_axis = tb_utils.general.get_statistics(featureID, segmentation_mask, data_2D)
+
+    # expected results
+    assert feature_mean == feature_max == feature_min == 10
+    assert feature_percentiles.size == 101
+    assert np.unique(feature_percentiles)[0] == 10
+    assert feature_sum == 10* data_2D[data_2D ==10 ].size
+
+    
+    ### Test 3D data 
+    data_3D = tb_test.make_sample_data_3D_3blobs()[10].data
+    
+    data_3D[data_3D > 8 ] = 10 
+    data_3D[data_3D < 8 ] = 0 
+    segmentation_mask_3D = data_3D.copy()
+    segmentation_mask_3D[segmentation_mask_3D > 8 ] = 1 
+    segmentation_mask_3D = segmentation_mask_3D.astype(int)
+
+    # get bulk statistics 
+    feature_mean, feature_max, feature_min, feature_percentiles, feature_sum, feature_axis = tb_utils.general.get_statistics(featureID, segmentation_mask_3D, data_3D)
+
+    # expected results
+    assert feature_mean == feature_max == feature_min == 10
+    assert feature_percentiles.size == 101
+    assert np.unique(feature_percentiles)[0] == 10
+    assert feature_sum == 10* data_3D[data_3D ==10 ].size
+
+
+
+
+
+
+
+
+
+
+    

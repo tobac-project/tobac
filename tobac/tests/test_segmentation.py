@@ -561,7 +561,6 @@ def test_different_z_axes(
                 threshold=1.5,
             )
 
-
 def test_segmentation_multiple_features():
     """Tests `tobac.segmentation.segmentation_timestep` with a 2D input containing multiple features with different areas.
     Tests specifically whether their area (ncells) is correctly calculate and assigned to the different features.
@@ -620,13 +619,17 @@ def test_segmentation_multiple_features():
 
     # perform segmentation
     out_seg_mask, out_df = segmentation.segmentation_timestep(
-        field_in=test_data_iris, features_in=fd_output, dxy=test_dxy, threshold=1.5
+        field_in=test_data_iris, features_in=fd_output, dxy=test_dxy, threshold=1.5, statistics = True
     )
     out_seg_mask_arr = out_seg_mask.core_data()
 
     # assure that the number of grid cells belonging to each feature (ncells) are consistent with segmentation mask
     assert int(out_df[out_df.feature == 1].ncells.values) == size_feature1
     assert int(out_df[out_df.feature == 2].ncells.values) == size_feature2
+    # assure that bulk statistic columns are created in output 
+    assert out_df.columns.size - fd_output.columns.size > 1
+    # assure that statistics are calculated everywhere where an area for ncells is found 
+    assert out_df.ncells[out_df['ncells'] > 0 ].shape == out_df.ncells[out_df['feature_mean'] > 0 ].shape
 
 
 # TODO: add more tests to make sure buddy box code is run.

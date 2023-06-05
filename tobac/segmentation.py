@@ -264,6 +264,7 @@ def segmentation_3D(
     max_distance=None,
     PBC_flag="none",
     seed_3D_flag="column",
+        statistics=False
 ):
     """Wrapper for the segmentation()-function."""
 
@@ -278,6 +279,7 @@ def segmentation_3D(
         max_distance=max_distance,
         PBC_flag=PBC_flag,
         seed_3D_flag=seed_3D_flag,
+        statistics=statistics
     )
 
 
@@ -292,6 +294,7 @@ def segmentation_2D(
     max_distance=None,
     PBC_flag="none",
     seed_3D_flag="column",
+        statistics= False,
 ):
     """Wrapper for the segmentation()-function."""
     return segmentation(
@@ -305,6 +308,7 @@ def segmentation_2D(
         max_distance=max_distance,
         PBC_flag=PBC_flag,
         seed_3D_flag=seed_3D_flag,
+        statistics=statistics
     )
 
 
@@ -1016,16 +1020,16 @@ def segmentation_timestep(
                 )
                 # write the statistics to feature output dataframe
                 features_out.loc[
-                    features_out.feature == row["feature"], "mean"
+                    features_out.feature == row["feature"], "feature_mean"
                 ] = feature_mean
                 features_out.loc[
-                    features_out.feature == row["feature"], "max"
+                    features_out.feature == row["feature"], "feature_max"
                 ] = feature_max
                 features_out.loc[
-                    features_out.feature == row["feature"], "min"
+                    features_out.feature == row["feature"], "feature_min"
                 ] = feature_min
                 features_out.loc[
-                    features_out.feature == row["feature"], "sum"
+                    features_out.feature == row["feature"], "feature_sum"
                 ] = feature_sum
                 features_out.loc[
                     features_out.feature == row["feature"], "major_axis_length"
@@ -1034,12 +1038,14 @@ def segmentation_timestep(
                 # save percentiles of data distribution within feature
                 if index == features_out[features_out.ncells > 0].index[0]:
                     # here, we need to initialize the column first since .loc indexing does not work with pd.Series
-                    features_out["percentiles"] = np.nan
+                    features_out["feature_percentiles"] = np.nan
                 # store numpy array with percentiles as cell in data frame
-                df = pd.DataFrame({"percentiles": [feature_percentiles]})
+                df = pd.DataFrame({"feature_percentiles": [feature_percentiles]})
+                # get row index rather than pd.Dataframe index value since we need to use .iloc indexing
+                row_idx = np.where(features_out.feature == row["feature"])[0]
                 features_out.iloc[
-                    features_out.index[features_out.feature == row["feature"]],
-                    features_out.columns.get_loc("percentiles"),
+                row_idx,
+                    features_out.columns.get_loc("feature_percentiles"),
                 ] = df.apply(lambda r: tuple(r), axis=1)
 
     return segmentation_out, features_out
