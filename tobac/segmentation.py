@@ -1059,7 +1059,9 @@ def segmentation_timestep(
                 features_out.iloc[
                     row_idx,
                     features_out.columns.get_loc("feature_percentiles"),
-                ] = df.apply(lambda r: tuple(r), axis=1)
+                ] = df.apply(
+                    lambda r: tuple(r), axis=1
+                )  # apply on the feature_percentiles column a function that returns a tuple with the values of that very column. This complicated syntax here is needed because it is otherwise not possible to assign a sequence to a pd.DataFrame column
 
     return segmentation_out, features_out
 

@@ -586,6 +586,11 @@ def get_statistics(feature_ID, segmentation_mask, field_in):
     """
     from skimage.measure import regionprops
 
+    if field_in.shape != segmentation_mask.shape:
+        raise ValueError(
+            "field_in and segmentation_mask need to have the same dimensions"
+        )
+
     # get data points that belong to feature
     data_points = field_in[segmentation_mask == feature_ID]
 
@@ -593,7 +598,7 @@ def get_statistics(feature_ID, segmentation_mask, field_in):
     feature_mean = np.nanmean(data_points)
     feature_max = np.nanmax(data_points)
     feature_min = np.nanmin(data_points)
-    feature_percentiles = np.percentile(data_points, range(101))
+    feature_percentiles = np.nanpercentile(data_points, range(101))
     feature_sum = np.nansum(data_points)
 
     # get other region properties
