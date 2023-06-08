@@ -19,11 +19,11 @@ git basics
 * **Create a Github account**: The first thing, you need to do is to `create a GitHub account <https://docs.github.com/en/get-started/signing-up-for-github/signing-up-for-a-new-github-account>`_ if you do not already have one. 
 
 * **Get familiar with the basics of GitHub and git**:
-  * Getting started with the `basics <https://docs.github.com/en/get-started/quickstart/hello-world>`_
-  * Learn about `branches <https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-branches>`_ 
-  * Learn about `forks <https://docs.github.com/en/get-started/quickstart/fork-a-repo>`_
-  * Learn about `pull requests <https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests>`_
-  * Learn about `how to commit and push changes from your local repository <https://docs.github.com/en/migrations/importing-source-code/using-the-command-line-to-import-source-code/adding-locally-hosted-code-to-github>`_ 
+   * Getting started with the `basics <https://docs.github.com/en/get-started/quickstart/hello-world>`_
+   * Learn about `branches <https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-branches>`_ 
+   * Learn about `forks <https://docs.github.com/en/get-started/quickstart/fork-a-repo>`_
+   * Learn about `pull requests <https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests>`_
+   * Learn about `how to commit and push changes from your local repository <https://docs.github.com/en/migrations/importing-source-code/using-the-command-line-to-import-source-code/adding-locally-hosted-code-to-github>`_ 
 
 * **Create an issue**: If you have an idea for a new feature or a suggestion for any kind of code changes, please create an issue for this. We use `our issues <https://github.com/tobac-project/tobac/issues>`_ to milestones `Link text <https://github.com/tobac-project/tobac/milestones>`_, i.e. the different versions of **tobac** to come.
 The issues act, therefore, not only as a place for reporting bugs, but also as a collection of *to do* points. 
@@ -31,16 +31,17 @@ The issues act, therefore, not only as a place for reporting bugs, but also as a
 You can also work on any issue that was created by somebody else and is already out there. A tip is to look for the **good first issue** label, if you are a new developer. These issues are usually fairly easy to address and can be good to practice our GitHub workflow. 
 
 * https://github.com/tobac-project/tobac/blob/main/CONTRIBUTING.md
+  
+* **Create a pull request from your fork:** We use our personal forks of the tobac repository to create pull requests. This means that you have to first commit and push your local changes to your personal fork and then create a pull request from that fork: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork
+
 
 * **Tips when working with your local code:**
 
-  * Install tobac package with :code:`pip install -e` . This allows you to directly test your local code changes as you run tobac. Instead of using the **tobac** version of the latest release, your local version of tobac will be used when you import **tobac** in a python script or IDE. Note that this way of installing a local package will use the code of the checked in branch, so this allows you also to test code while switching between branches.
+   * Install tobac package with :code:`pip install -e` . This allows you to directly test your local code changes as you run tobac. Instead of using the **tobac** version of the latest release, your local version of tobac will be used when you import **tobac** in a python script or IDE. Note that this way of installing a local package will use the code of the checked in branch, so this allows you also to test code while switching between branches.
 
-  * You can locally build the documentation page:
+   * You can locally build the documentation page:
 
-
-* **Create a pull request from your fork:** We use our personal forks of the tobac repository to create pull requests. This means that you have to first commit and push your local changes to your personal fork and then create a pull request from that fork: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork
-
+  
 =========================
 Our branching strategy
 =========================
