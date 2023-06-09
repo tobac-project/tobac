@@ -12,4 +12,4 @@ trackpy
 jupyter
 notebook
 pytables
-pyart
+arm_pyart
