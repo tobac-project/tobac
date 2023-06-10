@@ -724,18 +724,15 @@ def feature_detection_multithreshold_timestep(
                 )
                 return features_thresholds
 
-        if i_threshold > 0 and regions_old:
-            if not features_thresholds.empty:
-                # Work out which regions are still in feature_thresholds to keep
-                # This is faster than calling "in" for every idx
-                keep_old_keys = np.isin(
-                    list(regions_old.keys()), features_thresholds["idx"]
-                )
-                regions_old = {
-                    k: v
-                    for i, (k, v) in enumerate(regions_old.items())
-                    if keep_old_keys[i]
-                }
+        if i_threshold > 0 and not features_thresholds.empty and regions_old:
+            # Work out which regions are still in feature_thresholds to keep
+            # This is faster than calling "in" for every idx
+            keep_old_keys = np.isin(
+                list(regions_old.keys()), features_thresholds["idx"]
+            )
+            regions_old = {
+                k: v for i, (k, v) in enumerate(regions_old.items()) if keep_old_keys[i]
+            }
             regions_old.update(regions_i)
         else:
             regions_old = regions_i
