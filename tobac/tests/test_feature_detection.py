@@ -589,7 +589,7 @@ def test_strict_thresholding():
     test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type="iris")
 
     # All of these thresholds will be met
-    tresholds = [1, 5, 7.5]
+    thresholds = [1, 5, 7.5]
 
     # The second n_min threshold can never be met
     n_min_thresholds = [0, test_data.size + 1, 0]
@@ -599,19 +599,21 @@ def test_strict_thresholding():
         test_data_iris,
         0,
         dxy=1,
-        threshold=tresholds,
+        threshold=thresholds,
         n_min_threshold=n_min_thresholds,
         strict_thresholding=False,
     )
-    assert len(features) == 2
+    assert len(features) == 1
+    assert features["threshold_value"].item() == thresholds[-1]
 
     # Since the second n_min_thresholds value is not met this will only detect 1 feature
     features = feat_detect.feature_detection_multithreshold_timestep(
         test_data_iris,
         0,
         dxy=1,
-        threshold=tresholds,
+        threshold=thresholds,
         n_min_threshold=n_min_thresholds,
         strict_thresholding=True,
     )
     assert len(features) == 1
+    assert features["threshold_value"].item() == thresholds[0]
