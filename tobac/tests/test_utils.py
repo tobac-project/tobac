@@ -368,26 +368,36 @@ def test_combine_tobac_feats():
     """
 
     single_feat_1 = tb_test.generate_single_feature(
-        0,
-        0,
+        1,
+        1,
         start_date=datetime.datetime(2022, 1, 1, 0, 0),
         frame_start=0,
         max_h1=100,
         max_h2=100,
+        feature_size=5,
     )
     single_feat_2 = tb_test.generate_single_feature(
-        1,
-        1,
+        2,
+        2,
         start_date=datetime.datetime(2022, 1, 1, 0, 5),
         frame_start=0,
         max_h1=100,
         max_h2=100,
+        feature_size=5,
     )
 
     combined_feat = tb_utils.combine_tobac_feats([single_feat_1, single_feat_2])
 
     tot_feat = tb_test.generate_single_feature(
-        0, 0, spd_h1=1, spd_h2=1, num_frames=2, frame_start=0, max_h1=100, max_h2=100
+        1,
+        1,
+        spd_h1=1,
+        spd_h2=1,
+        num_frames=2,
+        frame_start=0,
+        max_h1=100,
+        max_h2=100,
+        feature_size=5,
     )
 
     pd_test.assert_frame_equal(combined_feat, tot_feat)
@@ -398,3 +408,49 @@ def test_combine_tobac_feats():
     )
     assert np.all(list(combined_feat["old_feat_column"].values) == [1, 1])
     assert np.all(list(combined_feat["feature"].values) == [1, 2])
+
+    # Test that a ValueError is raised if non-unique features are present
+    with pytest.raises(ValueError):
+        combined_feat = tb_utils.combine_tobac_feats(
+            [single_feat_1, single_feat_2],
+            renumber_features=False,
+            preserve_old_feat_nums="old_feat_column",
+        )
+
+    # Add a new feature with new feature number
+    single_feat_3 = tb_test.generate_single_feature(
+        0,
+        0,
+        start_date=datetime.datetime(2022, 1, 1, 0, 5),
+        frame_start=0,
+        max_h1=100,
+        max_h2=100,
+        feature_num=3,
+        feature_size=3,
+    )
+
+    # Test renumber_features=False
+    combined_feat = tb_utils.combine_tobac_feats(
+        [single_feat_1, single_feat_3],
+        renumber_features=False,
+        preserve_old_feat_nums="old_feat_column",
+    )
+    assert np.all(list(combined_feat["feature"].values) == [1, 3])
+
+    # Test sortby over one column
+    combined_feat = tb_utils.combine_tobac_feats(
+        [single_feat_1, single_feat_3],
+        preserve_old_feat_nums="old_feat_column",
+        sort_features_by="num",
+    )
+    assert np.all(list(combined_feat["feature"].values) == [1, 2])
+    assert np.all(list(combined_feat["old_feat_column"].values) == [3, 1])
+
+    # Test sortby over a list of columns
+    combined_feat = tb_utils.combine_tobac_feats(
+        [single_feat_1, single_feat_3],
+        preserve_old_feat_nums="old_feat_column",
+        sort_features_by=["hdim_1", "hdim_2"],
+    )
+    assert np.all(list(combined_feat["feature"].values) == [1, 2])
+    assert np.all(list(combined_feat["old_feat_column"].values) == [3, 1])
