@@ -6,16 +6,21 @@ from pandas.testing import assert_frame_equal
 
 
 @pytest.mark.parametrize(
-    "test_threshs, n_min_threshold, dxy, wavelength_filtering",
+    "test_threshs, n_min_threshold, dxy, wavelength_filtering, data_type",
     [
-        ([1.5], 2, -1, None),
-        ([1, 1.5, 2], 2, 10000, (100 * 1000, 500 * 1000)),
-        ([1, 2, 1.5], [3, 1, 2], -1, None),
-        ([1, 1.5, 2], {1.5: 2, 1: 3, 2: 1}, -1, None),
+        ([1.5], 2, -1, None, "iris"),
+        ([1.5], 2, -1, None, "xarray"),
+        ([1, 1.5, 2], 2, 10000, (100 * 1000, 500 * 1000), "iris"),
+        ([1, 2, 1.5], [3, 1, 2], -1, None, "iris"),
+        ([1, 1.5, 2], {1.5: 2, 1: 3, 2: 1}, -1, None, "iris"),
     ],
 )
 def test_feature_detection_multithreshold_timestep(
-    test_threshs, n_min_threshold, dxy, wavelength_filtering
+    test_threshs,
+    n_min_threshold,
+    dxy,
+    wavelength_filtering,
+    data_type,
 ):
     """
     Tests ```tobac.feature_detection.feature_detection_multithreshold_timestep```
@@ -40,7 +45,7 @@ def test_feature_detection_multithreshold_timestep(
         h2_size=test_hdim_2_sz,
         amplitude=test_amp,
     )
-    test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type="iris")
+    test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type)
     fd_output = feat_detect.feature_detection_multithreshold_timestep(
         test_data_iris,
         0,
@@ -450,17 +455,26 @@ def test_filter_min_distance(
 
 @pytest.mark.parametrize(
     "test_dset_size, vertical_axis_num, "
-    "vertical_coord_name,"
-    " vertical_coord_opt, expected_raise",
+    "vertical_coord_name, "
+    "vertical_coord_opt, expected_raise, "
+    "data_type",
     [
-        ((1, 20, 30, 40), 1, "altitude", "auto", False),
-        ((1, 20, 30, 40), 2, "altitude", "auto", False),
-        ((1, 20, 30, 40), 3, "altitude", "auto", False),
-        ((1, 20, 30, 40), 1, "air_pressure", "air_pressure", False),
-        ((1, 20, 30, 40), 1, "air_pressure", "auto", True),
-        ((1, 20, 30, 40), 1, "model_level_number", "auto", False),
-        ((1, 20, 30, 40), 1, "altitude", "auto", False),
-        ((1, 20, 30, 40), 1, "geopotential_height", "auto", False),
+        ((1, 20, 30, 40), 1, "altitude", "auto", False, "iris"),
+        ((1, 20, 30, 40), 2, "altitude", "auto", False, "iris"),
+        ((1, 20, 30, 40), 3, "altitude", "auto", False, "iris"),
+        ((1, 20, 30, 40), 1, "air_pressure", "air_pressure", False, "iris"),
+        ((1, 20, 30, 40), 1, "air_pressure", "auto", True, "iris"),
+        ((1, 20, 30, 40), 1, "model_level_number", "auto", False, "iris"),
+        ((1, 20, 30, 40), 1, "altitude", "auto", False, "iris"),
+        ((1, 20, 30, 40), 1, "geopotential_height", "auto", False, "iris"),
+        ((1, 20, 30, 40), 1, "altitude", "auto", False, "xarray"),
+        ((1, 20, 30, 40), 2, "altitude", "auto", False, "xarray"),
+        ((1, 20, 30, 40), 3, "altitude", "auto", False, "xarray"),
+        ((1, 20, 30, 40), 1, "air_pressure", "air_pressure", False, "xarray"),
+        ((1, 20, 30, 40), 1, "air_pressure", "auto", True, "xarray"),
+        ((1, 20, 30, 40), 1, "model_level_number", "auto", False, "xarray"),
+        ((1, 20, 30, 40), 1, "altitude", "auto", False, "xarray"),
+        ((1, 20, 30, 40), 1, "geopotential_height", "auto", False, "xarray"),
     ],
 )
 def test_feature_detection_multiple_z_coords(
@@ -469,6 +483,7 @@ def test_feature_detection_multiple_z_coords(
     vertical_coord_name,
     vertical_coord_opt,
     expected_raise,
+    data_type,
 ):
     """Tests ```tobac.feature_detection.feature_detection_multithreshold```
     with different axes
@@ -497,7 +512,7 @@ def test_feature_detection_multiple_z_coords(
     test_data[0, 0:5, 0:5, 0:5] = 3
     common_dset_opts = {
         "in_arr": test_data,
-        "data_type": "iris",
+        "data_type": data_type,
         "z_dim_name": vertical_coord_name,
     }
     if vertical_axis_num == 1:

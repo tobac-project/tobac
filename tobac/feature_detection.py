@@ -23,6 +23,14 @@ import pandas as pd
 from .utils import internal as internal_utils
 from .utils import periodic_boundaries as pbc_utils
 from tobac.utils.general import spectral_filtering
+from tobac.utils.internal import (
+    xarray_to_iris,
+    iris_to_xarray,
+    xarray_to_irispandas,
+    irispandas_to_xarray,
+)
+
+
 import warnings
 
 
@@ -328,7 +336,7 @@ def feature_detection_threshold(
 
     Parameters
     ----------
-    data_i : iris.cube.Cube
+    data_i : numpy array
         2D field to perform the feature detection (single timestep) on.
 
     i_time : int
@@ -807,6 +815,7 @@ def feature_detection_threshold(
     return features_threshold, regions
 
 
+@irispandas_to_xarray
 def feature_detection_multithreshold_timestep(
     data_i,
     i_time,
@@ -833,7 +842,7 @@ def feature_detection_multithreshold_timestep(
     Parameters
     ----------
 
-    data_i : iris.cube.Cube
+    data_i : xarray.Dataset (or for legacy: iris.cube.Cube)
         2D field to perform the feature detection (single timestep) on.
 
     threshold : float, optional
@@ -903,7 +912,8 @@ def feature_detection_multithreshold_timestep(
         )
 
     # get actual numpy array
-    track_data = data_i.core_data()
+    #     track_data = data_i.core_data()
+    track_data = data_i.data
 
     track_data = gaussian_filter(
         track_data, sigma=sigma_threshold
@@ -1006,6 +1016,7 @@ def feature_detection_multithreshold_timestep(
     return features_thresholds
 
 
+@xarray_to_iris
 def feature_detection_multithreshold(
     field_in,
     dxy=None,
