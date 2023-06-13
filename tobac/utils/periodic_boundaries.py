@@ -258,8 +258,8 @@ def calc_distance_coords_pbc(
 def weighted_circmean(
     values: np.ndarray,
     weights: np.ndarray,
-    high: float = 2 * np.pi,
-    low: float = 0,
+    high: float = 2. * np.pi,
+    low: float = 0.,
     axis: int | None = None,
 ) -> np.ndarray:
     """
