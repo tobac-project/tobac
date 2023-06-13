@@ -15,10 +15,15 @@ How to do a code review
   
 * Not required, but often useful: test new features with your own data 
 
-=========================
-Expectations
-=========================
 
+============================
+Tips and expectations
+============================
+
+
+Doing a code review can be very challenging if you are unfamiliar with the process. Here is a set of documents might provide a good resource on how to get started:
+
+https://github.com/google/eng-practices
 
 
 =========================

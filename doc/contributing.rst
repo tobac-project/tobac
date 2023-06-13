@@ -35,13 +35,17 @@ You can also work on any issue that was created by somebody else and is already 
 * **Create a pull request from your fork:** We use our personal forks of the tobac repository to create pull requests. This means that you have to first commit and push your local changes to your personal fork and then create a pull request from that fork: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork
 
 
-* **Tips when working with your local code:**
 
-   * Install tobac package with :code:`pip install -e` . This allows you to directly test your local code changes as you run tobac. Instead of using the **tobac** version of the latest release, your local version of tobac will be used when you import **tobac** in a python script or IDE. Note that this way of installing a local package will use the code of the checked in branch, so this allows you also to test code while switching between branches.
+===================================
+Tips on working on your local code
+===================================
 
-   * You can locally build the documentation page:
+* Install tobac package with :code:`pip install -e` . This allows you to directly test your local code changes as you run tobac. Instead of using the **tobac** version of the latest release, your local version of tobac will be used when you import **tobac** in a python script or IDE. Note that this way of installing a local package will use the code of the checked in branch, so this allows you also to test code while switching between branches.
 
-  
+* You can locally build the documentation page:
+
+* Writing `meaningful commit messages <https://www.conventionalcommits.org/en/v1.0.0/>`_ can be very helpful for you and people who review your code to better understand the code changes.
+
 =========================
 Our branching strategy
 =========================
