@@ -34,6 +34,7 @@ master_doc = "index"
 # allow dropdowns
 collapse_navigation = False
 
+
 # Include our custom CSS (currently for special table config)
 def setup(app):
     app.add_css_file("theme_overrides.css")

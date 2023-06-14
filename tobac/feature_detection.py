@@ -234,9 +234,7 @@ def remove_parents(features_thresholds, regions_i, regions_old):
         old_feat_arr[curr_loc : curr_loc + len(regions_old[idx_old])] = idx_old
         curr_loc += len(regions_old[idx_old])
 
-    common_pts, common_ix_new, common_ix_old = np.intersect1d(
-        all_curr_pts, all_old_pts, return_indices=True
-    )
+    _, _, common_ix_old = np.intersect1d(all_curr_pts, all_old_pts, return_indices=True)
     list_remove = np.unique(old_feat_arr[common_ix_old])
 
     # remove parent regions:
@@ -726,7 +724,18 @@ def feature_detection_multithreshold_timestep(
                 )
                 return features_thresholds
 
-        regions_old = regions_i
+        if i_threshold > 0 and not features_thresholds.empty and regions_old:
+            # Work out which regions are still in feature_thresholds to keep
+            # This is faster than calling "in" for every idx
+            keep_old_keys = np.isin(
+                list(regions_old.keys()), features_thresholds["idx"]
+            )
+            regions_old = {
+                k: v for i, (k, v) in enumerate(regions_old.items()) if keep_old_keys[i]
+            }
+            regions_old.update(regions_i)
+        else:
+            regions_old = regions_i
 
         logging.debug(
             "Finished feature detection for threshold "
