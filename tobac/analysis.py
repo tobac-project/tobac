@@ -32,6 +32,7 @@ import logging
 import os
 import warnings
 
+from tobac.centerofgravity import calculate_cog
 from .utils import mask_cell, mask_cell_surface, mask_cube_cell, get_bounding_box
 
 

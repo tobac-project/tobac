@@ -150,7 +150,11 @@ def add_coordinates(t, variable_cube):
 
 
 def add_coordinates_3D(
-    t, variable_cube, vertical_coord="auto", assume_coords_fixed_in_time=True
+    t,
+    variable_cube,
+    vertical_coord="auto",
+    vertical_axis=None,
+    assume_coords_fixed_in_time=True,
 ):
     """Function adding coordinates from the tracking cube to the trajectories
         for the 3D case: time, longitude&latitude, x&y dimensions, and altitude
@@ -170,6 +174,8 @@ def add_coordinates_3D(
         to the string. If it is an int, it assumes that it is the vertical axis.
         Note that if you only have a 2D or 3D coordinate for altitude, you must
         pass in an int.
+    vertical_axis: int or None
+        Axis number of the vertical.
     assume_coords_fixed_in_time: bool
         If true, it assumes that the coordinates are fixed in time, even if the
         coordinates say they vary in time. This is, by default, True, to preserve
