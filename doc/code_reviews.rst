@@ -32,5 +32,5 @@ Conventional comments
 
 The comments in a code review should be clear and constructive.
 
-A useful way of highlighting the intention of a specific comments is to label them according to `conventional comments <https://conventionalcomments.org/>`_.
+A useful way of highlighting the intention of specific comments is to label them according to `conventional comments <https://conventionalcomments.org/>`_.
 
