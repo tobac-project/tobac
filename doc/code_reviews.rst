@@ -7,7 +7,7 @@ Before anything is merged into the release branch (:code:`RC_*`), we require tha
 How to do a code review 
 ============================
 
-* Checkout out pull request locally
+* Checkout out pull request locally (`how to checkout a pull request locally <https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/checking-out-pull-requests-locally>`_)
 
 * Run tests locally
   
