@@ -7,7 +7,7 @@ Before anything is merged into the release branch (:code:`RC_*`), we require tha
 How to do a code review 
 ============================
 
-* Checkout out pull request locally
+* Checkout out pull request locally (`how to checkout a pull request locally <https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/checking-out-pull-requests-locally>`_)
 
 * Run tests locally
   
@@ -21,7 +21,7 @@ Tips and expectations
 ============================
 
 
-Doing a code review can be very challenging if you are unfamiliar with the process. Here is a set of documents might provide a good resource on how to get started:
+Doing a code review can be very challenging if you are unfamiliar with the process. Here is a set of documents which might provide a good resource on how to get started:
 
 https://github.com/google/eng-practices
 
@@ -32,5 +32,5 @@ Conventional comments
 
 The comments in a code review should be clear and constructive.
 
-A useful way of highlighting the intention of a specific comments is to label them according to `conventional comments <https://conventionalcomments.org/>`_.
+A useful way of highlighting the intention of specific comments is to label them according to `conventional comments <https://conventionalcomments.org/>`_.
 
