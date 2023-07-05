@@ -1,34 +1,30 @@
 {
     "title": "tobac - Tracking and Object-based Analysis of Clouds",
-    "description": "tobac is a Python package to identify, track and analyze clouds in different types of gridded datasets, such as 3D model output from cloud-resolving model simulations or 2D data from satellite retrievals.",
+    "description": "tobac is a Python package to identify, track and analyze clouds and other atmospheric phenomena in different types of gridded datasets, such as 3D model output from cloud-resolving model simulations or 2D data from satellite retrievals.",
     "creators": [
         {
             "name": "tobac Community"
         },
         {
-            "name": "Heikenfeld, Max",
-            "affiliation": "University of Oxford",
-            "orcid": "0000-0001-8124-8048"
-        },
-        {
-            "name": "Marinescu, Peter J.",
-            "affiliation": "Colorado State University",
-            "orcid": "0000-0002-5842-969X"
+            "name": "Brunner, Kelcy",
+            "affiliation": "Texas Tech University",
+            "orcid": "0000-0003-3938-0963"
         },
         {
             "name": "Freeman, Sean W.",
-            "affiliation": "Colorado State University",
+            "affiliation": "The University of Alabama in Huntsville",
             "orcid": "0000-0002-7398-1597"
-        },
-        {
-            "name": "Kukulies, Julia",
-            "affiliation": "University of Gothenburg (Sweden)",
-            "orcid": "0000-0001-6084-0069"
         },
         {
             "name": "Jones, William K.",
             "affiliation": "University of Oxford",
             "orcid": "0000-0001-9786-3723"
+        },
+
+        {
+            "name": "Kukulies, Julia",
+            "affiliation": "University of Gothenburg (Sweden)",
+            "orcid": "0000-0001-6084-0069"
         },
         {
             "name": "Senf, Fabian",
@@ -41,31 +37,6 @@
             "orcid": "0000-0003-1959-442X"
         },
         {
-            "name": "Brunner, Kelcy",
-            "affiliation": "Texas Tech University",
-            "orcid": "0000-0003-3938-0963"
-        },
-        {
-            "name": "Collis, Scott M.",
-            "affiliation": "Argonne National Laboratory",
-            "orcid": "0000-0002-2303-687X"
-        },
-        {
-            "name": "Pfeifer, Nils",
-            "affiliation": "Leibniz Institute for Tropospheric Research, Leipzig (Germany)",
-            "orcid": "0000-0002-5350-1445"
-        },
-        {
-            "name": "Lettl, Kolya",
-            "affiliation": "Leibniz Institute for Tropospheric Research, Leipzig (Germany)",
-            "orcid": "0000-0002-4524-8152"
-        },
-        {
-            "name": "Raut, Bhupendra A.",
-            "affiliation": "Northwestern-Argonne Institute of Science and Engineering, Argonne National Laboratory",
-            "orcid": "0000-0001-5598-1393"
-        },
-        {
             "name": "Stier, Philip",
             "affiliation": "University of Oxford",
             "orcid": "0000-0002-1191-0128"
@@ -74,6 +45,37 @@
             "name": "van den Heever, Sue C.",
             "affiliation": "Colorado State University",
             "orcid": "0000-0001-9843-3864"
+        },
+        {
+            "name": "Heikenfeld, Max",
+            "affiliation": "University of Oxford",
+            "orcid": "0000-0001-8124-8048"
+        },
+        {
+            "name": "Marinescu, Peter J.",
+            "affiliation": "Colorado State University",
+            "orcid": "0000-0002-5842-969X"
+        },
+        {
+            "name": "Collis, Scott M.",
+            "affiliation": "Argonne National Laboratory",
+            "orcid": "0000-0002-2303-687X"
+        },
+        {
+            "name": "Lettl, Kolya",
+            "affiliation": "Leibniz Institute for Tropospheric Research, Leipzig (Germany)",
+            "orcid": "0000-0002-4524-8152"
+        },
+
+        {
+            "name": "Pfeifer, Nils",
+            "affiliation": "Leibniz Institute for Tropospheric Research, Leipzig (Germany)",
+            "orcid": "0000-0002-5350-1445"
+        },
+        {
+            "name": "Raut, Bhupendra A.",
+            "affiliation": "Northwestern-Argonne Institute of Science and Engineering, Argonne National Laboratory",
+            "orcid": "0000-0001-5598-1393"
         },
         {
             "name": "Zhang, Xin",
