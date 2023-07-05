@@ -3,12 +3,16 @@
 """
 import copy
 import logging
+
+import pandas as pd
+
 from . import internal as internal_utils
 import numpy as np
 import sklearn
 import sklearn.neighbors
 import datetime
 import xarray as xr
+import warnings
 
 
 def add_coordinates(t, variable_cube):
@@ -568,6 +572,7 @@ def transform_feature_points(
     max_time_away=datetime.timedelta(minutes=0),
     max_space_away=0,
     max_vspace_away=0,
+    warn_dropped_features=True,
 ):
     """Function to transform input feature dataset horizontal grid points to a different grid.
     The typical use case for this function is to transform detected features to perform
@@ -596,6 +601,9 @@ def transform_feature_points(
         The maximum horizontal distance (in meters) to transform features to.
     max_vspace_away: float
         The maximum vertical distance (in meters) to transform features to.
+    warn_dropped_features: bool
+        Whether or not to print a warning message if one of the max_* options is
+        going to result in features that are dropped.
     Returns
     -------
     transformed_features: pd.DataFrame
@@ -681,8 +689,8 @@ def transform_feature_points(
         dist_cond = xr.DataArray(
             (dists[:, 0] * RADIUS_EARTH_M) < max_space_away, dims="index"
         )
-    ret_features = ret_features.where(dist_cond, drop=True)
 
+    ret_features = ret_features.where(dist_cond, drop=True)
     # force times to match, where appropriate.
     if "time" in new_dataset.coords:
         # this is necessary due to the iris/xarray/pandas weirdness that we have.
@@ -696,6 +704,16 @@ def transform_feature_points(
         )
         ret_features = ret_features.where(
             closest_times < np.timedelta64(max_time_away), drop=True
+        )
+
+    if warn_dropped_features:
+        returned_features = ret_features["feature"]
+        all_features = features["feature"]
+        removed_features = np.delete(
+            all_features, np.where(np.any(all_features == returned_features))
+        )
+        warnings.warn(
+            "Dropping feature numbers: " + str(removed_features.values), UserWarning
         )
 
     return ret_features
