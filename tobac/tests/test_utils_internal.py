@@ -66,9 +66,9 @@ def test_find_hdim_axes_3D(dset_type, time_axis, vertical_axis, expected_out):
 @pytest.mark.parametrize(
     "lat_name, lon_name, lat_name_test, lon_name_test, expected_result",
     [
-        ("lat", "lon", "auto", "auto", ("lat", "lon")),
-        ("lat", "long", "auto", "auto", ("lat", "long")),
-        ("lat", "altitude", "auto", "auto", ("lat", None)),
+        ("lat", "lon", None, None, ("lat", "lon")),
+        ("lat", "long", None, None, ("lat", "long")),
+        ("lat", "altitude", None, None, ("lat", None)),
         ("lat", "longitude", "lat", "longitude", ("lat", "longitude")),
     ],
 )

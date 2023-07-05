@@ -443,7 +443,7 @@ def find_vertical_axis_from_coord(variable_cube, vertical_coord="auto"):
     variable_cube: iris.cube
         Input variable cube, containing a vertical coordinate.
     vertical_coord: str
-        Vertical coordinate name. If `auto`, this function tries to auto-detect.
+        Vertical coordinate name. If None, this function tries to auto-detect.
 
     Returns
     -------
@@ -469,7 +469,7 @@ def find_vertical_axis_from_coord(variable_cube, vertical_coord="auto"):
     ):
         list_coord_names = variable_cube.coords
 
-    if vertical_coord == "auto":
+    if vertical_coord == "auto" or vertical_coord is None:
         # find the intersection
         all_vertical_axes = list(set(list_coord_names) & set(list_vertical))
         if len(all_vertical_axes) >= 1:
@@ -683,7 +683,7 @@ def find_hdim_axes_3D_iris(field_in, vertical_coord=None, vertical_axis=None):
 
 
 @irispandas_to_xarray
-def detect_latlon_coord_name(in_dataset, latitude_name="auto", longitude_name="auto"):
+def detect_latlon_coord_name(in_dataset, latitude_name=None, longitude_name=None):
     """Function to detect the name of latitude/longitude coordinates
 
     Parameters
@@ -691,9 +691,9 @@ def detect_latlon_coord_name(in_dataset, latitude_name="auto", longitude_name="a
     in_dataset: iris.cube.Cube, xarray.Dataset, or xarray.Dataarray
         Input dataset to detect names from
     latitude_name: str
-        The name of the latitude coordinate. If "auto", tries to auto-detect.
+        The name of the latitude coordinate. If None, tries to auto-detect.
     longitude_name: str
-        The name of the longitude coordinate. If "auto", tries to auto-detect.
+        The name of the longitude coordinate. If None, tries to auto-detect.
 
     Returns
     -------
@@ -706,7 +706,7 @@ def detect_latlon_coord_name(in_dataset, latitude_name="auto", longitude_name="a
     out_lon = None
     test_lat_names = ["lat", "latitude"]
     test_lon_names = ["lon", "long", "longitude"]
-    if latitude_name.lower() != "auto":
+    if latitude_name is not None:
         if latitude_name in in_dataset.coords:
             out_lat = latitude_name
     else:
@@ -714,7 +714,7 @@ def detect_latlon_coord_name(in_dataset, latitude_name="auto", longitude_name="a
             if test_lat_name in in_dataset.coords:
                 out_lat = test_lat_name
                 break
-    if longitude_name.lower() != "auto":
+    if longitude_name is not None:
         if longitude_name in in_dataset.coords:
             out_lon = longitude_name
     else:

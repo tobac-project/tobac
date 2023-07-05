@@ -566,12 +566,12 @@ def combine_tobac_feats(list_of_feats, preserve_old_feat_nums=None):
 def transform_feature_points(
     features,
     new_dataset,
-    latitude_name="auto",
-    longitude_name="auto",
-    altitude_name="auto",
-    max_time_away=datetime.timedelta(minutes=0),
-    max_space_away=0,
-    max_vspace_away=0,
+    latitude_name=None,
+    longitude_name=None,
+    altitude_name=None,
+    max_time_away=None,
+    max_space_away=None,
+    max_vspace_away=None,
     warn_dropped_features=True,
 ):
     """Function to transform input feature dataset horizontal grid points to a different grid.
@@ -590,10 +590,10 @@ def transform_feature_points(
     new_dataset: iris.cube.Cube or xarray
         The dataset to transform the
     latitude_name: str
-        The name of the latitude coordinate. If "auto", tries to auto-detect.
+        The name of the latitude coordinate. If None, tries to auto-detect.
     longitude_name: str
-        The name of the longitude coordinate. If "auto", tries to auto-detect.
-    longitude_name: str
+        The name of the longitude coordinate. If None, tries to auto-detect.
+    altitude_name: str
         The name of the altitude coordinate. If "auto", tries to auto-detect.
     max_time_away: datetime.timedelta
         The maximum time delta to associate feature points away from.
@@ -641,15 +641,14 @@ def transform_feature_points(
 
     # we have to convert to radians because scikit-learn's haversine
     # requires that the input be in radians.
-    flat_lats = np.deg2rad(lat_vals_new.flatten())
-    flat_lons = np.deg2rad(lon_vals_new.flatten())
+    flat_lats = np.deg2rad(lat_vals_new.ravel())
+    flat_lons = np.deg2rad(lon_vals_new.ravel())
 
     # we have to drop NaN values.
     either_nan = np.logical_or(np.isnan(flat_lats), np.isnan(flat_lons))
     # we need to remember where these values are in the array so that we can
     # appropriately unravel them.
-    loc_arr = np.arange(0, len(flat_lats), 1)
-    loc_arr_trimmed = loc_arr[~either_nan]
+    loc_arr_trimmed = np.where(np.logical_not(either_nan))[0]
     flat_lats_nona = flat_lats[~either_nan]
     flat_lons_nona = flat_lons[~either_nan]
     ll_tree = sklearn.neighbors.BallTree(
@@ -670,7 +669,7 @@ def transform_feature_points(
     ret_features["hdim_2"] = ("index", unraveled_h2)
 
     # now interpolate vertical, if available.
-    if is_3D:
+    if is_3D and max_space_away is not None and max_vspace_away is not None:
         alt_tree = sklearn.neighbors.BallTree(
             new_dataset[vert_coord].values[:, np.newaxis]
         )
@@ -678,6 +677,7 @@ def transform_feature_points(
             features[vert_coord].values[:, np.newaxis]
         )
         ret_features["vdim"] = ("index", closest_alt_pts[:, 0])
+
         dist_cond = xr.DataArray(
             np.logical_or(
                 (dists[:, 0] * RADIUS_EARTH_M) < max_space_away,
@@ -685,14 +685,16 @@ def transform_feature_points(
             ),
             dims="index",
         )
-    else:
+    elif max_space_away is not None:
         dist_cond = xr.DataArray(
             (dists[:, 0] * RADIUS_EARTH_M) < max_space_away, dims="index"
         )
 
-    ret_features = ret_features.where(dist_cond, drop=True)
+    if max_space_away is not None or max_vspace_away is not None:
+        ret_features = ret_features.where(dist_cond, drop=True)
+
     # force times to match, where appropriate.
-    if "time" in new_dataset.coords:
+    if "time" in new_dataset.coords and max_time_away is not None:
         # this is necessary due to the iris/xarray/pandas weirdness that we have.
         old_feat_times = ret_features["time"].astype("datetime64[s]")
         new_dataset_times = new_dataset["time"].astype("datetime64[s]")
