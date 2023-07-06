@@ -176,7 +176,7 @@ def linking_trackpy(
 
     vertical_coord: str
         Name of the vertical coordinate. The vertical coordinate used
-        must be meters. If 'auto', tries to auto-detect.
+        must be meters. If None, tries to auto-detect.
         It looks for the coordinate or the dimension name corresponding
         to the string. To use `dz`, set this to `None`.
 

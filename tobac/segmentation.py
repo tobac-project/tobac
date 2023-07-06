@@ -317,7 +317,7 @@ def segmentation_timestep(
     level=None,
     method="watershed",
     max_distance=None,
-    vertical_coord="auto",
+    vertical_coord=None,
     PBC_flag="none",
     seed_3D_flag="column",
     seed_3D_size=5,
@@ -361,7 +361,7 @@ def segmentation_timestep(
         belonging to that cell. Default is None.
 
     vertical_coord : str, optional
-        Vertical coordinate in 3D input data. If 'auto', input is checked for
+        Vertical coordinate in 3D input data. If None, input is checked for
         one of {'z', 'model_level_number', 'altitude','geopotential_height'}
         as a likely coordinate name
 

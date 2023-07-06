@@ -435,7 +435,7 @@ def njit_if_available(func, **kwargs):
         return func
 
 
-def find_vertical_axis_from_coord(variable_cube, vertical_coord="auto"):
+def find_vertical_axis_from_coord(variable_cube, vertical_coord=None):
     """Function to find the vertical coordinate in the iris cube
 
     Parameters
@@ -469,7 +469,7 @@ def find_vertical_axis_from_coord(variable_cube, vertical_coord="auto"):
     ):
         list_coord_names = variable_cube.coords
 
-    if vertical_coord == "auto" or vertical_coord is None:
+    if vertical_coord is None:
         # find the intersection
         all_vertical_axes = list(set(list_coord_names) & set(list_vertical))
         if len(all_vertical_axes) >= 1:
@@ -514,7 +514,7 @@ def find_axis_from_coord(variable_cube, coord_name):
         return None
 
 
-def find_dataframe_vertical_coord(variable_dataframe, vertical_coord="auto"):
+def find_dataframe_vertical_coord(variable_dataframe, vertical_coord=None):
     """Function to find the vertical coordinate in the iris cube
 
     Parameters
@@ -535,7 +535,7 @@ def find_dataframe_vertical_coord(variable_dataframe, vertical_coord="auto"):
         Raised if the vertical coordinate isn't found in the cube.
     """
 
-    if vertical_coord == "auto":
+    if vertical_coord is None:
         list_vertical = ["z", "model_level_number", "altitude", "geopotential_height"]
         all_vertical_axes = list(set(variable_dataframe.columns) & set(list_vertical))
         if len(all_vertical_axes) == 1:
@@ -578,7 +578,7 @@ def calc_distance_coords(coords_1, coords_2):
     return np.sqrt(np.sum(deltas**2))
 
 
-def find_hdim_axes_3D(field_in, vertical_coord="auto", vertical_axis=None):
+def find_hdim_axes_3D(field_in, vertical_coord=None, vertical_axis=None):
     """Finds what the hdim axes are given a 3D (including z) or
     4D (including z and time) dataset.
 
@@ -637,8 +637,7 @@ def find_hdim_axes_3D_iris(field_in, vertical_coord=None, vertical_axis=None):
     """
 
     if vertical_coord is not None and vertical_axis is not None:
-        if vertical_coord != "auto":
-            raise ValueError("Cannot set both vertical_coord and vertical_axis.")
+        raise ValueError("Cannot set both vertical_coord and vertical_axis.")
 
     time_axis = find_axis_from_coord(field_in, "time")
     if vertical_axis is not None:

@@ -161,7 +161,7 @@ def add_coordinates(t, variable_cube):
 def add_coordinates_3D(
     t,
     variable_cube,
-    vertical_coord="auto",
+    vertical_coord=None,
     vertical_axis=None,
     assume_coords_fixed_in_time=True,
 ):
@@ -178,7 +178,7 @@ def add_coordinates_3D(
         and 'altitude' (if 3D) are the coordinates that we expect, although this function
         will happily interpolate along any dimension coordinates you give.
     vertical_coord: str or int
-        Name or axis number of the vertical coordinate. If 'auto', tries to auto-detect.
+        Name or axis number of the vertical coordinate. If None, tries to auto-detect.
         If it is a string, it looks for the coordinate or the dimension name corresponding
         to the string. If it is an int, it assumes that it is the vertical axis.
         Note that if you only have a 2D or 3D coordinate for altitude, you must
@@ -594,7 +594,7 @@ def transform_feature_points(
     longitude_name: str
         The name of the longitude coordinate. If None, tries to auto-detect.
     altitude_name: str
-        The name of the altitude coordinate. If "auto", tries to auto-detect.
+        The name of the altitude coordinate. If None, tries to auto-detect.
     max_time_away: datetime.timedelta
         The maximum time delta to associate feature points away from.
     max_space_away: float

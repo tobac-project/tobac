@@ -266,11 +266,11 @@ def test_add_coordinates_3D(
 @pytest.mark.parametrize(
     "vertical_coord_names, vertical_coord_pass_in, expect_raise",
     [
-        (["z"], "auto", False),
-        (["pudding"], "auto", True),
+        (["z"], None, False),
+        (["pudding"], None, True),
         (["pudding"], "pudding", False),
         (["z", "model_level_number"], "pudding", True),
-        (["z", "model_level_number"], "auto", True),
+        (["z", "model_level_number"], None, True),
         (["z", "model_level_number"], "z", False),
     ],
 )

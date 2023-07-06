@@ -1019,7 +1019,7 @@ def feature_detection_multithreshold(
     min_distance=0,
     feature_number_start=1,
     PBC_flag="none",
-    vertical_coord="auto",
+    vertical_coord=None,
     vertical_axis=None,
     detect_subset=None,
     wavelength_filtering=None,
@@ -1081,7 +1081,7 @@ def feature_detection_multithreshold(
         'hdim_2' means that we are periodic along hdim2
         'both' means that we are periodic along both horizontal dimensions
     vertical_coord: str
-        Name of the vertical coordinate. If 'auto', tries to auto-detect.
+        Name of the vertical coordinate. If None, tries to auto-detect.
         It looks for the coordinate or the dimension name corresponding
         to the string.
     vertical_axis: int or None.
@@ -1324,7 +1324,7 @@ def filter_min_distance(
         This is typically `projection_y_coordinate`. Currently unused.
     z_coordinate_name: str or None
         The name of the z coordinate to calculate distance based on in meters.
-        This is typically `altitude`. If `auto`, tries to auto-detect.
+        This is typically `altitude`. If None, tries to auto-detect.
     target: {'maximum', 'minimum'}, optional
         Flag to determine if tracking is targetting minima or maxima in
         the data. Default is 'maximum'.
