@@ -253,7 +253,7 @@ def test_feature_detection_position(position_threshold):
             1000,
             100,
             1,
-            "chaos",
+            "__invalid_option__",
             False,
             False,
             False,
