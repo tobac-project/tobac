@@ -592,13 +592,15 @@ def combine_feature_dataframes(
     if not renumber_features and np.any(
         np.bincount(combined_df["feature"] + np.nanmin(combined_df["feature"])) > 1
     ):
-        error = ValueError("Non-unique feature values detected")
-        error.add_note(
-            "Combining feature dataframes with original feature numbers cannot be performed because duplicate feature numbers exist, please use 'renumber_features=True'"
+        error = ValueError(
+            "Non-unique feature values detected. Combining feature dataframes with original feature numbers cannot be performed because duplicate feature numbers exist, please use 'renumber_features=True'. If you would like to preserve the original feature numbers, please use the 'old_feature_column_name' keyword to define a new column for these values in the returned dataframe"
         )
-        error.add_note(
-            "If you would like to preserve the original feature numbers, please use the 'old_feature_column_name' keyword to define a new column for these values in the returned dataframe"
-        )
+        # error.add_note(
+        #     "Combining feature dataframes with original feature numbers cannot be performed because duplicate feature numbers exist, please use 'renumber_features=True'"
+        # )
+        # error.add_note(
+        #     "If you would like to preserve the original feature numbers, please use the 'old_feature_column_name' keyword to define a new column for these values in the returned dataframe"
+        # )
         raise error
 
     if sort_features_by is None:
