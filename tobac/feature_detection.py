@@ -298,9 +298,7 @@ def remove_parents(features_thresholds, regions_i, regions_old):
         old_feat_arr[curr_loc : curr_loc + len(regions_old[idx_old])] = idx_old
         curr_loc += len(regions_old[idx_old])
 
-    common_pts, common_ix_new, common_ix_old = np.intersect1d(
-        all_curr_pts, all_old_pts, return_indices=True
-    )
+    _, _, common_ix_old = np.intersect1d(all_curr_pts, all_old_pts, return_indices=True)
     list_remove = np.unique(old_feat_arr[common_ix_old])
 
     # remove parent regions:
@@ -826,6 +824,7 @@ def feature_detection_multithreshold_timestep(
     vertical_axis=None,
     dxy=-1,
     wavelength_filtering=None,
+    strict_thresholding=False,
 ):
     """Find features in each timestep.
 
@@ -886,6 +885,9 @@ def feature_detection_multithreshold_timestep(
     wavelength_filtering: tuple, optional
        Minimum and maximum wavelength for spectral filtering in meter. Default is None.
 
+    strict_thresholding: Bool, optional
+        If True, a feature can only be detected if all previous thresholds have been met.
+        Default is False.
 
     Returns
     -------
@@ -905,8 +907,8 @@ def feature_detection_multithreshold_timestep(
             FutureWarning,
         )
 
-    # get actual numpy array
-    track_data = data_i.core_data()
+    # get actual numpy array and make a copy so as not to change the data in the iris cube
+    track_data = data_i.core_data().copy()
 
     track_data = gaussian_filter(
         track_data, sigma=sigma_threshold
@@ -998,7 +1000,38 @@ def feature_detection_multithreshold_timestep(
             features_thresholds = remove_parents(
                 features_thresholds, regions_i, regions_old
             )
-        regions_old = regions_i
+
+        if strict_thresholding:
+            if regions_i:
+                # remove data in regions where no features were detected
+                valid_regions: np.ndarray = np.zeros_like(track_data)
+                region_indices: list[int] = list(regions_i.values())[
+                    0
+                ]  # linear indices
+                valid_regions.ravel()[region_indices] = 1
+                track_data: np.ndarray = np.multiply(valid_regions, track_data)
+            else:
+                # since regions_i is empty no further features can be detected
+                logging.debug(
+                    "Finished feature detection for threshold "
+                    + str(i_threshold)
+                    + " : "
+                    + str(threshold_i)
+                )
+                return features_thresholds
+
+        if i_threshold > 0 and not features_thresholds.empty and regions_old:
+            # Work out which regions are still in feature_thresholds to keep
+            # This is faster than calling "in" for every idx
+            keep_old_keys = np.isin(
+                list(regions_old.keys()), features_thresholds["idx"]
+            )
+            regions_old = {
+                k: v for i, (k, v) in enumerate(regions_old.items()) if keep_old_keys[i]
+            }
+            regions_old.update(regions_i)
+        else:
+            regions_old = regions_i
 
         logging.debug(
             "Finished feature detection for threshold "
@@ -1027,6 +1060,7 @@ def feature_detection_multithreshold(
     detect_subset=None,
     wavelength_filtering=None,
     dz=None,
+    strict_thresholding=False,
 ):
     """Perform feature detection based on contiguous regions.
 
@@ -1109,6 +1143,10 @@ def feature_detection_multithreshold(
         in the `features` input. If you specify a value here, this function assumes
         that it is the constant z spacing between points, even if ```z_coordinate_name```
         is specified.
+
+    strict_thresholding: Bool, optional
+        If True, a feature can only be detected if all previous thresholds have been met.
+        Default is False.
 
     Returns
     -------
@@ -1234,6 +1272,7 @@ def feature_detection_multithreshold(
             vertical_axis=vertical_axis,
             dxy=dxy,
             wavelength_filtering=wavelength_filtering,
+            strict_thresholding=strict_thresholding,
         )
         # check if list of features is not empty, then merge features from different threshold values
         # into one DataFrame and append to list for individual timesteps:
