@@ -1088,7 +1088,7 @@ def segmentation(
     level=None,
     method="watershed",
     max_distance=None,
-    vertical_coord="auto",
+    vertical_coord=None,
     PBC_flag="none",
     seed_3D_flag="column",
     seed_3D_size=5,

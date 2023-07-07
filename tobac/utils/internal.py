@@ -4,6 +4,17 @@ import numpy as np
 import skimage.measure
 import xarray as xr
 import iris
+import warnings
+
+
+def _warn_auto_coordinate():
+    """
+    Internal function to warn on the use of `auto` as a default coordinate.
+    """
+    warnings.warn(
+        '"auto" as a coordinate is deprecated. Use None instead.',
+        DeprecationWarning,
+    )
 
 
 def get_label_props_in_dict(labels):
@@ -462,6 +473,9 @@ def find_vertical_axis_from_coord(variable_cube, vertical_coord=None):
         "geopotential_height",
     ]
 
+    if vertical_coord == "auto":
+        _warn_auto_coordinate()
+
     if isinstance(variable_cube, iris.cube.Cube):
         list_coord_names = [coord.name() for coord in variable_cube.coords()]
     elif isinstance(variable_cube, xr.Dataset) or isinstance(
@@ -469,7 +483,7 @@ def find_vertical_axis_from_coord(variable_cube, vertical_coord=None):
     ):
         list_coord_names = variable_cube.coords
 
-    if vertical_coord is None:
+    if vertical_coord is None or vertical_coord == "auto":
         # find the intersection
         all_vertical_axes = list(set(list_coord_names) & set(list_vertical))
         if len(all_vertical_axes) >= 1:
@@ -522,7 +536,7 @@ def find_dataframe_vertical_coord(variable_dataframe, vertical_coord=None):
     variable_dataframe: pandas.DataFrame
         Input variable cube, containing a vertical coordinate.
     vertical_coord: str
-        Vertical coordinate name. If `auto`, this function tries to auto-detect.
+        Vertical coordinate name. If None, this function tries to auto-detect.
 
     Returns
     -------
@@ -535,7 +549,10 @@ def find_dataframe_vertical_coord(variable_dataframe, vertical_coord=None):
         Raised if the vertical coordinate isn't found in the cube.
     """
 
-    if vertical_coord is None:
+    if vertical_coord == "auto":
+        _warn_auto_coordinate()
+
+    if vertical_coord is None or vertical_coord == "auto":
         list_vertical = ["z", "model_level_number", "altitude", "geopotential_height"]
         all_vertical_axes = list(set(variable_dataframe.columns) & set(list_vertical))
         if len(all_vertical_axes) == 1:
@@ -587,12 +604,11 @@ def find_hdim_axes_3D(field_in, vertical_coord=None, vertical_axis=None):
     field_in: iris cube or xarray dataset
         Input field, can be 3D or 4D
     vertical_coord: str
-        The name of the vertical coord, or "auto", which will attempt to find
+        The name of the vertical coord, or None, which will attempt to find
         the vertical coordinate name
     vertical_axis: int or None
         The axis number of the vertical coordinate, or None. Note
-        that only one of vertical_axis or vertical_coord can be set,
-        unless vertical_coord="auto".
+        that only one of vertical_axis or vertical_coord can be set.
 
     Returns
     -------
@@ -601,6 +617,9 @@ def find_hdim_axes_3D(field_in, vertical_coord=None, vertical_axis=None):
 
     """
     from iris import cube as iris_cube
+
+    if vertical_coord == "auto":
+        _warn_auto_coordinate()
 
     if vertical_coord is not None and vertical_axis is not None:
         if vertical_coord != "auto":
@@ -623,12 +642,11 @@ def find_hdim_axes_3D_iris(field_in, vertical_coord=None, vertical_axis=None):
     field_in: iris cube
         Input field, can be 3D or 4D
     vertical_coord: str or None
-        The name of the vertical coord, or "auto", which will attempt to find
+        The name of the vertical coord, or None, which will attempt to find
         the vertical coordinate name
     vertical_axis: int or None
         The axis number of the vertical coordinate, or None. Note
-        that only one of vertical_axis or vertical_coord can be set,
-        unless vertical_coord="auto".
+        that only one of vertical_axis or vertical_coord can be set.
 
     Returns
     -------
@@ -636,8 +654,12 @@ def find_hdim_axes_3D_iris(field_in, vertical_coord=None, vertical_axis=None):
         The axes for hdim_1 and hdim_2
     """
 
+    if vertical_coord == "auto":
+        _warn_auto_coordinate()
+
     if vertical_coord is not None and vertical_axis is not None:
-        raise ValueError("Cannot set both vertical_coord and vertical_axis.")
+        if vertical_coord != "auto":
+            raise ValueError("Cannot set both vertical_coord and vertical_axis.")
 
     time_axis = find_axis_from_coord(field_in, "time")
     if vertical_axis is not None:
@@ -701,11 +723,15 @@ def detect_latlon_coord_name(in_dataset, latitude_name=None, longitude_name=None
         coordinate is not detected, returns None for that coordinate.
 
     """
+
+    if latitude_name == "auto" or longitude_name == "auto":
+        _warn_auto_coordinate()
+
     out_lat = None
     out_lon = None
     test_lat_names = ["lat", "latitude"]
     test_lon_names = ["lon", "long", "longitude"]
-    if latitude_name is not None:
+    if latitude_name is not None and latitude_name != "auto":
         if latitude_name in in_dataset.coords:
             out_lat = latitude_name
     else:
@@ -713,7 +739,7 @@ def detect_latlon_coord_name(in_dataset, latitude_name=None, longitude_name=None
             if test_lat_name in in_dataset.coords:
                 out_lat = test_lat_name
                 break
-    if longitude_name is not None:
+    if longitude_name is not None and longitude_name != "auto":
         if longitude_name in in_dataset.coords:
             out_lon = longitude_name
     else:
