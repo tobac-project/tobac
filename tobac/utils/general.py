@@ -516,13 +516,11 @@ def spectral_filtering(
         return filtered_field
 
 
-def combine_tobac_feats(
-    list_of_feats,
-    renumber_features=True,
-    preserve_old_feat_nums=None,
-    sort_features_by=None,
-):
-    """Function to combine a list of tobac feature detection dataframes
+def combine_tobac_feats(list_of_feats, preserve_old_feat_nums=None):
+    """WARNING: This function has been deprecated and will be removed in a future
+    release, please use 'combine_feature_dataframes' instead
+
+    Function to combine a list of tobac feature detection dataframes
     into one combined dataframe that can be used for tracking
     or segmentation.
     Parameters
@@ -530,13 +528,48 @@ def combine_tobac_feats(
     list_of_feats: array-like of Pandas DataFrames
         A list of dataframes (generated, for example, by
         running feature detection on multiple nodes).
+    preserve_old_feat_nums: str or None
+        The column name to preserve old feature numbers in. If None, these
+        old numbers will be deleted. Users may want to enable this feature
+        if they have run segmentation with the separate dataframes and
+        therefore old feature numbers.
+    Returns
+    -------
+    pd.DataFrame
+        One combined DataFrame."""
+    import warnings
+
+    warnings.warn(
+        "This function has been deprecated and will be removed in a future release, please use 'combine_feature_dataframes' instead",
+        DeprecationWarning,
+    )
+
+    return combine_feature_dataframes(
+        list_of_feats, old_feature_column_name=preserve_old_feat_nums
+    )
+
+
+def combine_feature_dataframes(
+    feature_df_list,
+    renumber_features=True,
+    old_feature_column_name=None,
+    sort_features_by=None,
+):
+    """Function to combine a list of tobac feature detection dataframes
+    into one combined dataframe that can be used for tracking
+    or segmentation.
+    Parameters
+    ----------
+    feature_df_list: array-like of Pandas DataFrames
+        A list of dataframes (generated, for example, by
+        running feature detection on multiple nodes).
     renumber_features: bool, optional (default: True)
         If true, features are renumber with contiguous integers. If false, the
         old feature numbers will be retained, but an exception will be raised if
         there are any non-unique feature numbers. If you have non-unique feature
-        numbers and want to preserve them, use the preserve_old_feat_nums to
+        numbers and want to preserve them, use the old_feature_column_name to
         save the old feature numbers to under a different column name.
-    preserve_old_feat_nums: str or None, optional (default: None)
+    old_feature_column_name: str or None, optional (default: None)
         The column name to preserve old feature numbers in. If None, these
         old numbers will be deleted. Users may want to enable this feature
         if they have run segmentation with the separate dataframes and
@@ -554,14 +587,19 @@ def combine_tobac_feats(
     import pandas as pd
 
     # first, let's just combine these.
-    combined_df = pd.concat(list_of_feats)
+    combined_df = pd.concat(feature_df_list)
 
     if not renumber_features and np.any(
         np.bincount(combined_df["feature"] + np.nanmin(combined_df["feature"])) > 1
     ):
-        raise ValueError(
-            "Non-unique feature values detected, please use renumber_features=True"
+        error = ValueError("Non-unique feature values detected")
+        error.add_note(
+            "Combining feature dataframes with original feature numbers cannot be performed because duplicate feature numbers exist, please use 'renumber_features=True'"
         )
+        error.add_note(
+            "If you would like to preserve the original feature numbers, please use the 'old_feature_column_name' keyword to define a new column for these values in the returned dataframe"
+        )
+        raise error
 
     if sort_features_by is None:
         if renumber_features:
@@ -571,8 +609,8 @@ def combine_tobac_feats(
     # # Then, sort by time first, then by feature number
     # combined_df = combined_df.sort_values(["time", "feature"])
     # Save the old feature numbers if requested.
-    if preserve_old_feat_nums is not None:
-        combined_df[preserve_old_feat_nums] = combined_df["feature"]
+    if old_feature_column_name is not None:
+        combined_df[old_feature_column_name] = combined_df["feature"]
     # count_per_time = combined_feats.groupby('time')['index'].count()
     combined_df["frame"] = combined_df["time"].rank(method="dense").astype(int) - 1
     combined_sorted = combined_df.sort_values(sort_features_by, ignore_index=True)

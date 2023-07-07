@@ -4,6 +4,7 @@ from .general import (
     get_spacings,
     get_bounding_box,
     combine_tobac_feats,
+    combine_feature_dataframes,
 )
 from .mask import (
     mask_cell,
