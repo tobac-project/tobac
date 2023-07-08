@@ -1,5 +1,6 @@
-How to Check if Sphinx-based Rendering of ``tobac`` is Working?
-===============================================================
+How to check the Sphinx-based rendering
+---------------------------------------
+
 
 The workflow has been tested in a linux system. We aim to build a static
 website out of the documentation material present in ``tobac``.
