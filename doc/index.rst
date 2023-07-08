@@ -66,6 +66,7 @@ The project is currently being extended by several contributors to include addit
 
    code_structure
    contributing
+   testing_sphinx-based_rendering
    code_reviews
    mentoring
 
