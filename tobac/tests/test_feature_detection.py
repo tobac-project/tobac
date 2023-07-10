@@ -453,14 +453,14 @@ def test_filter_min_distance(
     "vertical_coord_name,"
     " vertical_coord_opt, expected_raise",
     [
-        ((1, 20, 30, 40), 1, "altitude", "auto", False),
-        ((1, 20, 30, 40), 2, "altitude", "auto", False),
-        ((1, 20, 30, 40), 3, "altitude", "auto", False),
+        ((1, 20, 30, 40), 1, "altitude", None, False),
+        ((1, 20, 30, 40), 2, "altitude", None, False),
+        ((1, 20, 30, 40), 3, "altitude", None, False),
         ((1, 20, 30, 40), 1, "air_pressure", "air_pressure", False),
-        ((1, 20, 30, 40), 1, "air_pressure", "auto", True),
-        ((1, 20, 30, 40), 1, "model_level_number", "auto", False),
-        ((1, 20, 30, 40), 1, "altitude", "auto", False),
-        ((1, 20, 30, 40), 1, "geopotential_height", "auto", False),
+        ((1, 20, 30, 40), 1, "air_pressure", None, True),
+        ((1, 20, 30, 40), 1, "model_level_number", None, False),
+        ((1, 20, 30, 40), 1, "altitude", None, False),
+        ((1, 20, 30, 40), 1, "geopotential_height", None, False),
     ],
 )
 def test_feature_detection_multiple_z_coords(

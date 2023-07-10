@@ -1,9 +1,18 @@
 """General tobac utilities
 
 """
+import copy
 import logging
+
+import pandas as pd
+
 from . import internal as internal_utils
 import numpy as np
+import sklearn
+import sklearn.neighbors
+import datetime
+import xarray as xr
+import warnings
 
 
 def add_coordinates(t, variable_cube):
@@ -152,7 +161,7 @@ def add_coordinates(t, variable_cube):
 def add_coordinates_3D(
     t,
     variable_cube,
-    vertical_coord="auto",
+    vertical_coord=None,
     vertical_axis=None,
     assume_coords_fixed_in_time=True,
 ):
@@ -169,7 +178,7 @@ def add_coordinates_3D(
         and 'altitude' (if 3D) are the coordinates that we expect, although this function
         will happily interpolate along any dimension coordinates you give.
     vertical_coord: str or int
-        Name or axis number of the vertical coordinate. If 'auto', tries to auto-detect.
+        Name or axis number of the vertical coordinate. If None, tries to auto-detect.
         If it is a string, it looks for the coordinate or the dimension name corresponding
         to the string. If it is an int, it assumes that it is the vertical axis.
         Note that if you only have a 2D or 3D coordinate for altitude, you must
@@ -551,3 +560,162 @@ def combine_tobac_feats(list_of_feats, preserve_old_feat_nums=None):
     combined_sorted["feature"] = np.arange(1, len(combined_sorted) + 1)
     combined_sorted = combined_sorted.reset_index(drop=True)
     return combined_sorted
+
+
+@internal_utils.irispandas_to_xarray
+def transform_feature_points(
+    features,
+    new_dataset,
+    latitude_name=None,
+    longitude_name=None,
+    altitude_name=None,
+    max_time_away=None,
+    max_space_away=None,
+    max_vspace_away=None,
+    warn_dropped_features=True,
+):
+    """Function to transform input feature dataset horizontal grid points to a different grid.
+    The typical use case for this function is to transform detected features to perform
+    segmentation on a different grid.
+
+    The existing feature dataset must have some latitude/longitude coordinates associated
+    with each feature, and the new_dataset must have latitude/longitude available with
+    the same name. Note that due to xarray/iris incompatibilities, we suggest that the
+    input coordinates match the standard_name from Iris.
+
+    Parameters
+    ----------
+    features: pd.DataFrame
+        Input feature dataframe
+    new_dataset: iris.cube.Cube or xarray
+        The dataset to transform the
+    latitude_name: str
+        The name of the latitude coordinate. If None, tries to auto-detect.
+    longitude_name: str
+        The name of the longitude coordinate. If None, tries to auto-detect.
+    altitude_name: str
+        The name of the altitude coordinate. If None, tries to auto-detect.
+    max_time_away: datetime.timedelta
+        The maximum time delta to associate feature points away from.
+    max_space_away: float
+        The maximum horizontal distance (in meters) to transform features to.
+    max_vspace_away: float
+        The maximum vertical distance (in meters) to transform features to.
+    warn_dropped_features: bool
+        Whether or not to print a warning message if one of the max_* options is
+        going to result in features that are dropped.
+    Returns
+    -------
+    transformed_features: pd.DataFrame
+        A new feature dataframe, with the coordinates transformed to
+        the new grid, suitable for use in segmentation
+
+    """
+    from .. import analysis as tb_analysis
+
+    RADIUS_EARTH_M = 6371000
+    is_3D = "vdim" in features
+    if is_3D:
+        vert_coord = internal_utils.find_vertical_axis_from_coord(
+            new_dataset, altitude_name
+        )
+
+    lat_coord, lon_coord = internal_utils.detect_latlon_coord_name(
+        new_dataset, latitude_name=latitude_name, longitude_name=longitude_name
+    )
+
+    if lat_coord not in features or lon_coord not in features:
+        raise ValueError("Cannot find latitude and/or longitude coordinate")
+
+    lat_vals_new = new_dataset[lat_coord].values
+    lon_vals_new = new_dataset[lon_coord].values
+
+    if len(lat_vals_new.shape) != len(lon_vals_new.shape):
+        raise ValueError(
+            "Cannot work with lat/lon coordinates of unequal dimensionality"
+        )
+
+    # the lat/lons must be a 2D grid, so if they aren't, make them one.
+    if len(lat_vals_new.shape) == 1:
+        lon_vals_new, lat_vals_new = np.meshgrid(lon_vals_new, lat_vals_new)
+
+    # we have to convert to radians because scikit-learn's haversine
+    # requires that the input be in radians.
+    flat_lats = np.deg2rad(lat_vals_new.ravel())
+    flat_lons = np.deg2rad(lon_vals_new.ravel())
+
+    # we have to drop NaN values.
+    either_nan = np.logical_or(np.isnan(flat_lats), np.isnan(flat_lons))
+    # we need to remember where these values are in the array so that we can
+    # appropriately unravel them.
+    loc_arr_trimmed = np.where(np.logical_not(either_nan))[0]
+    flat_lats_nona = flat_lats[~either_nan]
+    flat_lons_nona = flat_lons[~either_nan]
+    ll_tree = sklearn.neighbors.BallTree(
+        np.array([flat_lats_nona, flat_lons_nona]).T, metric="haversine"
+    )
+
+    ret_features = copy.deepcopy(features)
+
+    # there is almost certainly room for speedup in here.
+    rad_lats = np.deg2rad(features[lat_coord])
+    rad_lons = np.deg2rad(features[lon_coord])
+    dists, closest_pts = ll_tree.query(np.column_stack((rad_lats, rad_lons)))
+    unraveled_h1, unraveled_h2 = np.unravel_index(
+        loc_arr_trimmed[closest_pts[:, 0]], np.shape(lat_vals_new)
+    )
+
+    ret_features["hdim_1"] = ("index", unraveled_h1)
+    ret_features["hdim_2"] = ("index", unraveled_h2)
+
+    # now interpolate vertical, if available.
+    if is_3D and max_space_away is not None and max_vspace_away is not None:
+        alt_tree = sklearn.neighbors.BallTree(
+            new_dataset[vert_coord].values[:, np.newaxis]
+        )
+        alt_dists, closest_alt_pts = alt_tree.query(
+            features[vert_coord].values[:, np.newaxis]
+        )
+        ret_features["vdim"] = ("index", closest_alt_pts[:, 0])
+
+        dist_cond = xr.DataArray(
+            np.logical_or(
+                (dists[:, 0] * RADIUS_EARTH_M) < max_space_away,
+                alt_dists[:, 0] < max_vspace_away,
+            ),
+            dims="index",
+        )
+    elif max_space_away is not None:
+        dist_cond = xr.DataArray(
+            (dists[:, 0] * RADIUS_EARTH_M) < max_space_away, dims="index"
+        )
+
+    if max_space_away is not None or max_vspace_away is not None:
+        ret_features = ret_features.where(dist_cond, drop=True)
+
+    # force times to match, where appropriate.
+    if "time" in new_dataset.coords and max_time_away is not None:
+        # this is necessary due to the iris/xarray/pandas weirdness that we have.
+        old_feat_times = ret_features["time"].astype("datetime64[s]")
+        new_dataset_times = new_dataset["time"].astype("datetime64[s]")
+        closest_times = np.min(np.abs(old_feat_times - new_dataset_times), axis=1)
+        closest_time_locs = np.abs(old_feat_times - new_dataset_times).argmin(axis=1)
+        # force to seconds to deal with iris not accepting ms
+        ret_features["time"] = new_dataset["time"][closest_time_locs].astype(
+            "datetime64[s]"
+        )
+        ret_features = ret_features.where(
+            closest_times < np.timedelta64(max_time_away), drop=True
+        )
+
+    if warn_dropped_features:
+        returned_features = ret_features["feature"]
+        all_features = features["feature"]
+        removed_features = np.delete(
+            all_features, np.where(np.any(all_features == returned_features))
+        )
+        warnings.warn(
+            "Dropping feature numbers: " + str(removed_features.values), UserWarning
+        )
+
+    return ret_features
