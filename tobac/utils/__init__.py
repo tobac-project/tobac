@@ -5,6 +5,7 @@ from .general import (
     get_bounding_box,
     combine_tobac_feats,
     combine_feature_dataframes,
+    transform_feature_points,
 )
 from .mask import (
     mask_cell,

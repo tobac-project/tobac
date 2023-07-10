@@ -14,6 +14,7 @@ import pandas as pd
 import pandas.testing as pd_test
 import numpy as np
 from scipy import fft
+import xarray as xr
 
 
 def lists_equal_without_order(a, b):
@@ -265,11 +266,11 @@ def test_add_coordinates_3D(
 @pytest.mark.parametrize(
     "vertical_coord_names, vertical_coord_pass_in, expect_raise",
     [
-        (["z"], "auto", False),
-        (["pudding"], "auto", True),
+        (["z"], None, False),
+        (["pudding"], None, True),
         (["pudding"], "pudding", False),
         (["z", "model_level_number"], "pudding", True),
-        (["z", "model_level_number"], "auto", True),
+        (["z", "model_level_number"], None, True),
         (["z", "model_level_number"], "z", False),
     ],
 )
@@ -454,3 +455,134 @@ def test_combine_tobac_feats():
     )
     assert np.all(list(combined_feat["feature"].values) == [1, 2])
     assert np.all(list(combined_feat["old_feat_column"].values) == [3, 1])
+
+
+def test_transform_feature_points():
+    """Tests tobac.utils.general.transform_feature_points"""
+
+    # generate features
+    orig_feat_df_1 = tb_test.generate_single_feature(0, 95, max_h1=1000, max_h2=1000)
+    orig_feat_df_2 = tb_test.generate_single_feature(5, 105, max_h1=1000, max_h2=1000)
+
+    orig_feat_df = tb_utils.combine_tobac_feats([orig_feat_df_1, orig_feat_df_2])
+
+    # just make their lat/lons the same as the hdims.
+    orig_feat_df["latitude"] = orig_feat_df["hdim_1"]
+    orig_feat_df["longitude"] = orig_feat_df["hdim_2"]
+
+    # Make a test dataset with lats spanning from -25 to 24
+    # and lons spanning from 90 to 139.
+    test_lat = np.linspace(-25, 24, 50)
+    test_lon = np.linspace(90, 139, 50)
+    in_xr = xr.Dataset(
+        {"data": (("latitude", "longitude"), np.empty((50, 50)))},
+        coords={"latitude": test_lat, "longitude": test_lon},
+    )
+
+    new_feat_df = tb_utils.general.transform_feature_points(
+        orig_feat_df,
+        in_xr["data"].to_iris(),
+        max_time_away=datetime.timedelta(minutes=1),
+        max_space_away=20 * 1000,
+    )
+    # recall that these are the *array positions*
+    # so [25, 5] for "hdim_1" and "hdim_2" are lat 0, long 95.
+    assert np.all(new_feat_df["hdim_1"] == [25, 30])
+    assert np.all(new_feat_df["hdim_2"] == [5, 15])
+
+    # now test max space apart - we should drop the second feature,
+    # which is at 5, 105 lat/lon as the maximum latitude in the new dataset is 0.
+    # we set the max space away at 20km.
+    test_lat = np.linspace(-49, 0, 50)
+    in_xr = xr.Dataset(
+        {"data": (("latitude", "longitude"), np.empty((50, 50)))},
+        coords={"latitude": test_lat, "longitude": test_lon},
+    )
+
+    new_feat_df = tb_utils.general.transform_feature_points(
+        orig_feat_df,
+        in_xr["data"].to_iris(),
+        max_space_away=20000,
+        max_time_away=datetime.timedelta(minutes=1),
+    )
+
+    assert np.all(new_feat_df["hdim_1"] == [49])
+    assert np.all(new_feat_df["hdim_2"] == [5])
+
+    # now test max time apart
+    test_lat = np.linspace(-25, 24, 50)
+    in_xr = xr.Dataset(
+        {"data": (("time", "latitude", "longitude"), np.empty((2, 50, 50)))},
+        coords={
+            "latitude": test_lat,
+            "longitude": test_lon,
+            "time": [
+                datetime.datetime(2023, 1, 1, 0, 0),
+                datetime.datetime(2023, 1, 1, 0, 5),
+            ],
+        },
+    )
+
+    orig_feat_df["time"] = datetime.datetime(2023, 1, 1, 0, 0, 5)
+    new_feat_df = tb_utils.general.transform_feature_points(
+        orig_feat_df,
+        in_xr["data"].to_iris(),
+        max_time_away=datetime.timedelta(minutes=10),
+        max_space_away=20 * 1000,
+    )
+    # we should still have both features, but they should have the new time.
+    assert np.all(new_feat_df["hdim_1"] == [25, 30])
+    assert np.all(new_feat_df["hdim_2"] == [5, 15])
+    assert np.all(
+        new_feat_df["time"]
+        == [datetime.datetime(2023, 1, 1, 0, 0), datetime.datetime(2023, 1, 1, 0, 0)]
+    )
+
+    # now make the features have time on the next day
+    # both should be dropped.
+    orig_feat_df["time"] = datetime.datetime(2023, 1, 2, 0, 0)
+    new_feat_df = tb_utils.general.transform_feature_points(
+        orig_feat_df,
+        in_xr["data"].to_iris(),
+        max_time_away=datetime.timedelta(minutes=1),
+    )
+
+    assert np.all(new_feat_df["hdim_1"] == [])
+    assert np.all(new_feat_df["hdim_2"] == [])
+
+
+def test_transform_feature_points_3D():
+    """Tests tobac.utils.general.transform_feature_points for a 3D case"""
+
+    orig_feat_df_1 = tb_test.generate_single_feature(
+        0, 95, 10, max_h1=1000, max_h2=1000
+    )
+    orig_feat_df_2 = tb_test.generate_single_feature(
+        5, 105, 20, max_h1=1000, max_h2=1000
+    )
+
+    orig_feat_df = tb_utils.combine_tobac_feats([orig_feat_df_1, orig_feat_df_2])
+
+    orig_feat_df["latitude"] = orig_feat_df["hdim_1"]
+    orig_feat_df["longitude"] = orig_feat_df["hdim_2"]
+    orig_feat_df["altitude"] = orig_feat_df["vdim"] * 1000
+
+    test_lat = np.linspace(-25, 24, 50)
+    test_lon = np.linspace(90, 139, 50)
+    test_alt = np.arange(0, 21, 2) * 1000
+    in_xr = xr.Dataset(
+        {"data": (("altitude", "latitude", "longitude"), np.empty((11, 50, 50)))},
+        coords={"latitude": test_lat, "longitude": test_lon, "altitude": test_alt},
+    )
+
+    new_feat_df = tb_utils.general.transform_feature_points(
+        orig_feat_df,
+        in_xr["data"].to_iris(),
+        max_time_away=datetime.timedelta(minutes=1),
+        max_space_away=20 * 1000,
+        max_vspace_away=200,
+    )
+
+    assert np.all(new_feat_df["hdim_1"] == [25, 30])
+    assert np.all(new_feat_df["hdim_2"] == [5, 15])
+    assert np.all(new_feat_df["vdim"] == [5, 10])
