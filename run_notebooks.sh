@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 find . -type f -name '*.ipynb' -not -path "*/.ipynb_checkpoints/*" > nbfiles.txt
 cat nbfiles.txt
 
