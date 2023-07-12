@@ -56,6 +56,7 @@ autodoc_mock_imports = [
     "trackpy",
     "numba",
     "skimage",
+    "sklearn",
 ]
 
 sys.path.insert(0, os.path.abspath("../"))
