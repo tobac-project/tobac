@@ -1,39 +1,63 @@
-'''This file is used to configure the Sphinx build of our documentation.
+"""This file is used to configure the Sphinx build of our documentation.
 The documentation on setting this up is here: https://www.sphinx-doc.org/en/master/usage/configuration.html 
-'''
+"""
 
 # This is the standard readthedocs theme.
 import sphinx_rtd_theme
 import sys, os
 
-sys.path.insert(0, os.path.abspath('extensions'))
+sys.path.insert(0, os.path.abspath("extensions"))
 
 # What Sphinx extensions do we need
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.todo',
-              'sphinx.ext.coverage', 'sphinx.ext.imgmath', 'sphinx.ext.ifconfig',
-              'sphinx_rtd_theme','sphinx.ext.napoleon', 'nbsphinx']
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.doctest",
+    "sphinx.ext.todo",
+    "sphinx.ext.coverage",
+    "sphinx.ext.imgmath",
+    "sphinx.ext.ifconfig",
+    "sphinx_rtd_theme",
+    "sphinx.ext.napoleon",
+    "nbsphinx",
+]
 
 
 html_theme = "sphinx_rtd_theme"
 
-html_static_path = ['_static']
+html_static_path = ["_static"]
 
 
-project = u'tobac'
+project = "tobac"
 
-master_doc = 'index'
+master_doc = "index"
 
 # allow dropdowns
 collapse_navigation = False
 
+
 # Include our custom CSS (currently for special table config)
 def setup(app):
-   app.add_css_file("theme_overrides.css")
+    app.add_css_file("theme_overrides.css")
+
 
 # This should include all modules used in tobac. These are dummy imports,
 # but should include both required and optional dependencies.
-autodoc_mock_imports = ['numpy', 'scipy', 'scikit-image', 'pandas', 'pytables', 'matplotlib', 'iris',
-                        'cf-units', 'xarray', 'cartopy', 'trackpy', 'numba']
+autodoc_mock_imports = [
+    #    "numpy",
+    "scipy",
+    "scikit-image",
+    "pandas",
+    "pytables",
+    "matplotlib",
+    "iris",
+    "cf-units",
+    "xarray",
+    "cartopy",
+    "trackpy",
+    "numba",
+    "skimage",
+    "sklearn",
+]
 
 sys.path.insert(0, os.path.abspath("../"))
 

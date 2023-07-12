@@ -1,5 +1,6 @@
 import numpy as np
 import logging
+import warnings
 
 
 def tracking_wrapper(
@@ -11,11 +12,15 @@ def tracking_wrapper(
     parameters_tracking=None,
     parameters_segmentation=None,
 ):
-
     from .feature_detection import feature_detection_multithreshold
     from .tracking import linking_trackpy
     from .segmentation import segmentation_3D, segmentation_2D
     from .utils import get_spacings
+
+    warnings.warn(
+        "tracking_wrapper is depreciated and will be removed in v2.0.",
+        DeprecationWarning,
+    )
 
     logger = logging.getLogger("trackpy")
     logger.propagate = False
@@ -146,6 +151,11 @@ def maketrack(
     
     """
     from copy import deepcopy
+
+    warnings.warn(
+        "maketrack is depreciated and will be removed in v2.0.",
+        DeprecationWarning,
+    )
 
     logger = logging.getLogger("trackpy")
     logger.propagate = False

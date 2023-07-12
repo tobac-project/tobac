@@ -4,11 +4,11 @@
 tobac - Tracking and Object-Based Analysis of Clouds
 -------------------------------------------------------
 
-**tobac** is a Python package to identify, track and analyze clouds in different types of gridded datasets, such as 3D model output from cloud-resolving model simulations or 2D data from satellite retrievals.
+**tobac** is a Python package to rapidly identify, track and analyze clouds in different types of gridded datasets, such as 3D model output from cloud-resolving model simulations or 2D data from satellite retrievals.
 
 The software is set up in a modular way to include different algorithms for feature identification, tracking, and analyses. **tobac** is also input variable agnostic and doesn't rely on specific input variables, nor a specific grid to work.
 
-In the current implementation, individual features are identified as either maxima or minima in a two-dimensional time-varying field (see :doc:`feature_detection_overview`). An associated volume can then be determined using these features with a separate (or identical) time-varying 2D or 3D field and a threshold value (see :doc:`segmentation`). The identified objects are linked into consistent trajectories representing the cloud over its lifecycle in the tracking step. Analysis and visualization methods provide a convenient way to use and display the tracking results.
+Individual features are identified as either maxima or minima in a 2D or 3D time-varying field (see :doc:`feature_detection_overview`). An associated volume can then be determined using these features with a separate (or identical) time-varying 2D or 3D field and a threshold value (see :doc:`segmentation`). The identified objects are linked into consistent trajectories representing the cloud over its lifecycle in the tracking step. Analysis and visualization methods provide a convenient way to use and display the tracking results.
 
 Version 1.2 of tobac and some example applications are described in a peer-reviewed article in Geoscientific Model Development as:
 
@@ -45,6 +45,7 @@ The project is currently being extended by several contributors to include addit
    segmentation_parameters
    segmentation_output
    features_without_segmented_area
+   transform_segmentation
 
 .. toctree::
    :caption: Tracking
@@ -58,10 +59,9 @@ The project is currently being extended by several contributors to include addit
    :maxdepth: 2
 
    merge_split
-   merge_split_out_vars
 
 .. toctree::
    :caption: API Reference
-   :maxdepth: 2
+   :maxdepth: 3
 
    tobac

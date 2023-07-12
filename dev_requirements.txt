@@ -1,0 +1,15 @@
+# Python dependencies
+numpy
+scipy
+scikit-image
+scikit-learn
+pandas
+matplotlib
+iris
+xarray
+cartopy
+trackpy
+pre-commit
+black
+pytest
+

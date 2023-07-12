@@ -6,10 +6,11 @@ not have a segmented area associated with them (meaning that the mask file does 
 output dataframe results in 0 grid cells. )
 
 
-.. _Case 1
-======
+.. _Case 1:
+
+==============================
 Case 1: Segmentation threshold 
-======
+==============================
 
 If the segmentation threshold is lower (assuming `target='minimum'`) than the highest threshold specified in the Feature Detection (see :doc:`threshold_detection_parameters`) this could leave some features without a segmented area, simply because there are no values to be segmented.
 
@@ -23,10 +24,11 @@ If the segmentation threshold is larger than 5 (e.g.  `threshold = 6`), the segm
 
 If the segmentation threshold is lower than or equal to the highest feature detection threshold (e.g.  `threshold = 5`), features with threshold values lower than 5 still get a segmented area associated with them (upper panels). However, features that are exactly equal to 5 and do not contain any features with lower thresholds inside will not get any segmented area associated with them (lower panels) which results in no values in the mask for this feature  and `ncells=0`.
 
-.. _Case 2
-==========
+.. _Case 2:
+
+========================
 Case 2: Feature position
-==========
+========================
 
 Another reason for features that do not have a segmented area associated with them is the rare but possible case when the feature position is located outside of the threshold area: 
 

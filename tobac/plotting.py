@@ -356,7 +356,6 @@ def plot_tracks_mask_field(
     if np.any(
         ~np.isnan(field.data)
     ):  # check if field to plot is not only nan, which causes error:
-
         plot_field = iplt.contourf(
             field,
             coords=["longitude", "latitude"],
@@ -565,6 +564,10 @@ def plot_mask_cell_track_follow(
     Input:
     Output:
     """
+    warnings.warn(
+        "plot_mask_cell_track_follow is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
 
     mpl_backend = mpl.get_backend()
     if mpl_backend != "agg":
@@ -580,7 +583,6 @@ def plot_mask_cell_track_follow(
 
     track_cell = track[track["cell"] == cell]
     for i_row, row in track_cell.iterrows():
-
         constraint_time = Constraint(time=row["time"])
         constraint_x = Constraint(
             projection_x_coordinate=lambda cell: row["projection_x_coordinate"] - width
@@ -704,6 +706,11 @@ def plot_mask_cell_individual_follow(
     from .utils import mask_cell_surface
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     from matplotlib.colors import Normalize
+
+    warnings.warn(
+        "plot_mask_cell_individual_follow is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
 
     divider = make_axes_locatable(axes)
 
@@ -829,7 +836,6 @@ def plot_mask_cell_individual_follow(
         )
 
     if cog is not None:
-
         for i_row, row in cog.iterrows():
             cell = row["cell"]
 
@@ -848,7 +854,6 @@ def plot_mask_cell_individual_follow(
             )
 
     if features is not None:
-
         for i_row, row in features.iterrows():
             color = "purple"
             axes.plot(
@@ -891,6 +896,12 @@ def plot_mask_cell_track_static(
     Input:
     Output:
     """
+
+    warnings.warn(
+        "plot_mask_cell_track_static is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
+
     mpl_backend = mpl.get_backend()
     if mpl_backend != "agg":
         warnings.warn(
@@ -919,7 +930,6 @@ def plot_mask_cell_track_static(
     )
     time_cell = time[slice(i_start, i_end)]
     for time_i in time_cell:
-
         #    for i_row,row in track_cell.iterrows():
         #        time_i=row['time']
         #        constraint_time = Constraint(time=row['time'])
@@ -1057,6 +1067,11 @@ def plot_mask_cell_individual_static(
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     from matplotlib.colors import Normalize
 
+    warnings.warn(
+        "plot_mask_cell_individual_static is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
+
     divider = make_axes_locatable(axes)
 
     if field_filled is not None:
@@ -1188,7 +1203,6 @@ def plot_mask_cell_individual_static(
             linewidth=1,
         )
     if cog is not None:
-
         for i_row, row in cog.iterrows():
             cell = row["cell"]
 
@@ -1207,7 +1221,6 @@ def plot_mask_cell_individual_static(
             )
 
     if features is not None:
-
         for i_row, row in features.iterrows():
             color = "purple"
             axes.plot(
@@ -1252,6 +1265,11 @@ def plot_mask_cell_track_2D3Dstatic(
     Input:
     Output:
     """
+    warnings.warn(
+        "plot_mask_cell_track_2D3Dstatic is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
+
     mpl_backend = mpl.get_backend()
     if mpl_backend != "agg":
         warnings.warn(
@@ -1282,7 +1300,6 @@ def plot_mask_cell_track_2D3Dstatic(
     )
     time_cell = time[slice(i_start, i_end)]
     for time_i in time_cell:
-
         #    for i_row,row in track_cell.iterrows():
         #        time_i=row['time']
         #        constraint_time = Constraint(time=row['time'])
@@ -1426,6 +1443,11 @@ def plot_mask_cell_track_3Dstatic(
     Input:
     Output:
     """
+    warnings.warn(
+        "plot_mask_cell_track_3Dstatic is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
+
     mpl_backend = mpl.get_backend()
     if mpl_backend != "agg":
         warnings.warn(
@@ -1455,7 +1477,6 @@ def plot_mask_cell_track_3Dstatic(
     )
     time_cell = time[slice(i_start, i_end)]
     for time_i in time_cell:
-
         #    for i_row,row in track_cell.iterrows():
         #        time_i=row['time']
         #        constraint_time = Constraint(time=row['time'])
@@ -1602,6 +1623,11 @@ def plot_mask_cell_individual_3Dstatic(
     #    from mpl_toolkits.axes_grid1 import make_axes_locatable
     #    from matplotlib.colors import Normalize
     from mpl_toolkits.mplot3d import Axes3D
+
+    warnings.warn(
+        "plot_mask_cell_individual_3Dstatic is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
 
     axes.view_init(elev=ele, azim=azim)
     axes.grid(b=False)
@@ -1782,6 +1808,10 @@ def plot_mask_cell_track_static_timeseries(
     Input:
     Output:
     """
+    warnings.warn(
+        "plot_mask_cell_track_static_timeseries is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
 
     mpl_backend = mpl.get_backend()
     if mpl_backend != "agg":
@@ -1818,7 +1848,6 @@ def plot_mask_cell_track_static_timeseries(
     )
     time_cell = time[slice(i_start, i_end)]
     for time_i in time_cell:
-
         constraint_time = Constraint(time=time_i)
         constraint_x = Constraint(
             projection_x_coordinate=lambda cell: x_min < cell < x_max
