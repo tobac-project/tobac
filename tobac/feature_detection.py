@@ -330,7 +330,6 @@ def remove_parents(
         for idx_new in regions_i:
             new_feat_arr[curr_loc : curr_loc + len(regions_i[idx_new])] = idx_new
             curr_loc += len(regions_i[idx_new])
-        # _, _, common_ix_new = np.intersect1d(all_old_pts, all_curr_pts, return_indices=True)
         regions_i_overlap = np.unique(new_feat_arr[common_ix_new])
         no_prev_feature = np.array(list(regions_i.keys()))[
             np.logical_not(np.isin(list(regions_i.keys()), regions_i_overlap))
@@ -1046,9 +1045,6 @@ def feature_detection_multithreshold_timestep(
                 [features_thresholds, features_threshold_i], ignore_index=True
             )
 
-        # if i_threshold>0:
-        #     print(regions_old.keys())
-
         # For multiple threshold, and features found both in the current and previous step, remove "parent" features from Dataframe
         if i_threshold > 0 and not features_thresholds.empty:
             # for each threshold value: check if newly found features are surrounded by feature based on less restrictive threshold
@@ -1060,50 +1056,6 @@ def feature_detection_multithreshold_timestep(
             )
         elif i_threshold == 0:
             regions_old = regions_i
-
-        # print(regions_i.keys())
-        # if i_threshold>0:
-        #     print(regions_old.keys())
-
-        # if strict_thresholding:
-        #     if regions_i:
-        #         # remove data in regions where no features were detected
-        #         valid_regions: np.ndarray = np.zeros_like(track_data, dtype=bool)
-        #         region_indices: list[int] = list(regions_i.values())[
-        #             0
-        #         ]  # linear indices
-        #         valid_regions.ravel()[region_indices] = 1
-        #         if i_threshold > 2:
-        #             raise RuntimeError
-        #         # track_data[np.logical_not(valid_regions)] = threshold_i
-        #         if target=="maximum":
-        #             track_data[np.logical_not(valid_regions)] = np.minimum(track_data[np.logical_not(valid_regions)], threshold_i)
-        #         #     track_data[np.logical_not(valid_regions)] = -np.inf
-        #         elif target=="minimum":
-        #             track_data[np.logical_not(valid_regions)] = np.maximum(track_data[np.logical_not(valid_regions)], threshold_i)
-        #         #     track_data[np.logical_not(valid_regions)] = np.inf
-        #     else:
-        #         # since regions_i is empty no further features can be detected
-        #         logging.debug(
-        #             "Finished feature detection for threshold "
-        #             + str(i_threshold)
-        #             + " : "
-        #             + str(threshold_i)
-        #         )
-        #         return features_thresholds
-
-        # if i_threshold > 0 and not features_thresholds.empty and regions_old:
-        #     # Work out which regions are still in feature_thresholds to keep
-        #     # This is faster than calling "in" for every idx
-        #     keep_old_keys = np.isin(
-        #         list(regions_old.keys()), features_thresholds["idx"]
-        #     )
-        #     regions_old = {
-        #         k: v for i, (k, v) in enumerate(regions_old.items()) if keep_old_keys[i]
-        #     }
-        #     regions_old.update(regions_i)
-        # else:
-        #     regions_old = regions_i
 
         logging.debug(
             "Finished feature detection for threshold "
