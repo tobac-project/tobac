@@ -1,0 +1,23 @@
+name: Check Zenodo JSON Formatting
+on: [push, pull_request]
+jobs:
+  check-json-formatting:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - name: check out repository code
+        uses: actions/checkout@v3
+      - name: set up conda environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          auto-activate-base: false
+          activate-environment: checkjson-env
+      - name: Install check-jsonschema
+        run: |
+          pip install check-jsonschema
+      - name: Check zenodo JSON formatting
+        run: |
+          check-jsonschema --schemafile https://zenodraft.github.io/metadata-schema-zenodo/latest/schema.json .zenodo.json

@@ -31,6 +31,7 @@ References
 """
 import copy
 import logging
+import numpy as np
 
 import skimage
 import numpy as np
@@ -321,7 +322,7 @@ def segmentation_timestep(
     level=None,
     method="watershed",
     max_distance=None,
-    vertical_coord="auto",
+    vertical_coord=None,
     PBC_flag="none",
     seed_3D_flag="column",
     seed_3D_size=5,
@@ -366,7 +367,7 @@ def segmentation_timestep(
         belonging to that cell. Default is None.
 
     vertical_coord : str, optional
-        Vertical coordinate in 3D input data. If 'auto', input is checked for
+        Vertical coordinate in 3D input data. If None, input is checked for
         one of {'z', 'model_level_number', 'altitude','geopotential_height'}
         as a likely coordinate name
 
@@ -1139,7 +1140,7 @@ def segmentation(
     level=None,
     method="watershed",
     max_distance=None,
-    vertical_coord="auto",
+    vertical_coord=None,
     PBC_flag="none",
     seed_3D_flag="column",
     seed_3D_size=5,
@@ -1264,7 +1265,7 @@ def segmentation(
 
     for i, field_i in enumerate(field_time):
         time_i = field_i.coord("time").units.num2date(field_i.coord("time").points[0])
-        features_i = features.loc[features["time"] == time_i]
+        features_i = features.loc[features["time"] == np.datetime64(time_i)]
         segmentation_out_i, features_out_i = segmentation_timestep(
             field_i,
             features_i,

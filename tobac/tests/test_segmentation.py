@@ -471,14 +471,14 @@ def test_segmentation_timestep_3d_seed_box_nopbcs(
     "vertical_coord_name,"
     " vertical_coord_opt, expected_raise",
     [
-        ((20, 30, 40), 0, "altitude", "auto", False),
-        ((20, 30, 40), 1, "altitude", "auto", False),
-        ((20, 30, 40), 2, "altitude", "auto", False),
+        ((20, 30, 40), 0, "altitude", None, False),
+        ((20, 30, 40), 1, "altitude", None, False),
+        ((20, 30, 40), 2, "altitude", None, False),
         ((20, 30, 40), 0, "air_pressure", "air_pressure", False),
-        ((20, 30, 40), 0, "air_pressure", "auto", True),
-        ((20, 30, 40), 0, "model_level_number", "auto", False),
-        ((20, 30, 40), 0, "altitude", "auto", False),
-        ((20, 30, 40), 0, "geopotential_height", "auto", False),
+        ((20, 30, 40), 0, "air_pressure", None, True),
+        ((20, 30, 40), 0, "model_level_number", None, False),
+        ((20, 30, 40), 0, "altitude", None, False),
+        ((20, 30, 40), 0, "geopotential_height", None, False),
     ],
 )
 def test_different_z_axes(

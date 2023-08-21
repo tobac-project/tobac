@@ -253,7 +253,7 @@ def test_feature_detection_position(position_threshold):
             1000,
             100,
             1,
-            "chaos",
+            "__invalid_option__",
             False,
             False,
             False,
@@ -453,14 +453,14 @@ def test_filter_min_distance(
     "vertical_coord_name,"
     " vertical_coord_opt, expected_raise",
     [
-        ((1, 20, 30, 40), 1, "altitude", "auto", False),
-        ((1, 20, 30, 40), 2, "altitude", "auto", False),
-        ((1, 20, 30, 40), 3, "altitude", "auto", False),
+        ((1, 20, 30, 40), 1, "altitude", None, False),
+        ((1, 20, 30, 40), 2, "altitude", None, False),
+        ((1, 20, 30, 40), 3, "altitude", None, False),
         ((1, 20, 30, 40), 1, "air_pressure", "air_pressure", False),
-        ((1, 20, 30, 40), 1, "air_pressure", "auto", True),
-        ((1, 20, 30, 40), 1, "model_level_number", "auto", False),
-        ((1, 20, 30, 40), 1, "altitude", "auto", False),
-        ((1, 20, 30, 40), 1, "geopotential_height", "auto", False),
+        ((1, 20, 30, 40), 1, "air_pressure", None, True),
+        ((1, 20, 30, 40), 1, "model_level_number", None, False),
+        ((1, 20, 30, 40), 1, "altitude", None, False),
+        ((1, 20, 30, 40), 1, "geopotential_height", None, False),
     ],
 )
 def test_feature_detection_multiple_z_coords(
@@ -691,6 +691,59 @@ def test_feature_detection_coords():
 
     for coord in test_data_iris.coords():
         assert coord.name() in fd_output_first
+
+
+def test_strict_thresholding():
+    """Tests that strict_thresholding prevents detection of features that have not met all
+    previous n_min_threshold values"""
+
+    # Generate test dataset
+    test_dset_size = (100, 100)
+    test_hdim_1_pt = 50.0
+    test_hdim_2_pt = 50.0
+    test_hdim_1_sz = 10
+    test_hdim_2_sz = 10
+    test_amp = 10
+    test_data = np.zeros(test_dset_size)
+    test_data = tbtest.make_feature_blob(
+        test_data,
+        test_hdim_1_pt,
+        test_hdim_2_pt,
+        h1_size=test_hdim_1_sz,
+        h2_size=test_hdim_2_sz,
+        amplitude=test_amp,
+    )
+    test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type="iris")
+
+    # All of these thresholds will be met
+    thresholds = [1, 5, 7.5]
+
+    # The second n_min threshold can never be met
+    n_min_thresholds = [0, test_data.size + 1, 0]
+
+    # This will detect 2 features (first and last threshold value)
+    features = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        dxy=1,
+        threshold=thresholds,
+        n_min_threshold=n_min_thresholds,
+        strict_thresholding=False,
+    )
+    assert len(features) == 1
+    assert features["threshold_value"].item() == thresholds[-1]
+
+    # Since the second n_min_thresholds value is not met this will only detect 1 feature
+    features = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        dxy=1,
+        threshold=thresholds,
+        n_min_threshold=n_min_thresholds,
+        strict_thresholding=True,
+    )
+    assert len(features) == 1
+    assert features["threshold_value"].item() == thresholds[0]
 
 
 @pytest.mark.parametrize(
