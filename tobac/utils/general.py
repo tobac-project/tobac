@@ -3,7 +3,7 @@
 """
 import copy
 import logging
-
+from typing import Callable
 import pandas as pd
 
 from . import internal as internal_utils
@@ -320,7 +320,7 @@ def add_coordinates_3D(
     return t
 
 
-def get_bounding_box(x, buffer=1):
+def bounding_box(x, buffer=1):
     """Finds the bounding box of a ndarray, i.e. the smallest
     bounding rectangle for nonzero values as explained here:
     https://stackoverflow.com/questions/31400769/bounding-box-of-numpy-array
@@ -636,39 +636,61 @@ def get_statistics(
     *fields: tuple[np.ndarray],
     features: pd.DataFrame,
     func_dict: dict[str, Callable] = {"mean": np.mean},
+    input_parameters: dict[str, int] = {None: None},
     index: None | list[int] = None,
     default: None | float = None,
     **kwargs
 ) -> pd.DataFrame:
     """
-     Derive bulk statistics of all data point that are attributed to a certain feature after segmentation.
+    Get bulk statistics for objects (e.g. features or segmented features) given a labelled mask of the objects
+    and any input field with the same dimensions.
 
-     Parameters:
-     ----------
+    The statistics are added as a new column to the existing feature dataframe. Users can specify which statistics are computed by
+    providing a dictionary with the column name of the metric and the respective function.
 
-    Returns:
-    -------
+    Parameters
+    ----------
+    labels : np.ndarray[int]
+        Mask with labels of each regions to apply function to (e.g. output of segmentation for a specific timestep)
+    *fields : tuple[np.ndarray]
+        Fields to give as arguments to each function call. Must have the same shape as labels.
     features: pd.DataFrame
-    Updated feature dataframe with statistics saved in the respective columns
+        Dataframe with features or segmented features (output from feature detection or segmentation)
+        can be for the specific timestep or for the whole dataset
+    func_dict: dict[str, Callable], optional (default: {'mean':np.mean})
+        dictionary with function(s) to apply over each region as values and the name of the respective statistics as keys
+    index: None | list[int], optional (default: None)
+        list of indexes of regions in labels to apply function to. If None, will
+            default to all integers between 1 and the maximum value in labels
+    default: None | float, optional (default: None)
+        default value to return in a region has no values,
+    **kwargs: optional
+        key word arguments for any of the functions in func_dict
+
+     Returns:
+     -------
+     features: pd.DataFrame
+         Updated feature dataframe with bulk statistics for each feature saved in a new column
     """
     # raise error if mask and input data dimensions do not match
     for field in fields:
         if labels.shape != field.shape:
             raise ValueError("Input labels and field do not have the same shape")
 
-        if index is None:
-            index = range(1, int(np.nanmax(labels) + 1))
-        else:
-            # get the statistics only for specified feature objects
-            if np.max(index) > np.max(labels):
-                raise ValueError("Index contains values that are not in labels!")
-        bins = np.cumsum(np.bincount(labels.ravel()))
-        argsorted = np.argsort(labels.ravel())
+    if index is None:
+        index = range(1, int(np.nanmax(labels) + 1))
+    else:
+        # get the statistics only for specified feature objects
+        if np.max(index) > np.max(labels):
+            raise ValueError("Index contains values that are not in labels!")
+    bins = np.cumsum(np.bincount(labels.ravel()))
+    argsorted = np.argsort(labels.ravel())
 
-        for stats_name in func_dict.keys():
-            func = func_dict[stats_name]
+    for stats_name in func_dict.keys():
+        func = func_dict[stats_name]
 
-            # apply function for each label in sorted ascending order
+        # apply function for each label in sorted ascending order
+        try:
             stats = np.array(
                 [
                     func(
@@ -683,10 +705,36 @@ def get_statistics(
                     for i in index
                 ]
             )
+        except:
+            stats = np.array(
+                [
+                    func(
+                        *[
+                            field.ravel()[argsorted[bins[i - 1] : bins[i]]]
+                            for field in fields
+                        ]
+                    )
+                    if bins[i] > bins[i - 1]
+                    else default
+                    for i in index
+                ]
+            )
 
-            # add new column to feature dataframe
-            features = features.sort_values("feature")
-            features[stats_name] = stats
+        # add according stats to feature dataframe
+        for idx, label in enumerate(np.unique(labels[labels > 0])):
+            # test if values are scalars
+            if not hasattr(stats[idx], "__len__"):
+                # if yes, we can just assign the value to the new column and row of the respective feature
+                features.loc[features.feature == label, stats_name] = stats[idx]
+            # if stats output is array-like it has to be added in a different way
+            else:
+                df = pd.DataFrame({stats_name: [stats[idx]]})
+                # get row index rather than pd.Dataframe index value since we need to use .iloc indexing
+                row_idx = np.where(features.feature == label)[0]
+                features.iloc[
+                    row_idx,
+                    features.columns.get_loc(stats_name),
+                ] = df.apply(lambda r: tuple(r), axis=1)
 
     return features
 
