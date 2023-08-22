@@ -40,6 +40,7 @@ import pandas as pd
 from . import utils as tb_utils
 from .utils import periodic_boundaries as pbc_utils
 from .utils import internal as internal_utils
+from .utils import get_statistics
 
 
 def add_markers(
@@ -1021,48 +1022,9 @@ def segmentation_timestep(
                 row["feature"]
             ]
 
-            if statistics:
-                (
-                    feature_mean,
-                    feature_max,
-                    feature_min,
-                    feature_percentiles,
-                    feature_sum,
-                    feature_axis,
-                ) = tb_utils.general.get_statistics(
-                    row["feature"], segmentation_mask.copy(), field_in.data.copy()
-                )
-                # write the statistics to feature output dataframe
-                features_out.loc[
-                    features_out.feature == row["feature"], "feature_mean"
-                ] = feature_mean
-                features_out.loc[
-                    features_out.feature == row["feature"], "feature_max"
-                ] = feature_max
-                features_out.loc[
-                    features_out.feature == row["feature"], "feature_min"
-                ] = feature_min
-                features_out.loc[
-                    features_out.feature == row["feature"], "feature_sum"
-                ] = feature_sum
-                features_out.loc[
-                    features_out.feature == row["feature"], "major_axis_length"
-                ] = feature_axis
-
-                # save percentiles of data distribution within feature
-                if index == features_out[features_out.ncells > 0].index[0]:
-                    # here, we need to initialize the column first since .loc indexing does not work with pd.Series
-                    features_out["feature_percentiles"] = np.nan
-                # store numpy array with percentiles as cell in data frame
-                df = pd.DataFrame({"feature_percentiles": [feature_percentiles]})
-                # get row index rather than pd.Dataframe index value since we need to use .iloc indexing
-                row_idx = np.where(features_out.feature == row["feature"])[0]
-                features_out.iloc[
-                    row_idx,
-                    features_out.columns.get_loc("feature_percentiles"),
-                ] = df.apply(
-                    lambda r: tuple(r), axis=1
-                )  # apply on the feature_percentiles column a function that returns a tuple with the values of that very column. This complicated syntax here is needed because it is otherwise not possible to assign a sequence to a pd.DataFrame column
+    if statistics:
+        # kwargs =
+        features_out  =  get_statistics(segmentation_out.data, field_in.data, func_dict = statistics, features = features_out)
 
     return segmentation_out, features_out
 

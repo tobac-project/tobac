@@ -320,7 +320,7 @@ def add_coordinates_3D(
     return t
 
 
-def bounding_box(x, buffer=1):
+def get_bounding_box(x, buffer=1):
     """Finds the bounding box of a ndarray, i.e. the smallest
     bounding rectangle for nonzero values as explained here:
     https://stackoverflow.com/questions/31400769/bounding-box-of-numpy-array
