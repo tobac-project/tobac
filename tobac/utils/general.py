@@ -631,15 +631,17 @@ def combine_feature_dataframes(
     return combined_sorted
 
 
+## FUNCTION TO EXPERIMENT
+
+
 def get_statistics(
     labels: np.ndarray[int],
     *fields: tuple[np.ndarray],
+    func_dict: dict[str, tuple[Callable]] = {"ncells": np.count_nonzero},
     features: pd.DataFrame,
-    func_dict: dict[str, Callable] = {"mean": np.mean},
     input_parameters: dict[str, int] = {None: None},
     index: None | list[int] = None,
-    default: None | float = None,
-    **kwargs
+    default: None | float = None
 ) -> pd.DataFrame:
     """
     Get bulk statistics for objects (e.g. features or segmented features) given a labelled mask of the objects
@@ -654,18 +656,17 @@ def get_statistics(
         Mask with labels of each regions to apply function to (e.g. output of segmentation for a specific timestep)
     *fields : tuple[np.ndarray]
         Fields to give as arguments to each function call. Must have the same shape as labels.
+    func_dict: dict[str, Callable], optional (default: {'ncells':np.count_nonzero})
+        Dictionary with function(s) to apply over each region as values and the name of the respective statistics as keys
+        default is to just count the number of cells associated with each feature and write it to the feature dataframe
     features: pd.DataFrame
         Dataframe with features or segmented features (output from feature detection or segmentation)
         can be for the specific timestep or for the whole dataset
-    func_dict: dict[str, Callable], optional (default: {'mean':np.mean})
-        dictionary with function(s) to apply over each region as values and the name of the respective statistics as keys
     index: None | list[int], optional (default: None)
         list of indexes of regions in labels to apply function to. If None, will
             default to all integers between 1 and the maximum value in labels
     default: None | float, optional (default: None)
-        default value to return in a region has no values,
-    **kwargs: optional
-        key word arguments for any of the functions in func_dict
+        default value to return in a region that has no values
 
      Returns:
      -------
@@ -686,26 +687,37 @@ def get_statistics(
     bins = np.cumsum(np.bincount(labels.ravel()))
     argsorted = np.argsort(labels.ravel())
 
+    # apply each function given per func_dict for the labeled regions sorted in ascending order
     for stats_name in func_dict.keys():
-        func = func_dict[stats_name]
-
-        # apply function for each label in sorted ascending order
-        try:
-            stats = np.array(
-                [
-                    func(
-                        *[
-                            field.ravel()[argsorted[bins[i - 1] : bins[i]]]
-                            for field in fields
-                        ],
-                        **kwargs
-                    )
-                    if bins[i] > bins[i - 1]
-                    else default
-                    for i in index
-                ]
-            )
-        except:
+        # initiate new column in feature dataframe
+        features[stats_name] = None
+        # if function is given as a tuple, take the input parameters provided
+        if type(func_dict[stats_name]) is tuple:
+            func = func_dict[stats_name][0]
+            # check that key word arguments are provided as dictionary
+            if not type(func_dict[stats_name][1]) is dict:
+                raise TypeError(
+                    "Tuple must contain dictionary with key word arguments for function."
+                )
+            else:
+                kwargs = func_dict[stats_name][1]
+                stats = np.array(
+                    [
+                        func(
+                            *[
+                                field.ravel()[argsorted[bins[i - 1] : bins[i]]]
+                                for field in fields
+                            ],
+                            **kwargs
+                        )
+                        if bins[i] > bins[i - 1]
+                        else default
+                        for i in index
+                    ]
+                )
+        # otherwise apply function on region without any input parameter
+        else:
+            func = func_dict[stats_name]
             stats = np.array(
                 [
                     func(
@@ -720,8 +732,9 @@ def get_statistics(
                 ]
             )
 
-        # add according stats to feature dataframe
+        # add results of computed statistics to feature dataframe with column name given per func_dict
         for idx, label in enumerate(np.unique(labels[labels > 0])):
+
             # test if values are scalars
             if not hasattr(stats[idx], "__len__"):
                 # if yes, we can just assign the value to the new column and row of the respective feature

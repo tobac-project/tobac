@@ -1011,20 +1011,19 @@ def segmentation_timestep(
     segmentation_mask[wh_below_threshold] = segment_number_below_threshold
     segmentation_out.data = segmentation_mask
 
-    # count number of grid cells associated to each tracked cell and write that into DataFrame:
-    values, count = np.unique(segmentation_mask, return_counts=True)
-    counts = dict(zip(values, count))
-    ncells = np.zeros(len(features_out))
-    for i, (index, row) in enumerate(features_out.iterrows()):
-        if row["feature"] in counts.keys():
-            # assign a value for ncells for the respective feature in data frame
-            features_out.loc[features_out.feature == row["feature"], "ncells"] = counts[
-                row["feature"]
-            ]
+    # add ncells to feature dataframe with new statistic method
+    features_out = get_statistics(
+        segmentation_out.data, field_in.data, features=features_out
+    )
 
+    # compute additional statistics, if requested
     if statistics:
-        # kwargs =
-        features_out  =  get_statistics(segmentation_out.data, field_in.data, func_dict = statistics, features = features_out)
+        features_out = get_statistics(
+            segmentation_out.data,
+            field_in.data,
+            func_dict=statistics,
+            features=features_out,
+        )
 
     return segmentation_out, features_out
 
