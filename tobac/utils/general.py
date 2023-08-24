@@ -631,14 +631,11 @@ def combine_feature_dataframes(
     return combined_sorted
 
 
-## FUNCTION TO EXPERIMENT
-
-
 def get_statistics(
     labels: np.ndarray[int],
     *fields: tuple[np.ndarray],
-    func_dict: dict[str, tuple[Callable]] = {"ncells": np.count_nonzero},
     features: pd.DataFrame,
+    func_dict: dict[str, tuple[Callable]] = {"ncells": np.count_nonzero},
     input_parameters: dict[str, int] = {None: None},
     index: None | list[int] = None,
     default: None | float = None
@@ -656,15 +653,15 @@ def get_statistics(
         Mask with labels of each regions to apply function to (e.g. output of segmentation for a specific timestep)
     *fields : tuple[np.ndarray]
         Fields to give as arguments to each function call. Must have the same shape as labels.
-    func_dict: dict[str, Callable], optional (default: {'ncells':np.count_nonzero})
-        Dictionary with function(s) to apply over each region as values and the name of the respective statistics as keys
-        default is to just count the number of cells associated with each feature and write it to the feature dataframe
     features: pd.DataFrame
         Dataframe with features or segmented features (output from feature detection or segmentation)
         can be for the specific timestep or for the whole dataset
+    func_dict: dict[str, Callable], optional (default: {'ncells':np.count_nonzero})
+        Dictionary with function(s) to apply over each region as values and the name of the respective statistics as keys
+        default is to just count the number of cells associated with each feature and write it to the feature dataframe
     index: None | list[int], optional (default: None)
         list of indexes of regions in labels to apply function to. If None, will
-            default to all integers between 1 and the maximum value in labels
+            default to all integers between the minimum and the maximum value in labels
     default: None | float, optional (default: None)
         default value to return in a region that has no values
 
@@ -679,7 +676,7 @@ def get_statistics(
             raise ValueError("Input labels and field do not have the same shape")
 
     if index is None:
-        index = range(1, int(np.nanmax(labels) + 1))
+        index = range(int(np.nanmin(labels[labels > 0])) , int(np.nanmax(labels) + 1))
     else:
         # get the statistics only for specified feature objects
         if np.max(index) > np.max(labels):
@@ -689,8 +686,9 @@ def get_statistics(
 
     # apply each function given per func_dict for the labeled regions sorted in ascending order
     for stats_name in func_dict.keys():
-        # initiate new column in feature dataframe
-        features[stats_name] = None
+        # initiate new column in feature dataframe if it does not already exist
+        if stats_name not in features.columns:
+            features[stats_name] = None
         # if function is given as a tuple, take the input parameters provided
         if type(func_dict[stats_name]) is tuple:
             func = func_dict[stats_name][0]
@@ -701,6 +699,11 @@ def get_statistics(
                 )
             else:
                 kwargs = func_dict[stats_name][1]
+                # default needs to be sequence when function output is array-like
+                output = func(np.random.rand(1,10), **kwargs)
+                if hasattr(output, "__len__"):
+                    default = np.full(output.shape, default)
+
                 stats = np.array(
                     [
                         func(
@@ -718,6 +721,11 @@ def get_statistics(
         # otherwise apply function on region without any input parameter
         else:
             func = func_dict[stats_name]
+            # default needs to be sequence when function output is array-like
+            output = func(np.random.rand(1,10))
+            if hasattr(output, "__len__"):
+                default = np.full(output.shape, default)
+
             stats = np.array(
                 [
                     func(
@@ -735,7 +743,7 @@ def get_statistics(
         # add results of computed statistics to feature dataframe with column name given per func_dict
         for idx, label in enumerate(np.unique(labels[labels > 0])):
 
-            # test if values are scalars
+            # test if values are scalars 
             if not hasattr(stats[idx], "__len__"):
                 # if yes, we can just assign the value to the new column and row of the respective feature
                 features.loc[features.feature == label, stats_name] = stats[idx]
@@ -750,6 +758,75 @@ def get_statistics(
                 ] = df.apply(lambda r: tuple(r), axis=1)
 
     return features
+
+
+
+
+@internal_utils.irispandas_to_xarray
+def get_statistics_from_mask(
+    segmentation_mask: xr.DataArray, 
+    *fields: xr.DataArray, 
+    features: pd.DataFrame,
+    func_dict: dict[str, tuple[Callable]] = {'Mean': np.mean}, 
+    index: None | list[int] = None,
+    default: None | float = None) -> pd.DataFrame:
+    """
+    Derives bulk statistics for each object in the segmentation mask. 
+
+
+    Parameters: 
+    -----------
+    segmentation_mask : xr.DataArray
+        Segmentation mask output 
+    *fields : xr.DataArray[np.ndarray]
+        Field(s) with input data. Needs to have the same dimensions as the segmentation mask. 
+    features: pd.DataFrame 
+        Dataframe with segmented features (output from feature detection or segmentation). 
+        Timesteps must not be exactly the same as in segmentation mask but all labels in the mask need to be present in the feature dataframe.
+    func_dict: dict[str, Callable], optional (default: {'ncells':np.count_nonzero})
+        Dictionary with function(s) to apply over each region as values and the name of the respective statistics as keys 
+        default is to just count the number of cells associated with each feature and write it to the feature dataframe 
+    index: None | list[int], optional (default: None)
+        list of indexes of regions in labels to apply function to. If None, will
+            default to all integers between 1 and the maximum value in labels
+    default: None | float, optional (default: None)
+        default value to return in a region that has no values
+
+     Returns:
+     -------
+     features: pd.DataFrame
+         Updated feature dataframe with bulk statistics for each feature saved in a new column 
+    """
+
+    # check that mask and input data have the same dimensions
+    if segmentation_mask.shape != field.shape:
+        raise ValueError("Input labels and field do not have the same shape")
+    
+    # warning when feature labels are not unique in dataframe 
+    if not features.feature.is_unique:
+        raise logging.warning('Feature labels are not unique which may cause unexpected results for the computation of bulk statistics.') 
+    
+    # get bulk statistics for each timestep 
+    for tt in pd.to_datetime(segmentation_mask.time): 
+        # select specific timestep 
+        segmentation_mask_t = segmentation_mask.sel(time= tt).data
+        field_t = field.sel(time =tt).data 
+        
+        # make sure that the labels in the segmentation mask exist in feature dataframe 
+        if np.intersect1d(np.unique(segmentation_mask_t), features.feature).size > np.unique(segmentation_mask_t).size : 
+            raise ValueError('The labels of the segmentation mask and the feature dataframe do not seem to match. Please make sure you provide the correct input feature dataframe to calculate the bulk statistics. ')
+        else:
+            # make sure that features are not double-defined 
+            features  = get_statistics(segmentation_mask_t, field_t, features = features, func_dict= func_dict, default = default, index = index) 
+            
+    return features 
+
+
+
+
+
+
+
 
 
 @internal_utils.irispandas_to_xarray

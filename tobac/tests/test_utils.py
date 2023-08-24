@@ -457,8 +457,6 @@ def test_combine_tobac_feats():
     assert np.all(list(combined_feat["old_feat_column"].values) == [3, 1])
 
 
-
-
 def test_get_statistics():
     """
     Test to assure that bulk statistics for identified features are computed as expected.
@@ -514,9 +512,6 @@ def test_get_statistics():
     assert feature_percentiles.size == 101
     assert np.unique(feature_percentiles)[0] == 10
     assert feature_sum == 10 * data_3D[data_3D == 10].size
-
-
-
 
 
 def test_transform_feature_points():
@@ -648,4 +643,3 @@ def test_transform_feature_points_3D():
     assert np.all(new_feat_df["hdim_1"] == [25, 30])
     assert np.all(new_feat_df["hdim_2"] == [5, 15])
     assert np.all(new_feat_df["vdim"] == [5, 10])
-
