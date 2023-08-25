@@ -26,6 +26,7 @@ from tobac.tracking import build_distance_function
 from tobac.utils import internal as internal_utils
 from tobac.utils import periodic_boundaries as pbc_utils
 from tobac.utils.general import spectral_filtering
+from tobac.utils.general import get_statistics
 import warnings
 
 
@@ -799,7 +800,6 @@ def feature_detection_threshold(
             features_threshold = pd.DataFrame(
                 list_features_threshold, columns=column_names
             )
-
         # features_threshold=pd.DataFrame(list_features_threshold, columns = column_names)
     else:
         features_threshold = pd.DataFrame()
@@ -825,6 +825,7 @@ def feature_detection_multithreshold_timestep(
     dxy=-1,
     wavelength_filtering=None,
     strict_thresholding=False,
+    statistics=None,
 ):
     """Find features in each timestep.
 
@@ -990,6 +991,24 @@ def feature_detection_multithreshold_timestep(
             vertical_axis=vertical_axis,
         )
         if any([x is not None for x in features_threshold_i]):
+            # if statistics is not None, compute bulk statistics for the remaining detected feature objects
+            if statistics:
+                # reconstruct the labeled regions based on the regions dict
+                labels = np.zeros(track_data.shape)
+                labels = labels.astype(int)
+                for key in regions_i.keys():
+                    labels.ravel()[regions_i[key]] = key
+                    # apply function to get statistics based on labeled regions and functions provided by the user
+                    # the feature dataframe is updated by appending a column for each metric
+                features_threshold_i = get_statistics(
+                    labels,
+                    track_data,
+                    features=features_threshold_i,
+                    func_dict=statistics,
+                    index=np.unique(labels[labels > 0]),
+                    id_column="idx",
+                )
+
             features_thresholds = pd.concat(
                 [features_thresholds, features_threshold_i], ignore_index=True
             )
@@ -1061,6 +1080,7 @@ def feature_detection_multithreshold(
     wavelength_filtering=None,
     dz=None,
     strict_thresholding=False,
+    statistics=None,
 ):
     """Perform feature detection based on contiguous regions.
 
@@ -1273,6 +1293,7 @@ def feature_detection_multithreshold(
             dxy=dxy,
             wavelength_filtering=wavelength_filtering,
             strict_thresholding=strict_thresholding,
+            statistics=statistics,
         )
         # check if list of features is not empty, then merge features from different threshold values
         # into one DataFrame and append to list for individual timesteps:
@@ -1297,7 +1318,6 @@ def feature_detection_multithreshold(
                     min_h2=0,
                     max_h2=hdim2_max,
                 )
-
         list_features_timesteps.append(features_thresholds)
 
         logging.debug(
