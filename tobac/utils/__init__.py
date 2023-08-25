@@ -7,6 +7,7 @@ from .general import (
     combine_feature_dataframes,
     transform_feature_points,
     get_statistics,
+    get_statistics_from_mask,
 )
 from .mask import (
     mask_cell,

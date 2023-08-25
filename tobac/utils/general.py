@@ -761,7 +761,7 @@ def get_statistics(
     return features
 
 
-@internal_utils.irispandas_to_xarray
+#@internal_utils.irispandas_to_xarray
 def get_statistics_from_mask(
     segmentation_mask: xr.DataArray,
     *fields: xr.DataArray,
@@ -803,8 +803,9 @@ def get_statistics_from_mask(
     """
 
     # check that mask and input data have the same dimensions
-    if segmentation_mask.shape != field.shape:
-        raise ValueError("Input labels and field do not have the same shape")
+    for field in fields: 
+        if segmentation_mask.shape != field.shape:
+            raise ValueError("Input labels and field do not have the same shape")
 
     # warning when feature labels are not unique in dataframe
     if not features.feature.is_unique:
