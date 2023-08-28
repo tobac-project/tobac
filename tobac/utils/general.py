@@ -677,20 +677,20 @@ def get_statistics(
         if labels.shape != field.shape:
             raise ValueError("Input labels and field do not have the same shape")
 
-    # mask must contain positive values to calculate statistics 
-    if labels[labels> 0].size > 0:
-
+    # mask must contain positive values to calculate statistics
+    if labels[labels > 0].size > 0:
 
         if index is None:
-            index = range(int(np.nanmin(labels[labels > 0])), int(np.nanmax(labels) + 1))
+            index = range(
+                int(np.nanmin(labels[labels > 0])), int(np.nanmax(labels) + 1)
+            )
         else:
             # get the statistics only for specified feature objects
             if np.max(index) > np.max(labels):
                 raise ValueError("Index contains values that are not in labels!")
 
-
         # set negative markers to 0 as they are unsegmented
-        labels[labels < 0 ] = 0 
+        labels[labels < 0] = 0
         bins = np.cumsum(np.bincount(labels.ravel()))
         argsorted = np.argsort(labels.ravel())
 
@@ -705,7 +705,8 @@ def get_statistics(
                 # check that key word arguments are provided as dictionary
                 if not type(func_dict[stats_name][1]) is dict:
                     raise TypeError(
-                    "Tuple must contain dictionary with key word arguments for function.")
+                        "Tuple must contain dictionary with key word arguments for function."
+                    )
                 else:
                     kwargs = func_dict[stats_name][1]
                     # default needs to be sequence when function output is array-like
@@ -713,19 +714,19 @@ def get_statistics(
                     if hasattr(output, "__len__"):
                         default = np.full(output.shape, default)
                     stats = np.array(
-                    [
-                        func(
-                            *[
-                                field.ravel()[argsorted[bins[i - 1] : bins[i]]]
-                                for field in fields
-                            ],
-                            **kwargs,
-                        )
-                        if bins[i] > bins[i - 1]
-                        else default
-                        for i in index
-                    ]
-                )
+                        [
+                            func(
+                                *[
+                                    field.ravel()[argsorted[bins[i - 1] : bins[i]]]
+                                    for field in fields
+                                ],
+                                **kwargs,
+                            )
+                            if bins[i] > bins[i - 1]
+                            else default
+                            for i in index
+                        ]
+                    )
             # otherwise apply function on region without any input parameter
             else:
                 func = func_dict[stats_name]
@@ -735,18 +736,18 @@ def get_statistics(
                     default = np.full(output.shape, default)
 
                 stats = np.array(
-                [
-                    func(
-                        *[
-                            field.ravel()[argsorted[bins[i - 1] : bins[i]]]
-                            for field in fields
-                        ]
-                    )
-                    if bins[i] > bins[i - 1]
-                    else default
-                    for i in index
-                ]
-            )
+                    [
+                        func(
+                            *[
+                                field.ravel()[argsorted[bins[i - 1] : bins[i]]]
+                                for field in fields
+                            ]
+                        )
+                        if bins[i] > bins[i - 1]
+                        else default
+                        for i in index
+                    ]
+                )
 
             # add results of computed statistics to feature dataframe with column name given per func_dict
             for idx, label in enumerate(np.unique(labels[labels > 0])):
@@ -761,9 +762,9 @@ def get_statistics(
                     # get row index rather than pd.Dataframe index value since we need to use .iloc indexing
                     row_idx = np.where(features[id_column] == label)[0]
                     features.iloc[
-                    row_idx,
-                    features.columns.get_loc(stats_name),
-                ] = df.apply(lambda r: tuple(r), axis=1)
+                        row_idx,
+                        features.columns.get_loc(stats_name),
+                    ] = df.apply(lambda r: tuple(r), axis=1)
 
     return features
 
@@ -823,7 +824,7 @@ def get_statistics_from_mask(
     for tt in pd.to_datetime(segmentation_mask.time):
         # select specific timestep
         segmentation_mask_t = segmentation_mask.sel(time=tt).data
-        field_t = field.sel(time=tt).data 
+        field_t = field.sel(time=tt).data
 
         # make sure that the labels in the segmentation mask exist in feature dataframe
         if (

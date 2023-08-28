@@ -148,9 +148,10 @@ def iris_to_xarray(func):
                         if type(output_item) == xarray.DataArray
                         else output_item
                         for output_item in output
-                    ])
+                    ]
+                )
             elif type(output) == xarray.DataArray:
-                      output = xarray.DataArray.to_iris(output)
+                output = xarray.DataArray.to_iris(output)
             # if output is neither tuple nor an xr.DataArray
             else:
                 output = func(*args, **kwargs)
