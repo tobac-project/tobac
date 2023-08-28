@@ -513,14 +513,7 @@ def test_bulk_statistics():
         )
 
     ### Test the same with 3D data
-    test_data = tb_test.make_sample_data_3D_3blobs().data.copy().astype(int)
-    common_dset_opts = {
-        "in_arr": test_data,
-        "data_type": "iris",
-    }
-    test_data_iris = tb_test.make_dataset_from_arr(
-        time_dim_num=0, z_dim_num=1, y_dim_num=2, x_dim_num=3, **common_dset_opts
-    )
+    test_data_iris = tb_test.make_sample_data_3D_3blobs()
 
     # detect features in test dataset
     fd_output = tobac.feature_detection.feature_detection_multithreshold(
@@ -556,7 +549,7 @@ def test_bulk_statistics():
     # assure that statistics bring expected result
     for frame in out_df.frame.values:
         assert out_df[out_df.frame == frame].segment_max.values[0] == np.max(
-            test_data[frame]
+            test_data_iris.data[frame]
         )
 
 
