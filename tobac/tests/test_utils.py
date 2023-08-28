@@ -497,7 +497,7 @@ def test_bulk_statistics():
     #### checks
 
     #  assure that bulk statistics in postprocessing give same result
-    out_segmentation = tb_utils.get_statistics_from_mask (
+    out_segmentation = tb_utils.get_statistics_from_mask(
         out_seg_mask, test_data_iris, features=out_df, func_dict=stats
     )
     assert out_segmentation.equals(out_df)
