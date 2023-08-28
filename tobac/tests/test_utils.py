@@ -464,7 +464,7 @@ def test_bulk_statistics():
     """
 
     ### Test 2D data with time dimension
-    test_data = tb_test.make_simple_sample_data_2D().data.copy().astype(int)
+    test_data = tb_test.make_simple_sample_data_2D().core_data()
     common_dset_opts = {
         "in_arr": test_data,
         "data_type": "iris",
@@ -497,7 +497,7 @@ def test_bulk_statistics():
     #### checks
 
     #  assure that bulk statistics in postprocessing give same result
-    out_segmentation = tb_utils.get_statistics_from_mask(
+    out_segmentation = tb_utils.get_statistics_from_mask (
         out_seg_mask, test_data_iris, features=out_df, func_dict=stats
     )
     assert out_segmentation.equals(out_df)
