@@ -677,35 +677,42 @@ def get_statistics(
         if labels.shape != field.shape:
             raise ValueError("Input labels and field do not have the same shape")
 
-    if index is None:
-        index = range(int(np.nanmin(labels[labels > 0])), int(np.nanmax(labels) + 1))
-    else:
-        # get the statistics only for specified feature objects
-        if np.max(index) > np.max(labels):
-            raise ValueError("Index contains values that are not in labels!")
-    bins = np.cumsum(np.bincount(labels.ravel()))
-    argsorted = np.argsort(labels.ravel())
+    # mask must contain positive values to calculate statistics 
+    if labels[labels> 0].size > 0:
 
-    # apply each function given per func_dict for the labeled regions sorted in ascending order
-    for stats_name in func_dict.keys():
-        # initiate new column in feature dataframe if it does not already exist
-        if stats_name not in features.columns:
-            features[stats_name] = None
-        # if function is given as a tuple, take the input parameters provided
-        if type(func_dict[stats_name]) is tuple:
-            func = func_dict[stats_name][0]
-            # check that key word arguments are provided as dictionary
-            if not type(func_dict[stats_name][1]) is dict:
-                raise TypeError(
-                    "Tuple must contain dictionary with key word arguments for function."
-                )
-            else:
-                kwargs = func_dict[stats_name][1]
-                # default needs to be sequence when function output is array-like
-                output = func(np.random.rand(1, 10), **kwargs)
-                if hasattr(output, "__len__"):
-                    default = np.full(output.shape, default)
-                stats = np.array(
+
+        if index is None:
+            index = range(int(np.nanmin(labels[labels > 0])), int(np.nanmax(labels) + 1))
+        else:
+            # get the statistics only for specified feature objects
+            if np.max(index) > np.max(labels):
+                raise ValueError("Index contains values that are not in labels!")
+
+
+        # set negative markers to 0 as they are unsegmented
+        labels[labels < 0 ] = 0 
+        bins = np.cumsum(np.bincount(labels.ravel()))
+        argsorted = np.argsort(labels.ravel())
+
+        # apply each function given per func_dict for the labeled regions sorted in ascending order
+        for stats_name in func_dict.keys():
+            # initiate new column in feature dataframe if it does not already exist
+            if stats_name not in features.columns:
+                features[stats_name] = None
+                # if function is given as a tuple, take the input parameters provided
+            if type(func_dict[stats_name]) is tuple:
+                func = func_dict[stats_name][0]
+                # check that key word arguments are provided as dictionary
+                if not type(func_dict[stats_name][1]) is dict:
+                    raise TypeError(
+                    "Tuple must contain dictionary with key word arguments for function.")
+                else:
+                    kwargs = func_dict[stats_name][1]
+                    # default needs to be sequence when function output is array-like
+                    output = func(np.random.rand(1, 10), **kwargs)
+                    if hasattr(output, "__len__"):
+                        default = np.full(output.shape, default)
+                    stats = np.array(
                     [
                         func(
                             *[
@@ -719,15 +726,15 @@ def get_statistics(
                         for i in index
                     ]
                 )
-        # otherwise apply function on region without any input parameter
-        else:
-            func = func_dict[stats_name]
-            # default needs to be sequence when function output is array-like
-            output = func(np.random.rand(1, 10))
-            if hasattr(output, "__len__"):
-                default = np.full(output.shape, default)
+            # otherwise apply function on region without any input parameter
+            else:
+                func = func_dict[stats_name]
+                # default needs to be sequence when function output is array-like
+                output = func(np.random.rand(1, 10))
+                if hasattr(output, "__len__"):
+                    default = np.full(output.shape, default)
 
-            stats = np.array(
+                stats = np.array(
                 [
                     func(
                         *[
@@ -741,19 +748,19 @@ def get_statistics(
                 ]
             )
 
-        # add results of computed statistics to feature dataframe with column name given per func_dict
-        for idx, label in enumerate(np.unique(labels[labels > 0])):
+            # add results of computed statistics to feature dataframe with column name given per func_dict
+            for idx, label in enumerate(np.unique(labels[labels > 0])):
 
-            # test if values are scalars
-            if not hasattr(stats[idx], "__len__"):
-                # if yes, we can just assign the value to the new column and row of the respective feature
-                features.loc[features[id_column] == label, stats_name] = stats[idx]
-            # if stats output is array-like it has to be added in a different way
-            else:
-                df = pd.DataFrame({stats_name: [stats[idx]]})
-                # get row index rather than pd.Dataframe index value since we need to use .iloc indexing
-                row_idx = np.where(features[id_column] == label)[0]
-                features.iloc[
+                # test if values are scalars
+                if not hasattr(stats[idx], "__len__"):
+                    # if yes, we can just assign the value to the new column and row of the respective feature
+                    features.loc[features[id_column] == label, stats_name] = stats[idx]
+                    # if stats output is array-like it has to be added in a different way
+                else:
+                    df = pd.DataFrame({stats_name: [stats[idx]]})
+                    # get row index rather than pd.Dataframe index value since we need to use .iloc indexing
+                    row_idx = np.where(features[id_column] == label)[0]
+                    features.iloc[
                     row_idx,
                     features.columns.get_loc(stats_name),
                 ] = df.apply(lambda r: tuple(r), axis=1)
