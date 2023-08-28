@@ -761,7 +761,7 @@ def get_statistics(
     return features
 
 
-#@internal_utils.irispandas_to_xarray
+@internal_utils.iris_to_xarray
 def get_statistics_from_mask(
     segmentation_mask: xr.DataArray,
     *fields: xr.DataArray,
@@ -801,9 +801,8 @@ def get_statistics_from_mask(
      features: pd.DataFrame
          Updated feature dataframe with bulk statistics for each feature saved in a new column
     """
-
     # check that mask and input data have the same dimensions
-    for field in fields: 
+    for field in fields:
         if segmentation_mask.shape != field.shape:
             raise ValueError("Input labels and field do not have the same shape")
 
@@ -817,7 +816,7 @@ def get_statistics_from_mask(
     for tt in pd.to_datetime(segmentation_mask.time):
         # select specific timestep
         segmentation_mask_t = segmentation_mask.sel(time=tt).data
-        field_t = field.sel(time=tt).data
+        field_t = field.sel(time=tt).data 
 
         # make sure that the labels in the segmentation mask exist in feature dataframe
         if (
