@@ -9,7 +9,7 @@ Modules
 
 The **tobac** package currently consists of three **main modules**:
 
-1. The :py:mod:`tobac.feature_detection` contains methods to identify objects (*features*) in 2D or 3D (3D or 4D when including the time dimensions) gridded data. This is done by identifying contiguous regions above or below one or multiple user-defined thresholds. The module makes use of :py:mod:`scipy.ndimage.label`, a generic image processing method that labels features in an array. The methods in :py:mod:`tobac.feature_detection` are high-level functions that enable a fast and effective feature detection and create easy-to-use output in form of a :py:mod:`pandas.DataFrame` that contains the coordinates and some basic information on each detected feature. The most high-level methods that is commonly used by users is `tobac.feature_detection_multithreshold`. 
+1. The :py:mod:`tobac.feature_detection` contains methods to identify objects (*features*) in 2D or 3D (3D or 4D when including the time dimensions) gridded data. This is done by identifying contiguous regions above or below one or multiple user-defined thresholds. The module makes use of :py:mod:`scipy.ndimage.label`, a generic image processing method that labels features in an array. The methods in :py:mod:`tobac.feature_detection` are high-level functions that enable a fast and effective feature detection and create easy-to-use output in form of a :py:mod:`pandas.DataFrame` that contains the coordinates and some basic information on each detected feature. The most high-level methods that is commonly used by users is :py:func:`tobac.feature_detection_multithreshold`. 
 
 2. The :py:mod:`tobac.segmentation` module contains methods to define the extent of the identified feature areas or volumes. This step is needed to create a mask of the identified features because the feature detection currently only saves the center points of the features. The segmentation procedure is performed by using the watershedding method, but more methods are to be implemented in the future. Just as the feature detection, this module can handle both 2D and 3D data. 
 
@@ -33,6 +33,14 @@ Finally, there are two modules that are primarily **important for developers**:
 For more information on each submodule, refer to the respective source code documentation.
 
 One thing to note is that **tobac** as of now is purely functional. The plan is, however, to move towards a more object-oriented design with base classes for the main operations such as feature detection and tracking. 
+
+
+========
+Examples
+========
+
+To help users get started with **tobac** and to demonstrate the various functionalities, **tobac** hosts several detailed and **illustrated examples** in the form of Jupyter notebooks. They are hosted under the directory `examples/` and be executed by the user.
+
 
 ============================
 Migrating to xarray and dask

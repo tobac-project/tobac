@@ -5,8 +5,9 @@ How to check the Sphinx-based rendering
 The workflow has been tested in a linux system. We aim to build a static
 website out of the documentation material present in ``tobac``.
 
+==================================
 1. Preparing the Local Environment
-----------------------------------
+==================================
 
 -  **choose a separate place for your testing**
 
@@ -31,34 +32,44 @@ website out of the documentation material present in ``tobac``.
 
    .. code:: bash
 
-      git fetch --all
-      git checkout -t origin/<BRANCH> 
+      /tmp/website-testing/tobac> git fetch --all
+      /tmp/website-testing/tobac> git checkout -t origin/<BRANCH> 
 
 -  **Python environment**
 
    -  create a python virtual env
-      ``bash       /tmp/website-testing> python -m venv .python3-venv``
 
-   -  and install requirements \```bash # deactivation conda is only
-      necessary if your loaded conda before … /tmp/website-testing>
-      conda deactivate
+      .. code:: bash
+      
+         /tmp/website-testing> python -m venv .python3-venv
 
-      # activate the new env and upgrade ``pip`` /tmp/website-testing>
-      source .python3-venv/bin/activate /tmp/website-testing> pip
-      install –upgrade pip
 
-      # now everything is installed into the local python env!
-      /tmp/website-testing> pip install -r tobac/doc/requirements.txt
+   -  and install requirements
+      
+      .. code:: bash
+         
+         # deactivation conda is only necessary if your loaded conda before … 
+         /tmp/website-testing> conda deactivate
 
-      # and also install RTD scheme /tmp/website-testing> pip install
-      sphinx_rtd_theme
+         # activate the new env and upgrade ``pip`` 
+         /tmp/website-testing> source .python3-venv/bin/activate 
+         /tmp/website-testing> pip install –upgrade pip
 
-      \`\`\ ````\ pip\ ``-based installation takes a bit of time, but is much faster than``\ conda`.
-      If the installation runs without problems, you are ready to build
-      the website.
+         # now everything is installed into the local python env!
+         /tmp/website-testing> pip install -r tobac/doc/requirements.txt
 
-2. Building the Website
------------------------
+         # and also install RTD scheme 
+         /tmp/website-testing> pip install sphinx_rtd_theme
+
+      `pip`-based installation takes a bit of time, but is much faster than `conda`.
+   
+
+If the installation runs without problems, you are ready to build the website.
+
+
+==================================
+1. Building the Website
+==================================
 
 Actually, only few steps are needed to build the website, i.e.
 
@@ -78,8 +89,9 @@ Actually, only few steps are needed to build the website, i.e.
 
       /tmp/website-testing/tobac> firefox doc/_build/html/index.html
 
+==================================
 3. Parsing Your Local Changes
------------------------------
+==================================
 
 Now, we connect to your locally hosted ``tobac`` repository and your
 development branch.
@@ -115,8 +127,9 @@ development branch.
       /tmp/website-testing/tobac> firefox _build/html/index.html
 
 
+==========================================
 Option: Check Rendering of a Pull requests
-------------------------------------------
+==========================================
 
 -  **check the pull request out**: Now, assume the PR has the ID ``<ID>`` and you define the branch name ``BRANCH_NAME`` as you like
 
