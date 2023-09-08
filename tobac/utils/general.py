@@ -15,6 +15,7 @@ import xarray as xr
 import warnings
 
 
+
 def add_coordinates(t, variable_cube):
     """Add coordinates from the input cube of the feature detection
     to the trajectories/features.
@@ -365,7 +366,7 @@ def get_bounding_box(x, buffer=1):
         bbox.append([idx_min, idx_max])
     return bbox
 
-
+@internal_utils.xarray_to_iris
 def get_spacings(field_in, grid_spacing=None, time_spacing=None):
     """Determine spatial and temporal grid spacing of the
     input data.

@@ -308,6 +308,7 @@ def segmentation_2D(
     )
 
 
+@internal_utils.xarray_to_iris
 def segmentation_timestep(
     field_in,
     features_in,
@@ -1079,6 +1080,7 @@ def check_add_unseeded_across_bdrys(
     return markers_out
 
 
+@internal_utils.xarray_to_iris
 def segmentation(
     features,
     field,

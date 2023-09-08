@@ -807,7 +807,6 @@ def feature_detection_threshold(
 
     return features_threshold, regions
 
-
 def feature_detection_multithreshold_timestep(
     data_i,
     i_time,
@@ -1042,6 +1041,7 @@ def feature_detection_multithreshold_timestep(
     return features_thresholds
 
 
+@internal_utils.xarray_to_iris
 def feature_detection_multithreshold(
     field_in,
     dxy=None,
