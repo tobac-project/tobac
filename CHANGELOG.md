@@ -5,6 +5,7 @@ _**Version 1.5.1:**_
 **Bug fixes**
 
 - Fix to readthedocs building after system packages no longer imported [#336](https://github.com/tobac-project/tobac/pull/336)
+- The `strict_thresholding` option in feature detection now works correctly for detecting minima, and produces the same results as without strict thresholding if the `n_min_threshold` is a scalar value [#316](https://github.com/tobac-project/tobac/pull/316)
 
 
 _**Version 1.5.0:**_
