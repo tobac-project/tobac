@@ -1,5 +1,13 @@
 ### Tobac Changelog
 
+_**Version 1.5.1:**_
+
+**Bug fixes**
+
+- utils.general.standardize_track_dataset was added back after being inadvertently removed in version 1.5.0 [#330](https://github.com/tobac-project/tobac/pull/330)
+- All Numba import errors are now caught with the exception of KeyboardInterrupts. [#335](https://github.com/tobac-project/tobac/pull/335)
+
+
 _**Version 1.5.0:**_
 
 **Enhancements for Users**
