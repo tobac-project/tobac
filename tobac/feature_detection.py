@@ -322,7 +322,7 @@ def remove_parents(
 
 
 def feature_detection_threshold(
-    data_i: iris.cube.Cube,
+    data_i: np.array,
     i_time: int,
     threshold: float = None,
     min_num: int = 0,
@@ -342,8 +342,8 @@ def feature_detection_threshold(
 
     Parameters
     ----------
-    data_i : iris.cube.Cube
-        2D field to perform the feature detection (single timestep) on.
+    data_i : np.array
+        2D or 3D field to perform the feature detection (single timestep) on.
 
     i_time : int
         Number of the current timestep.
@@ -828,22 +828,24 @@ def feature_detection_threshold(
 
 
 def feature_detection_multithreshold_timestep(
-    data_i,
-    i_time,
-    threshold=None,
-    min_num=0,
-    target="maximum",
-    position_threshold="center",
-    sigma_threshold=0.5,
-    n_erosion_threshold=0,
-    n_min_threshold=0,
-    min_distance=0,
-    feature_number_start=1,
-    PBC_flag="none",
-    vertical_axis=None,
-    dxy=-1,
-    wavelength_filtering=None,
-    strict_thresholding=False,
+    data_i: np.array,
+    i_time: int,
+    threshold: list[float] = None,
+    min_num: int = 0,
+    target: Literal["maximum", "minimum"] = "maximum",
+    position_threshold: Literal[
+        "center", "extreme", "weighted_diff", "weighted abs"
+    ] = "center",
+    sigma_threshold: float = 0.5,
+    n_erosion_threshold: int = 0,
+    n_min_threshold: int = 0,
+    min_distance: float = 0,
+    feature_number_start: int = 1,
+    PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
+    vertical_axis: int = None,
+    dxy: float = -1,
+    wavelength_filtering: tuple[float] = None,
+    strict_thresholding: bool = False,
 ):
     """Find features in each timestep.
 
@@ -855,9 +857,12 @@ def feature_detection_multithreshold_timestep(
     ----------
 
     data_i : iris.cube.Cube
-        2D field to perform the feature detection (single timestep) on.
+        3D field to perform the feature detection (single timestep) on.
 
-    threshold : float, optional
+    i_time : int
+        Number of the current timestep.
+
+    threshold : list of floats, optional
         Threshold value used to select target regions to track. Default
         is None.
 
@@ -1070,24 +1075,26 @@ def feature_detection_multithreshold_timestep(
 
 
 def feature_detection_multithreshold(
-    field_in,
-    dxy=None,
-    threshold=None,
-    min_num=0,
-    target="maximum",
-    position_threshold="center",
-    sigma_threshold=0.5,
-    n_erosion_threshold=0,
-    n_min_threshold=0,
-    min_distance=0,
-    feature_number_start=1,
-    PBC_flag="none",
-    vertical_coord=None,
-    vertical_axis=None,
-    detect_subset=None,
-    wavelength_filtering=None,
-    dz=None,
-    strict_thresholding=False,
+    field_in: iris.cube.Cube,
+    dxy: float = None,
+    threshold: list[float] = None,
+    min_num: int = 0,
+    target: Literal["maximum", "minimum"] = "maximum",
+    position_threshold: Literal[
+        "center", "extreme", "weighted_diff", "weighted abs"
+    ] = "center",
+    sigma_threshold: float = 0.5,
+    n_erosion_threshold: int = 0,
+    n_min_threshold: int = 0,
+    min_distance: float = 0,
+    feature_number_start: int = 1,
+    PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
+    vertical_coord: str = None,
+    vertical_axis: int = None,
+    detect_subset: dict = None,
+    wavelength_filtering: tuple = None,
+    dz: Union[float, None] = None,
+    strict_thresholding: bool = False,
 ):
     """Perform feature detection based on contiguous regions.
 
@@ -1359,19 +1366,19 @@ def feature_detection_multithreshold(
 
 
 def filter_min_distance(
-    features,
-    dxy=None,
-    dz=None,
-    min_distance=None,
-    x_coordinate_name=None,
-    y_coordinate_name=None,
-    z_coordinate_name=None,
-    target="maximum",
-    PBC_flag="none",
-    min_h1=0,
-    max_h1=0,
-    min_h2=0,
-    max_h2=0,
+    features: pd.DataFrame,
+    dxy: float = None,
+    dz: float = None,
+    min_distance: float = None,
+    x_coordinate_name: str = None,
+    y_coordinate_name: str = None,
+    z_coordinate_name: str = None,
+    target: Literal["maximum", "minimum"] = "maximum",
+    PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
+    min_h1: int = 0,
+    max_h1: int = 0,
+    min_h2: int = 0,
+    max_h2: int = 0,
 ):
     """Function to remove features that are too close together.
     If two features are closer than `min_distance`, it keeps the
