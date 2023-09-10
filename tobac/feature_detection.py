@@ -218,13 +218,13 @@ def feature_position(
         )
 
     if run_mean:
-        if PBC_flag == "hdim_1" or PBC_flag == "both":
+        if PBC_flag in ("hdim_1", "both"):
             hdim1_index = pbc_utils.weighted_circmean(
                 hdim1_indices, weights=hdim1_weights, high=hdim1_max + 1, low=hdim1_min
             )
         else:
             hdim1_index = np.average(hdim1_indices, weights=hdim1_weights)
-        if PBC_flag == "hdim_2" or PBC_flag == "both":
+        if PBC_flag in ("hdim_2", "both"):
             hdim2_index = pbc_utils.weighted_circmean(
                 hdim2_indices, weights=hdim2_weights, high=hdim2_max + 1, low=hdim2_min
             )
