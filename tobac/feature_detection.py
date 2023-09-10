@@ -30,6 +30,8 @@ from .utils.general import spectral_filtering
 import warnings
 from typing import Union
 from typing_extensions import Literal
+import iris
+import xarray as xr
 
 
 def feature_position(
@@ -49,7 +51,7 @@ def feature_position(
     hdim1_max: int = 0,
     hdim2_min: int = 0,
     hdim2_max: int = 0,
-):
+) -> tuple[float]:
     """Determine feature position with regard to the horizontal
     dimensions in pixels from the identified region above
     threshold values
@@ -239,7 +241,9 @@ def feature_position(
         return hdim1_index, hdim2_index
 
 
-def test_overlap(region_inner, region_outer):
+def test_overlap(
+    region_inner: list[tuple[int]], region_outer: list[tuple[int]]
+) -> bool:
     """Test for overlap between two regions
 
     Parameters
@@ -263,7 +267,9 @@ def test_overlap(region_inner, region_outer):
     return not overlap
 
 
-def remove_parents(features_thresholds, regions_i, regions_old):
+def remove_parents(
+    features_thresholds: pd.DataFrame, regions_i: dict, regions_old: dict
+) -> pd.DataFrame:
     """Remove parents of newly detected feature regions.
 
     Remove features where its regions surround newly
@@ -316,20 +322,22 @@ def remove_parents(features_thresholds, regions_i, regions_old):
 
 
 def feature_detection_threshold(
-    data_i,
-    i_time,
-    threshold=None,
-    min_num=0,
-    target="maximum",
-    position_threshold="center",
-    sigma_threshold=0.5,
-    n_erosion_threshold=0,
-    n_min_threshold=0,
-    min_distance=0,
-    idx_start=0,
-    PBC_flag="none",
-    vertical_axis=0,
-):
+    data_i: iris.cube.Cube,
+    i_time: int,
+    threshold: float = None,
+    min_num: int = 0,
+    target: Literal["maximum", "minimum"] = "maximum",
+    position_threshold: Literal[
+        "center", "extreme", "weighted_diff", "weighted_abs"
+    ] = "center",
+    sigma_threshold: float = 0.5,
+    n_erosion_threshold: int = 0,
+    n_min_threshold: int = 0,
+    min_distance: float = 0,
+    idx_start: int = 0,
+    PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
+    vertical_axis: int = 0,
+) -> tuple[pd.DataFrame, dict]:
     """Find features based on individual threshold value.
 
     Parameters
