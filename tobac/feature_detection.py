@@ -16,6 +16,7 @@ References
    diverse datasets. Geoscientific Model Development,
    12(11), 4551-4570.
 """
+from __future__ import annotations
 
 import logging
 import numpy as np
@@ -27,23 +28,27 @@ from tobac.utils import internal as internal_utils
 from tobac.utils import periodic_boundaries as pbc_utils
 from tobac.utils.general import spectral_filtering
 import warnings
+from typing import Union
+from typing_extensions import Literal
 
 
 def feature_position(
-    hdim1_indices,
-    hdim2_indices,
-    vdim_indices=None,
-    region_small=None,
-    region_bbox=None,
-    track_data=None,
-    threshold_i=None,
-    position_threshold="center",
-    target=None,
-    PBC_flag="none",
-    hdim1_min=0,
-    hdim1_max=0,
-    hdim2_min=0,
-    hdim2_max=0,
+    hdim1_indices: list[int],
+    hdim2_indices: list[int],
+    vdim_indices: Union[list[int], None] = None,
+    region_small: np.ndarray = None,
+    region_bbox: Union[list[int], tuple[int]] = None,
+    track_data: np.ndarray = None,
+    threshold_i: float = None,
+    position_threshold: Literal[
+        "center", "extreme", "weighted_diff", "weighted abs"
+    ] = "center",
+    target: Literal["maximum", "minimum"] = None,
+    PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
+    hdim1_min: int = 0,
+    hdim1_max: int = 0,
+    hdim2_min: int = 0,
+    hdim2_max: int = 0,
 ):
     """Determine feature position with regard to the horizontal
     dimensions in pixels from the identified region above
