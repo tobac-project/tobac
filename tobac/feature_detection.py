@@ -23,10 +23,10 @@ import numpy as np
 import pandas as pd
 from scipy.spatial import KDTree
 from sklearn.neighbors import BallTree
-from tobac.tracking import build_distance_function
-from tobac.utils import internal as internal_utils
-from tobac.utils import periodic_boundaries as pbc_utils
-from tobac.utils.general import spectral_filtering
+from .tracking import build_distance_function
+from .utils import internal as internal_utils
+from .utils import periodic_boundaries as pbc_utils
+from .utils.general import spectral_filtering
 import warnings
 from typing import Union
 from typing_extensions import Literal
@@ -146,8 +146,8 @@ def feature_position(
     # First, if necessary, run PBC processing.
     # processing of PBC indices
     # checks to see if minimum and maximum values are present in dimensional array
-    # then if true, adds max value to any indices past the halfway point of their respective dimension.
-    # this, in essence, shifts the set of points to the high side.
+    # then if true, adds max value to any indices past the halfway point of their
+    # respective dimension. this, in essence, shifts the set of points to the high side.
     pbc_options = ["hdim_1", "hdim_2", "both"]
 
     if len(region_bbox) == 4:
@@ -395,7 +395,8 @@ def feature_detection_threshold(
 
     if min_num != 0:
         warnings.warn(
-            "min_num parameter has no effect and will be deprecated in a future version of tobac. Please use n_min_threshold instead",
+            "min_num parameter has no effect and will be deprecated in a future version of tobac. "
+            "Please use n_min_threshold instead",
             FutureWarning,
         )
 
@@ -521,8 +522,8 @@ def feature_detection_threshold(
                         ~np.any(label_on_corner == skip_list)
                     ):
                         # alt_inds = np.where(labels==alt_label_3)
-                        # get a list of indices where the label on the corner is so we can switch them
-                        # in the new list.
+                        # get a list of indices where the label on the corner is so we can switch
+                        # them in the new list.
 
                         labels_2[
                             all_label_locs_v[label_on_corner],
@@ -549,7 +550,8 @@ def feature_detection_threshold(
                         and (np.any(label_on_corner == skip_list))
                         and (~np.any(label_on_corner == skip_list_thisind))
                     ):
-                        # find the updated label, and overwrite all of label_ind indices with updated label
+                        # find the updated label, and overwrite all of label_ind indices with
+                        # updated label
                         labels_2_alt = labels_2[label_z, y_val_alt, x_val_alt]
                         labels_2[
                             label_locs_v, label_locs_h1, label_locs_h2
@@ -568,7 +570,8 @@ def feature_detection_threshold(
 
                     # if it's labeled and not already been dealt with
                     if (label_alt != 0) and (~np.any(label_alt == skip_list)):
-                        # find the indices where it has the label value on opposite side and change their value to original side
+                        # find the indices where it has the label value on opposite side and change
+                        # their value to original side
                         # print(all_label_locs_v[label_alt], alt_inds[0])
                         labels_2[
                             all_label_locs_v[label_alt],
@@ -593,7 +596,8 @@ def feature_detection_threshold(
                         and (np.any(label_alt == skip_list))
                         and (~np.any(label_alt == skip_list_thisind))
                     ):
-                        # find the updated label, and overwrite all of label_ind indices with updated label
+                        # find the updated label, and overwrite all of label_ind indices with
+                        # updated label
                         labels_2_alt = labels_2[label_z, y_val_alt, label_x]
                         labels_2[
                             label_locs_v, label_locs_h1, label_locs_h2
@@ -611,7 +615,8 @@ def feature_detection_threshold(
 
                     # if it's labeled and not already been dealt with
                     if (label_alt != 0) and (~np.any(label_alt == skip_list)):
-                        # find the indices where it has the label value on opposite side and change their value to original side
+                        # find the indices where it has the label value on opposite side and change
+                        # their value to original side
                         labels_2[
                             all_label_locs_v[label_alt],
                             all_label_locs_h1[label_alt],
@@ -635,7 +640,8 @@ def feature_detection_threshold(
                         and (np.any(label_alt == skip_list))
                         and (~np.any(label_alt == skip_list_thisind))
                     ):
-                        # find the updated label, and overwrite all of label_ind indices with updated label
+                        # find the updated label, and overwrite all of label_ind indices with
+                        # updated label
                         labels_2_alt = labels_2[label_z, label_y, x_val_alt]
                         labels_2[
                             label_locs_v, label_locs_h1, label_locs_h2
@@ -926,13 +932,15 @@ def feature_detection_multithreshold_timestep(
         )
 
     # sort thresholds from least extreme to most extreme
-    threshold_sorted = sorted(threshold, reverse=(target == "minimum"))
+    threshold_sorted = sorted(threshold, reverse=target == "minimum")
 
-    # check if each threshold has a n_min_threshold (minimum nr. of grid cells associated with thresholds), if multiple n_min_threshold are given
+    # check if each threshold has a n_min_threshold (minimum nr. of grid cells associated with
+    # thresholds), if multiple n_min_threshold are given
     if isinstance(n_min_threshold, list) or isinstance(n_min_threshold, dict):
         if len(n_min_threshold) is not len(threshold):
             raise ValueError(
-                "Number of elements in n_min_threshold needs to be the same as thresholds, if n_min_threshold is given as dict or list."
+                "Number of elements in n_min_threshold needs to be the same as thresholds, if "
+                "n_min_threshold is given as dict or list."
             )
 
         # check if thresholds in dict correspond to given thresholds
@@ -941,15 +949,18 @@ def feature_detection_multithreshold_timestep(
                 n_min_threshold.keys(), reverse=(target == "minimum")
             ):
                 raise ValueError(
-                    "Ambiguous input for threshold values. If n_min_threshold is given as a dict, the keys not to correspond to the values in threshold."
+                    "Ambiguous input for threshold values. If n_min_threshold is given as a dict,"
+                    " the keys not to correspond to the values in threshold."
                 )
-            # sort dictionary by keys (threshold values) so that they match sorted thresholds and get values for n_min_threshold
+            # sort dictionary by keys (threshold values) so that they match sorted thresholds and
+            # get values for n_min_threshold
             n_min_threshold = [
                 n_min_threshold[threshold] for threshold in threshold_sorted
             ]
 
         elif isinstance(n_min_threshold, list):
-            # if n_min_threshold is a list, sort it such that it still matches with the sorted threshold values
+            # if n_min_threshold is a list, sort it such that it still matches with the sorted
+            # threshold values
             n_min_threshold = [
                 x
                 for _, x in sorted(
@@ -962,7 +973,8 @@ def feature_detection_multithreshold_timestep(
         and not isinstance(n_min_threshold, int)
     ):
         raise ValueError(
-            "N_min_threshold must be an integer. If multiple values for n_min_threshold are given, please provide a dictionary or list."
+            "N_min_threshold must be an integer. If multiple values for n_min_threshold are given,"
+            " please provide a dictionary or list."
         )
 
     # create empty lists to store regions and features for individual timestep
@@ -999,9 +1011,11 @@ def feature_detection_multithreshold_timestep(
                 [features_thresholds, features_threshold_i], ignore_index=True
             )
 
-        # For multiple threshold, and features found both in the current and previous step, remove "parent" features from Dataframe
+        # For multiple threshold, and features found both in the current and previous step, remove
+        # "parent" features from Dataframe
         if i_threshold > 0 and not features_thresholds.empty and regions_old:
-            # for each threshold value: check if newly found features are surrounded by feature based on less restrictive threshold
+            # for each threshold value: check if newly found features are surrounded by feature
+            # based on less restrictive threshold
             features_thresholds = remove_parents(
                 features_thresholds, regions_i, regions_old
             )
@@ -1228,8 +1242,8 @@ def feature_detection_multithreshold(
     if type(threshold) in [int, float]:
         threshold = [threshold]
 
-    # if wavelength_filtering is given, check that value cannot be larger than distances along x and y,
-    # that the value cannot be smaller or equal to the grid spacing
+    # if wavelength_filtering is given, check that value cannot be larger than distances along
+    # x and y, that the value cannot be smaller or equal to the grid spacing
     # and throw a warning if dxy and wavelengths have about the same order of magnitude
     if wavelength_filtering is not None:
         if is_3D:
@@ -1245,17 +1259,21 @@ def feature_detection_multithreshold(
 
         if lambda_min > distance or lambda_max > distance:
             raise ValueError(
-                "The given wavelengths cannot be larger than the total distance in m along the axes of the domain."
+                "The given wavelengths cannot be larger than the total distance in m along the axes"
+                " of the domain."
             )
 
         elif lambda_min <= dxy:
             raise ValueError(
-                "The given minimum wavelength cannot be smaller than gridspacing dxy. Please note that both dxy and the values for wavelength_filtering should be given in meter."
+                "The given minimum wavelength cannot be smaller than gridspacing dxy. Please note "
+                "that both dxy and the values for wavelength_filtering should be given in meter."
             )
 
         elif np.floor(np.log10(lambda_min)) - np.floor(np.log10(dxy)) > 1:
             warnings.warn(
-                "Warning: The values for dxy and the minimum wavelength are close in order of magnitude. Please note that both dxy and for wavelength_filtering should be given in meter."
+                "Warning: The values for dxy and the minimum wavelength are close in order of "
+                "magnitude. Please note that both dxy and for wavelength_filtering should be "
+                "given in meter."
             )
 
     for i_time, data_i in enumerate(data_time):
@@ -1279,15 +1297,16 @@ def feature_detection_multithreshold(
             wavelength_filtering=wavelength_filtering,
             strict_thresholding=strict_thresholding,
         )
-        # check if list of features is not empty, then merge features from different threshold values
-        # into one DataFrame and append to list for individual timesteps:
+        # check if list of features is not empty, then merge features from different threshold
+        # values into one DataFrame and append to list for individual timesteps:
         if not features_thresholds.empty:
             hdim1_ax, hdim2_ax = internal_utils.find_hdim_axes_3D(
                 field_in, vertical_coord=vertical_coord
             )
             hdim1_max = field_in.shape[hdim1_ax] - 1
             hdim2_max = field_in.shape[hdim2_ax] - 1
-            # Loop over DataFrame to remove features that are closer than distance_min to each other:
+            # Loop over DataFrame to remove features that are closer than distance_min to each
+            # other:
             if min_distance > 0:
                 features_thresholds = filter_min_distance(
                     features_thresholds,
@@ -1310,7 +1329,8 @@ def feature_detection_multithreshold(
         )
 
     logging.debug("feature detection: merging DataFrames")
-    # Check if features are detected and then concatenate features from different timesteps into one pandas DataFrame
+    # Check if features are detected and then concatenate features from different timesteps into
+    # one pandas DataFrame
     # If no features are detected raise error
     if any([not x.empty for x in list_features_timesteps]):
         features = pd.concat(list_features_timesteps, ignore_index=True)
@@ -1429,7 +1449,8 @@ def filter_min_distance(
             "Both "
             + z_coordinate_name
             + " and dz available to filter_min_distance; using constant dz. "
-            "Set dz to none if you want to use altitude or set `z_coordinate_name` to None to use constant dz."
+            "Set dz to none if you want to use altitude or set `z_coordinate_name` to None to use "
+            "constant dz."
         )
 
     # As optional coordinate names are not yet implemented, set to defaults here:
