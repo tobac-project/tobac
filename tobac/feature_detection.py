@@ -847,7 +847,7 @@ def feature_detection_multithreshold_timestep(
     dxy: float = -1,
     wavelength_filtering: tuple[float] = None,
     strict_thresholding: bool = False,
-):
+) -> pd.DataFrame:
     """Find features in each timestep.
 
     Based on iteratively finding regions above/below a set of
@@ -1096,7 +1096,7 @@ def feature_detection_multithreshold(
     wavelength_filtering: tuple = None,
     dz: Union[float, None] = None,
     strict_thresholding: bool = False,
-):
+) -> pd.DataFrame:
     """Perform feature detection based on contiguous regions.
 
     The regions are above/below a threshold.
@@ -1380,7 +1380,7 @@ def filter_min_distance(
     max_h1: int = 0,
     min_h2: int = 0,
     max_h2: int = 0,
-):
+) -> pd.DataFrame:
     """Function to remove features that are too close together.
     If two features are closer than `min_distance`, it keeps the
     larger feature.
