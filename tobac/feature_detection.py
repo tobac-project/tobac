@@ -28,8 +28,9 @@ from .utils import internal as internal_utils
 from .utils import periodic_boundaries as pbc_utils
 from .utils.general import spectral_filtering
 import warnings
-from typing import Union
-from typing_extensions import Literal
+from typing import Union, Literal
+
+# from typing_extensions import Literal
 import iris
 import xarray as xr
 
