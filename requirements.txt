@@ -9,3 +9,4 @@ iris
 xarray
 cartopy
 trackpy
+python>=3.8
