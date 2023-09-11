@@ -35,8 +35,6 @@ from tobac.utils import internal as internal_utils
 from tobac.utils import periodic_boundaries as pbc_utils
 from tobac.utils.general import spectral_filtering
 
-# from typing_extensions import Literal
-
 
 def feature_position(
     hdim1_indices: list[int],
@@ -272,7 +270,7 @@ def test_overlap(
 
 
 def remove_parents(
-    features_thresholds: pd.DataFrame, regions_i: dict, regions_old: dict
+    features_thresholds: pd.DataFrame, regions_i: dict, regions_old: dict, strict_thresholding: bool =False
 ) -> pd.DataFrame:
     """Remove parents of newly detected feature regions.
 
@@ -294,6 +292,9 @@ def remove_parents(
         threshold from previous threshold
         (feature ids as keys).
 
+    strict_thresholding: Bool, optional
+        If True, a feature can only be detected if all previous thresholds have been met.
+        Default is False.
     Returns
     -------
     features_thresholds : pandas.DataFrame
@@ -303,18 +304,48 @@ def remove_parents(
 
     try:
         all_curr_pts = np.concatenate([vals for idx, vals in regions_i.items()])
+    except ValueError:
+        # the case where there are no new regions
+        if strict_thresholding:
+            return features_thresholds, {}
+        else:
+            return features_thresholds, regions_old
+    try:
         all_old_pts = np.concatenate([vals for idx, vals in regions_old.items()])
     except ValueError:
-        # the case where there are no regions
-        return features_thresholds
+        # the case where there are no old regions
+        if strict_thresholding:
+            return (
+                features_thresholds[
+                    ~features_thresholds["idx"].isin(list(regions_i.keys()))
+                ],
+                {},
+            )
+        else:
+            return features_thresholds, regions_i
+
     old_feat_arr = np.empty((len(all_old_pts)))
     curr_loc = 0
     for idx_old in regions_old:
         old_feat_arr[curr_loc : curr_loc + len(regions_old[idx_old])] = idx_old
         curr_loc += len(regions_old[idx_old])
 
-    _, _, common_ix_old = np.intersect1d(all_curr_pts, all_old_pts, return_indices=True)
+    _, common_ix_new, common_ix_old = np.intersect1d(
+        all_curr_pts, all_old_pts, return_indices=True
+    )
     list_remove = np.unique(old_feat_arr[common_ix_old])
+
+    if strict_thresholding:
+        new_feat_arr = np.empty((len(all_curr_pts)))
+        curr_loc = 0
+        for idx_new in regions_i:
+            new_feat_arr[curr_loc : curr_loc + len(regions_i[idx_new])] = idx_new
+            curr_loc += len(regions_i[idx_new])
+        regions_i_overlap = np.unique(new_feat_arr[common_ix_new])
+        no_prev_feature = np.array(list(regions_i.keys()))[
+            np.logical_not(np.isin(list(regions_i.keys()), regions_i_overlap))
+        ]
+        list_remove = np.concatenate([list_remove, no_prev_feature])
 
     # remove parent regions:
     if features_thresholds is not None:
@@ -322,7 +353,23 @@ def remove_parents(
             ~features_thresholds["idx"].isin(list_remove)
         ]
 
-    return features_thresholds
+        if strict_thresholding:
+            keep_new_keys = np.isin(list(regions_i.keys()), features_thresholds["idx"])
+            regions_old = {
+                k: v for i, (k, v) in enumerate(regions_i.items()) if keep_new_keys[i]
+            }
+        else:
+            keep_old_keys = np.isin(
+                list(regions_old.keys()), features_thresholds["idx"]
+            )
+            regions_old = {
+                k: v for i, (k, v) in enumerate(regions_old.items()) if keep_old_keys[i]
+            }
+            regions_old.update(regions_i)
+    else:
+        regions_old = regions_i
+
+    return features_thresholds, regions_old
 
 
 def feature_detection_threshold(
@@ -1030,43 +1077,16 @@ def feature_detection_multithreshold_timestep(
 
         # For multiple threshold, and features found both in the current and previous step, remove
         # "parent" features from Dataframe
-        if i_threshold > 0 and not features_thresholds.empty and regions_old:
-            # for each threshold value: check if newly found features are surrounded by feature
-            # based on less restrictive threshold
-            features_thresholds = remove_parents(
-                features_thresholds, regions_i, regions_old
+        if i_threshold > 0 and not features_thresholds.empty:
+            # For multiple threshold, and features found both in the current and previous step, remove
+            # "parent" features from Dataframe
+            features_thresholds, regions_old = remove_parents(
+                features_thresholds,
+                regions_i,
+                regions_old,
+                strict_thresholding=strict_thresholding,
             )
-
-        if strict_thresholding:
-            if regions_i:
-                # remove data in regions where no features were detected
-                valid_regions: np.ndarray = np.zeros_like(track_data)
-                region_indices: list[int] = list(regions_i.values())[
-                    0
-                ]  # linear indices
-                valid_regions.ravel()[region_indices] = 1
-                track_data: np.ndarray = np.multiply(valid_regions, track_data)
-            else:
-                # since regions_i is empty no further features can be detected
-                logging.debug(
-                    "Finished feature detection for threshold "
-                    + str(i_threshold)
-                    + " : "
-                    + str(threshold_i)
-                )
-                return features_thresholds
-
-        if i_threshold > 0 and not features_thresholds.empty and regions_old:
-            # Work out which regions are still in feature_thresholds to keep
-            # This is faster than calling "in" for every idx
-            keep_old_keys = np.isin(
-                list(regions_old.keys()), features_thresholds["idx"]
-            )
-            regions_old = {
-                k: v for i, (k, v) in enumerate(regions_old.items()) if keep_old_keys[i]
-            }
-            regions_old.update(regions_i)
-        else:
+        elif i_threshold == 0:
             regions_old = regions_i
 
         logging.debug(
