@@ -449,12 +449,15 @@ def njit_if_available(func, **kwargs):
         return func
 
 
-def find_vertical_axis_from_coord(variable_cube, vertical_coord=None):
+def find_vertical_axis_from_coord(
+    variable_cube: Union[iris.cube.Cube, xr.DataArray],
+    vertical_coord: Union[str, None] = None,
+):
     """Function to find the vertical coordinate in the iris cube
 
     Parameters
     ----------
-    variable_cube: iris.cube
+    variable_cube: iris.cube.Cube or xarray.DataArray
         Input variable cube, containing a vertical coordinate.
     vertical_coord: str
         Vertical coordinate name. If None, this function tries to auto-detect.
@@ -480,7 +483,7 @@ def find_vertical_axis_from_coord(variable_cube, vertical_coord=None):
         _warn_auto_coordinate()
 
     if isinstance(variable_cube, iris.cube.Cube):
-        list_coord_names = [coord.name() for coord in variable_cube.coords()]
+        return iris_utils.find_vertical_axis_from_coord(variable_cube, vertical_coord)
     elif isinstance(variable_cube, xr.Dataset) or isinstance(
         variable_cube, xr.DataArray
     ):
