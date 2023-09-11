@@ -4,7 +4,10 @@ import numpy as np
 import skimage.measure
 import xarray as xr
 import iris
+import iris.cube
 import warnings
+from . import iris_utils
+from typing import Union
 
 
 def _warn_auto_coordinate():
@@ -498,36 +501,6 @@ def find_vertical_axis_from_coord(variable_cube, vertical_coord=None):
         raise ValueError("Please specify vertical coordinate found in cube")
 
 
-def find_axis_from_coord(variable_cube, coord_name):
-    """Finds the axis number in an iris cube given a coordinate name.
-
-    Parameters
-    ----------
-    variable_cube: iris.cube
-        Input variable cube
-    coord_name: str
-        coordinate to look for
-
-    Returns
-    -------
-    axis_number: int
-        the number of the axis of the given coordinate, or None if the coordinate
-        is not found in the cube or not a dimensional coordinate
-    """
-
-    list_coord_names = [coord.name() for coord in variable_cube.coords()]
-    all_matching_axes = list(set(list_coord_names) & set((coord_name,)))
-    if (
-        len(all_matching_axes) == 1
-        and len(variable_cube.coord_dims(all_matching_axes[0])) > 0
-    ):
-        return variable_cube.coord_dims(all_matching_axes[0])[0]
-    elif len(all_matching_axes) > 1:
-        raise ValueError("Too many axes matched.")
-    else:
-        return None
-
-
 def find_dataframe_vertical_coord(variable_dataframe, vertical_coord=None):
     """Function to find the vertical coordinate in the iris cube
 
@@ -633,6 +606,35 @@ def find_hdim_axes_3D(field_in, vertical_coord=None, vertical_axis=None):
         raise ValueError("Unknown data type: " + type(field_in).__name__)
 
 
+def find_axis_from_coord(
+    variable_arr: Union[iris.cube.Cube, xr.DataArray], coord_name: str
+):
+    """Finds the axis number in an xarray or iris cube given a coordinate or dimension name.
+
+    Parameters
+    ----------
+    variable_arr: iris.cube.Cube or xarray.DataArray
+        Input variable cube
+    coord_name: str
+        coordinate or dimension to look for
+
+    Returns
+    -------
+    axis_number: int
+        the number of the axis of the given coordinate, or None if the coordinate
+        is not found in the variable or not a dimensional coordinate
+    """
+
+    if isinstance(variable_arr, iris.cube.Cube):
+        return iris_utils.find_axis_from_coord(variable_arr, coord_name)
+    elif isinstance(variable_arr, xr.DataArray):
+        raise NotImplementedError(
+            "xarray version of find_axis_from_coord not implemented."
+        )
+    else:
+        raise ValueError("variable_arr must be Iris Cube or Xarray DataArray")
+
+
 def find_hdim_axes_3D_iris(field_in, vertical_coord=None, vertical_axis=None):
     """Finds what the hdim axes are given a 3D (including z) or
     4D (including z and time) dataset.
@@ -661,7 +663,7 @@ def find_hdim_axes_3D_iris(field_in, vertical_coord=None, vertical_axis=None):
         if vertical_coord != "auto":
             raise ValueError("Cannot set both vertical_coord and vertical_axis.")
 
-    time_axis = find_axis_from_coord(field_in, "time")
+    time_axis = iris_utils.find_axis_from_coord(field_in, "time")
     if vertical_axis is not None:
         vertical_coord_axis = vertical_axis
         vert_coord_found = True
