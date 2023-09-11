@@ -4,4 +4,3 @@ python:
   version: 3
   install:
     - requirements: doc/requirements.txt
-  system_packages: true
