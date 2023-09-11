@@ -17,22 +17,25 @@ References
    12(11), 4551-4570.
 """
 from __future__ import annotations
-
+from typing import Union
+import warnings
 import logging
+
+from typing_extensions import Literal
+
 import numpy as np
 import pandas as pd
 from scipy.spatial import KDTree
 from sklearn.neighbors import BallTree
-from .tracking import build_distance_function
-from .utils import internal as internal_utils
-from .utils import periodic_boundaries as pbc_utils
-from .utils.general import spectral_filtering
-import warnings
-from typing import Union, Literal
-
-# from typing_extensions import Literal
 import iris
 import xarray as xr
+
+from tobac.tracking import build_distance_function
+from tobac.utils import internal as internal_utils
+from tobac.utils import periodic_boundaries as pbc_utils
+from tobac.utils.general import spectral_filtering
+
+# from typing_extensions import Literal
 
 
 def feature_position(
