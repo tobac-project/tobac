@@ -4,6 +4,7 @@ _**Version 1.5.1:**_
 
 **Bug fixes**
 
+- Fix to readthedocs building after system packages no longer imported [#336](https://github.com/tobac-project/tobac/pull/336)
 - The `strict_thresholding` option in feature detection now works correctly for detecting minima, and produces the same results as without strict thresholding if the `n_min_threshold` is a scalar value [#316](https://github.com/tobac-project/tobac/pull/316)
 
 
@@ -42,12 +43,15 @@ _**Version 1.5.0:**_
 - `scipy.interpolate.interp2d` in `add_coordinates` and `add_coordinates_3D` has been replaced with `scipy.interpolate.interpn` as `interp2d` has been deprecated. [#279](https://github.com/tobac-project/tobac/pull/279) 
 - `setup.py` updated to draw its required packages from `requirements.txt` [#288](https://github.com/tobac-project/tobac/pull/288)
 
+
+
 **Repository Enhancements**
 
 - New CI was added to automatically check the example and documentation Jupyter notebooks [#258](https://github.com/tobac-project/tobac/pull/258), [#290](https://github.com/tobac-project/tobac/pull/290)
 - The `check_formatting` CI action has been revised to install dependencies through `conda` [#288](https://github.com/tobac-project/tobac/pull/288)
 - Repository authors updated [#289](https://github.com/tobac-project/tobac/pull/289)
 - CI added to check author list formatting for Zenodo [#292](https://github.com/tobac-project/tobac/pull/292)
+
 
 **Deprecations**
 
@@ -58,7 +62,9 @@ _**Version 1.5.0:**_
 - `tobac.utils.combine_tobac_feats` has been renamed to `tobac.utils.combine_feature_dataframes`, and the original name has been deprecated and will be removed in a future release. [#300](https://github.com/tobac-project/tobac/pull/300)
 
 
+
 _**Version 1.4.2:**_
+
 
 **Bug fix**
 
@@ -79,7 +85,6 @@ _**Version 1.4.1:**_
 **Documentation**
 
 - Regenerated example notebooks so that they are up to date for the present version [#233](https://github.com/tobac-project/tobac/pull/233)
-
 
 _**Version 1.4.0:**_
 
@@ -118,13 +123,11 @@ _**Version 1.4.0:**_
 
 - Support for Python 3.6 and earlier is now deprecated and will be removed in v1.5.0 ([#193](https://github.com/tobac-project/tobac/pull/193))
 
-
 _**Version 1.3.3:**_
 
 **Bug fixes**
 
 - Added a workaround to a bug in trackpy that fixes predictive tracking [#170](https://github.com/tobac-project/tobac/pull/170)
-
 
 _**Version 1.3.2:**_
 
@@ -137,7 +140,6 @@ _**Version 1.3.2:**_
 
 - Added automatic code coverage reports [#124](https://github.com/tobac-project/tobac/pull/124)
 - Added automatic building of readthedocs documentation on pull requests
-
 
 _**Version 1.3.1:**_
 
@@ -152,7 +154,6 @@ _**Version 1.3.1:**_
 **Repository enhancements**
 
 - New pull request template for the repository, including a checklist to be completed for each pull request [#120](https://github.com/tobac-project/tobac/pull/120)
-
 
 _**Version 1.3:**_
 
