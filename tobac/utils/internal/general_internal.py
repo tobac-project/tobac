@@ -5,9 +5,19 @@ import skimage.measure
 import xarray as xr
 import iris
 import iris.cube
+import pandas as pd
 import warnings
 from . import iris_utils
+from . import xarray_utils as xr_utils
 from typing import Union
+
+# list of common vertical coordinates to search for in various functions
+COMMON_VERT_COORDS: list[str] = [
+    "z",
+    "model_level_number",
+    "altitude",
+    "geopotential_height",
+]
 
 
 def _warn_auto_coordinate():
@@ -472,39 +482,21 @@ def find_vertical_axis_from_coord(
     ValueError
         Raised if the vertical coordinate isn't found in the cube.
     """
-    list_vertical = [
-        "z",
-        "model_level_number",
-        "altitude",
-        "geopotential_height",
-    ]
 
     if vertical_coord == "auto":
         _warn_auto_coordinate()
 
     if isinstance(variable_cube, iris.cube.Cube):
         return iris_utils.find_vertical_axis_from_coord(variable_cube, vertical_coord)
-    elif isinstance(variable_cube, xr.Dataset) or isinstance(
-        variable_cube, xr.DataArray
-    ):
-        list_coord_names = variable_cube.coords
+    if isinstance(variable_cube, xr.Dataset) or isinstance(variable_cube, xr.DataArray):
+        return xr_utils.find_vertical_axis_from_coord(variable_cube, vertical_coord)
 
-    if vertical_coord is None or vertical_coord == "auto":
-        # find the intersection
-        all_vertical_axes = list(set(list_coord_names) & set(list_vertical))
-        if len(all_vertical_axes) >= 1:
-            return all_vertical_axes[0]
-        else:
-            raise ValueError(
-                "Cube lacks suitable automatic vertical coordinate (z, model_level_number, altitude, or geopotential_height)"
-            )
-    elif vertical_coord in list_coord_names:
-        return vertical_coord
-    else:
-        raise ValueError("Please specify vertical coordinate found in cube")
+    raise ValueError("variable_cube must be xr.DataArray or iris.cube.Cube")
 
 
-def find_dataframe_vertical_coord(variable_dataframe, vertical_coord=None):
+def find_dataframe_vertical_coord(
+    variable_dataframe: pd.DataFrame, vertical_coord: Union[str, None] = None
+):
     """Function to find the vertical coordinate in the iris cube
 
     Parameters
@@ -529,8 +521,9 @@ def find_dataframe_vertical_coord(variable_dataframe, vertical_coord=None):
         _warn_auto_coordinate()
 
     if vertical_coord is None or vertical_coord == "auto":
-        list_vertical = ["z", "model_level_number", "altitude", "geopotential_height"]
-        all_vertical_axes = list(set(variable_dataframe.columns) & set(list_vertical))
+        all_vertical_axes = list(
+            set(variable_dataframe.columns) & set(COMMON_VERT_COORDS)
+        )
         if len(all_vertical_axes) == 1:
             return all_vertical_axes[0]
         else:
@@ -544,7 +537,7 @@ def find_dataframe_vertical_coord(variable_dataframe, vertical_coord=None):
 
 
 @njit_if_available
-def calc_distance_coords(coords_1, coords_2):
+def calc_distance_coords(coords_1: np.array, coords_2: np.array):
     """Function to calculate the distance between cartesian
     coordinate set 1 and coordinate set 2.
     Parameters
@@ -571,13 +564,17 @@ def calc_distance_coords(coords_1, coords_2):
     return np.sqrt(np.sum(deltas**2))
 
 
-def find_hdim_axes_3D(field_in, vertical_coord=None, vertical_axis=None):
+def find_hdim_axes_3D(
+    field_in: Union[iris.cube.Cube, xr.DataArray],
+    vertical_coord: Union[str, None] = None,
+    vertical_axis: Union[int, None] = None,
+):
     """Finds what the hdim axes are given a 3D (including z) or
     4D (including z and time) dataset.
 
     Parameters
     ----------
-    field_in: iris cube or xarray dataset
+    field_in: iris cube or xarray dataarray
         Input field, can be 3D or 4D
     vertical_coord: str
         The name of the vertical coord, or None, which will attempt to find
@@ -602,7 +599,7 @@ def find_hdim_axes_3D(field_in, vertical_coord=None, vertical_axis=None):
             raise ValueError("Cannot set both vertical_coord and vertical_axis.")
 
     if type(field_in) is iris_cube.Cube:
-        return find_hdim_axes_3D_iris(field_in, vertical_coord, vertical_axis)
+        return iris_utils.find_hdim_axes_3d(field_in, vertical_coord, vertical_axis)
     elif type(field_in) is xr.DataArray:
         raise NotImplementedError("Xarray find_hdim_axes_3D not implemented")
     else:
