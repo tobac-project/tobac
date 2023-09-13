@@ -14,3 +14,4 @@ notebook
 pytables
 s3fs
 arm_pyart
+seaborn
