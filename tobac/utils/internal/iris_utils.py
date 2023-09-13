@@ -1,6 +1,7 @@
 """Internal tobac utilities for iris cubes
 The goal will be to, ultimately, remove these when we sunset iris
 """
+from __future__ import annotations
 
 from typing import Union
 

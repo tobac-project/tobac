@@ -1,5 +1,7 @@
 """Internal tobac utilities
 """
+from __future__ import annotations
+
 import numpy as np
 import skimage.measure
 import xarray as xr
@@ -9,7 +11,7 @@ import pandas as pd
 import warnings
 from . import iris_utils
 from . import xarray_utils as xr_utils
-from typing import Union
+from typing import Union, Callable
 
 # list of common vertical coordinates to search for in various functions
 COMMON_VERT_COORDS: list[str] = [
@@ -30,7 +32,7 @@ def _warn_auto_coordinate():
     )
 
 
-def get_label_props_in_dict(labels):
+def get_label_props_in_dict(labels: np.array) -> dict:
     """Function to get the label properties into a dictionary format.
 
     Parameters
@@ -53,7 +55,7 @@ def get_label_props_in_dict(labels):
     return region_properties_dict
 
 
-def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
+def get_indices_of_labels_from_reg_prop_dict(region_property_dict: dict) -> tuple[dict]:
     """Function to get the x, y, and z indices (as well as point count) of all labeled regions.
     Parameters
     ----------
@@ -107,7 +109,7 @@ def get_indices_of_labels_from_reg_prop_dict(region_property_dict):
         return [curr_loc_indices, y_indices, x_indices]
 
 
-def iris_to_xarray(func):
+def iris_to_xarray(func: Callable) -> Callable:
     """Decorator that converts all input of a function that is in the form of
     Iris cubes into xarray DataArrays and converts all outputs with type
     xarray DataArrays back into Iris cubes.
@@ -173,7 +175,7 @@ def iris_to_xarray(func):
     return wrapper
 
 
-def xarray_to_iris(func):
+def xarray_to_iris(func: Callable) -> Callable:
     """Decorator that converts all input of a function that is in the form of
     xarray DataArrays into Iris cubes and converts all outputs with type
     Iris cubes back into xarray DataArrays.
@@ -257,7 +259,7 @@ def xarray_to_iris(func):
     return wrapper
 
 
-def irispandas_to_xarray(func):
+def irispandas_to_xarray(func: Callable) -> Callable:
     """Decorator that converts all input of a function that is in the form of
     Iris cubes/pandas Dataframes into xarray DataArrays/xarray Datasets and
     converts all outputs with the type xarray DataArray/xarray Dataset
@@ -337,7 +339,7 @@ def irispandas_to_xarray(func):
     return wrapper
 
 
-def xarray_to_irispandas(func):
+def xarray_to_irispandas(func: Callable) -> Callable:
     """Decorator that converts all input of a function that is in the form of
     DataArrays/xarray Datasets into xarray Iris cubes/pandas Dataframes and
     converts all outputs with the type Iris cubes/pandas Dataframes back into
@@ -440,7 +442,7 @@ def xarray_to_irispandas(func):
     return wrapper
 
 
-def njit_if_available(func, **kwargs):
+def njit_if_available(func: Callable, **kwargs) -> Callable:
     """Decorator to wrap a function with numba.njit if available.
     If numba isn't available, it just returns the function.
 
@@ -462,7 +464,7 @@ def njit_if_available(func, **kwargs):
 def find_vertical_axis_from_coord(
     variable_cube: Union[iris.cube.Cube, xr.DataArray],
     vertical_coord: Union[str, None] = None,
-):
+) -> str:
     """Function to find the vertical coordinate in the iris cube
 
     Parameters
@@ -496,7 +498,7 @@ def find_vertical_axis_from_coord(
 
 def find_dataframe_vertical_coord(
     variable_dataframe: pd.DataFrame, vertical_coord: Union[str, None] = None
-):
+) -> str:
     """Function to find the vertical coordinate in the iris cube
 
     Parameters
@@ -537,7 +539,7 @@ def find_dataframe_vertical_coord(
 
 
 @njit_if_available
-def calc_distance_coords(coords_1: np.array, coords_2: np.array):
+def calc_distance_coords(coords_1: np.array, coords_2: np.array) -> float:
     """Function to calculate the distance between cartesian
     coordinate set 1 and coordinate set 2.
     Parameters
@@ -568,7 +570,7 @@ def find_hdim_axes_3D(
     field_in: Union[iris.cube.Cube, xr.DataArray],
     vertical_coord: Union[str, None] = None,
     vertical_axis: Union[int, None] = None,
-):
+) -> tuple[int]:
     """Finds what the hdim axes are given a 3D (including z) or
     4D (including z and time) dataset.
 
@@ -589,7 +591,6 @@ def find_hdim_axes_3D(
         The axes for hdim_1 and hdim_2
 
     """
-    from iris import cube as iris_cube
 
     if vertical_coord == "auto":
         _warn_auto_coordinate()
@@ -598,7 +599,7 @@ def find_hdim_axes_3D(
         if vertical_coord != "auto":
             raise ValueError("Cannot set both vertical_coord and vertical_axis.")
 
-    if type(field_in) is iris_cube.Cube:
+    if type(field_in) is iris.cube.Cube:
         return iris_utils.find_hdim_axes_3d(field_in, vertical_coord, vertical_axis)
     elif type(field_in) is xr.DataArray:
         raise NotImplementedError("Xarray find_hdim_axes_3D not implemented")
@@ -608,7 +609,7 @@ def find_hdim_axes_3D(
 
 def find_axis_from_coord(
     variable_arr: Union[iris.cube.Cube, xr.DataArray], coord_name: str
-):
+) -> int:
     """Finds the axis number in an xarray or iris cube given a coordinate or dimension name.
 
     Parameters
@@ -635,83 +636,17 @@ def find_axis_from_coord(
         raise ValueError("variable_arr must be Iris Cube or Xarray DataArray")
 
 
-def find_hdim_axes_3D_iris(field_in, vertical_coord=None, vertical_axis=None):
-    """Finds what the hdim axes are given a 3D (including z) or
-    4D (including z and time) dataset.
-
-    Parameters
-    ----------
-    field_in: iris cube
-        Input field, can be 3D or 4D
-    vertical_coord: str or None
-        The name of the vertical coord, or None, which will attempt to find
-        the vertical coordinate name
-    vertical_axis: int or None
-        The axis number of the vertical coordinate, or None. Note
-        that only one of vertical_axis or vertical_coord can be set.
-
-    Returns
-    -------
-    (hdim_1_axis, hdim_2_axis): (int, int)
-        The axes for hdim_1 and hdim_2
-    """
-
-    if vertical_coord == "auto":
-        _warn_auto_coordinate()
-
-    if vertical_coord is not None and vertical_axis is not None:
-        if vertical_coord != "auto":
-            raise ValueError("Cannot set both vertical_coord and vertical_axis.")
-
-    time_axis = iris_utils.find_axis_from_coord(field_in, "time")
-    if vertical_axis is not None:
-        vertical_coord_axis = vertical_axis
-        vert_coord_found = True
-    else:
-        try:
-            vertical_axis = find_vertical_axis_from_coord(
-                field_in, vertical_coord=vertical_coord
-            )
-        except ValueError:
-            vert_coord_found = False
-        else:
-            vert_coord_found = True
-            ndim_vertical = field_in.coord_dims(vertical_axis)
-            if len(ndim_vertical) > 1:
-                raise ValueError(
-                    "please specify 1 dimensional vertical coordinate."
-                    " Current vertical coordinates: {0}".format(ndim_vertical)
-                )
-            if len(ndim_vertical) != 0:
-                vertical_coord_axis = ndim_vertical[0]
-            else:
-                # this means the vertical coordinate is an auxiliary coordinate of some kind.
-                vert_coord_found = False
-
-    if not vert_coord_found:
-        # if we don't have a vertical coordinate, and we are 3D or lower
-        # that is okay.
-        if (field_in.ndim == 3 and time_axis is not None) or field_in.ndim < 3:
-            vertical_coord_axis = None
-        else:
-            raise ValueError("No suitable vertical coordinate found")
-    # Once we know the vertical coordinate, we can resolve the
-    # horizontal coordinates
-
-    all_axes = np.arange(0, field_in.ndim)
-    output_vals = tuple(
-        all_axes[np.logical_not(np.isin(all_axes, [time_axis, vertical_coord_axis]))]
-    )
-    return output_vals
-
-
 @irispandas_to_xarray
-def detect_latlon_coord_name(in_dataset, latitude_name=None, longitude_name=None):
+def detect_latlon_coord_name(
+    in_dataset: Union[xr.DataArray, iris.cube.Cube],
+    latitude_name: Union[str, None] = None,
+    longitude_name: Union[str, None] = None,
+) -> tuple[str]:
     """Function to detect the name of latitude/longitude coordinates
 
     Parameters
     ----------
-    in_dataset: iris.cube.Cube, xarray.Dataset, or xarray.Dataarray
+    in_dataset: iris.cube.Cube or xarray.DataArray
         Input dataset to detect names from
     latitude_name: str
         The name of the latitude coordinate. If None, tries to auto-detect.

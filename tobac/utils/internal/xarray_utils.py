@@ -1,5 +1,7 @@
 """Internal tobac utilities for xarray datasets/dataarrays
 """
+from __future__ import annotations
+
 
 from typing import Union
 import xarray as xr
@@ -9,7 +11,7 @@ from . import general_internal as tb_utils_gi
 def find_vertical_axis_from_coord(
     variable_cube: xr.DataArray,
     vertical_coord: Union[str, None] = None,
-):
+) -> str:
     """Function to find the vertical coordinate in the iris cube
 
     Parameters
