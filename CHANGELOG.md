@@ -4,6 +4,8 @@ _**Version 1.5.1:**_
 
 **Bug fixes**
 
+- utils.general.standardize_track_dataset was added back after being inadvertently removed in version 1.5.0 [#330](https://github.com/tobac-project/tobac/pull/330)
+- All Numba import errors are now caught with the exception of KeyboardInterrupts. [#335](https://github.com/tobac-project/tobac/pull/335)
 - Fix to readthedocs building after system packages no longer imported [#336](https://github.com/tobac-project/tobac/pull/336)
 - The `strict_thresholding` option in feature detection now works correctly for detecting minima, and produces the same results as without strict thresholding if the `n_min_threshold` is a scalar value [#316](https://github.com/tobac-project/tobac/pull/316)
 
