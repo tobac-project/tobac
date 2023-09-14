@@ -807,6 +807,7 @@ def feature_detection_threshold(
 
     return features_threshold, regions
 
+
 def feature_detection_multithreshold_timestep(
     data_i,
     i_time,
