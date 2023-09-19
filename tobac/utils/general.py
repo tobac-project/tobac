@@ -787,3 +787,128 @@ def transform_feature_points(
         )
 
     return ret_features
+
+
+def standardize_track_dataset(TrackedFeatures, Mask, Projection=None):
+    """
+    CAUTION: this function is experimental. No data structures output are guaranteed to be supported in future versions of tobac.
+    Combine a feature mask with the feature data table into a common dataset.
+    returned by tobac.segmentation
+    with the TrackedFeatures dataset returned by tobac.linking_trackpy.
+    Also rename the variables to be more descriptive and comply with cf-tree.
+    Convert the default cell parent ID  to an integer table.
+    Add a cell dimension to reflect
+    Projection is an xarray DataArray
+    TODO: Add metadata attributes
+    Parameters
+    ----------
+    TrackedFeatures : xarray.core.dataset.Dataset
+        xarray dataset of tobac Track information, the xarray dataset returned by tobac.tracking.linking_trackpy
+    Mask: xarray.core.dataset.Dataset
+        xarray dataset of tobac segmentation mask information, the xarray dataset returned
+        by tobac.segmentation.segmentation
+    Projection : xarray.core.dataarray.DataArray, default = None
+        array.DataArray of the original input dataset (gridded nexrad data for example).
+        If using gridded nexrad data, this can be input as: data['ProjectionCoordinateSystem']
+        An example of the type of information in the dataarray includes the following attributes:
+        latitude_of_projection_origin :29.471900939941406
+        longitude_of_projection_origin :-95.0787353515625
+        _CoordinateTransformType :Projection
+        _CoordinateAxes :x y z time
+        _CoordinateAxesTypes :GeoX GeoY Height Time
+        grid_mapping_name :azimuthal_equidistant
+        semi_major_axis :6370997.0
+        inverse_flattening :298.25
+        longitude_of_prime_meridian :0.0
+        false_easting :0.0
+        false_northing :0.0
+    Returns
+    -------
+    ds : xarray.core.dataset.Dataset
+        xarray dataset of merged Track and Segmentation Mask datasets with renamed variables.
+    """
+    import xarray as xr
+
+    feature_standard_names = {
+        # new variable name, and long description for the NetCDF attribute
+        "frame": (
+            "feature_time_index",
+            "positional index of the feature along the time dimension of the mask, from 0 to N-1",
+        ),
+        "hdim_1": (
+            "feature_hdim1_coordinate",
+            "position of the feature along the first horizontal dimension in grid point space; a north-south coordinate for dim order (time, y, x)."
+            "The numbering is consistent with positional indexing of the coordinate, but can be"
+            "fractional, to account for a centroid not aligned to the grid.",
+        ),
+        "hdim_2": (
+            "feature_hdim2_coordinate",
+            "position of the feature along the second horizontal dimension in grid point space; an east-west coordinate for dim order (time, y, x)"
+            "The numbering is consistent with positional indexing of the coordinate, but can be"
+            "fractional, to account for a centroid not aligned to the grid.",
+        ),
+        "idx": ("feature_id_this_frame",),
+        "num": (
+            "feature_grid_cell_count",
+            "Number of grid points that are within the threshold of this feature",
+        ),
+        "threshold_value": (
+            "feature_threshold_max",
+            "Feature number within that frame; starts at 1, increments by 1 to the number of features for each frame, and resets to 1 when the frame increments",
+        ),
+        "feature": (
+            "feature",
+            "Unique number of the feature; starts from 1 and increments by 1 to the number of features",
+        ),
+        "time": (
+            "feature_time",
+            "time of the feature, consistent with feature_time_index",
+        ),
+        "timestr": (
+            "feature_time_str",
+            "String representation of the feature time, YYYY-MM-DD HH:MM:SS",
+        ),
+        "projection_y_coordinate": (
+            "feature_projection_y_coordinate",
+            "y position of the feature in the projection given by ProjectionCoordinateSystem",
+        ),
+        "projection_x_coordinate": (
+            "feature_projection_x_coordinate",
+            "x position of the feature in the projection given by ProjectionCoordinateSystem",
+        ),
+        "lat": ("feature_latitude", "latitude of the feature"),
+        "lon": ("feature_longitude", "longitude of the feature"),
+        "ncells": (
+            "feature_ncells",
+            "number of grid cells for this feature (meaning uncertain)",
+        ),
+        "areas": ("feature_area",),
+        "isolated": ("feature_isolation_flag",),
+        "num_objects": ("number_of_feature_neighbors",),
+        "cell": ("feature_parent_cell_id",),
+        "time_cell": ("feature_parent_cell_elapsed_time",),
+        "segmentation_mask": ("2d segmentation mask",),
+    }
+    new_feature_var_names = {
+        k: feature_standard_names[k][0]
+        for k in feature_standard_names.keys()
+        if k in TrackedFeatures.variables.keys()
+    }
+
+    #     TrackedFeatures = TrackedFeatures.drop(["cell_parent_track_id"])
+    # Combine Track and Mask variables. Use the 'feature' variable as the coordinate variable instead of
+    # the 'index' variable and call the dimension 'feature'
+    ds = xr.merge(
+        [
+            TrackedFeatures.swap_dims({"index": "feature"})
+            .drop("index")
+            .rename_vars(new_feature_var_names),
+            Mask,
+        ]
+    )
+
+    # Add the projection data back in
+    if Projection is not None:
+        ds["ProjectionCoordinateSystem"] = Projection
+
+    return ds
