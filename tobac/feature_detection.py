@@ -269,8 +269,11 @@ def test_overlap(
 
 
 def remove_parents(
-    features_thresholds: pd.DataFrame, regions_i: dict, regions_old: dict, strict_thresholding: bool=False
-)->pd.DataFrame:
+    features_thresholds: pd.DataFrame,
+    regions_i: dict,
+    regions_old: dict,
+    strict_thresholding: bool = False,
+) -> pd.DataFrame:
     """Remove parents of newly detected feature regions.
 
     Remove features where its regions surround newly
