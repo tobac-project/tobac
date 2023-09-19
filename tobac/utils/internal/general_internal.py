@@ -457,7 +457,13 @@ def njit_if_available(func: Callable, **kwargs) -> Callable:
         from numba import njit
 
         return njit(func, kwargs)
-    except ModuleNotFoundError:
+    except KeyboardInterrupt as kie:
+        raise
+    except Exception as exc:
+        warnings.warn(
+            "Numba not able to be imported; periodic boundary calculations will be slower."
+            "Exception raised: " + repr(exc)
+        )
         return func
 
 

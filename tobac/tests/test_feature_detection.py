@@ -1,7 +1,9 @@
+import tobac
 import tobac.testing as tbtest
 import tobac.feature_detection as feat_detect
 import pytest
 import numpy as np
+import xarray as xr
 from pandas.testing import assert_frame_equal
 
 
@@ -744,6 +746,82 @@ def test_strict_thresholding():
     )
     assert len(features) == 1
     assert features["threshold_value"].item() == thresholds[0]
+
+    # Repeat for minima
+    test_data_iris = tbtest.make_dataset_from_arr(10 - test_data, data_type="iris")
+    # All of these thresholds will be met
+    thresholds = [9, 5, 2.5]
+
+    # This will detect 2 features (first and last threshold value)
+    features = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        dxy=1,
+        threshold=thresholds,
+        n_min_threshold=n_min_thresholds,
+        strict_thresholding=False,
+        target="minimum",
+    )
+    assert len(features) == 1
+    assert features["threshold_value"].item() == thresholds[-1]
+
+    # Since the second n_min_thresholds value is not met this will only detect 1 feature
+    features = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        dxy=1,
+        threshold=thresholds,
+        n_min_threshold=n_min_thresholds,
+        strict_thresholding=True,
+        target="minimum",
+    )
+    assert len(features) == 1
+    assert features["threshold_value"].item() == thresholds[0]
+
+    # Test example from documentation
+    input_field_arr = np.zeros((1, 101, 101))
+
+    for idx, side in enumerate([40, 20, 10, 5]):
+        input_field_arr[
+            :,
+            (50 - side - 4 * idx) : (50 + side - 4 * idx),
+            (50 - side - 4 * idx) : (50 + side - 4 * idx),
+        ] = (
+            50 - side
+        )
+
+    input_field_iris = xr.DataArray(
+        input_field_arr,
+        dims=["time", "Y", "X"],
+        coords={"time": [np.datetime64("2019-01-01T00:00:00")]},
+    ).to_iris()
+
+    thresholds = [8, 29, 39, 44]
+
+    n_min_thresholds = [79**2, input_field_arr.size, 8**2, 3**2]
+
+    features_demo = tobac.feature_detection_multithreshold(
+        input_field_iris,
+        dxy=1000,
+        threshold=thresholds,
+        n_min_threshold=n_min_thresholds,
+        strict_thresholding=False,
+    )
+
+    assert features_demo.iloc[0]["hdim_1"] == pytest.approx(37.5)
+    assert features_demo.iloc[0]["hdim_2"] == pytest.approx(37.5)
+
+    # Now repeat with strict thresholding
+    features_demo = tobac.feature_detection_multithreshold(
+        input_field_iris,
+        dxy=1000,
+        threshold=thresholds,
+        n_min_threshold=n_min_thresholds,
+        strict_thresholding=True,
+    )
+
+    assert features_demo.iloc[0]["hdim_1"] == pytest.approx(49.5)
+    assert features_demo.iloc[0]["hdim_2"] == pytest.approx(49.5)
 
 
 @pytest.mark.parametrize(
