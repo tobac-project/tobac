@@ -219,9 +219,6 @@ def find_hdim_axes_3d(
             vertical_coord_name = find_vertical_coord_name(
                 field_in, vertical_coord=vertical_coord
             )
-        except ValueError:
-            vert_coord_found = False
-        else:
             vert_coord_found = True
             ndim_vertical = find_axis_from_dim_coord(field_in, vertical_coord_name)
             if ndim_vertical is None:
@@ -230,6 +227,9 @@ def find_hdim_axes_3d(
                     f" Current vertical coordinates: {ndim_vertical}"
                 )
             vertical_coord_axis = ndim_vertical
+
+        except ValueError:
+            vert_coord_found = False
 
     if not vert_coord_found:
         # if we don't have a vertical coordinate, and we are 3D or lower
