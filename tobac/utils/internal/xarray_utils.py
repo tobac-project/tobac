@@ -27,12 +27,15 @@ def find_axis_from_dim_coord(
     axis_number: int
         the number of the axis of the given coordinate, or None if the coordinate
         is not found in the cube or not a dimensional coordinate
+
+    Raises
+    ------
+    ValueError
+        Returns ValueError if there are more than one matching dimension name or
+        if the dimension/coordinate isn't found.
     """
 
-    try:
-        dim_axis = find_axis_from_dim(in_da, dim_coord_name)
-    except ValueError:
-        dim_axis = None
+    dim_axis = find_axis_from_dim(in_da, dim_coord_name)
 
     try:
         coord_axes = find_axis_from_coord(in_da, dim_coord_name)
@@ -43,21 +46,12 @@ def find_axis_from_dim_coord(
         raise ValueError("Coordinate/Dimension " + dim_coord_name + " not found.")
 
     # if we find a dimension with an axis and/or the coordinates, return that axis number
-    if dim_axis == coord_axes[0] and len(coord_axes) == 1:
+    if len(coord_axes) == 1 and dim_axis == coord_axes[0]:
         return dim_axis
     if len(coord_axes) == 0 and dim_axis is not None:
         return dim_axis
     if dim_axis is None and len(coord_axes) == 1:
         return coord_axes[0]
-    # odd case- we have a coordinate and a dimension with the same name, but the
-    # coordinate has multiple dimensions, while the dimension is clearly only one axis
-    # pass along the dimension one as long as it is represented in the
-    # list of coordinate dimensions.
-    if len(coord_axes) > 1 and dim_axis is not None and dim_axis in coord_axes:
-        return dim_axis
-
-    if dim_axis is not None and len(coord_axes) > 1 and dim_axis not in coord_axes:
-        raise ValueError("Dimension and coordinate share a name but not an axis.")
 
     return None
 
@@ -84,11 +78,21 @@ def find_axis_from_dim(in_da: xr.DataArray, dim_name: str) -> Union[int, None]:
         raises ValueError if dim_name matches multiple dimensions
     """
     list_dims = in_da.dims
-    all_matching_dims = list(set(list_dims) & {dim_name})
+    all_matching_dims = [
+        dim
+        for dim in list_dims
+        if dim
+        in [
+            dim_name,
+        ]
+    ]
     if len(all_matching_dims) == 1:
         return list_dims.index(all_matching_dims[0])
     if len(all_matching_dims) > 1:
-        raise ValueError("Too many matching dimensions")
+        raise ValueError(
+            "More than one matching dimension. Need to specify which axis number or rename "
+            "your dimensions."
+        )
     return None
 
 
@@ -164,9 +168,9 @@ def find_vertical_coord_name(
         )
         if len(all_vertical_axes) >= 1:
             return all_vertical_axes[0]
+        coord_names_err = str(tuple(tb_utils_gi.COMMON_VERT_COORDS))
         raise ValueError(
-            "Cube lacks suitable automatic vertical coordinate (z, model_level_number, "
-            "altitude, or geopotential_height)"
+            "Cube lacks suitable automatic vertical coordinate " + coord_names_err
         )
     if vertical_coord in list_coord_names:
         return vertical_coord
