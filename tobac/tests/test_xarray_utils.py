@@ -1,16 +1,13 @@
 """Tests for tobac.utils.internal_utils.xarray_utils
 """
 
-
-import tobac.utils.internal as internal_utils
-import tobac.utils.internal.xarray_utils as xr_utils
-import tobac.testing as tbtest
-
 from typing import Union
 
 import pytest
 import numpy as np
 import xarray as xr
+
+import tobac.utils.internal.xarray_utils as xr_utils
 
 
 @pytest.mark.parametrize(
