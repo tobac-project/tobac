@@ -32,6 +32,7 @@ from typing import Union, Literal
 
 # from typing_extensions import Literal
 import iris
+import iris.cube
 import xarray as xr
 
 
@@ -880,8 +881,9 @@ def feature_detection_threshold(
     return features_threshold, regions
 
 
+@internal_utils.irispandas_to_xarray
 def feature_detection_multithreshold_timestep(
-    data_i: np.array,
+    data_i: xr.DataArray,
     i_time: int,
     threshold: list[float] = None,
     min_num: int = 0,
@@ -909,7 +911,7 @@ def feature_detection_multithreshold_timestep(
     Parameters
     ----------
 
-    data_i : iris.cube.Cube
+    data_i : iris.cube.Cube or xarray.DataArray
         3D field to perform the feature detection (single timestep) on.
 
     i_time : int
@@ -985,7 +987,7 @@ def feature_detection_multithreshold_timestep(
         )
 
     # get actual numpy array and make a copy so as not to change the data in the iris cube
-    track_data = data_i.core_data().copy()
+    track_data = data_i.values.copy()
 
     track_data = gaussian_filter(
         track_data, sigma=sigma_threshold
