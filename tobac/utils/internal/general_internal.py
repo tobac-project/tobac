@@ -11,8 +11,7 @@ import pandas as pd
 import warnings
 from . import iris_utils
 from . import xarray_utils as xr_utils
-from typing import Union
-import typing
+from typing import Union, Callable
 
 # list of common vertical coordinates to search for in various functions
 COMMON_VERT_COORDS: list[str] = [
@@ -110,7 +109,7 @@ def get_indices_of_labels_from_reg_prop_dict(region_property_dict: dict) -> tupl
         return [curr_loc_indices, y_indices, x_indices]
 
 
-def iris_to_xarray(func: typing.Callable) -> typing.Callable:
+def iris_to_xarray(func: Callable) -> Callable:
     """Decorator that converts all input of a function that is in the form of
     Iris cubes into xarray DataArrays and converts all outputs with type
     xarray DataArrays back into Iris cubes.
@@ -176,7 +175,7 @@ def iris_to_xarray(func: typing.Callable) -> typing.Callable:
     return wrapper
 
 
-def xarray_to_iris(func: typing.Callable) -> typing.Callable:
+def xarray_to_iris(func: Callable) -> Callable:
     """Decorator that converts all input of a function that is in the form of
     xarray DataArrays into Iris cubes and converts all outputs with type
     Iris cubes back into xarray DataArrays.
@@ -260,7 +259,7 @@ def xarray_to_iris(func: typing.Callable) -> typing.Callable:
     return wrapper
 
 
-def irispandas_to_xarray(func: typing.Callable) -> typing.Callable:
+def irispandas_to_xarray(func: Callable) -> Callable:
     """Decorator that converts all input of a function that is in the form of
     Iris cubes/pandas Dataframes into xarray DataArrays/xarray Datasets and
     converts all outputs with the type xarray DataArray/xarray Dataset
@@ -340,7 +339,7 @@ def irispandas_to_xarray(func: typing.Callable) -> typing.Callable:
     return wrapper
 
 
-def xarray_to_irispandas(func: typing.Callable) -> typing.Callable:
+def xarray_to_irispandas(func: Callable) -> Callable:
     """Decorator that converts all input of a function that is in the form of
     DataArrays/xarray Datasets into xarray Iris cubes/pandas Dataframes and
     converts all outputs with the type Iris cubes/pandas Dataframes back into
@@ -443,7 +442,7 @@ def xarray_to_irispandas(func: typing.Callable) -> typing.Callable:
     return wrapper
 
 
-def njit_if_available(func: typing.Callable, **kwargs) -> typing.Callable:
+def njit_if_available(func: Callable, **kwargs) -> Callable:
     """Decorator to wrap a function with numba.njit if available.
     If numba isn't available, it just returns the function.
 
