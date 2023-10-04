@@ -106,7 +106,11 @@ def add_markers(
     if seed_3D_flag == "column":
         for _, row in features.iterrows():
             # Offset marker locations by 0.5 to find nearest pixel
-            marker_arr[level, int(row["hdim_1"]+0.5) % h1_len, int(row["hdim_2"]+0.5) % h2_len] = row["feature"]
+            marker_arr[
+                level,
+                int(row["hdim_1"] + 0.5) % h1_len,
+                int(row["hdim_2"] + 0.5) % h2_len,
+            ] = row["feature"]
 
     elif seed_3D_flag == "box":
         # Get the size of the seed box from the input parameter
