@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Union
 import numpy as np
+import pandas as pd
 import xarray as xr
 from . import general_internal as tb_utils_gi
 
@@ -182,7 +183,7 @@ def find_hdim_axes_3d(
     vertical_coord: Union[str, None] = None,
     vertical_axis: Union[int, None] = None,
     time_dim_coord_name: str = "time",
-) -> tuple[int]:
+) -> tuple[int, int]:
     """Finds what the hdim axes are given a 3D (including z) or
     4D (including z and time) dataset.
 
@@ -246,3 +247,94 @@ def find_hdim_axes_3d(
         all_axes[np.logical_not(np.isin(all_axes, [time_axis, vertical_coord_axis]))]
     )
     return output_vals
+
+
+def add_coordinates_to_features(
+    feature_df: pd.DataFrame,
+    variable_da: xr.DataArray,
+    vertical_coord: Union[str, None] = None,
+    vertical_axis: Union[int, None] = None,
+    assume_coords_fixed_in_time: bool = True,
+) -> pd.DataFrame:
+    """Function to populate the interpolated coordinates to feature
+
+    Parameters
+    ----------
+    feature_df: pandas DataFrame
+        Feature dataframe
+    variable_da: xarray.DataArray
+        DataArray (usually the one you are tracking on) at least conaining the dimension of 'time'.
+        Typically, 'longitude','latitude','x_projection_coordinate','y_projection_coordinate',
+        and 'altitude' (if 3D) are the coordinates that we expect, although this function
+        will happily interpolate along any coordinates you give.
+    vertical_coord: str
+        Name of the vertical coordinate. If None, tries to auto-detect.
+        If it is a string, it looks for the coordinate or the dimension name corresponding
+        to the string. If it is an int, it assumes that it is the vertical axis.
+        Note that if you only have a 2D or 3D coordinate for altitude, you must
+        pass in an int.
+    vertical_axis: int or None
+        Axis number of the vertical.
+    assume_coords_fixed_in_time: bool
+        If true, it assumes that the coordinates are fixed in time, even if the
+        coordinates say they vary in time. This is, by default, True, to preserve
+        legacy functionality. If False, it assumes that if a coordinate says
+        it varies in time, it takes the coordinate at its word.
+    Returns
+    -------
+
+    """
+
+    time_dim_name: str = "time"
+    # first, we must find the names of the dimensions corresponding to the numbered
+    # dimensions.
+
+    ndims: int = variable_da.ndim
+
+    time_dim_number = find_axis_from_dim(variable_da, time_dim_name)
+
+    is_3d = (time_dim_number is not None and ndims == 4) or (
+        time_dim_number is None and ndims == 3
+    )
+    if is_3d:
+        hdim1_axis, hdim2_axis = find_hdim_axes_3d(
+            variable_da,
+            vertical_coord,
+            vertical_axis,
+            time_dim_coord_name=time_dim_name,
+        )
+        if vertical_axis is None:
+            vdim_coord = find_vertical_coord_name(variable_da, vertical_coord)
+        else:
+            vdim_coord = variable_da.dims[vertical_axis]
+    else:  # 2D
+        if ndims == 2:
+            hdim1_axis = 0
+            hdim2_axis = 1
+        elif ndims == 3 and time_dim_number is not None:
+            possible_dims = [0, 1, 2]
+            possible_dims.pop(time_dim_number)
+            hdim1_axis, hdim2_axis = possible_dims
+        else:
+            raise ValueError("DataArray has too many or too few dimensions")
+
+    hdim1_name = variable_da.dims[hdim1_axis]
+    hdim2_name = variable_da.dims[hdim2_axis]
+
+    dim_interp_coords = {
+        hdim1_name: xr.DataArray(feature_df["hdim_1"].values, dims="features"),
+        hdim2_name: xr.DataArray(feature_df["hdim_2"].values, dims="features"),
+    }
+
+    if is_3d:
+        dim_interp_coords[vdim_coord] = xr.DataArray(
+            feature_df["vdim"].values, dims="features"
+        )
+
+    interpolated_df = variable_da.interp(coords=dim_interp_coords)
+
+    for interp_coord in interpolated_df.coords:
+        if interp_coord == time_dim_name:
+            continue
+        feature_df[interp_coord] = interpolated_df[interp_coord].values
+    return feature_df

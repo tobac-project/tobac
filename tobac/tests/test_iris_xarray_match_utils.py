@@ -16,15 +16,43 @@ import tobac.utils.internal.xarray_utils as xr_utils
 
 @pytest.mark.parametrize(
     "feature_positions, coordinates, expected_val",
-    [(((0, 0, 0), (9, 9, 9)), {"x": ("x", np.linspace(0, 9, 10))}, {"x": (0, 9)})],
+    [
+        (
+            ((0, 0, 0), (9, 9, 9)),
+            {"x": ("x", np.linspace(0, 10, 10)), "z": ("z", np.linspace(0, 10, 10))},
+            {"x": (0, 9)},
+        ),
+        (
+            ((0, 0), (9, 9)),
+            {"x": ("x", np.linspace(0, 10, 10))},
+            {"x": (0, 9)},
+        ),
+        (
+            ((0, 0), (9, 9), (5, 7)),
+            {
+                "longitude": ("x", np.linspace(-30, 60, 10)),
+                "latitude": ("y", np.linspace(-70, 20, 10)),
+            },
+            {"latitude": (-70, 20, 0), "longitude": (-30, 60, 20)},
+        ),
+        (
+            ((0, 0), (9, 9), (5, 7)),
+            {
+                "longitude": ("x", np.linspace(-30, 60, 10)),
+                "latitude": ("y", np.linspace(-70, 20, 10)),
+            },
+            {"latitude": (-70, 20, 0), "longitude": (-30, 60, 20)},
+        ),
+    ],
 )
-def test_add_coordinates_2D(
+def test_add_coordinates_xarray_base(
     feature_positions: tuple[tuple[float]],
     coordinates: dict[str : tuple[str, np.ndarray]],
     expected_val: dict[str : tuple[float]],
 ):
     """
-    Test that add_coordinates_2D for xarray and iris are equal.
+    Test that adding coordinates for xarray and iris are equal, using an
+    xarray generated dataset as the base.
 
     Parameters
     ----------
@@ -39,7 +67,7 @@ def test_add_coordinates_2D(
 
     """
 
-    all_indiv_feats = list()
+    all_indiv_feats = []
     if len(feature_positions[0]) == 2:
         is_3D = False
     elif len(feature_positions[0]) == 3:
@@ -72,19 +100,29 @@ def test_add_coordinates_2D(
         else:
             raise ValueError("Feature positions should be 2 or 3D")
 
-        all_feats = pd.concat(all_indiv_feats)
+    all_feats = pd.concat(all_indiv_feats)
 
-        da_size = (1, 10, 10, 10) if is_3D else (1, 10, 10)
-        dims = ("time", "x", "y", "z") if is_3D else ("time", "x", "y")
-        coordinates["time"] = np.array((datetime.datetime(2000, 1, 1, 0),))
-        da_with_coords = xr.DataArray(
-            data=np.empty(da_size), dims=dims, coords=coordinates
+    da_size = (1, 10, 10, 10) if is_3D else (1, 10, 10)
+    dims = ("time", "x", "y", "z") if is_3D else ("time", "x", "y")
+    coordinates["time"] = np.array((datetime.datetime(2000, 1, 1, 0),))
+    da_with_coords = xr.DataArray(data=np.empty(da_size), dims=dims, coords=coordinates)
+    if is_3D:
+        iris_coord_interp = iris_utils.add_coordinates_3D(
+            all_feats, da_with_coords.to_iris()
         )
-        if is_3D:
-            iris_coord_interp = iris_utils.add_coordinates_3D(
-                all_feats, da_with_coords.to_iris()
-            )
-        else:
-            iris_coord_interp = iris_utils.add_coordinates(
-                all_feats, da_with_coords.to_iris()
-            )
+        xr_coord_interp = xr_utils.add_coordinates_to_features(
+            all_feats, da_with_coords
+        )
+
+    else:
+        iris_coord_interp = iris_utils.add_coordinates(
+            all_feats, da_with_coords.to_iris()
+        )
+        xr_coord_interp = xr_utils.add_coordinates_to_features(
+            all_feats, da_with_coords
+        )
+    for val_name in expected_val:
+        assert (iris_coord_interp[val_name] == expected_val[val_name]).all()
+        assert (xr_coord_interp[val_name] == expected_val[val_name]).all()
+
+    pd.testing.assert_frame_equal(iris_coord_interp, xr_coord_interp)
