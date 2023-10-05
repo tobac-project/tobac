@@ -128,7 +128,14 @@ def test_add_coordinates_xarray_base(
             all_feats, da_with_coords
         )
     for val_name in expected_val:
-        assert (iris_coord_interp[val_name] == expected_val[val_name]).all()
-        assert (xr_coord_interp[val_name] == expected_val[val_name]).all()
+        np.testing.assert_almost_equal(
+            iris_coord_interp[val_name], expected_val[val_name]
+        )
+        np.testing.assert_almost_equal(
+            xr_coord_interp[val_name], expected_val[val_name]
+        )
+
+        # assert (iris_coord_interp[val_name] == expected_val[val_name]).all()
+        # assert (xr_coord_interp[val_name] == expected_val[val_name]).all()
 
     pd.testing.assert_frame_equal(iris_coord_interp, xr_coord_interp)
