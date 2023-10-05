@@ -36,12 +36,18 @@ import tobac.utils.internal.xarray_utils as xr_utils
             {"latitude": (-70, 20, 0), "longitude": (-30, 60, 20)},
         ),
         (
-            ((0, 0), (9, 9), (5, 7)),
+            ((0, 0), (9, 9), (5, 7), (3.6, 7.9)),
             {
-                "longitude": ("x", np.linspace(-30, 60, 10)),
-                "latitude": ("y", np.linspace(-70, 20, 10)),
+                "longitude": (
+                    ("x", "y"),
+                    np.arange(-180, -80).reshape(10, -1),
+                ),
+                "latitude": (("x", "y"), np.arange(-50, 50).reshape(10, -1)),
             },
-            {"latitude": (-70, 20, 0), "longitude": (-30, 60, 20)},
+            {
+                "latitude": (-50, 49, 7, -6.1),
+                "longitude": (-180, -81, -123, -136.1),
+            },
         ),
     ],
 )
