@@ -613,6 +613,7 @@ def test_segmentation_multiple_features():
         threshold=[1, 2, 3],
         n_min_threshold=test_min_num,
         target="maximum",
+        statistics={"features_mean": np.mean},
     )
 
     # add feature IDs to data frame for one time step
@@ -620,13 +621,24 @@ def test_segmentation_multiple_features():
 
     # perform segmentation
     out_seg_mask, out_df = segmentation.segmentation_timestep(
-        field_in=test_data_iris, features_in=fd_output, dxy=test_dxy, threshold=1.5
+        field_in=test_data_iris,
+        features_in=fd_output,
+        dxy=test_dxy,
+        threshold=1.5,
+        statistics={"segments_mean": np.mean},
     )
     out_seg_mask_arr = out_seg_mask.core_data()
 
     # assure that the number of grid cells belonging to each feature (ncells) are consistent with segmentation mask
     assert int(out_df[out_df.feature == 1].ncells.values) == size_feature1
     assert int(out_df[out_df.feature == 2].ncells.values) == size_feature2
+    # assure that bulk statistic columns are created in output (one column added after segmentation)
+    assert out_df.columns.size - fd_output.columns.size > 1
+    # assure that statistics are calculated everywhere where an area for ncells is found
+    assert (
+        out_df.ncells[out_df["ncells"] > 0].shape
+        == out_df.ncells[out_df["features_mean"] > 0].shape
+    )
 
 
 # TODO: add more tests to make sure buddy box code is run.

@@ -35,10 +35,12 @@ import numpy as np
 
 import skimage
 import numpy as np
+import pandas as pd
 
 from . import utils as tb_utils
 from .utils import periodic_boundaries as pbc_utils
 from .utils import internal as internal_utils
+from .utils import get_statistics
 
 
 def add_markers(
@@ -264,6 +266,7 @@ def segmentation_3D(
     max_distance=None,
     PBC_flag="none",
     seed_3D_flag="column",
+    statistics=False,
 ):
     """Wrapper for the segmentation()-function."""
 
@@ -278,6 +281,7 @@ def segmentation_3D(
         max_distance=max_distance,
         PBC_flag=PBC_flag,
         seed_3D_flag=seed_3D_flag,
+        statistics=statistics,
     )
 
 
@@ -292,6 +296,7 @@ def segmentation_2D(
     max_distance=None,
     PBC_flag="none",
     seed_3D_flag="column",
+    statistics=False,
 ):
     """Wrapper for the segmentation()-function."""
     return segmentation(
@@ -305,6 +310,7 @@ def segmentation_2D(
         max_distance=max_distance,
         PBC_flag=PBC_flag,
         seed_3D_flag=seed_3D_flag,
+        statistics=statistics,
     )
 
 
@@ -323,6 +329,7 @@ def segmentation_timestep(
     seed_3D_size=5,
     segment_number_below_threshold=0,
     segment_number_unassigned=0,
+    statistics=False,
 ):
     """Perform watershedding for an individual time step of the data. Works
     for both 2D and 3D data
@@ -384,6 +391,9 @@ def segmentation_timestep(
         the marker to use to indicate a segmentation point is below the threshold.
     segment_number_unassigned: int
         the marker to use to indicate a segmentation point is above the threshold but unsegmented.
+    statistics: boolean, optional
+        Default is False. If True, bulk statistics for the data points assigned to each feature are saved in output.
+
 
     Returns
     -------
@@ -1001,16 +1011,21 @@ def segmentation_timestep(
     segmentation_mask[wh_below_threshold] = segment_number_below_threshold
     segmentation_out.data = segmentation_mask
 
-    # count number of grid cells associated to each tracked cell and write that into DataFrame:
-    values, count = np.unique(segmentation_mask, return_counts=True)
-    counts = dict(zip(values, count))
-    ncells = np.zeros(len(features_out))
-    for i, (index, row) in enumerate(features_out.iterrows()):
-        if row["feature"] in counts.keys():
-            # assign a value for ncells for the respective feature in data frame
-            features_out.loc[features_out.feature == row["feature"], "ncells"] = counts[
-                row["feature"]
-            ]
+    # add ncells to feature dataframe with new statistic method
+    features_out = get_statistics(
+        np.array(segmentation_out.data.copy()),
+        np.array(field_in.data.copy()),
+        features=features_out,
+    )
+
+    # compute additional statistics, if requested
+    if statistics:
+        features_out = get_statistics(
+            segmentation_out.data.copy(),
+            field_in.data.copy(),
+            features=features_out,
+            func_dict=statistics,
+        )
 
     return segmentation_out, features_out
 
@@ -1094,6 +1109,7 @@ def segmentation(
     seed_3D_size=5,
     segment_number_below_threshold=0,
     segment_number_unassigned=0,
+    statistics=False,
 ):
     """Use watershedding to determine region above a threshold
         value around initial seeding position for all time steps of
@@ -1114,6 +1130,9 @@ def segmentation(
 
         dxy : float
             Grid spacing of the input data.
+
+        statistics : boolean, optional
+            Default is False. If True, bulk statistics for the data points assigned to each feature are saved in output.
 
         Output:
         segmentation_out: iris.cube.Cube
@@ -1164,6 +1183,8 @@ def segmentation(
             the marker to use to indicate a segmentation point is below the threshold.
         segment_number_unassigned: int
             the marker to use to indicate a segmentation point is above the threshold but unsegmented.
+    statistics: boolean, optional
+        Default is False. If True, bulk statistics for the data points assigned to each feature are saved in output.
 
 
         Returns
@@ -1223,6 +1244,7 @@ def segmentation(
             seed_3D_size=seed_3D_size,
             segment_number_unassigned=segment_number_unassigned,
             segment_number_below_threshold=segment_number_below_threshold,
+            statistics=statistics,
         )
         segmentation_out_list.append(segmentation_out_i)
         features_out_list.append(features_out_i)
