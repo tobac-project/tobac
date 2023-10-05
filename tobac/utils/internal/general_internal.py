@@ -617,7 +617,7 @@ def find_hdim_axes_3D(
 
 def find_axis_from_coord(
     variable_arr: Union[iris.cube.Cube, xr.DataArray], coord_name: str
-) -> int:
+) -> Union[int, None]:
     """Finds the axis number in an xarray or iris cube given a coordinate or dimension name.
 
     Parameters
