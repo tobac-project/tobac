@@ -297,7 +297,10 @@ def weighted_circmean(
         angle_average = np.arctan2(sin_average, cos_average) % (2 * np.pi)
     rescaled_average = (angle_average * scaling_factor) + low
     # Round return value to try and supress rounding errors
-    return np.round(rescaled_average, 12)
+    rescaled_average = np.round(rescaled_average, 12)
+    if rescaled_average == high:
+        rescaled_average = low
+    return rescaled_average
 
 
 def transfm_pbc_point(in_dim, dim_min, dim_max):

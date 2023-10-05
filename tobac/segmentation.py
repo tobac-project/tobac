@@ -113,8 +113,13 @@ def add_markers(
         marker_arr = marker_arr[np.newaxis, :, :]
 
     if seed_3D_flag == "column":
-        for index, row in features.iterrows():
-            marker_arr[level, int(row["hdim_1"]), int(row["hdim_2"])] = row["feature"]
+        for _, row in features.iterrows():
+            # Offset marker locations by 0.5 to find nearest pixel
+            marker_arr[
+                level,
+                int(row["hdim_1"] + 0.5) % h1_len,
+                int(row["hdim_2"] + 0.5) % h2_len,
+            ] = row["feature"]
 
     elif seed_3D_flag == "box":
         # Get the size of the seed box from the input parameter
@@ -132,7 +137,7 @@ def add_markers(
             seed_h1 = seed_3D_size
             seed_h2 = seed_3D_size
 
-        for index, row in features.iterrows():
+        for _, row in features.iterrows():
             if is_3D:
                 # If we have a 3D input and we need to do box seeding
                 # we need to have 3D features.
@@ -790,7 +795,7 @@ def segmentation_timestep(
                 if buddy == 0:
                     continue
                 # isolate feature from set of buddies
-                buddy_feat = features_in[features_in["feature"] == buddy]
+                buddy_feat = features_in[features_in["feature"] == buddy].iloc[0]
 
                 # transform buddy feature position if needed for positioning in z2/y2/x2 space
                 # MAY be redundant with what is done just below here
