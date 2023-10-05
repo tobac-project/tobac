@@ -786,7 +786,7 @@ def segmentation_timestep(
                 if buddy == 0:
                     continue
                 # isolate feature from set of buddies
-                buddy_feat = features_in[features_in["feature"] == buddy]
+                buddy_feat = features_in[features_in["feature"] == buddy].iloc[0]
 
                 # transform buddy feature position if needed for positioning in z2/y2/x2 space
                 # MAY be redundant with what is done just below here
