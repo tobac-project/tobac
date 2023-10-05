@@ -901,7 +901,7 @@ def feature_detection_multithreshold_timestep(
     dxy: float = -1,
     wavelength_filtering: tuple[float] = None,
     strict_thresholding: bool = False,
-    statistics: Union[dict, None] = None
+    statistics: Union[dict, None] = None,
 ) -> pd.DataFrame:
     """Find features in each timestep.
 
@@ -1141,7 +1141,7 @@ def feature_detection_multithreshold(
     wavelength_filtering: tuple = None,
     dz: Union[float, None] = None,
     strict_thresholding: bool = False,
-    statistics: Union[dict, None] = None
+    statistics: Union[dict, None] = None,
 ) -> pd.DataFrame:
     """Perform feature detection based on contiguous regions.
 

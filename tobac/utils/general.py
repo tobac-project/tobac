@@ -457,7 +457,6 @@ def get_statistics(
 
     # mask must contain positive values to calculate statistics
     if labels[labels > 0].size > 0:
-
         if index is None:
             index = range(
                 int(np.nanmin(labels[labels > 0])), int(np.nanmax(labels) + 1)
@@ -529,7 +528,6 @@ def get_statistics(
 
             # add results of computed statistics to feature dataframe with column name given per func_dict
             for idx, label in enumerate(np.unique(labels[labels > 0])):
-
                 # test if values are scalars
                 if not hasattr(stats[idx], "__len__"):
                     # if yes, we can just assign the value to the new column and row of the respective feature
