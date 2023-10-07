@@ -679,7 +679,6 @@ def get_statistics(
 
     # mask must contain positive values to calculate statistics
     if labels[labels > 0].size > 0:
-
         if index is None:
             index = range(
                 int(np.nanmin(labels[labels > 0])), int(np.nanmax(labels) + 1)
@@ -688,6 +687,9 @@ def get_statistics(
             # get the statistics only for specified feature objects
             if np.max(index) > np.max(labels):
                 raise ValueError("Index contains values that are not in labels!")
+
+        # Find which labels exist in features for output:
+        index_in_features = np.isin(index, features[id_column])
 
         # set negative markers to 0 as they are unsegmented
         labels[labels < 0] = 0
@@ -750,21 +752,23 @@ def get_statistics(
                 )
 
             # add results of computed statistics to feature dataframe with column name given per func_dict
-            for idx, label in enumerate(np.unique(labels[labels > 0])):
-
-                # test if values are scalars
-                if not hasattr(stats[idx], "__len__"):
-                    # if yes, we can just assign the value to the new column and row of the respective feature
-                    features.loc[features[id_column] == label, stats_name] = stats[idx]
-                    # if stats output is array-like it has to be added in a different way
-                else:
-                    df = pd.DataFrame({stats_name: [stats[idx]]})
-                    # get row index rather than pd.Dataframe index value since we need to use .iloc indexing
-                    row_idx = np.where(features[id_column] == label)[0]
-                    features.iloc[
-                        row_idx,
-                        features.columns.get_loc(stats_name),
-                    ] = df.apply(lambda r: tuple(r), axis=1)
+            for idx, label in enumerate(index):
+                if index_in_features[idx]:
+                    # test if values are scalars
+                    if not hasattr(stats[idx], "__len__"):
+                        # if yes, we can just assign the value to the new column and row of the respective feature
+                        features.loc[features[id_column] == label, stats_name] = stats[
+                            idx
+                        ]
+                        # if stats output is array-like it has to be added in a different way
+                    else:
+                        df = pd.DataFrame({stats_name: [stats[idx]]})
+                        # get row index rather than pd.Dataframe index value since we need to use .iloc indexing
+                        row_idx = np.where(features[id_column] == label)[0]
+                        features.iloc[
+                            row_idx,
+                            features.columns.get_loc(stats_name),
+                        ] = df.apply(lambda r: tuple(r), axis=1)
 
     return features
 
