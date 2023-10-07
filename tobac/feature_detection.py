@@ -1377,15 +1377,15 @@ def feature_detection_multithreshold(
         #    features_filtered.drop(columns=['idx','num','threshold_value'],inplace=True)
         if "vdim" in features:
             features = add_coordinates_3D(
-                features, field_in.to_iris(), vertical_coord=vertical_coord
+                features, field_in, vertical_coord=vertical_coord
             )
         else:
-            features = add_coordinates(features, field_in.to_iris())
+            features = add_coordinates(features, field_in)
     else:
         features = None
         logging.debug("No features detected")
     logging.debug("feature detection completed")
-    return features.to_xarray()
+    return features
 
 
 def filter_min_distance(

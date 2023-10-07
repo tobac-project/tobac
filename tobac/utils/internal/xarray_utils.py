@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from . import general_internal as tb_utils_gi
+import datetime
 
 
 def find_axis_from_dim_coord(
@@ -332,6 +333,11 @@ def add_coordinates_to_features(
         )
 
     interpolated_df = variable_da.interp(coords=dim_interp_coords)
+    feature_df[time_dim_name] = variable_da[time_dim_name].values[feature_df["frame"]]
+    feature_df[time_dim_name + "str"] = [
+        pd.to_datetime(str(x)).strftime("%Y-%m-%d %H:%M:%S")
+        for x in variable_da[time_dim_name].values[feature_df["frame"]]
+    ]
 
     for interp_coord in interpolated_df.coords:
         if interp_coord == time_dim_name:
