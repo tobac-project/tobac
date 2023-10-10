@@ -12,3 +12,4 @@ dependencies:
   - xarray
   - cartopy
   - trackpy
+  - pytest
