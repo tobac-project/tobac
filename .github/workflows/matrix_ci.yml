@@ -7,10 +7,11 @@ concurrency:
   cancel-in-progress: true
 
 # This job installs dependencies and runs tests across a matrix of python and OS versions.
+#Add if: github.repository == 'tobac-project/tobac' to limit runs to tobac repo
+
 jobs:
   build:
     name: ${{ matrix.os }}-${{ matrix.python-version }}
-    if: github.repository == 'tobac-project/tobac'
     runs-on: ${{ matrix.os }}-latest
     defaults:
       run:
