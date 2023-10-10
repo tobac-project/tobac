@@ -13,6 +13,7 @@ jobs:
   build:
     name: ${{ matrix.os }}-${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}-latest
+    if: github.repository == 'tobac-project/tobac'
     defaults:
       run:
         shell: bash -l {0}
