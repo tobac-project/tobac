@@ -49,4 +49,4 @@ jobs:
         id: run_tests
         shell: bash -l {0}
         run: |
-          python -m pytest -v --cov=./ --cov-report=xml
+          python -m pytest -v 
