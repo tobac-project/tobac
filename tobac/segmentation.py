@@ -1021,6 +1021,7 @@ def segmentation_timestep(
         np.array(segmentation_out.data.copy()),
         np.array(field_in.data.copy()),
         features=features_out,
+        func_dict={"ncells": np.count_nonzero},
     )
 
     # compute additional statistics, if requested
