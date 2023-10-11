@@ -15,6 +15,7 @@ import xarray as xr
 import warnings
 from functools import partial
 
+
 def add_coordinates(t, variable_cube):
     """Add coordinates from the input cube of the feature detection
     to the trajectories/features.
