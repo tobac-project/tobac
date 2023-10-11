@@ -941,9 +941,9 @@ def feature_detection_multithreshold_timestep(
         If True, a feature can only be detected if all previous thresholds have been met.
         Default is False.
 
-    statistics : dict, optional                                                                                                                           
-            Default is None. Optional parameter to calculate bulk statistics within feature detection.                                                        
-            Dictionary with callable function(s) to apply over the region of each detected feature and the name of the statistics to appear in the feature ou            tput dataframe. The functions should be the values and the names of the metric the keys (e.g. {'mean': np.mean})      
+    statistics : dict, optional
+            Default is None. Optional parameter to calculate bulk statistics within feature detection.
+            Dictionary with callable function(s) to apply over the region of each detected feature and the name of the statistics to appear in the feature ou            tput dataframe. The functions should be the values and the names of the metric the keys (e.g. {'mean': np.mean})
 
     Returns
     -------
@@ -1059,7 +1059,7 @@ def feature_detection_multithreshold_timestep(
                     labels,
                     track_data,
                     features=features_threshold_i,
-                    func_dict=statistics,
+                    statistic=statistics,
                     index=np.unique(labels[labels > 0]),
                     id_column="idx",
                 )
