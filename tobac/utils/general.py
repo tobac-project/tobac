@@ -692,8 +692,7 @@ def get_statistics(
         index_in_features = np.isin(index, features[id_column])
 
         # set negative markers to 0 as they are unsegmented
-        labels[labels < 0] = 0
-        bins = np.cumsum(np.bincount(labels.ravel()))
+        bins = np.cumsum(np.bincount(np.maximum(labels.ravel(), 0)))
         argsorted = np.argsort(labels.ravel())
 
         # apply each function given per func_dict for the labeled regions sorted in ascending order
