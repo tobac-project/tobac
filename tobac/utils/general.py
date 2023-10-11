@@ -43,7 +43,7 @@ def add_coordinates(
     if isinstance(variable_cube, iris.cube.Cube):
         return internal_utils.iris_utils.add_coordinates(t, variable_cube)
     if isinstance(variable_cube, xr.DataArray):
-        raise NotImplementedError("add_coordinates not implemented for xarray.")
+        return internal_utils.xr_utils.add_coordinates_to_features(t, variable_cube)
     raise ValueError(
         "add_coordinates only supports xarray.DataArray and iris.cube.Cube"
     )
@@ -92,7 +92,13 @@ def add_coordinates_3D(
             t, variable_cube, vertical_coord, vertical_axis, assume_coords_fixed_in_time
         )
     if isinstance(variable_cube, xr.DataArray):
-        raise NotImplementedError("add_coordinates_3D not implemented for xarray.")
+        return internal_utils.xr_utils.add_coordinates_to_features(
+            t,
+            variable_cube,
+            vertical_coord=vertical_coord,
+            vertical_axis=vertical_axis,
+            assume_coords_fixed_in_time=assume_coords_fixed_in_time,
+        )
     raise ValueError(
         "add_coordinates_3D only supports xarray.DataArray and iris.cube.Cube"
     )
