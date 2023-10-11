@@ -271,7 +271,7 @@ def segmentation_3D(
     max_distance=None,
     PBC_flag="none",
     seed_3D_flag="column",
-    statistics=False,
+    statistics=None,
 ):
     """Wrapper for the segmentation()-function."""
 
@@ -301,7 +301,7 @@ def segmentation_2D(
     max_distance=None,
     PBC_flag="none",
     seed_3D_flag="column",
-    statistics=False,
+    statistics=None,
 ):
     """Wrapper for the segmentation()-function."""
     return segmentation(
@@ -334,7 +334,7 @@ def segmentation_timestep(
     seed_3D_size=5,
     segment_number_below_threshold=0,
     segment_number_unassigned=0,
-    statistics=False,
+    statistics=None,
 ):
     """Perform watershedding for an individual time step of the data. Works
     for both 2D and 3D data
@@ -397,7 +397,7 @@ def segmentation_timestep(
     segment_number_unassigned: int
         the marker to use to indicate a segmentation point is above the threshold but unsegmented.
     statistics: boolean, optional
-        Default is False. If True, bulk statistics for the data points assigned to each feature are saved in output.
+        Default is None. If True, bulk statistics for the data points assigned to each feature are saved in output.
 
 
     Returns
@@ -1114,7 +1114,7 @@ def segmentation(
     seed_3D_size=5,
     segment_number_below_threshold=0,
     segment_number_unassigned=0,
-    statistics=False,
+    statistics=None,
 ):
     """Use watershedding to determine region above a threshold
         value around initial seeding position for all time steps of
@@ -1136,7 +1136,11 @@ def segmentation(
         dxy : float
             Grid spacing of the input data.
 
-        statistics : boolean, optional
+        statistics : dict, optional 
+            Default is None. Optional parameter to calculate bulk statistics within feature detection.
+            Dictionary with callable function(s) to apply over the region of each detected feature and the name of the statistics to appear in the feature output dataframe. The functions should be the values and the names of the metric the keys (e.g. {'mean': np.mean})                                     
+
+boolean, optional
             Default is False. If True, bulk statistics for the data points assigned to each feature are saved in output.
 
         Output:
