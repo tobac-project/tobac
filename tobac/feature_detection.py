@@ -1062,7 +1062,6 @@ def feature_detection_multithreshold_timestep(
         elif i_threshold == 0:
             regions_old = regions_i
 
-
         if statistics:
             # reconstruct the labeled regions based on the regions dict
             labels = np.zeros(track_data.shape)
@@ -1079,7 +1078,7 @@ def feature_detection_multithreshold_timestep(
                 index=np.unique(labels[labels > 0]),
                 id_column="idx",
             )
-            
+
         logging.debug(
             "Finished feature detection for threshold "
             + str(i_threshold)

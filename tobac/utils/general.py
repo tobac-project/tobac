@@ -13,7 +13,7 @@ import sklearn.neighbors
 import datetime
 import xarray as xr
 import warnings
-
+from functools import partial
 
 def add_coordinates(t, variable_cube):
     """Add coordinates from the input cube of the feature detection
@@ -702,55 +702,35 @@ def get_statistics(
             # initiate new column in feature dataframe if it does not already exist
             if stats_name not in features.columns:
                 features[stats_name] = None
-                # if function is given as a tuple, take the input parameters provided
+            # if function is given as a tuple, take the input parameters provided
             if type(statistic[stats_name]) is tuple:
-                func = statistic[stats_name][0]
-                # check that key word arguments are provided as dictionary
+                # assure that key word arguments are provided as dictionary
                 if not type(statistic[stats_name][1]) is dict:
                     raise TypeError(
                         "Tuple must contain dictionary with key word arguments for function."
                     )
-                else:
-                    kwargs = statistic[stats_name][1]
-                    # default needs to be sequence when function output is array-like
-                    output = func(np.random.rand(1, 10), **kwargs)
-                    if hasattr(output, "__len__"):
-                        default = np.full(output.shape, default)
-                    stats = np.array(
-                        [
-                            func(
-                                *[
-                                    field.ravel()[argsorted[bins[i - 1] : bins[i]]]
-                                    for field in fields
-                                ],
-                                **kwargs,
-                            )
-                            if bins[i] > bins[i - 1]
-                            else default
-                            for i in index
-                        ]
-                    )
-            # otherwise apply function on region without any input parameter
+
+                func = partial(statistic[stats_name][0], **statistic[stats_name][1])
             else:
                 func = statistic[stats_name]
-                # default needs to be sequence when function output is array-like
-                output = func(np.random.rand(1, 10))
-                if hasattr(output, "__len__"):
-                    default = np.full(output.shape, default)
 
-                stats = np.array(
-                    [
-                        func(
-                            *[
-                                field.ravel()[argsorted[bins[i - 1] : bins[i]]]
-                                for field in fields
-                            ]
-                        )
-                        if bins[i] > bins[i - 1]
-                        else default
-                        for i in index
-                    ]
-                )
+            # default needs to be sequence when function output is array-like
+            output = func(np.random.rand(1, 10))
+            if hasattr(output, "__len__"):
+                default = np.full(output.shape, default)
+            stats = np.array(
+                [
+                    func(
+                        *[
+                            field.ravel()[argsorted[bins[i - 1] : bins[i]]]
+                            for field in fields
+                        ],
+                    )
+                    if bins[i] > bins[i - 1]
+                    else default
+                    for i in index
+                ]
+            )
 
             # add results of computed statistics to feature dataframe with column name given per statistic
             for idx, label in enumerate(index):
