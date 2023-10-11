@@ -969,6 +969,10 @@ def feature_detection_multithreshold_timestep(
         If True, a feature can only be detected if all previous thresholds have been met.
         Default is False.
 
+    statistics : dict, optional
+            Default is None. Optional parameter to calculate bulk statistics within feature detection.
+            Dictionary with callable function(s) to apply over the region of each detected feature and the name of the statistics to appear in the feature ou            tput dataframe. The functions should be the values and the names of the metric the keys (e.g. {'mean': np.mean})
+
     Returns
     -------
     features_threshold : pandas DataFrame
@@ -1076,24 +1080,6 @@ def feature_detection_multithreshold_timestep(
             vertical_axis=vertical_axis,
         )
         if any([x is not None for x in features_threshold_i]):
-            # if statistics is not None, compute bulk statistics for the remaining detected feature objects
-            if statistics:
-                # reconstruct the labeled regions based on the regions dict
-                labels = np.zeros(track_data.shape)
-                labels = labels.astype(int)
-                for key in regions_i.keys():
-                    labels.ravel()[regions_i[key]] = key
-                    # apply function to get statistics based on labeled regions and functions provided by the user
-                    # the feature dataframe is updated by appending a column for each metric
-                features_threshold_i = get_statistics(
-                    labels,
-                    track_data,
-                    features=features_threshold_i,
-                    func_dict=statistics,
-                    index=np.unique(labels[labels > 0]),
-                    id_column="idx",
-                )
-
             features_thresholds = pd.concat(
                 [features_thresholds, features_threshold_i], ignore_index=True
             )
@@ -1109,6 +1095,23 @@ def feature_detection_multithreshold_timestep(
             )
         elif i_threshold == 0:
             regions_old = regions_i
+
+        if statistics:
+            # reconstruct the labeled regions based on the regions dict
+            labels = np.zeros(track_data.shape)
+            labels = labels.astype(int)
+            for key in regions_old.keys():
+                labels.ravel()[regions_old[key]] = key
+                # apply function to get statistics based on labeled regions and functions provided by the user
+                # the feature dataframe is updated by appending a column for each metric
+            features_thresholds = get_statistics(
+                labels,
+                track_data,
+                features=features_thresholds,
+                statistic=statistics,
+                index=np.unique(labels[labels > 0]),
+                id_column="idx",
+            )
 
         logging.debug(
             "Finished feature detection for threshold "

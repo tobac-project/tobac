@@ -1,10 +1,10 @@
-######################################
-  Compute bulk statistics for features
-######################################
+##########################
+  Compute bulk statistics
+##########################
 
 .. toctree::
    :maxdepth: 2
 
-   notebooks/statistics_feature_detection_example
-   notebooks/statistics_segmentation_example
-   notebooks/statistics_postprocessing_example
+   notebooks/compute_statistics_during_feature_detection_example
+   notebooks/compute_statistics_during_segmentation_example
+   notebooks/compute_statistics_postprocessing_example

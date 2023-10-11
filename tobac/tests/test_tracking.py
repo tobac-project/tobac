@@ -449,8 +449,10 @@ def test_trackpy_predict():
     cell_2_expected = copy.deepcopy(cell_2)
     cell_2_expected["cell"] = np.int32(2)
 
-    features = pd.concat([cell_1, cell_2])
-    expected_output = pd.concat([cell_1_expected, cell_2_expected])
+    features = pd.concat([cell_1, cell_2], ignore_index=True, verify_integrity=True)
+    expected_output = pd.concat(
+        [cell_1_expected, cell_2_expected], ignore_index=True, verify_integrity=True
+    )
 
     output = tobac.linking_trackpy(
         features, None, 1, 1, d_max=100, method_linking="predict"
