@@ -635,7 +635,7 @@ def get_statistics(
     labels: np.ndarray[int],
     *fields: tuple[np.ndarray],
     features: pd.DataFrame,
-    func_dict: dict[str, tuple[Callable]] = {"ncells": np.count_nonzero},
+    statistic: dict[str, Callable | tuple[Callable, dict]] = {"ncells": np.count_nonzero},
     index: None | list[int] = None,
     default: None | float = None,
     id_column: str = "feature",
