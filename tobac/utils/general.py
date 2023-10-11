@@ -656,7 +656,7 @@ def get_statistics(
     features: pd.DataFrame
         Dataframe with features or segmented features (output from feature detection or segmentation)
         can be for the specific timestep or for the whole dataset
-    func_dict: dict[str, Callable], optional (default: {'ncells':np.count_nonzero})
+    statistic: dict[str, Callable], optional (default: {'ncells':np.count_nonzero})
         Dictionary with function(s) to apply over each region as values and the name of the respective statistics as keys
         default is to just count the number of cells associated with each feature and write it to the feature dataframe
     index: None | list[int], optional (default: None)
@@ -695,21 +695,21 @@ def get_statistics(
         bins = np.cumsum(np.bincount(np.maximum(labels.ravel(), 0)))
         argsorted = np.argsort(labels.ravel())
 
-        # apply each function given per func_dict for the labeled regions sorted in ascending order
-        for stats_name in func_dict.keys():
+        # apply each function given per statistic parameter for the labeled regions sorted in ascending order
+        for stats_name in statistic.keys():
             # initiate new column in feature dataframe if it does not already exist
             if stats_name not in features.columns:
                 features[stats_name] = None
                 # if function is given as a tuple, take the input parameters provided
-            if type(func_dict[stats_name]) is tuple:
-                func = func_dict[stats_name][0]
+            if type(statistic[stats_name]) is tuple:
+                func = statistic[stats_name][0]
                 # check that key word arguments are provided as dictionary
-                if not type(func_dict[stats_name][1]) is dict:
+                if not type(statistic[stats_name][1]) is dict:
                     raise TypeError(
                         "Tuple must contain dictionary with key word arguments for function."
                     )
                 else:
-                    kwargs = func_dict[stats_name][1]
+                    kwargs = statistic[stats_name][1]
                     # default needs to be sequence when function output is array-like
                     output = func(np.random.rand(1, 10), **kwargs)
                     if hasattr(output, "__len__"):
@@ -730,7 +730,7 @@ def get_statistics(
                     )
             # otherwise apply function on region without any input parameter
             else:
-                func = func_dict[stats_name]
+                func = statistic[stats_name]
                 # default needs to be sequence when function output is array-like
                 output = func(np.random.rand(1, 10))
                 if hasattr(output, "__len__"):
@@ -750,7 +750,7 @@ def get_statistics(
                     ]
                 )
 
-            # add results of computed statistics to feature dataframe with column name given per func_dict
+            # add results of computed statistics to feature dataframe with column name given per statistic
             for idx, label in enumerate(index):
                 if index_in_features[idx]:
                     # test if values are scalars
@@ -777,7 +777,7 @@ def get_statistics_from_mask(
     segmentation_mask: xr.DataArray,
     *fields: xr.DataArray,
     features: pd.DataFrame,
-    func_dict: dict[str, tuple[Callable]] = {"Mean": np.mean},
+    statistic: dict[str, tuple[Callable]] = {"Mean": np.mean},
     index: None | list[int] = None,
     default: None | float = None,
     id_column: str = "feature",
@@ -795,7 +795,7 @@ def get_statistics_from_mask(
     features: pd.DataFrame
         Dataframe with segmented features (output from feature detection or segmentation).
         Timesteps must not be exactly the same as in segmentation mask but all labels in the mask need to be present in the feature dataframe.
-    func_dict: dict[str, Callable], optional (default: {'ncells':np.count_nonzero})
+    statistic: dict[str, Callable], optional (default: {'ncells':np.count_nonzero})
         Dictionary with function(s) to apply over each region as values and the name of the respective statistics as keys
         default is to just count the number of cells associated with each feature and write it to the feature dataframe
     index: None | list[int], optional (default: None)
@@ -843,7 +843,7 @@ def get_statistics_from_mask(
                 segmentation_mask_t,
                 field_t,
                 features=features,
-                func_dict=func_dict,
+                statistic=statistic,
                 default=default,
                 index=index,
                 id_column=id_column,
