@@ -3,9 +3,14 @@ Support functions to compute bulk statistics of features, either as a postproces
 or within feature detection or segmentation. 
 
 """
+
+from . import internal as internal_utils
 from typing import Callable, Union
 from functools import partial
 import numpy as np
+import pandas as pd
+import xarray as xr
+
 
 def get_statistics(
     labels: np.ndarray[int],
@@ -15,7 +20,7 @@ def get_statistics(
         "ncells": np.count_nonzero
     },
     index: Union[None, list[int]] = None,
-    default: Union[None , float] = None,
+    default: Union[None, float] = None,
     id_column: str = "feature",
 ) -> pd.DataFrame:
     """
@@ -136,8 +141,8 @@ def get_statistics_from_mask(
     *fields: xr.DataArray,
     features: pd.DataFrame,
     statistic: dict[str, tuple[Callable]] = {"Mean": np.mean},
-    index: Union[None , list[int]] = None,
-    default: Union[ None, float] = None,
+    index: Union[None, list[int]] = None,
+    default: Union[None, float] = None,
     id_column: str = "feature",
 ) -> pd.DataFrame:
     """
@@ -208,4 +213,3 @@ def get_statistics_from_mask(
             )
 
     return features
-
