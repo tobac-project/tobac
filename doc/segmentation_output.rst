@@ -10,7 +10,7 @@ Segmentation also outputs the same `pandas` dataframe as obtained by Feature Det
    :widths: 3, 35, 3, 3
    :header-rows: 1
 
-One can optionally get the bulk statistics of the data points belonging to each segmented feature (i.e. either the 2D area or the 3D volume assigned to the feature). This is done by setting `statistics=True` when calling :ufunc:`tobac.segmentation.segmentation` and will add the following columns to the output dataframe: 
+One can optionally get the bulk statistics of the data points belonging to each segmented feature (i.e. either the 2D area or the 3D volume assigned to the feature). This is done using the `statistics` parameter when calling :ufunc:`tobac.segmentation.segmentation` . The user-defined metrics are then added as columns to the output dataframe, for example: 
 
 .. csv-table:: tobac Segmentation Output Variables
    :file: ./segmentation_out_vars_statistics.csv
