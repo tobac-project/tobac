@@ -3,7 +3,6 @@ Support functions to compute bulk statistics of features, either as a postproces
 or within feature detection or segmentation. 
 
 """
-
 import logging
 from . import internal as internal_utils
 from typing import Callable, Union
