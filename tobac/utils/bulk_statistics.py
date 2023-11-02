@@ -194,17 +194,17 @@ def get_statistics_from_mask(
         )
 
     # get bulk statistics for each timestep
-    features_t_list = []
+    step_statistics = []
 
     for tt in pd.to_datetime(segmentation_mask.time):
         # select specific timestep
         segmentation_mask_t = segmentation_mask.sel(time=tt).data
         field_t = field.sel(time=tt).data
-        features_t = features.loc[features.time == tt]
+        features_t = features.loc[features.time == tt].copy()
 
         # make sure that the labels in the segmentation mask exist in feature dataframe
         if (
-            np.intersect1d(np.unique(segmentation_mask_t), features.feature).size
+            np.intersect1d(np.unique(segmentation_mask_t), features_t.feature).size
             > np.unique(segmentation_mask_t).size
         ):
             raise ValueError(
@@ -212,7 +212,7 @@ def get_statistics_from_mask(
             )
         else:
             # make sure that features are not double-defined
-            features_t_list.append(
+            step_statistics.append(
                 get_statistics(
                     segmentation_mask_t,
                     field_t,
@@ -224,6 +224,6 @@ def get_statistics_from_mask(
                 )
             )
 
-    features = pd.concat(features_t_list)
+    features = pd.concat(step_statistics)
 
     return features
