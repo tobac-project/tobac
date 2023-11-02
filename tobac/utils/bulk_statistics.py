@@ -4,6 +4,7 @@ or within feature detection or segmentation.
 
 """
 
+import logging
 from . import internal as internal_utils
 from typing import Callable, Union
 from functools import partial
@@ -63,9 +64,7 @@ def get_statistics(
     # mask must contain positive values to calculate statistics
     if labels[labels > 0].size > 0:
         if index is None:
-            index = range(
-                int(np.nanmin(labels[labels > 0])), int(np.nanmax(labels) + 1)
-            )
+            index = features.feature.to_numpy()
         else:
             # get the statistics only for specified feature objects
             if np.max(index) > np.max(labels):
@@ -80,9 +79,6 @@ def get_statistics(
 
         # apply each function given per statistic parameter for the labeled regions sorted in ascending order
         for stats_name in statistic.keys():
-            # initiate new column in feature dataframe if it does not already exist
-            if stats_name not in features.columns:
-                features[stats_name] = None
             # if function is given as a tuple, take the input parameters provided
             if type(statistic[stats_name]) is tuple:
                 # assure that key word arguments are provided as dictionary
@@ -96,24 +92,35 @@ def get_statistics(
                 func = statistic[stats_name]
 
             # default needs to be sequence when function output is array-like
-            output = func(np.random.rand(1, 10))
+            output = func(np.random.rand(10))
             if hasattr(output, "__len__"):
                 default = np.full(output.shape, default)
+
             stats = np.array(
                 [
                     func(
-                        *[
+                        *(
                             field.ravel()[argsorted[bins[i - 1] : bins[i]]]
                             for field in fields
-                        ],
+                        )
                     )
-                    if bins[i] > bins[i - 1]
+                    if i < bins.size and bins[i] > bins[i - 1]
                     else default
                     for i in index
                 ]
             )
 
             # add results of computed statistics to feature dataframe with column name given per statistic
+            # initiate new column in feature dataframe if it does not already exist
+            if stats_name not in features.columns:
+                if default is not None and not hasattr(default, "__len__"):
+                    # If result is a scalar value we can create an empty column with the correct dtype
+                    features[stats_name] = np.full(
+                        [len(features)], default, type(default)
+                    )
+                else:
+                    features[stats_name] = np.full([len(features)], None, object)
+
             for idx, label in enumerate(index):
                 if index_in_features[idx]:
                     # test if values are scalars
@@ -187,10 +194,13 @@ def get_statistics_from_mask(
         )
 
     # get bulk statistics for each timestep
+    features_t_list = []
+
     for tt in pd.to_datetime(segmentation_mask.time):
         # select specific timestep
         segmentation_mask_t = segmentation_mask.sel(time=tt).data
         field_t = field.sel(time=tt).data
+        features_t = features.loc[features.time == tt]
 
         # make sure that the labels in the segmentation mask exist in feature dataframe
         if (
@@ -202,14 +212,18 @@ def get_statistics_from_mask(
             )
         else:
             # make sure that features are not double-defined
-            features = get_statistics(
-                segmentation_mask_t,
-                field_t,
-                features=features,
-                statistic=statistic,
-                default=default,
-                index=index,
-                id_column=id_column,
+            features_t_list.append(
+                get_statistics(
+                    segmentation_mask_t,
+                    field_t,
+                    features=features_t,
+                    statistic=statistic,
+                    default=default,
+                    index=index,
+                    id_column=id_column,
+                )
             )
+
+    features = pd.concat(features_t_list)
 
     return features
