@@ -138,7 +138,8 @@ def linking_trackpy(
         Default is 1
 
     time_cell_min : float, optional
-        Minimum length in time of tracked cell to be reported in minutes
+        Minimum length in time of tracked cell to be reported in the same units as
+        dt (typically seconds)
         Default is None.
 
     order : int, optional
