@@ -787,6 +787,9 @@ def transform_feature_points(
             "Dropping feature numbers: " + str(removed_features.values), UserWarning
         )
 
+    # make sure that feature points are converted back to int64
+    ret_features['feature'] = ret_features.feature.astype(int)
+
     return ret_features
 
 

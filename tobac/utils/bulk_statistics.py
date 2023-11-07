@@ -43,8 +43,8 @@ def get_statistics(
         Dictionary with function(s) to apply over each region as values and the name of the respective statistics as keys
         default is to just count the number of cells associated with each feature and write it to the feature dataframe
     index: None | list[int], optional (default: None)
-        list of indexes of regions in labels to apply function to. If None, will
-            default to all integers between the minimum and the maximum value in labels
+        list of indices of regions in labels to apply function to. If None, will
+            default to all integer feature labels in labels
     default: None | float, optional (default: None)
         default value to return in a region that has no values
     id_column: str, optional (default: "feature")
