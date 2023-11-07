@@ -788,7 +788,7 @@ def transform_feature_points(
         )
 
     # make sure that feature points are converted back to int64
-    ret_features['feature'] = ret_features.feature.astype(int)
+    ret_features["feature"] = ret_features.feature.astype(int)
 
     return ret_features
 
