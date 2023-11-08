@@ -1,9 +1,9 @@
 """General tobac utilities
 
 """
+
 import copy
 import logging
-
 import pandas as pd
 
 from . import internal as internal_utils
@@ -792,6 +792,9 @@ def transform_feature_points(
         warnings.warn(
             "Dropping feature numbers: " + str(removed_features.values), UserWarning
         )
+
+    # make sure that feature points are converted back to int64
+    ret_features["feature"] = ret_features.feature.astype(int)
 
     return ret_features
 

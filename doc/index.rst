@@ -60,6 +60,14 @@ The project is currently being extended by several contributors to include addit
 
    merge_split
 
+
+.. toctree::
+   :caption: Compute bulk statistics online or in postprocessing
+   :maxdepth: 2
+
+   bulk_statistics/index
+
+   
 .. toctree::
    :caption: API Reference
    :maxdepth: 3
