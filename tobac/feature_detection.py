@@ -26,8 +26,8 @@ from sklearn.neighbors import BallTree
 from tobac.tracking import build_distance_function
 from tobac.utils import internal as internal_utils
 from tobac.utils import periodic_boundaries as pbc_utils
-from tobac.utils.general import spectral_filtering
-from tobac.utils.general import get_statistics
+from tobac.utils import spectral_filtering
+from tobac.utils import get_statistics
 import warnings
 from typing import Union, Literal
 
