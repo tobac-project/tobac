@@ -17,7 +17,7 @@ References
    12(11), 4551-4570.
 """
 from __future__ import annotations
-from typing import Union
+from typing import Union, Callable
 import warnings
 import logging
 
@@ -34,6 +34,8 @@ from tobac.tracking import build_distance_function
 from tobac.utils import internal as internal_utils
 from tobac.utils import periodic_boundaries as pbc_utils
 from tobac.utils.general import spectral_filtering
+from tobac.utils import get_statistics
+import warnings
 
 
 def feature_position(
@@ -872,7 +874,6 @@ def feature_detection_threshold(
             features_threshold = pd.DataFrame(
                 list_features_threshold, columns=column_names
             )
-
         # features_threshold=pd.DataFrame(list_features_threshold, columns = column_names)
     else:
         features_threshold = pd.DataFrame()
@@ -900,6 +901,7 @@ def feature_detection_multithreshold_timestep(
     dxy: float = -1,
     wavelength_filtering: tuple[float] = None,
     strict_thresholding: bool = False,
+    statistics: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None
 ) -> pd.DataFrame:
     """Find features in each timestep.
 
@@ -966,6 +968,10 @@ def feature_detection_multithreshold_timestep(
     strict_thresholding: Bool, optional
         If True, a feature can only be detected if all previous thresholds have been met.
         Default is False.
+
+    statistics : dict, optional
+            Default is None. Optional parameter to calculate bulk statistics within feature detection.
+            Dictionary with callable function(s) to apply over the region of each detected feature and the name of the statistics to appear in the feature ou            tput dataframe. The functions should be the values and the names of the metric the keys (e.g. {'mean': np.mean})
 
     Returns
     -------
@@ -1092,6 +1098,23 @@ def feature_detection_multithreshold_timestep(
         elif i_threshold == 0:
             regions_old = regions_i
 
+        if statistics:
+            # reconstruct the labeled regions based on the regions dict
+            labels = np.zeros(track_data.shape)
+            labels = labels.astype(int)
+            for key in regions_old.keys():
+                labels.ravel()[regions_old[key]] = key
+                # apply function to get statistics based on labeled regions and functions provided by the user
+                # the feature dataframe is updated by appending a column for each metric
+            features_thresholds = get_statistics(
+                labels,
+                track_data,
+                features=features_thresholds,
+                statistic=statistics,
+                index=np.unique(labels[labels > 0]),
+                id_column="idx",
+            )
+
         logging.debug(
             "Finished feature detection for threshold "
             + str(i_threshold)
@@ -1122,6 +1145,7 @@ def feature_detection_multithreshold(
     wavelength_filtering: tuple = None,
     dz: Union[float, None] = None,
     strict_thresholding: bool = False,
+    statistics: Union[dict[str, Union[Callable, tuple[Callable, dict]]],None]=None,
 ) -> pd.DataFrame:
     """Perform feature detection based on contiguous regions.
 
@@ -1338,6 +1362,7 @@ def feature_detection_multithreshold(
             dxy=dxy,
             wavelength_filtering=wavelength_filtering,
             strict_thresholding=strict_thresholding,
+            statistics=statistics,
         )
         # check if list of features is not empty, then merge features from different threshold
         # values into one DataFrame and append to list for individual timesteps:
@@ -1363,7 +1388,6 @@ def feature_detection_multithreshold(
                     min_h2=0,
                     max_h2=hdim2_max,
                 )
-
         list_features_timesteps.append(features_thresholds)
 
         logging.debug(
