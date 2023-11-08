@@ -344,7 +344,7 @@ def segmentation_timestep(
     seed_3D_size: Union[int, tuple[int]] = 5,
     segment_number_below_threshold: int = 0,
     segment_number_unassigned: int = 0,
-    statistics: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None]=None,
+    statistics: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
 ) -> tuple[iris.cube.Cube, pd.DataFrame]:
     """Perform watershedding for an individual time step of the data. Works
     for both 2D and 3D data
@@ -1126,8 +1126,7 @@ def segmentation(
     seed_3D_size: Union[int, tuple[int]] = 5,
     segment_number_below_threshold: int = 0,
     segment_number_unassigned: int = 0,
-    statistics: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None]=None,
-
+    statistics: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
 ) -> tuple[iris.cube.Cube, pd.DataFrame]:
     """Use watershedding to determine region above a threshold
             value around initial seeding position for all time steps of
