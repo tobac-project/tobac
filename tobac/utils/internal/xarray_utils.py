@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Union
 import xarray as xr
-from . import general_internal as tb_utils_gi
+from . import basic as tb_utils_gi
 
 
 def find_vertical_axis_from_coord(

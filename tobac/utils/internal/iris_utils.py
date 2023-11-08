@@ -9,7 +9,7 @@ import iris
 import iris.cube
 import numpy as np
 
-from . import general_internal as tb_utils_gi
+from . import basic as tb_utils_gi
 
 
 def find_axis_from_coord(
