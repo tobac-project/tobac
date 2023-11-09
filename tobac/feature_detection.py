@@ -17,16 +17,23 @@ References
    12(11), 4551-4570.
 """
 from __future__ import annotations
-
+from typing import Union, Callable
+import warnings
 import logging
+
+from typing_extensions import Literal
+
 import numpy as np
 import pandas as pd
 from scipy.spatial import KDTree
 from sklearn.neighbors import BallTree
+import iris
+import xarray as xr
+
 from tobac.tracking import build_distance_function
 from tobac.utils import internal as internal_utils
 from tobac.utils import periodic_boundaries as pbc_utils
-from tobac.utils import spectral_filtering
+from tobac.utils.general import spectral_filtering
 from tobac.utils import get_statistics
 import warnings
 from typing import Union, Literal
@@ -34,7 +41,6 @@ from typing import Union, Literal
 # from typing_extensions import Literal
 import iris
 import iris.cube
-import xarray as xr
 
 
 def feature_position(
@@ -901,7 +907,7 @@ def feature_detection_multithreshold_timestep(
     dxy: float = -1,
     wavelength_filtering: tuple[float] = None,
     strict_thresholding: bool = False,
-    statistics: Union[dict, None] = None,
+    statistics: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
 ) -> pd.DataFrame:
     """Find features in each timestep.
 
@@ -1084,9 +1090,11 @@ def feature_detection_multithreshold_timestep(
                 [features_thresholds, features_threshold_i], ignore_index=True
             )
 
-        # For multiple threshold, and features found both in the current and previous step, remove "parent" features from Dataframe
+        # For multiple threshold, and features found both in the current and previous step, remove
+        # "parent" features from Dataframe
         if i_threshold > 0 and not features_thresholds.empty:
-            # for each threshold value: check if newly found features are surrounded by feature based on less restrictive threshold
+            # For multiple threshold, and features found both in the current and previous step, remove
+            # "parent" features from Dataframe
             features_thresholds, regions_old = remove_parents(
                 features_thresholds,
                 regions_i,
@@ -1144,7 +1152,7 @@ def feature_detection_multithreshold(
     wavelength_filtering: tuple = None,
     dz: Union[float, None] = None,
     strict_thresholding: bool = False,
-    statistics: Union[dict, None] = None,
+    statistics: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
 ) -> pd.DataFrame:
     """Perform feature detection based on contiguous regions.
 
