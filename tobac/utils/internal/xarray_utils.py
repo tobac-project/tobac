@@ -7,7 +7,7 @@ from typing import Union
 import numpy as np
 import pandas as pd
 import xarray as xr
-from . import general_internal as tb_utils_gi
+from . import basic as tb_utils_gi
 import datetime
 
 
