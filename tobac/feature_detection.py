@@ -36,7 +36,6 @@ from tobac.utils import periodic_boundaries as pbc_utils
 from tobac.utils.general import spectral_filtering
 from tobac.utils import get_statistics
 import warnings
-from typing import Union, Literal
 
 # from typing_extensions import Literal
 import iris
