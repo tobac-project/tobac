@@ -13,3 +13,4 @@ dependencies:
   - cartopy
   - trackpy
   - pytest
+  - typing_extensions
