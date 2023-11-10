@@ -31,7 +31,12 @@ References
 """
 import copy
 import logging
+
+import iris.cube
 import numpy as np
+import pandas as pd
+from typing_extensions import Literal
+from typing import Union, Callable
 
 import skimage
 import numpy as np
@@ -44,8 +49,13 @@ from .utils import get_statistics
 
 
 def add_markers(
-    features, marker_arr, seed_3D_flag, seed_3D_size=5, level=None, PBC_flag="none"
-):
+    features: pd.DataFrame,
+    marker_arr: np.array,
+    seed_3D_flag: Literal["column", "box"],
+    seed_3D_size: Union[int, tuple[int]] = 5,
+    level: Union[None, slice] = None,
+    PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
+) -> np.array:
     """Adds markers for watershedding using the `features` dataframe
     to the marker_arr.
 
@@ -320,22 +330,22 @@ def segmentation_2D(
 
 
 def segmentation_timestep(
-    field_in,
-    features_in,
-    dxy,
-    threshold=3e-3,
-    target="maximum",
-    level=None,
-    method="watershed",
-    max_distance=None,
-    vertical_coord=None,
-    PBC_flag="none",
-    seed_3D_flag="column",
-    seed_3D_size=5,
-    segment_number_below_threshold=0,
-    segment_number_unassigned=0,
-    statistics=None,
-):
+    field_in: iris.cube.Cube,
+    features_in: pd.DataFrame,
+    dxy: float,
+    threshold: float = 3e-3,
+    target: Literal["maximum", "minimum"] = "maximum",
+    level: Union[None, slice] = None,
+    method: Literal["watershed"] = "watershed",
+    max_distance: Union[None, float] = None,
+    vertical_coord: Union[str, None] = None,
+    PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
+    seed_3D_flag: Literal["column", "box"] = "column",
+    seed_3D_size: Union[int, tuple[int]] = 5,
+    segment_number_below_threshold: int = 0,
+    segment_number_unassigned: int = 0,
+    statistics: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
+) -> tuple[iris.cube.Cube, pd.DataFrame]:
     """Perform watershedding for an individual time step of the data. Works
     for both 2D and 3D data
 
@@ -1045,7 +1055,7 @@ def check_add_unseeded_across_bdrys(
     border_max: int,
     markers_arr: np.array,
     inplace: bool = True,
-):
+) -> np.array:
     """Add new markers to unseeded but eligible regions when they are bordering
     an appropriate boundary.
 
@@ -1102,22 +1112,22 @@ def check_add_unseeded_across_bdrys(
 
 
 def segmentation(
-    features,
-    field,
-    dxy,
-    threshold=3e-3,
-    target="maximum",
-    level=None,
-    method="watershed",
-    max_distance=None,
-    vertical_coord=None,
-    PBC_flag="none",
-    seed_3D_flag="column",
-    seed_3D_size=5,
-    segment_number_below_threshold=0,
-    segment_number_unassigned=0,
-    statistics=None,
-):
+    features: pd.DataFrame,
+    field: iris.cube.Cube,
+    dxy: float,
+    threshold: float = 3e-3,
+    target: Literal["maximum", "minimum"] = "maximum",
+    level: Union[None, slice] = None,
+    method: Literal["watershed"] = "watershed",
+    max_distance: Union[None, float] = None,
+    vertical_coord: Union[str, None] = None,
+    PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
+    seed_3D_flag: Literal["column", "box"] = "column",
+    seed_3D_size: Union[int, tuple[int]] = 5,
+    segment_number_below_threshold: int = 0,
+    segment_number_unassigned: int = 0,
+    statistics: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
+) -> tuple[iris.cube.Cube, pd.DataFrame]:
     """Use watershedding to determine region above a threshold
             value around initial seeding position for all time steps of
             the input data. Works both in 2D (based on single seeding
