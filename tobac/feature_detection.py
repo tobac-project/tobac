@@ -1161,7 +1161,7 @@ def feature_detection_multithreshold(
         Grid spacing of the input data (in meter).
 
     thresholds : list of floats, optional
-        Threshold values used to select target regions to track. The feature detection is inclusive of the threshold value, i.e. values greater/less than or equal are included in the target region. 
+        Threshold values used to select target regions to track. The feature detection is inclusive of the threshold value, i.e. values greater/less than or equal are included in the target region.
         Default is None.
 
     target : {'maximum', 'minimum'}, optional
