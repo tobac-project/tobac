@@ -19,11 +19,17 @@ Refereed Publications
 
       * - Kukulies, J., Chen, D., & Curio, J. (2021). The role of mesoscale convective systems in precipitation in the Tibetan Plateau region. *Journal of Geophysical Research: Atmospheres*, 126(23), e2021JD035279. doi:10.1029/2021JD035279.
 
+      * - Kukulies, J., Lai, H. W., Curio, J., Feng, Z., Lin, C., Li, P., ... & Chen, D. (2023). Mesoscale convective systems in the Third pole region: Characteristics, mechanisms and impact on precipitation. *Frontiers in Earth Science*, 11, 1143380.
+
       * - Li, Y., Liu, Y., Chen, Y., Chen, B., Zhang, X., Wang, W. & Huo, Z. (2021). Characteristics of Deep Convective Systems and Initiation during Warm Seasons over China and Its Vicinity. *Remote Sensing*, 13(21), 4289. doi:10.3390/rs13214289.
+
+      * - Leung, G. R., Saleeby, S. M., Sokolowsky, G. A., Freeman, S. W., & van den Heever, S. C. (2023). Aerosol–cloud impacts on aerosol detrainment and rainout in shallow maritime tropical clouds. *Atmospheric Chemistry and Physics*, 23(9), 5263-5278.
 
       * - Marinescu, P. J., Van Den Heever, S. C., Heikenfeld, M., Barrett, A. I., Barthlott, C., Hoose, C., ... & Zhang, Y. (2021). Impacts of varying concentrations of cloud condensation nuclei on deep convective cloud updrafts—a multimodel assessment. *Journal of the Atmospheric Sciences*, 78(4), 1147-1172, doi: 10.1175/JAS-D-20-0200.1.
 
       * - Marinescu, P. J. (2020). Observations of Aerosol Particles and Deep Convective Updrafts and the Modeling of Their Interactions (Doctoral dissertation, Colorado State University).
+
+      * - Oue, M., Saleeby, S. M., Marinescu, P. J., Kollias, P., & van den Heever, S. C. (2022). Optimizing radar scan strategies for tracking isolated deep convection using observing system simulation experiments. *Atmospheric Measurement Techniques*, 15(16), 4931-4950.
 
       * - Raut, B. A., Jackson, R., Picel, M., Collis, S. M., Bergemann, M., & Jakob, C. (2021). An Adaptive Tracking Algorithm for Convection in Simulated and Remote Sensing Data. *Journal of Applied Meteorology and Climatology*, 60(4), 513-526, doi:10.1175/JAMC-D-20-0119.1.
 
