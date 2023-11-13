@@ -362,7 +362,7 @@ def segmentation_timestep(
         Grid spacing of the input data in metres
 
     threshold : float, optional
-        Threshold for the watershedding field to be used for the mask.
+        Threshold for the watershedding field to be used for the mask. The watershedding is exclusive of the threshold value, i.e. values greater (less) than the threshold are included in the target region, while values equal to the threshold value are excluded.
         Default is 3e-3.
 
     target : {'maximum', 'minimum'}, optional

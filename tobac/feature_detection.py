@@ -288,12 +288,12 @@ def remove_parents(
         Dataframe containing detected features.
 
     regions_i : dict
-        Dictionary containing the regions above/below
+        Dictionary containing the regions greater/lower than and equal to
         threshold for the newly detected feature
         (feature ids as keys).
 
     regions_old : dict
-        Dictionary containing the regions above/below
+        Dictionary containing the regions greater/lower than and equal to 
         threshold from previous threshold
         (feature ids as keys).
 
@@ -405,8 +405,10 @@ def feature_detection_threshold(
         Number of the current timestep.
 
     threshold : float, optional
-        Threshold value used to select target regions to track. Default
-                is None.
+        Threshold value used to select target regions to track.  The feature detection is inclusive of the
+        threshold value(s), i.e. values greater/less than or equal are included in the target region. The
+        feature detection is inclusive of the threshold value(s), i.e. values greater/less than or equal are
+        included in the target region. Default is None.
 
     target : {'maximum', 'minimum'}, optional
         Flag to determine if tracking is targetting minima or maxima
@@ -919,8 +921,7 @@ def feature_detection_multithreshold_timestep(
         Number of the current timestep.
 
     threshold : list of floats, optional
-        Threshold value used to select target regions to track. Default
-        is None.
+        Threshold value used to select target regions to track. The feature detection is inclusive of the threshold value(s), i.e. values greater/less than or equal are included in the target region. Default is None.
 
     min_num : int, optional
         This parameter is not used in the function. Default is 0.
@@ -1161,7 +1162,7 @@ def feature_detection_multithreshold(
         Grid spacing of the input data (in meter).
 
     thresholds : list of floats, optional
-        Threshold values used to select target regions to track. The feature detection is inclusive of the threshold value, i.e. values greater/less than or equal are included in the target region.
+        Threshold values used to select target regions to track. The feature detection is inclusive of the threshold value(s), i.e. values greater/less than or equal are included in the target region.
         Default is None.
 
     target : {'maximum', 'minimum'}, optional
