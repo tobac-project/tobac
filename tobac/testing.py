@@ -62,7 +62,7 @@ def make_simple_sample_data_2D(data_type="iris"):
             ) * np.exp(-np.power(yy - y_i, 2.0) / (2 * np.power(10e3, 2.0)))
 
     t_start = datetime.datetime(1970, 1, 1, 0, 0)
-    t_points = (t - t_start).astype("timedelta64[ms]").astype(int) / 1000
+    t_points = (t - t_start).astype("timedelta64[ms]").astype(int) // 1000
     t_coord = DimCoord(
         t_points,
         standard_name="time",
@@ -176,7 +176,7 @@ def make_sample_data_2D_3blobs(data_type="iris"):
                 -np.power(xx - x_i, 2.0) / (2 * np.power(10e3, 2.0))
             ) * np.exp(-np.power(yy - y_i, 2.0) / (2 * np.power(10e3, 2.0)))
     t_start = datetime.datetime(1970, 1, 1, 0, 0)
-    t_points = (t - t_start).astype("timedelta64[ms]").astype(int) / 1000
+    t_points = (t - t_start).astype("timedelta64[ms]").astype(int) // 1000
     t_coord = DimCoord(
         t_points,
         standard_name="time",
@@ -286,7 +286,7 @@ def make_sample_data_2D_3blobs_inv(data_type="iris"):
             ) * np.exp(-np.power(yy - y_i, 2.0) / (2 * np.power(10e3, 2.0)))
 
     t_start = datetime.datetime(1970, 1, 1, 0, 0)
-    t_points = (t - t_start).astype("timedelta64[ms]").astype(int) / 1000
+    t_points = (t - t_start).astype("timedelta64[ms]").astype(int) // 1000
 
     t_coord = DimCoord(
         t_points,
@@ -432,7 +432,7 @@ def make_sample_data_3D_3blobs(data_type="iris", invert_xy=False):
             )
 
     t_start = datetime.datetime(1970, 1, 1, 0, 0)
-    t_points = (t - t_start).astype("timedelta64[ms]").astype(int) / 1000
+    t_points = (t - t_start).astype("timedelta64[ms]").astype(int) // 1000
     t_coord = DimCoord(
         t_points,
         standard_name="time",
