@@ -293,7 +293,7 @@ def remove_parents(
         (feature ids as keys).
 
     regions_old : dict
-        Dictionary containing the regions greater/lower than and equal to 
+        Dictionary containing the regions greater/lower than and equal to
         threshold from previous threshold
         (feature ids as keys).
 
@@ -1162,8 +1162,8 @@ def feature_detection_multithreshold(
         Grid spacing of the input data (in meter).
 
     thresholds : list of floats, optional
-        Threshold values used to select target regions to track. The feature detection is inclusive of the threshold value(s), i.e. values greater/less than or equal are included in the target region.
-        Default is None.
+        Threshold values used to select target regions to track. The feature detection is inclusive of the threshold value(s), i.e. values
+        greater/less than or equal are included in the target region. Default is None.
 
     target : {'maximum', 'minimum'}, optional
         Flag to determine if tracking is targetting minima or maxima in
