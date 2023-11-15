@@ -2,7 +2,7 @@
 """
 from __future__ import annotations
 
-
+import copy
 from typing import Union
 import numpy as np
 import pandas as pd
@@ -255,7 +255,8 @@ def add_coordinates_to_features(
     variable_da: xr.DataArray,
     vertical_coord: Union[str, None] = None,
     vertical_axis: Union[int, None] = None,
-    assume_coords_fixed_in_time: bool = True,
+    use_standard_names: bool = True,
+    interp_dims_without_coords: bool = False,
 ) -> pd.DataFrame:
     """Function to populate the interpolated coordinates to feature
 
@@ -276,15 +277,19 @@ def add_coordinates_to_features(
         pass in an int.
     vertical_axis: int or None
         Axis number of the vertical.
-    assume_coords_fixed_in_time: bool
-        If true, it assumes that the coordinates are fixed in time, even if the
-        coordinates say they vary in time. This is, by default, True, to preserve
-        legacy functionality. If False, it assumes that if a coordinate says
-        it varies in time, it takes the coordinate at its word.
+    use_standard_names: bool
+        If true, when interpolating a coordinate, it looks for a standard_name
+        and uses that to name the output coordinate, to mimic iris functionality.
+        If false, uses the actual name of the coordinate to output.
+    interp_dims_without_coords: bool
+        If True, interpolates dimensions without coordinates
+        If False, skips dimensions without coordinates
     Returns
     -------
 
     """
+    # make a copy to avoid editing in place.
+    return_feat_df = copy.deepcopy(feature_df)
 
     time_dim_name: str = "time"
     # first, we must find the names of the dimensions corresponding to the numbered
@@ -297,6 +302,7 @@ def add_coordinates_to_features(
     is_3d = (time_dim_number is not None and ndims == 4) or (
         time_dim_number is None and ndims == 3
     )
+    vdim_coord = None
     if is_3d:
         hdim1_axis, hdim2_axis = find_hdim_axes_3d(
             variable_da,
@@ -323,24 +329,39 @@ def add_coordinates_to_features(
     hdim2_name = variable_da.dims[hdim2_axis]
 
     dim_interp_coords = {
-        hdim1_name: xr.DataArray(feature_df["hdim_1"].values, dims="features"),
-        hdim2_name: xr.DataArray(feature_df["hdim_2"].values, dims="features"),
+        hdim1_name: xr.DataArray(return_feat_df["hdim_1"].values, dims="features"),
+        hdim2_name: xr.DataArray(return_feat_df["hdim_2"].values, dims="features"),
     }
 
     if is_3d:
         dim_interp_coords[vdim_coord] = xr.DataArray(
-            feature_df["vdim"].values, dims="features"
+            return_feat_df["vdim"].values, dims="features"
         )
 
     interpolated_df = variable_da.interp(coords=dim_interp_coords)
-    feature_df[time_dim_name] = variable_da[time_dim_name].values[feature_df["frame"]]
-    feature_df[time_dim_name + "str"] = [
+    return_feat_df[time_dim_name] = variable_da[time_dim_name].values[
+        return_feat_df["frame"]
+    ]
+    return_feat_df[time_dim_name + "str"] = [
         pd.to_datetime(str(x)).strftime("%Y-%m-%d %H:%M:%S")
-        for x in variable_da[time_dim_name].values[feature_df["frame"]]
+        for x in variable_da[time_dim_name].values[return_feat_df["frame"]]
     ]
 
     for interp_coord in interpolated_df.coords:
+        # skip time coordinate because we dealt with that already
         if interp_coord == time_dim_name:
             continue
-        feature_df[interp_coord] = interpolated_df[interp_coord].values
-    return feature_df
+
+        if interp_coord not in variable_da.coords and not interp_dims_without_coords:
+            continue
+
+        interp_coord_name = interp_coord
+        # if we have standard names and are using them, rename our coordinates.
+        if use_standard_names:
+            try:
+                interp_coord_name = interpolated_df[interp_coord].attrs["standard_name"]
+            except KeyError:
+                pass
+
+        return_feat_df[interp_coord_name] = interpolated_df[interp_coord].values
+    return return_feat_df

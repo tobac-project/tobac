@@ -98,7 +98,7 @@ import tobac.utils.internal.xarray_utils as xr_utils
 )
 def test_find_axis_from_dim_coord(
     dim_names: tuple[str],
-    coord_dim_map: dict[str : tuple[str],],
+    coord_dim_map: dict,
     coord_looking_for: str,
     expected_out: Union[int, None],
     expected_raise: bool,

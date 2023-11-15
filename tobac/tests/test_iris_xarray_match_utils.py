@@ -1,6 +1,7 @@
 """Tests to confirm that xarray and iris pathways work the same and produce the same data
  for the same input datasets.
 """
+import copy
 import datetime
 
 import numpy as np
@@ -138,4 +139,55 @@ def test_add_coordinates_xarray_base(
         # assert (iris_coord_interp[val_name] == expected_val[val_name]).all()
         # assert (xr_coord_interp[val_name] == expected_val[val_name]).all()
 
+    pd.testing.assert_frame_equal(iris_coord_interp, xr_coord_interp)
+
+
+@pytest.mark.parametrize(
+    "coordinate_names, coordinate_standard_names",
+    [(("lat",), ("latitude",))],
+)
+def test_add_coordinates_xarray_std_names(
+    coordinate_names: tuple[str],
+    coordinate_standard_names: tuple[str],
+):
+    """
+    Test that adding coordinates for xarray and iris result in the same coordinate names
+    when standard_names are added to the xarray coordinates
+
+    Parameters
+    ----------
+    coordinate_names: tuple of str
+        names of coordinates to give
+    coordinate_standard_name: tuple of str
+        standard_names of coordinates to give
+
+    """
+
+    all_feats = tbtest.generate_single_feature(
+        0,
+        0,
+        feature_num=1,
+        max_h1=10,
+        max_h2=10,
+    )
+
+    da_size = (1, 10, 10)
+    dims = ("time", "x", "y")
+    coordinates = dict()
+    coordinates["time"] = np.array((datetime.datetime(2000, 1, 1, 0),))
+
+    for coord_name, coord_standard_name in zip(
+        coordinate_names, coordinate_standard_names
+    ):
+        coordinates[coord_name] = xr.DataArray(data=np.arange(10), dims="x")
+        coordinates[coord_name].attrs["standard_name"] = coord_standard_name
+
+    da_with_coords = xr.DataArray(data=np.empty(da_size), dims=dims, coords=coordinates)
+
+    iris_coord_interp = iris_utils.add_coordinates(
+        copy.deepcopy(all_feats), da_with_coords.to_iris()
+    )
+    xr_coord_interp = xr_utils.add_coordinates_to_features(
+        copy.deepcopy(all_feats), da_with_coords
+    )
     pd.testing.assert_frame_equal(iris_coord_interp, xr_coord_interp)
