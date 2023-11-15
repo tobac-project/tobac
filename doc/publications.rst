@@ -16,16 +16,15 @@ Refereed Publications
       * - Bukowski, J. (2021). Mineral Dust Lofting and Interactions with Cold Pools (Doctoral dissertation, Colorado State University).
 
       * - Heikenfeld, M. (2019). Aerosol effects on microphysical processes and deep convective clouds (Doctoral dissertation, University of Oxford).
-
       * - Kukulies, J., Chen, D., & Curio, J. (2021). The role of mesoscale convective systems in precipitation in the Tibetan Plateau region. *Journal of Geophysical Research: Atmospheres*, 126(23), e2021JD035279. doi:10.1029/2021JD035279.
 
-      * - Kukulies, J., Lai, H. W., Curio, J., Feng, Z., Lin, C., Li, P., ... & Chen, D. (2023). Mesoscale convective systems in the Third pole region: Characteristics, mechanisms and impact on precipitation. *Frontiers in Earth Science*, 11, 1143380.
+      * - Kukulies, J., Lai, H. W., Curio, J., Feng, Z., Lin, C., Li, P., Ou, T., Sugimoto, S. & Chen, D. (2023). Mesoscale convective systems in the Third pole region: Characteristics, mechanisms and impact on precipitation. *Frontiers in Earth Science*, 11, 1143380.
 
       * - Li, Y., Liu, Y., Chen, Y., Chen, B., Zhang, X., Wang, W. & Huo, Z. (2021). Characteristics of Deep Convective Systems and Initiation during Warm Seasons over China and Its Vicinity. *Remote Sensing*, 13(21), 4289. doi:10.3390/rs13214289.
 
       * - Leung, G. R., Saleeby, S. M., Sokolowsky, G. A., Freeman, S. W., & van den Heever, S. C. (2023). Aerosol–cloud impacts on aerosol detrainment and rainout in shallow maritime tropical clouds. *Atmospheric Chemistry and Physics*, 23(9), 5263-5278.
 
-      * - Marinescu, P. J., Van Den Heever, S. C., Heikenfeld, M., Barrett, A. I., Barthlott, C., Hoose, C., ... & Zhang, Y. (2021). Impacts of varying concentrations of cloud condensation nuclei on deep convective cloud updrafts—a multimodel assessment. *Journal of the Atmospheric Sciences*, 78(4), 1147-1172, doi: 10.1175/JAS-D-20-0200.1.
+      * - Marinescu, P. J., Van Den Heever, S. C., Heikenfeld, M., Barrett, A. I., Barthlott, C., Hoose, C., Fan, J., Fridlind, A. M., Matsui, T., Miltenberger, A. K., Stier, P., Vie, B., White, B. A., & Zhang, Y. (2021). Impacts of varying concentrations of cloud condensation nuclei on deep convective cloud updrafts—a multimodel assessment. *Journal of the Atmospheric Sciences*, 78(4), 1147-1172, doi: 10.1175/JAS-D-20-0200.1.
 
       * - Marinescu, P. J. (2020). Observations of Aerosol Particles and Deep Convective Updrafts and the Modeling of Their Interactions (Doctoral dissertation, Colorado State University).
 
@@ -38,7 +37,6 @@ Refereed Publications
       * - Zhang, X., Yin, Y., Kukulies, J., Li, Y., Kuang, X., He, C., .. & Chen, J. (2021). Revisiting Lightning Activity and Parameterization Using Geostationary Satellite Observations. *Remote Sensing*, 13(19), 3866, doi: 10.3390/rs13193866.
 
 
-      
 **Have you used tobac in your research?**
 
 Please contact us (e.g. by joining our `tobac google group <https://groups.google.com/g/tobac/about>`_) or submit a pull request containing your reference in our `main repo on GitHub <https://github.com/tobac-project/tobac>`_!
