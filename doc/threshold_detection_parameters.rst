@@ -61,4 +61,4 @@ The second filtering option is a binary erosion (`skimage.morphology.binary_eros
 ================
 Minimum Distance
 ================
-The parameter :code:`min_distance` sets the minimum distance between two detected features. If two detected features are within :code:`min_distance` of each other, the feature with the larger value is kept, and the feature with the smaller value is discarded. 
+The parameter :code:`min_distance` sets the minimum distance between two detected features. If two detected features are within :code:`min_distance` of each other, the feature with the more extreme value is kept, and the feature with the less extreme value is discarded. 
