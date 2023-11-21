@@ -9,6 +9,7 @@ import pandas as pd
 import xarray as xr
 from . import basic as tb_utils_gi
 import datetime
+import random, string
 
 
 def find_axis_from_dim_coord(
@@ -184,7 +185,8 @@ def find_hdim_axes_3d(
     vertical_coord: Union[str, None] = None,
     vertical_axis: Union[int, None] = None,
     time_dim_coord_name: str = "time",
-) -> tuple[int, int]:
+    return_vertical_axis: bool = False,
+) -> Union[tuple[int, int], tuple[int, int, int]]:
     """Finds what the hdim axes are given a 3D (including z) or
     4D (including z and time) dataset.
 
@@ -200,6 +202,8 @@ def find_hdim_axes_3d(
         that only one of vertical_axis or vertical_coord can be set.
     time_dim_coord_name: str
         Name of the time dimension/coordinate
+    return_vertical_axis: bool
+        True if you want to also return the vertical axis number as the last value
 
     Returns
     -------
@@ -247,6 +251,8 @@ def find_hdim_axes_3d(
     output_vals = tuple(
         all_axes[np.logical_not(np.isin(all_axes, [time_axis, vertical_coord_axis]))]
     )
+    if return_vertical_axis:
+        output_vals = (*output_vals, vertical_coord_axis)
     return output_vals
 
 
@@ -304,14 +310,16 @@ def add_coordinates_to_features(
     )
     vdim_coord = None
     if is_3d:
-        hdim1_axis, hdim2_axis = find_hdim_axes_3d(
+        hdim1_axis, hdim2_axis, vertical_axis = find_hdim_axes_3d(
             variable_da,
             vertical_coord,
             vertical_axis,
             time_dim_coord_name=time_dim_name,
+            return_vertical_axis=True,
         )
         if vertical_axis is None:
             vdim_coord = find_vertical_coord_name(variable_da, vertical_coord)
+            vertical_axis = find_axis_from_dim_coord(variable_da, vdim_coord)
         else:
             vdim_coord = variable_da.dims[vertical_axis]
     else:  # 2D
@@ -325,8 +333,31 @@ def add_coordinates_to_features(
         else:
             raise ValueError("DataArray has too many or too few dimensions")
 
-    hdim1_name = variable_da.dims[hdim1_axis]
-    hdim2_name = variable_da.dims[hdim2_axis]
+    # create new coordinates that are simply the i, j, k values
+
+    # generate random names for the new coordinates that are based on i, j, k values
+    hdim1_name = "".join(
+        random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits)
+        for _ in range(16)
+    )
+    hdim2_name = "".join(
+        random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits)
+        for _ in range(16)
+    )
+
+    new_coords = {
+        hdim1_name: (
+            variable_da.dims[hdim1_axis],
+            np.arange(0, variable_da.shape[hdim1_axis], 1),
+        ),
+        hdim2_name: (
+            variable_da.dims[hdim2_axis],
+            np.arange(0, variable_da.shape[hdim2_axis], 1),
+        ),
+    }
+
+    # hdim1_name = variable_da.dims[hdim1_axis]
+    # hdim2_name = variable_da.dims[hdim2_axis]
 
     dim_interp_coords = {
         hdim1_name: xr.DataArray(return_feat_df["hdim_1"].values, dims="features"),
@@ -334,11 +365,23 @@ def add_coordinates_to_features(
     }
 
     if is_3d:
-        dim_interp_coords[vdim_coord] = xr.DataArray(
+        vdim_name = "".join(
+            random.choice(
+                string.ascii_uppercase + string.ascii_lowercase + string.digits
+            )
+            for _ in range(16)
+        )
+        dim_interp_coords[vdim_name] = xr.DataArray(
             return_feat_df["vdim"].values, dims="features"
         )
-
-    interpolated_df = variable_da.interp(coords=dim_interp_coords)
+        new_coords[vdim_name] = (
+            (
+                variable_da.dims[vertical_axis],
+                np.arange(0, variable_da.shape[vertical_axis], 1),
+            ),
+        )
+    variable_da_new_coords = variable_da.assign_coords(coords=new_coords)
+    interpolated_df = variable_da_new_coords.interp(coords=dim_interp_coords)
     return_feat_df[time_dim_name] = variable_da[time_dim_name].values[
         return_feat_df["frame"]
     ]
