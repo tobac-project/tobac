@@ -61,8 +61,8 @@ jobs:
             Linting results by Pylint:
             --------------------------
             ${{ steps.pr_score.outputs.MESSAGE}}
-            <sub>The linting score is an indicator that reflects how well the code adheres to Pylint’s coding standards and quality metrics. 
-            A decrease usually indicates new code was added that does not meet style guidelines or has potential errors.<sup>
+            <sub>The linting score is an indicator that reflects how well your code version follows Pylint’s coding standards and quality metrics with respect to the main branch.
+            A decrease usually indicates your new code does not fully meet style guidelines or has potential errors.<sup>
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           repo-token-user-login: 'github-actions[bot]' # The user.login for temporary GitHub token
           allow-repeats: false # This is the default
