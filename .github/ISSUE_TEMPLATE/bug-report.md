@@ -8,6 +8,6 @@ assignees: ''
 ---
 
 * [ ] Have you searched the issue tracker for the same problem?
-* [ ] Have you checked if you're using the latest version?
+* [ ] Have you checked if you're using the latest version? If not, which version are you using?
 * [ ] Have you mentioned the steps to reproduce the issue?
 * [ ] Have you, if applicable, included error messages?
