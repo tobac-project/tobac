@@ -91,7 +91,7 @@ def get_statistics(
                 func = statistic[stats_name]
 
             # default needs to be sequence when function output is array-like
-            output = func(np.random.rand(10))
+            output = func(*([np.random.rand(10)] * len(fields)))
             if hasattr(output, "__len__"):
                 default = np.full(output.shape, default)
 
