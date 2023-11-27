@@ -609,7 +609,7 @@ def test_time_cell_min(
 
     """
     # delta time automatically set by smallest difference between cell lengths
-    delta_time = int(np.min(np.diff(cell_time_lengths)))
+    delta_time = 1
     # how far horizontally to separate test features
     sep_factor = 2
     all_feats = list()

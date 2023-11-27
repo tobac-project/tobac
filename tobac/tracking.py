@@ -85,34 +85,28 @@ def linking_trackpy(
     features : pandas.DataFrame
         Detected features to be linked.
 
-    field_in : xarray.DataArray
-        Input field to perform the watershedding on (2D or 3D for one
-        specific point in time).
+    field_in : None
+        Input field. Not currently used; can be set to `None`.
 
     dt : float
-        Time resolution of tracked features.
+        Time resolution of tracked features in seconds.
 
     dxy : float
-        Horizontal grid spacing of the input data.
+        Horizontal grid spacing of the input data in meters.
 
     dz : float
-        Constant vertical grid spacing (m), optional. If not specified
+        Constant vertical grid spacing (meters), optional. If not specified
         and the input is 3D, this function requires that `vertical_coord` is available
         in the `features` input. If you specify a value here, this function assumes
         that it is the constant z spacing between points, even if ```vertical_coord```
         is specified.
 
     d_max : float, optional
-        Maximum search range
+        Maximum search range in meters. Only one of `d_max`, `d_min`, or `v_max` can be set.
         Default is None.
 
     d_min : float, optional
-        Variations in the shape of the regions used to determine the
-        positions of the features can lead to quasi-instantaneous shifts
-        of the position of the feature by one or two grid cells even for
-        a very high temporal resolution of the input data, potentially
-        jeopardising the tracking procedure. To prevent this, tobac uses
-        an additional minimum radius of the search range.
+        Deprecated. Only one of `d_max`, `d_min`, or `v_max` can be set.
         Default is None.
 
     subnetwork_size : int, optional
@@ -124,7 +118,9 @@ def linking_trackpy(
         Default is None.
 
     v_max : float, optional
-        Speed at which features are allowed to move. Default is None.
+        Speed at which features are allowed to move in meters per second.
+        Only one of `d_max`, `d_min`, or `v_max` can be set.
+        Default is None.
 
     memory : int, optional
         Number of output timesteps features allowed to vanish for to
@@ -138,8 +134,8 @@ def linking_trackpy(
         Default is 1
 
     time_cell_min : float, optional
-        Minimum length in time of tracked cell to be reported in the same units as
-        dt (typically seconds)
+        Minimum length in time that a cell must be tracked for to be considered a
+        valid cell in seconds.
         Default is None.
 
     order : int, optional
@@ -148,12 +144,12 @@ def linking_trackpy(
         Default is 1.
 
     extrapolate : int, optional
-        Number or timesteps to extrapolate trajectories.
+        Number or timesteps to extrapolate trajectories. Currently unused.
         Default is 0.
 
     method_linking : {'random', 'predict'}, optional
         Flag choosing method used for trajectory linking.
-        Default is 'random'.
+        Default is 'random', although we typically encourage users to use 'predict'.
 
     adaptive_step : float, optional
         Reduce search range by multiplying it by this factor. Needs to be
