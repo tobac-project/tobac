@@ -198,7 +198,7 @@ def get_statistics_from_mask(
     for tt in pd.to_datetime(segmentation_mask.time):
         # select specific timestep
         segmentation_mask_t = segmentation_mask.sel(time=tt).data
-        field_t = (field.sel(time=tt).data for field in fields)
+        fields_t = (field.sel(time=tt).values for field in fields)
         features_t = features.loc[features.time == tt].copy()
 
         # make sure that the labels in the segmentation mask exist in feature dataframe
@@ -215,7 +215,7 @@ def get_statistics_from_mask(
                 get_statistics(
                     features_t,
                     segmentation_mask_t,
-                    *field_t,
+                    *fields_t,
                     statistic=statistic,
                     default=default,
                     index=index,
