@@ -31,11 +31,10 @@ References
 """
 import copy
 import logging
-import skimage
 import numpy as np
 
 import iris.cube
-import numpy as np
+import skimage
 import pandas as pd
 from typing_extensions import Literal
 from typing import Union, Callable
