@@ -613,7 +613,7 @@ def test_segmentation_multiple_features():
         threshold=[1, 2, 3],
         n_min_threshold=test_min_num,
         target="maximum",
-        statistics={"features_mean": np.mean},
+        statistic={"features_mean": np.mean},
     )
 
     # add feature IDs to data frame for one time step
@@ -625,7 +625,7 @@ def test_segmentation_multiple_features():
         features_in=fd_output,
         dxy=test_dxy,
         threshold=1.5,
-        statistics={"segments_mean": np.mean},
+        statistic={"segments_mean": np.mean},
     )
     out_seg_mask_arr = out_seg_mask.core_data()
 

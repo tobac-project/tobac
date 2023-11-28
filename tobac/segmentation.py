@@ -281,7 +281,7 @@ def segmentation_3D(
     max_distance=None,
     PBC_flag="none",
     seed_3D_flag="column",
-    statistics=None,
+    statistic=None,
 ):
     """Wrapper for the segmentation()-function."""
 
@@ -296,7 +296,7 @@ def segmentation_3D(
         max_distance=max_distance,
         PBC_flag=PBC_flag,
         seed_3D_flag=seed_3D_flag,
-        statistics=statistics,
+        statistic=statistic,
     )
 
 
@@ -311,7 +311,7 @@ def segmentation_2D(
     max_distance=None,
     PBC_flag="none",
     seed_3D_flag="column",
-    statistics=None,
+    statistic=None,
 ):
     """Wrapper for the segmentation()-function."""
     return segmentation(
@@ -325,7 +325,7 @@ def segmentation_2D(
         max_distance=max_distance,
         PBC_flag=PBC_flag,
         seed_3D_flag=seed_3D_flag,
-        statistics=statistics,
+        statistic=statistic,
     )
 
 
@@ -344,7 +344,7 @@ def segmentation_timestep(
     seed_3D_size: Union[int, tuple[int]] = 5,
     segment_number_below_threshold: int = 0,
     segment_number_unassigned: int = 0,
-    statistics: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
+    statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
 ) -> tuple[iris.cube.Cube, pd.DataFrame]:
     """Perform watershedding for an individual time step of the data. Works
     for both 2D and 3D data
@@ -1028,20 +1028,20 @@ def segmentation_timestep(
 
     # add ncells to feature dataframe with new statistic method
     features_out = get_statistics(
+        features_out,
         np.array(segmentation_out.data.copy()),
         np.array(field_in.data.copy()),
-        features=features_out,
         statistic={"ncells": np.count_nonzero},
         default=0,
     )
 
     # compute additional statistics, if requested
-    if statistics:
+    if statistic:
         features_out = get_statistics(
+            features_out,
             segmentation_out.data.copy(),
             field_in.data.copy(),
-            features=features_out,
-            statistic=statistics,
+            statistic=statistic,
         )
 
     return segmentation_out, features_out
@@ -1126,7 +1126,7 @@ def segmentation(
     seed_3D_size: Union[int, tuple[int]] = 5,
     segment_number_below_threshold: int = 0,
     segment_number_unassigned: int = 0,
-    statistics: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
+    statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
 ) -> tuple[iris.cube.Cube, pd.DataFrame]:
     """Use watershedding to determine region above a threshold
             value around initial seeding position for all time steps of
@@ -1148,7 +1148,7 @@ def segmentation(
             dxy : float
                 Grid spacing of the input data.
 
-            statistics : dict, optional
+            statistic : dict, optional
                 Default is None. Optional parameter to calculate bulk statistics within feature detection.
                 Dictionary with callable function(s) to apply over the region of each detected feature and the name of the statistics to appear in the feature output dataframe. The functions should be the values and the names of the metric the keys (e.g. {'mean': np.mean})
 
@@ -1204,7 +1204,7 @@ def segmentation(
                 the marker to use to indicate a segmentation point is below the threshold.
             segment_number_unassigned: int
                 the marker to use to indicate a segmentation point is above the threshold but unsegmented.
-        statistics: boolean, optional
+        statistic: boolean, optional
             Default is False. If True, bulk statistics for the data points assigned to each feature are saved in output.
 
 
@@ -1265,7 +1265,7 @@ def segmentation(
             seed_3D_size=seed_3D_size,
             segment_number_unassigned=segment_number_unassigned,
             segment_number_below_threshold=segment_number_below_threshold,
-            statistics=statistics,
+            statistic=statistic,
         )
         segmentation_out_list.append(segmentation_out_i)
         features_out_list.append(features_out_i)

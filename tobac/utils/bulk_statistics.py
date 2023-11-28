@@ -13,9 +13,9 @@ import xarray as xr
 
 
 def get_statistics(
+    features: pd.DataFrame,
     labels: np.ndarray[int],
     *fields: tuple[np.ndarray],
-    features: pd.DataFrame,
     statistic: dict[str, Union[Callable, tuple[Callable, dict]]] = {
         "ncells": np.count_nonzero
     },
@@ -143,9 +143,9 @@ def get_statistics(
 
 @internal_utils.iris_to_xarray
 def get_statistics_from_mask(
+    features: pd.DataFrame,
     segmentation_mask: xr.DataArray,
     *fields: xr.DataArray,
-    features: pd.DataFrame,
     statistic: dict[str, tuple[Callable]] = {"Mean": np.mean},
     index: Union[None, list[int]] = None,
     default: Union[None, float] = None,
@@ -213,9 +213,9 @@ def get_statistics_from_mask(
             # make sure that features are not double-defined
             step_statistics.append(
                 get_statistics(
+                    features_t,
                     segmentation_mask_t,
                     *field_t,
-                    features=features_t,
                     statistic=statistic,
                     default=default,
                     index=index,

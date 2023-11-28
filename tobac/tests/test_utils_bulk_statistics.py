@@ -41,14 +41,14 @@ def test_bulk_statistics():
         "percentiles": (np.percentile, {"q": 95}),
     }
     out_seg_mask, out_df = tobac.segmentation.segmentation_2D(
-        fd_output, test_data_iris, dxy=1000, threshold=threshold, statistics=stats
+        fd_output, test_data_iris, dxy=1000, threshold=threshold, statistic=stats
     )
 
     #### checks
 
     #  assure that bulk statistics in postprocessing give same result
     out_segmentation = tb_utils.get_statistics_from_mask(
-        out_seg_mask, test_data_iris, features=out_df, statistic=stats
+        out_df, out_seg_mask, test_data_iris, statistic=stats
     )
     assert out_segmentation.equals(out_df)
 
@@ -81,14 +81,14 @@ def test_bulk_statistics():
         "percentiles": (np.percentile, {"q": 95}),
     }
     out_seg_mask, out_df = tobac.segmentation.segmentation_3D(
-        fd_output, test_data_iris, dxy=1000, threshold=threshold, statistics=stats
+        fd_output, test_data_iris, dxy=1000, threshold=threshold, statistic=stats
     )
 
     ##### checks #####
 
     #  assure that bulk statistics in postprocessing give same result
     out_segmentation = tb_utils.get_statistics_from_mask(
-        out_seg_mask, test_data_iris, features=out_df, statistic=stats
+        out_df, out_seg_mask, test_data_iris, statistic=stats
     )
     assert out_segmentation.equals(out_df)
 
@@ -202,7 +202,7 @@ def test_bulk_statistics_multiple_fields():
     expected_mean_result = np.array([2, 2, 3, 2.5])
 
     bulk_statistics_output = tb_utils.get_statistics_from_mask(
-        test_labels, test_values, features=test_features, statistic=statistics_mean
+        test_features, test_labels, test_values, statistic=statistics_mean
     )
 
     statistics_weighted_mean = {
@@ -212,10 +212,10 @@ def test_bulk_statistics_multiple_fields():
     expected_weighted_mean_result = np.array([3, 2, 2, 2.5])
 
     bulk_statistics_output = tb_utils.get_statistics_from_mask(
+        bulk_statistics_output,
         test_labels,
         test_values,
         test_weights,
-        features=bulk_statistics_output,
         statistic=statistics_weighted_mean,
     )
 
