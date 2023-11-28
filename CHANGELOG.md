@@ -1,5 +1,75 @@
 ### Tobac Changelog
 
+_**Version 1.5.1:**_
+
+**Bug fixes**
+
+- The `strict_thresholding` option in feature detection now works correctly for detecting minima, and produces the same results as without strict thresholding if the `n_min_threshold` is a scalar value [#316](https://github.com/tobac-project/tobac/pull/316)
+- utils.general.standardize_track_dataset was added back after being inadvertently removed in version 1.5.0 [#330](https://github.com/tobac-project/tobac/pull/330)
+- All Numba import errors are now caught with the exception of KeyboardInterrupts. [#335](https://github.com/tobac-project/tobac/pull/335)
+
+**Documentation**
+- Fix to readthedocs building after system packages no longer imported [#336](https://github.com/tobac-project/tobac/pull/336)
+
+**Repository Enhancements**
+- Fix to Jupyter Notebook CI that was timing out due to installing packages with `conda`, switched to `mamba` to resolve. [#340](https://github.com/tobac-project/tobac/pull/340)
+
+
+_**Version 1.5.0:**_
+
+**Enhancements for Users**
+
+- Feature detection and tracking in three dimensions is now supported [#209](https://github.com/tobac-project/tobac/pull/209)
+- Feature detection, segmentation, and tracking across periodic boundaries is now supported [#259](https://github.com/tobac-project/tobac/pull/259)
+- Transformation of feature detection points to allow segmentation on a new grid is now supported [#242](https://github.com/tobac-project/tobac/pull/242)
+- `n_min_threshold` in feature detection can now be set for each threshold level instead of uniformly for all thresholds [#208](https://github.com/tobac-project/tobac/pull/208)
+- Feature detection now has the option to only detect a feature if all previous thresholds have been met [#283](https://github.com/tobac-project/tobac/pull/283)
+- Unsegmented points can now have their marker value selected [#285](https://github.com/tobac-project/tobac/pull/285)
+- Minimum distance filtering is now substantially faster [#249](https://github.com/tobac-project/tobac/pull/249)
+- `combine_feature_dataframes` now allows the retention of feature numbers [#300](https://github.com/tobac-project/tobac/pull/300)
+- `scikit-learn` is now a required dependency; `pytables` and `cf-units` are no longer direct dependencies of *tobac* [#204](https://github.com/tobac-project/tobac/pull/204)
+
+**Bug fixes**
+
+- An error is now raised if none of the search range parameters (`v_max`, `d_max`, `d_min`) are set in `linking_trackpy` [#223](https://github.com/tobac-project/tobac/pull/223)
+- Minimum distance filtering in feature detection (set through `min_distance` in `feature_detection_multithreshold`, run through `filter_min_distance`) has been fixed to properly work when `target=minimum`. [#244](https://github.com/tobac-project/tobac/pull/244)
+- Interpolated numeric coordinates now preserve their datatypes (i.e., `float`s stay `float`s) in feature detection [#250](https://github.com/tobac-project/tobac/pull/250)
+- Fixes to the internal `find_axis_from_coord` utility to allow for non-dimensional coordinates to be correctly dealt with [#255](https://github.com/tobac-project/tobac/pull/255)
+- Jupyter notebooks changed to use string paths to work around an Iris bug [#294](https://github.com/tobac-project/tobac/pull/294)
+- Minimum distance filtering updated to produce consistent results [#249](https://github.com/tobac-project/tobac/pull/249)
+
+**Documentation**
+
+- Enhancements to the documentation of how *tobac* links features together [210](https://github.com/tobac-project/tobac/pull/210)
+- Fixes to the API documentation generation when using type hints [#305](https://github.com/tobac-project/tobac/pull/305)
+
+**Internal Enhancements**
+
+- New converting decorators (`xarray_to_iris`, `iris_to_xarray`, `xarray_to_irispandas`, `irispandas_to_xarray`) have been added for internal use that will allow the upcoming transition to xarray throughout *tobac* to occur more smoothly. [#179](https://github.com/tobac-project/tobac/pull/179)
+- The `utils` module has been broken up from a single `utils.py` file to multiple files inside a `utils` folder, allowing for ease of maintenance and fewer long code files. [#191](https://github.com/tobac-project/tobac/pull/191)
+- `scipy.interpolate.interp2d` in `add_coordinates` and `add_coordinates_3D` has been replaced with `scipy.interpolate.interpn` as `interp2d` has been deprecated. [#279](https://github.com/tobac-project/tobac/pull/279) 
+- `setup.py` updated to draw its required packages from `requirements.txt` [#288](https://github.com/tobac-project/tobac/pull/288)
+
+
+
+**Repository Enhancements**
+
+- New CI was added to automatically check the example and documentation Jupyter notebooks [#258](https://github.com/tobac-project/tobac/pull/258), [#290](https://github.com/tobac-project/tobac/pull/290)
+- The `check_formatting` CI action has been revised to install dependencies through `conda` [#288](https://github.com/tobac-project/tobac/pull/288)
+- Repository authors updated [#289](https://github.com/tobac-project/tobac/pull/289)
+- CI added to check author list formatting for Zenodo [#292](https://github.com/tobac-project/tobac/pull/292)
+
+
+**Deprecations**
+
+- All functions in `centerofgravity.py` (`calculate_cog`, `calculate_cog_untracked`, `center_of_gravity`) have been deprecated and will be removed or significantly changed in v2.0. [#200](https://github.com/tobac-project/tobac/pull/200)
+- `plot_mask_cell_track_follow`, `plot_mask_cell_individual_follow`, `plot_mask_cell_track_static`, `plot_mask_cell_individual_static`, `plot_mask_cell_track_2D3Dstatic`, `plot_mask_cell_track_3Dstatic`, `plot_mask_cell_individual_3Dstatic`, and `plot_mask_cell_track_static_timeseries` in `plotting.py` have been deprecated and will be removed or significantly changed in v2.0. [#200](https://github.com/tobac-project/tobac/pull/200)
+- The wrapper functions in `wrapper.py` (`tracking_wrapper` and `maketrack`) have been deprecated and will be removed in v2.0. [#200](https://github.com/tobac-project/tobac/pull/200)
+- `cell_statistics_all`, `cell_statistics`, and `cog_cell` in the analysis module have been deprecated and will be removed or significantly changed in v2.0. [#207](https://github.com/tobac-project/tobac/pull/207)
+- `tobac.utils.combine_tobac_feats` has been renamed to `tobac.utils.combine_feature_dataframes`, and the original name has been deprecated and will be removed in a future release. [#300](https://github.com/tobac-project/tobac/pull/300)
+
+
+
 _**Version 1.4.2:**_
 
 

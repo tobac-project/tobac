@@ -1,6 +1,9 @@
 import pytest
+import tobac.testing as testing
+import tobac.segmentation as seg
 import numpy as np
 from tobac import segmentation, feature_detection, testing
+from tobac.utils import periodic_boundaries as pbc_utils
 
 
 def test_segmentation_timestep_2D_feature_2D_seg():
@@ -44,6 +47,7 @@ def test_segmentation_timestep_2D_feature_2D_seg():
         features_in=test_feature_ds,
         dxy=test_dxy,
         threshold=1.5,
+        PBC_flag="none",
     )
 
     # Make sure that all labeled points are segmented
@@ -53,6 +57,203 @@ def test_segmentation_timestep_2D_feature_2D_seg():
         ]
         == np.ones((test_hdim_1_sz, test_hdim_2_sz))
     )
+
+    # Now try PBCs
+    # First, something stretching across hdim_1
+    test_hdim_1_pt = 0.0
+    test_data = np.zeros(test_dset_size)
+
+    # Note that PBC flag here is 'both' as we still want the blob to be on both
+    # sides of the boundary to see if we accidentally grab it without PBC
+    # segmentation
+    test_data = testing.make_feature_blob(
+        test_data,
+        test_hdim_1_pt,
+        test_hdim_2_pt,
+        h1_size=test_hdim_1_sz,
+        h2_size=test_hdim_2_sz,
+        amplitude=test_amp,
+        PBC_flag="both",
+    )
+
+    test_data_iris = testing.make_dataset_from_arr(test_data, data_type="iris")
+    # Generate dummy feature dataset
+    test_feature_ds = testing.generate_single_feature(
+        start_h1=test_hdim_1_pt, start_h2=test_hdim_2_pt, max_h1=1000, max_h2=1000
+    )
+
+    hdim_1_start_feat, hdim_1_end_feat = testing.get_start_end_of_feat(
+        test_hdim_1_pt, test_hdim_1_sz, 0, test_dset_size[0], is_pbc=True
+    )
+
+    for pbc_option in ["none", "hdim_1", "hdim_2", "both"]:
+        out_seg_mask, out_df = seg.segmentation_timestep(
+            field_in=test_data_iris,
+            features_in=test_feature_ds,
+            dxy=test_dxy,
+            threshold=test_amp - 0.5,
+            PBC_flag=pbc_option,
+        )
+        # This will automatically give the appropriate box, and it's tested separately.
+        segmented_box_expected = pbc_utils.get_pbc_coordinates(
+            0,
+            test_dset_size[0],
+            0,
+            test_dset_size[1],
+            hdim_1_start_feat,
+            hdim_1_end_feat,
+            hdim_2_start_feat,
+            hdim_2_end_feat,
+            PBC_flag=pbc_option,
+        )
+        # Make sure that all labeled points are segmented
+        for seg_box in segmented_box_expected:
+            assert np.all(
+                out_seg_mask.core_data()[
+                    seg_box[0] : seg_box[1], seg_box[2] : seg_box[3]
+                ]
+                == np.ones((seg_box[1] - seg_box[0], seg_box[3] - seg_box[2]))
+            )
+
+        if pbc_option in ["none", "hdim_2"]:
+            # there will only be one seg_box
+            assert np.sum(
+                out_seg_mask.core_data()[out_seg_mask.core_data() == 1]
+            ) == np.sum(np.ones((seg_box[1] - seg_box[0], seg_box[3] - seg_box[2])))
+        else:
+            # We should be capturing the whole feature
+            assert np.sum(
+                out_seg_mask.core_data()[out_seg_mask.core_data() == 1]
+            ) == np.sum(np.ones((test_hdim_1_sz, test_hdim_2_sz)))
+
+    # Same as the above test, but for hdim_2
+    # First, try the cases where we shouldn't get the points on the opposite
+    # hdim_2 side
+    test_hdim_1_pt = 20.0
+    test_hdim_2_pt = 0.0
+    test_data = np.zeros(test_dset_size)
+    test_data = testing.make_feature_blob(
+        test_data,
+        test_hdim_1_pt,
+        test_hdim_2_pt,
+        h1_size=test_hdim_1_sz,
+        h2_size=test_hdim_2_sz,
+        amplitude=test_amp,
+        PBC_flag="both",
+    )
+    test_data_iris = testing.make_dataset_from_arr(test_data, data_type="iris")
+    # Generate dummy feature dataset
+    test_feature_ds = testing.generate_single_feature(
+        start_h1=test_hdim_1_pt, start_h2=test_hdim_2_pt, max_h1=1000, max_h2=1000
+    )
+    hdim_1_start_feat, hdim_1_end_feat = testing.get_start_end_of_feat(
+        test_hdim_1_pt, test_hdim_1_sz, 0, test_dset_size[0], is_pbc=True
+    )
+
+    hdim_2_start_feat, hdim_2_end_feat = testing.get_start_end_of_feat(
+        test_hdim_2_pt, test_hdim_2_sz, 0, test_dset_size[1], is_pbc=True
+    )
+
+    for pbc_option in ["none", "hdim_1", "hdim_2", "both"]:
+        out_seg_mask, out_df = seg.segmentation_timestep(
+            field_in=test_data_iris,
+            features_in=test_feature_ds,
+            dxy=test_dxy,
+            threshold=test_amp - 0.5,
+            PBC_flag=pbc_option,
+        )
+        # This will automatically give the appropriate box(es), and it's tested separately.
+        segmented_box_expected = pbc_utils.get_pbc_coordinates(
+            0,
+            test_dset_size[0],
+            0,
+            test_dset_size[1],
+            hdim_1_start_feat,
+            hdim_1_end_feat,
+            hdim_2_start_feat,
+            hdim_2_end_feat,
+            PBC_flag=pbc_option,
+        )
+        # Make sure that all labeled points are segmented
+        for seg_box in segmented_box_expected:
+            assert np.all(
+                out_seg_mask.core_data()[
+                    seg_box[0] : seg_box[1], seg_box[2] : seg_box[3]
+                ]
+                == np.ones((seg_box[1] - seg_box[0], seg_box[3] - seg_box[2]))
+            )
+
+        if pbc_option in ["none", "hdim_1"]:
+            # there will only be one seg_box
+            assert np.sum(
+                out_seg_mask.core_data()[out_seg_mask.core_data() == 1]
+            ) == np.sum(np.ones((seg_box[1] - seg_box[0], seg_box[3] - seg_box[2])))
+        else:
+            # We should be capturing the whole feature
+            assert np.sum(
+                out_seg_mask.core_data()[out_seg_mask.core_data() == 1]
+            ) == np.sum(np.ones((test_hdim_1_sz, test_hdim_2_sz)))
+
+    # Same as the above test, but for hdim_2
+    # First, try the cases where we shouldn't get the points on the opposite
+    # both sides (corner point)
+    test_hdim_1_pt = 0.0
+    test_hdim_2_pt = 0.0
+    test_data = np.zeros(test_dset_size)
+    test_data = testing.make_feature_blob(
+        test_data,
+        test_hdim_1_pt,
+        test_hdim_2_pt,
+        h1_size=test_hdim_1_sz,
+        h2_size=test_hdim_2_sz,
+        amplitude=test_amp,
+        PBC_flag="both",
+    )
+    test_data_iris = testing.make_dataset_from_arr(test_data, data_type="iris")
+    # Generate dummy feature dataset
+    test_feature_ds = testing.generate_single_feature(
+        start_h1=test_hdim_1_pt, start_h2=test_hdim_2_pt, max_h1=1000, max_h2=1000
+    )
+    hdim_1_start_feat, hdim_1_end_feat = testing.get_start_end_of_feat(
+        test_hdim_1_pt, test_hdim_1_sz, 0, test_dset_size[0], is_pbc=True
+    )
+
+    hdim_2_start_feat, hdim_2_end_feat = testing.get_start_end_of_feat(
+        test_hdim_2_pt, test_hdim_2_sz, 0, test_dset_size[1], is_pbc=True
+    )
+
+    for pbc_option in ["none", "hdim_1", "hdim_2", "both"]:
+        out_seg_mask, out_df = seg.segmentation_timestep(
+            field_in=test_data_iris,
+            features_in=test_feature_ds,
+            dxy=test_dxy,
+            threshold=test_amp - 0.5,
+            PBC_flag=pbc_option,
+        )
+        # This will automatically give the appropriate box(es), and it's tested separately.
+        segmented_box_expected = pbc_utils.get_pbc_coordinates(
+            0,
+            test_dset_size[0],
+            0,
+            test_dset_size[1],
+            hdim_1_start_feat,
+            hdim_1_end_feat,
+            hdim_2_start_feat,
+            hdim_2_end_feat,
+            PBC_flag=pbc_option,
+        )
+        # Make sure that all labeled points are segmented
+        for seg_box in segmented_box_expected:
+            print(pbc_option, seg_box)
+            # TODO: something is wrong with this case, unclear what.
+            assert np.all(
+                out_seg_mask.core_data()[
+                    seg_box[0] : seg_box[1], seg_box[2] : seg_box[3]
+                ]
+                == np.ones((seg_box[1] - seg_box[0], seg_box[3] - seg_box[2]))
+            )
+
+        # TODO: Make sure for none, hdim_1, hdim_2 that only the appropriate points are segmented
 
 
 def test_segmentation_timestep_level():
@@ -208,6 +409,8 @@ def test_segmentation_timestep_3d_seed_box_nopbcs(
     test_dxy = 1000
     test_amp = 2
 
+    PBC_opt = "none"
+
     test_data = np.zeros(test_dset_size)
     test_data = testing.make_feature_blob(
         test_data,
@@ -268,14 +471,14 @@ def test_segmentation_timestep_3d_seed_box_nopbcs(
     "vertical_coord_name,"
     " vertical_coord_opt, expected_raise",
     [
-        ((20, 30, 40), 0, "altitude", "auto", False),
-        ((20, 30, 40), 1, "altitude", "auto", False),
-        ((20, 30, 40), 2, "altitude", "auto", False),
+        ((20, 30, 40), 0, "altitude", None, False),
+        ((20, 30, 40), 1, "altitude", None, False),
+        ((20, 30, 40), 2, "altitude", None, False),
         ((20, 30, 40), 0, "air_pressure", "air_pressure", False),
-        ((20, 30, 40), 0, "air_pressure", "auto", True),
-        ((20, 30, 40), 0, "model_level_number", "auto", False),
-        ((20, 30, 40), 0, "altitude", "auto", False),
-        ((20, 30, 40), 0, "geopotential_height", "auto", False),
+        ((20, 30, 40), 0, "air_pressure", None, True),
+        ((20, 30, 40), 0, "model_level_number", None, False),
+        ((20, 30, 40), 0, "altitude", None, False),
+        ((20, 30, 40), 0, "geopotential_height", None, False),
     ],
 )
 def test_different_z_axes(
@@ -304,7 +507,6 @@ def test_different_z_axes(
     expected_raise: bool
         True if we expect a ValueError to be raised, false otherwise
     """
-    import numpy as np
 
     # First, just check that input and output shapes are the same.
     test_dxy = 1000
@@ -411,6 +613,7 @@ def test_segmentation_multiple_features():
         threshold=[1, 2, 3],
         n_min_threshold=test_min_num,
         target="maximum",
+        statistics={"features_mean": np.mean},
     )
 
     # add feature IDs to data frame for one time step
@@ -418,10 +621,525 @@ def test_segmentation_multiple_features():
 
     # perform segmentation
     out_seg_mask, out_df = segmentation.segmentation_timestep(
-        field_in=test_data_iris, features_in=fd_output, dxy=test_dxy, threshold=1.5
+        field_in=test_data_iris,
+        features_in=fd_output,
+        dxy=test_dxy,
+        threshold=1.5,
+        statistics={"segments_mean": np.mean},
     )
     out_seg_mask_arr = out_seg_mask.core_data()
 
     # assure that the number of grid cells belonging to each feature (ncells) are consistent with segmentation mask
     assert int(out_df[out_df.feature == 1].ncells.values) == size_feature1
     assert int(out_df[out_df.feature == 2].ncells.values) == size_feature2
+    # assure that bulk statistic columns are created in output (one column added after segmentation)
+    assert out_df.columns.size - fd_output.columns.size > 1
+    # assure that statistics are calculated everywhere where an area for ncells is found
+    assert (
+        out_df.ncells[out_df["ncells"] > 0].shape
+        == out_df.ncells[out_df["features_mean"] > 0].shape
+    )
+
+
+# TODO: add more tests to make sure buddy box code is run.
+# From this list right now, I'm not sure why buddy box isn't run actually.
+@pytest.mark.parametrize(
+    "dset_size, blob_1_loc, blob_1_size, blob_2_loc, blob_2_size,"
+    "shift_domain, seed_3D_size",
+    [
+        ((20, 30, 40), (8, 0, 0), (5, 5, 5), (8, 3, 3), (5, 5, 5), (0, -8, -8), None),
+        ((20, 30, 40), (8, 0, 0), (5, 5, 5), (8, 3, 3), (5, 5, 5), (0, -8, -8), None),
+        ((20, 30, 40), (8, 1, 1), (5, 5, 5), (8, 28, 38), (5, 5, 5), (0, 15, 15), None),
+        ((20, 30, 40), (8, 0, 0), (5, 5, 5), (8, 28, 38), (5, 5, 5), (0, -8, -8), None),
+        (
+            (20, 30, 40),
+            (8, 0, 0),
+            (5, 5, 5),
+            (8, 28, 38),
+            (5, 5, 5),
+            (0, -8, -8),
+            (5, 5, 5),
+        ),
+    ],
+)
+# TODO: last test fails
+def test_segmentation_timestep_3d_buddy_box(
+    dset_size,
+    blob_1_loc,
+    blob_1_size,
+    blob_2_loc,
+    blob_2_size,
+    shift_domain,
+    seed_3D_size,
+):
+    """Tests ```tobac.segmentation.segmentation_timestep```
+    to make sure that the "buddy box" 3D PBC implementation works.
+    Basic procedure: build a dataset with two features (preferrably on the corner)
+    and then run segmentation, shift the points, and then run segmentation again.
+    After shifting back, the results should be identical.
+    Note: only tests 'both' PBC condition.
+    Parameters
+    ----------
+    dset_size: tuple(int, int, int)
+        Size of the domain (assumes z, hdim_1, hdim_2)
+    blob_1_loc: tuple(int, int, int)
+        Location of the first blob
+    blob_1_size: tuple(int, int, int)
+        Size of the first blob. Note: use odd numbers here.
+    blob_2_loc: tuple(int, int, int)
+        Location of the second blob
+    blob_2_size: tuple(int, int, int)
+        Size of the second blob. Note: use odd numbers here.
+    shift_domain: tuple(int, int, int)
+        How many points to shift the domain by.
+    seed_3D_size: None, int, or tuple
+        Seed size to pass to tobac. If None, passes in a column seed
+    """
+
+    import pandas as pd
+
+    """
+    The best way to do this I think is to create two blobs near (but not touching)
+    each other, varying the seed_3D_size so that they are either segmented together
+    or not segmented together. 
+    """
+    test_dxy = 1000
+    test_amp = 2
+
+    test_data = np.zeros(dset_size)
+    test_data = testing.make_feature_blob(
+        test_data,
+        blob_1_loc[1],
+        blob_1_loc[2],
+        blob_1_loc[0],
+        h1_size=blob_1_size[1],
+        h2_size=blob_1_size[2],
+        v_size=blob_1_size[0],
+        amplitude=test_amp,
+        PBC_flag="both",
+    )
+
+    # Make a second feature
+    test_data = testing.make_feature_blob(
+        test_data,
+        blob_2_loc[1],
+        blob_2_loc[2],
+        blob_2_loc[0],
+        h1_size=blob_2_size[1],
+        h2_size=blob_2_size[2],
+        v_size=blob_2_size[0],
+        amplitude=test_amp,
+        PBC_flag="both",
+    )
+
+    test_data_iris = testing.make_dataset_from_arr(
+        test_data, data_type="iris", z_dim_num=0, y_dim_num=1, x_dim_num=2
+    )
+    # Generate dummy feature dataset only on the first feature.
+    test_feature_ds_1 = testing.generate_single_feature(
+        start_v=blob_1_loc[0],
+        start_h1=blob_1_loc[1],
+        start_h2=blob_1_loc[2],
+        max_h1=dset_size[1],
+        max_h2=dset_size[2],
+        feature_num=1,
+        PBC_flag="both",
+    )
+    test_feature_ds_2 = testing.generate_single_feature(
+        start_v=blob_2_loc[0],
+        start_h1=blob_2_loc[1],
+        start_h2=blob_2_loc[2],
+        max_h1=dset_size[1],
+        max_h2=dset_size[2],
+        feature_num=2,
+        PBC_flag="both",
+    )
+    test_feature_ds = pd.concat([test_feature_ds_1, test_feature_ds_2])
+
+    common_seg_opts = {"dxy": test_dxy, "threshold": 1.5, "PBC_flag": "both"}
+    if seed_3D_size is None:
+        common_seg_opts["seed_3D_flag"] = "column"
+    else:
+        common_seg_opts["seed_3D_flag"] = "box"
+        common_seg_opts["seed_3D_size"] = seed_3D_size
+
+    out_seg_mask, out_df = seg.segmentation_timestep(
+        field_in=test_data_iris, features_in=test_feature_ds, **common_seg_opts
+    )
+
+    # Now, shift the data over and re-run segmentation.
+    test_data_shifted = np.roll(test_data, shift_domain, axis=(0, 1, 2))
+    test_data_iris_shifted = testing.make_dataset_from_arr(
+        test_data_shifted, data_type="iris", z_dim_num=0, y_dim_num=1, x_dim_num=2
+    )
+    test_feature_ds_1 = testing.generate_single_feature(
+        start_v=blob_1_loc[0] + shift_domain[0],
+        start_h1=blob_1_loc[1] + shift_domain[1],
+        start_h2=blob_1_loc[2] + shift_domain[2],
+        max_h1=dset_size[1],
+        max_h2=dset_size[2],
+        feature_num=1,
+        PBC_flag="both",
+    )
+    test_feature_ds_2 = testing.generate_single_feature(
+        start_v=blob_2_loc[0] + shift_domain[0],
+        start_h1=blob_2_loc[1] + shift_domain[1],
+        start_h2=blob_2_loc[2] + shift_domain[2],
+        max_h1=dset_size[1],
+        max_h2=dset_size[2],
+        feature_num=2,
+        PBC_flag="both",
+    )
+    test_feature_ds_shifted = pd.concat([test_feature_ds_1, test_feature_ds_2])
+    out_seg_mask_shifted, out_df = seg.segmentation_timestep(
+        field_in=test_data_iris_shifted,
+        features_in=test_feature_ds_shifted,
+        **common_seg_opts,
+    )
+
+    # Now, shift output back.
+    out_seg_reshifted = np.roll(
+        out_seg_mask_shifted.core_data(),
+        tuple((-x for x in shift_domain)),
+        axis=(0, 1, 2),
+    )
+
+    assert np.all(out_seg_mask.core_data() == out_seg_reshifted)
+
+
+@pytest.mark.parametrize(
+    "dset_size, feat_1_loc, feat_2_loc," "shift_domain, seed_3D_size",
+    [
+        ((20, 30, 40), (8, 0, 0), (8, 3, 3), (0, -8, -8), None),
+        ((20, 30, 40), (8, 0, 0), (8, 3, 3), (0, -8, -8), None),
+        ((20, 30, 40), (8, 1, 1), (8, 28, 38), (0, 15, 15), None),
+        ((20, 30, 40), (8, 0, 0), (8, 28, 38), (0, -8, -8), None),
+        ((20, 30, 40), (8, 0, 0), (8, 28, 38), (0, -8, -8), (5, 5, 5)),
+    ],
+)
+def test_add_markers_pbcs(
+    dset_size, feat_1_loc, feat_2_loc, shift_domain, seed_3D_size
+):
+    """Tests ```tobac.segmentation.add_markers```
+    to make sure that adding markers works and is consistent across PBCs
+    Parameters
+    ----------
+    dset_size: tuple(int, int, int) or (int, int)
+        Size of the domain (assumes z, hdim_1, hdim_2) or (hdim_1, hdim_2)
+    feat_1_loc: tuple, same length as dset_size
+        Location of the first blob
+    feat_2_loc: tuple, same length as dset_size
+        Location of the second blob
+    shift_domain: tuple, same length as dset_size
+        How many points to shift the domain by.
+    seed_3D_size: None, int, or tuple
+        Seed size to pass to tobac. If None, passes in a column seed
+    """
+
+    import pandas as pd
+
+    if len(dset_size) == 2:
+        is_3D = False
+        start_h1_ax = 0
+    else:
+        is_3D = True
+        start_h1_ax = 1
+
+    common_feat_opts = {
+        "PBC_flag": "both",
+        "max_h1": dset_size[start_h1_ax],
+        "max_h2": dset_size[start_h1_ax + 1],
+    }
+
+    # Generate dummy feature dataset only on the first feature.
+    test_feature_ds_1 = testing.generate_single_feature(
+        start_v=feat_1_loc[0],
+        start_h1=feat_1_loc[1],
+        start_h2=feat_1_loc[2],
+        feature_num=1,
+        **common_feat_opts,
+    )
+    test_feature_ds_2 = testing.generate_single_feature(
+        start_v=feat_2_loc[0],
+        start_h1=feat_2_loc[1],
+        start_h2=feat_2_loc[2],
+        feature_num=2,
+        **common_feat_opts,
+    )
+    test_feature_ds = pd.concat([test_feature_ds_1, test_feature_ds_2])
+
+    common_marker_opts = dict()
+    common_marker_opts["PBC_flag"] = "both"
+
+    if seed_3D_size is None:
+        common_marker_opts["seed_3D_flag"] = "column"
+    else:
+        common_marker_opts["seed_3D_flag"] = "box"
+        common_marker_opts["seed_3D_size"] = seed_3D_size
+
+    marker_arr = seg.add_markers(
+        test_feature_ds, np.zeros(dset_size), **common_marker_opts
+    )
+
+    # Now, shift the data over and re-run markers.
+    test_feature_ds_1 = testing.generate_single_feature(
+        start_v=feat_1_loc[0] + shift_domain[0],
+        start_h1=feat_1_loc[1] + shift_domain[1],
+        start_h2=feat_1_loc[2] + shift_domain[2],
+        feature_num=1,
+        **common_feat_opts,
+    )
+    test_feature_ds_2 = testing.generate_single_feature(
+        start_v=feat_2_loc[0] + shift_domain[0],
+        start_h1=feat_2_loc[1] + shift_domain[1],
+        start_h2=feat_2_loc[2] + shift_domain[2],
+        feature_num=2,
+        **common_feat_opts,
+    )
+    test_feature_ds_shifted = pd.concat([test_feature_ds_1, test_feature_ds_2])
+
+    marker_arr_shifted = seg.add_markers(
+        test_feature_ds_shifted, np.zeros(dset_size), **common_marker_opts
+    )
+
+    # Now, shift output back.
+    marker_arr_reshifted = np.roll(
+        marker_arr_shifted, tuple((-x for x in shift_domain)), axis=(0, 1, 2)
+    )
+
+    assert np.all(marker_arr == marker_arr_reshifted)
+
+
+@pytest.mark.parametrize(
+    "PBC_flag",
+    [
+        ("none"),
+        ("hdim_1"),
+        ("hdim_2"),
+        ("both"),
+    ],
+)
+def test_empty_segmentation(PBC_flag):
+    """Tests ```tobac.segmentation.segmentation_timestep``` with an
+    empty/zeroed out array
+
+    """
+
+    h1_size = 100
+    h2_size = 100
+    v_size = 5
+    test_dxy = 1000
+    test_feature = testing.generate_single_feature(
+        start_v=1,
+        start_h1=1,
+        start_h2=1,
+        max_h1=h1_size,
+        max_h2=h2_size,
+        feature_num=1,
+        PBC_flag=PBC_flag,
+    )
+
+    seg_arr = np.zeros((v_size, h1_size, h2_size))
+    seg_opts = {
+        "dxy": test_dxy,
+        "threshold": 1.5,
+        "PBC_flag": PBC_flag,
+        "segment_number_unassigned": 0,
+        "segment_number_below_threshold": -1,
+    }
+    test_data_iris = testing.make_dataset_from_arr(
+        seg_arr, data_type="iris", z_dim_num=0, y_dim_num=1, x_dim_num=2
+    )
+
+    out_seg_mask, out_df = seg.segmentation_timestep(
+        field_in=test_data_iris, features_in=test_feature, **seg_opts
+    )
+
+    assert np.all(out_seg_mask.core_data() == -1)
+
+
+def test_pbc_snake_segmentation():
+    """
+    Test that a "snake" feature that crosses PBCs multiple times is recognized as a single feature
+    """
+
+    test_arr = np.zeros((50, 50))
+    test_arr[::4, 0] = 2
+    test_arr[1::4, 0] = 2
+    test_arr[3::4, 0] = 2
+
+    test_arr[1::4, 49] = 2
+    test_arr[2::4, 49] = 2
+    test_arr[3::4, 49] = 2
+
+    test_data_iris = testing.make_dataset_from_arr(test_arr, data_type="iris")
+    fd_output = feature_detection.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        threshold=[1, 2, 3],
+        n_min_threshold=2,
+        dxy=1,
+        target="maximum",
+        PBC_flag="hdim_2",
+    )
+    fd_output["feature"] = [1]
+
+    seg_output, seg_feats = segmentation.segmentation_timestep(
+        test_data_iris,
+        fd_output,
+        1,
+        threshold=1,
+        PBC_flag="hdim_2",
+        seed_3D_flag="box",
+        seed_3D_size=3,
+        segment_number_unassigned=0,
+        segment_number_below_threshold=-1,
+    )
+
+    correct_seg_arr = np.full((50, 50), -1, dtype=np.int32)
+    feat_num = 1
+    correct_seg_arr[::4, 0] = feat_num
+    correct_seg_arr[1::4, 0] = feat_num
+    correct_seg_arr[3::4, 0] = feat_num
+
+    correct_seg_arr[1::4, 49] = feat_num
+    correct_seg_arr[2::4, 49] = feat_num
+    correct_seg_arr[3::4, 49] = feat_num
+    np.where(correct_seg_arr == 0)
+    seg_out_arr = seg_output.core_data()
+    assert np.all(correct_seg_arr == seg_out_arr)
+
+    # test hdim_1
+    test_data_iris = testing.make_dataset_from_arr(test_arr.T, data_type="iris")
+    fd_output = feature_detection.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        threshold=[1, 2, 3],
+        n_min_threshold=2,
+        dxy=1,
+        target="maximum",
+        PBC_flag="hdim_1",
+    )
+    fd_output["feature"] = [1]
+
+    seg_output, seg_feats = segmentation.segmentation_timestep(
+        test_data_iris,
+        fd_output,
+        1,
+        threshold=1,
+        PBC_flag="hdim_1",
+        seed_3D_flag="box",
+        seed_3D_size=3,
+        segment_number_unassigned=0,
+        segment_number_below_threshold=-1,
+    )
+    seg_out_arr = seg_output.core_data()
+
+    assert np.all(correct_seg_arr.T == seg_out_arr)
+
+
+def test_max_distance():
+    """
+    Tests that max_distance works for both PBCs and normal segmentation
+    """
+
+    test_arr = np.zeros((50, 50))
+    test_arr[:, :] = 10
+
+    fd_output = testing.generate_single_feature(5, 5, max_h1=50, max_h2=50)
+
+    test_data_iris = testing.make_dataset_from_arr(test_arr, data_type="iris")
+
+    seg_output, seg_feats = segmentation.segmentation_timestep(
+        test_data_iris,
+        fd_output,
+        1,
+        threshold=1,
+        PBC_flag="none",
+        max_distance=1,
+    )
+
+    correct_seg_arr = np.full((50, 50), 0, dtype=np.int32)
+    feat_num: int = 1
+    correct_seg_arr[4:7, 5] = feat_num
+    correct_seg_arr[5, 4:7] = feat_num
+
+    seg_out_arr = seg_output.core_data()
+    assert np.all(correct_seg_arr == seg_out_arr)
+
+    test_arr = np.zeros((50, 50))
+    test_arr[:, :20] = 10
+    test_arr[:, 45:] = 10
+
+    fd_output = testing.generate_single_feature(0, 0, max_h1=50, max_h2=50)
+
+    test_data_iris = testing.make_dataset_from_arr(test_arr, data_type="iris")
+
+    with pytest.raises(NotImplementedError):
+        seg_output, seg_feats = segmentation.segmentation_timestep(
+            test_data_iris,
+            fd_output,
+            1,
+            threshold=1,
+            PBC_flag="hdim_2",
+            max_distance=1,
+        )
+    """    
+    correct_seg_arr = np.full((50, 50), 0, dtype=np.int32)
+    feat_num: int = 1
+    correct_seg_arr[0:3, 0] = feat_num
+    correct_seg_arr[0, 0:3] = feat_num
+    correct_seg_arr[:, 20:45] = -1
+
+    seg_out_arr = seg_output.core_data()
+    assert np.all(correct_seg_arr == seg_out_arr)
+    """
+
+
+@pytest.mark.parametrize(
+    ("below_thresh", "above_thresh", "error"),
+    ((0, 0, False), (0, -1, False), (-5, -10, False), (20, 30, True)),
+)
+def test_seg_alt_unseed_num(below_thresh, above_thresh, error):
+    """
+    Tests ```segmentation.segmentation_timestep``` to
+    make sure that the unseeded regions are labeled appropriately.
+
+    """
+    test_arr = np.zeros((50, 50))
+    test_arr[0:10, 0:10] = 10
+    test_arr[40:50, 40:50] = 10
+
+    fd_output = testing.generate_single_feature(5, 5, max_h1=50, max_h2=50)
+
+    test_data_iris = testing.make_dataset_from_arr(test_arr, data_type="iris")
+    if error:
+        with pytest.raises(ValueError):
+            seg_output, seg_feats = segmentation.segmentation_timestep(
+                test_data_iris,
+                fd_output,
+                1,
+                threshold=1,
+                PBC_flag="none",
+                segment_number_below_threshold=below_thresh,
+                segment_number_unassigned=above_thresh,
+            )
+    else:
+        seg_output, seg_feats = segmentation.segmentation_timestep(
+            test_data_iris,
+            fd_output,
+            1,
+            threshold=1,
+            PBC_flag="none",
+            segment_number_below_threshold=below_thresh,
+            segment_number_unassigned=above_thresh,
+        )
+
+        correct_seg_arr = np.full((50, 50), below_thresh, dtype=np.int32)
+        feat_num: int = 1
+        correct_seg_arr[0:10, 0:10] = feat_num
+        correct_seg_arr[10:40, 10:40] = below_thresh
+        correct_seg_arr[40:50, 40:50] = above_thresh
+
+        seg_out_arr = seg_output.core_data()
+        assert np.all(correct_seg_arr == seg_out_arr)

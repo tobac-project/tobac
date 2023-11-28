@@ -14,6 +14,7 @@ import pandas as pd
 import pandas.testing as pd_test
 import numpy as np
 from scipy import fft
+import xarray as xr
 
 
 def lists_equal_without_order(a, b):
@@ -265,11 +266,11 @@ def test_add_coordinates_3D(
 @pytest.mark.parametrize(
     "vertical_coord_names, vertical_coord_pass_in, expect_raise",
     [
-        (["z"], "auto", False),
-        (["pudding"], "auto", True),
+        (["z"], None, False),
+        (["pudding"], None, True),
         (["pudding"], "pudding", False),
         (["z", "model_level_number"], "pudding", True),
-        (["z", "model_level_number"], "auto", True),
+        (["z", "model_level_number"], None, True),
         (["z", "model_level_number"], "z", False),
     ],
 )
@@ -348,7 +349,6 @@ def test_spectral_filtering():
     assert (filtered_data.max() - filtered_data.min()) < (
         wave_data.max() - wave_data.min()
     )
-
     # because the randomly generated wave lies outside of range that is set for filtering,
     # make sure that the filtering results in the disappearance of this signal
     assert (
@@ -369,33 +369,316 @@ def test_combine_tobac_feats():
     """
 
     single_feat_1 = tb_test.generate_single_feature(
-        0,
-        0,
+        1,
+        1,
         start_date=datetime.datetime(2022, 1, 1, 0, 0),
         frame_start=0,
         max_h1=100,
         max_h2=100,
+        feature_size=5,
     )
     single_feat_2 = tb_test.generate_single_feature(
-        1,
-        1,
+        2,
+        2,
         start_date=datetime.datetime(2022, 1, 1, 0, 5),
         frame_start=0,
         max_h1=100,
         max_h2=100,
+        feature_size=5,
     )
 
-    combined_feat = tb_utils.combine_tobac_feats([single_feat_1, single_feat_2])
+    combined_feat = tb_utils.combine_feature_dataframes([single_feat_1, single_feat_2])
 
     tot_feat = tb_test.generate_single_feature(
-        0, 0, spd_h1=1, spd_h2=1, num_frames=2, frame_start=0, max_h1=100, max_h2=100
+        1,
+        1,
+        spd_h1=1,
+        spd_h2=1,
+        num_frames=2,
+        frame_start=0,
+        max_h1=100,
+        max_h2=100,
+        feature_size=5,
     )
 
     pd_test.assert_frame_equal(combined_feat, tot_feat)
 
     # Now try preserving the old feature numbers.
-    combined_feat = tb_utils.combine_tobac_feats(
-        [single_feat_1, single_feat_2], preserve_old_feat_nums="old_feat_column"
+    combined_feat = tb_utils.combine_feature_dataframes(
+        [single_feat_1, single_feat_2], old_feature_column_name="old_feat_column"
     )
     assert np.all(list(combined_feat["old_feat_column"].values) == [1, 1])
     assert np.all(list(combined_feat["feature"].values) == [1, 2])
+
+    # Test that a ValueError is raised if non-unique features are present
+    with pytest.raises(ValueError):
+        combined_feat = tb_utils.combine_feature_dataframes(
+            [single_feat_1, single_feat_2],
+            renumber_features=False,
+            old_feature_column_name="old_feat_column",
+        )
+
+    # Add a new feature with new feature number
+    single_feat_3 = tb_test.generate_single_feature(
+        0,
+        0,
+        start_date=datetime.datetime(2022, 1, 1, 0, 5),
+        frame_start=0,
+        max_h1=100,
+        max_h2=100,
+        feature_num=3,
+        feature_size=3,
+    )
+
+    # Test renumber_features=False
+    combined_feat = tb_utils.combine_feature_dataframes(
+        [single_feat_1, single_feat_3],
+        renumber_features=False,
+        old_feature_column_name="old_feat_column",
+    )
+    assert np.all(list(combined_feat["feature"].values) == [1, 3])
+
+    # Test sortby over one column
+    combined_feat = tb_utils.combine_feature_dataframes(
+        [single_feat_1, single_feat_3],
+        old_feature_column_name="old_feat_column",
+        sort_features_by="num",
+    )
+    assert np.all(list(combined_feat["feature"].values) == [1, 2])
+    assert np.all(list(combined_feat["old_feat_column"].values) == [3, 1])
+
+    # Test sortby over a list of columns
+    combined_feat = tb_utils.combine_feature_dataframes(
+        [single_feat_1, single_feat_3],
+        old_feature_column_name="old_feat_column",
+        sort_features_by=["hdim_1", "hdim_2"],
+    )
+    assert np.all(list(combined_feat["feature"].values) == [1, 2])
+    assert np.all(list(combined_feat["old_feat_column"].values) == [3, 1])
+
+
+def test_bulk_statistics():
+    """
+    Test to assure that bulk statistics for identified features are computed as expected.
+
+    """
+
+    ### Test 2D data with time dimension
+    test_data = tb_test.make_simple_sample_data_2D().core_data()
+    common_dset_opts = {
+        "in_arr": test_data,
+        "data_type": "iris",
+    }
+    test_data_iris = tb_test.make_dataset_from_arr(
+        time_dim_num=0, y_dim_num=1, x_dim_num=2, **common_dset_opts
+    )
+
+    # detect features
+    threshold = 7
+    # test_data_iris = testing.make_dataset_from_arr(test_data, data_type="iris")
+    fd_output = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_iris,
+        dxy=1000,
+        threshold=[threshold],
+        n_min_threshold=100,
+        target="maximum",
+    )
+
+    # perform segmentation with bulk statistics
+    stats = {
+        "segment_max": np.max,
+        "segment_min": min,
+        "percentiles": (np.percentile, {"q": 95}),
+    }
+    out_seg_mask, out_df = tobac.segmentation.segmentation_2D(
+        fd_output, test_data_iris, dxy=1000, threshold=threshold, statistics=stats
+    )
+
+    #### checks
+
+    #  assure that bulk statistics in postprocessing give same result
+    out_segmentation = tb_utils.get_statistics_from_mask(
+        out_seg_mask, test_data_iris, features=out_df, statistic=stats
+    )
+    assert out_segmentation.equals(out_df)
+
+    # assure that column names in new dataframe correspond to keys in statistics dictionary
+    for key in stats.keys():
+        assert key in out_df.columns
+
+    # assure that statistics bring expected result
+    for frame in out_df.frame.values:
+        assert out_df[out_df.frame == frame].segment_max.values[0] == np.max(
+            test_data[frame]
+        )
+
+    ### Test the same with 3D data
+    test_data_iris = tb_test.make_sample_data_3D_3blobs()
+
+    # detect features in test dataset
+    fd_output = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_iris,
+        dxy=1000,
+        threshold=[threshold],
+        n_min_threshold=100,
+        target="maximum",
+    )
+
+    # perform segmentation with bulk statistics
+    stats = {
+        "segment_max": np.max,
+        "segment_min": min,
+        "percentiles": (np.percentile, {"q": 95}),
+    }
+    out_seg_mask, out_df = tobac.segmentation.segmentation_3D(
+        fd_output, test_data_iris, dxy=1000, threshold=threshold, statistics=stats
+    )
+
+    ##### checks #####
+
+    #  assure that bulk statistics in postprocessing give same result
+    out_segmentation = tb_utils.get_statistics_from_mask(
+        out_seg_mask, test_data_iris, features=out_df, statistic=stats
+    )
+    assert out_segmentation.equals(out_df)
+
+    # assure that column names in new dataframe correspond to keys in statistics dictionary
+    for key in stats.keys():
+        assert key in out_df.columns
+
+    # assure that statistics bring expected result
+    for frame in out_df.frame.values:
+        assert out_df[out_df.frame == frame].segment_max.values[0] == np.max(
+            test_data_iris.data[frame]
+        )
+
+
+def test_transform_feature_points():
+    """Tests tobac.utils.general.transform_feature_points"""
+
+    # generate features
+    orig_feat_df_1 = tb_test.generate_single_feature(0, 95, max_h1=1000, max_h2=1000)
+    orig_feat_df_2 = tb_test.generate_single_feature(5, 105, max_h1=1000, max_h2=1000)
+
+    orig_feat_df = tb_utils.combine_tobac_feats([orig_feat_df_1, orig_feat_df_2])
+
+    # just make their lat/lons the same as the hdims.
+    orig_feat_df["latitude"] = orig_feat_df["hdim_1"]
+    orig_feat_df["longitude"] = orig_feat_df["hdim_2"]
+
+    # Make a test dataset with lats spanning from -25 to 24
+    # and lons spanning from 90 to 139.
+    test_lat = np.linspace(-25, 24, 50)
+    test_lon = np.linspace(90, 139, 50)
+    in_xr = xr.Dataset(
+        {"data": (("latitude", "longitude"), np.empty((50, 50)))},
+        coords={"latitude": test_lat, "longitude": test_lon},
+    )
+
+    new_feat_df = tb_utils.general.transform_feature_points(
+        orig_feat_df,
+        in_xr["data"].to_iris(),
+        max_time_away=datetime.timedelta(minutes=1),
+        max_space_away=20 * 1000,
+    )
+    # recall that these are the *array positions*
+    # so [25, 5] for "hdim_1" and "hdim_2" are lat 0, long 95.
+    assert np.all(new_feat_df["hdim_1"] == [25, 30])
+    assert np.all(new_feat_df["hdim_2"] == [5, 15])
+
+    # now test max space apart - we should drop the second feature,
+    # which is at 5, 105 lat/lon as the maximum latitude in the new dataset is 0.
+    # we set the max space away at 20km.
+    test_lat = np.linspace(-49, 0, 50)
+    in_xr = xr.Dataset(
+        {"data": (("latitude", "longitude"), np.empty((50, 50)))},
+        coords={"latitude": test_lat, "longitude": test_lon},
+    )
+
+    new_feat_df = tb_utils.general.transform_feature_points(
+        orig_feat_df,
+        in_xr["data"].to_iris(),
+        max_space_away=20000,
+        max_time_away=datetime.timedelta(minutes=1),
+    )
+
+    assert np.all(new_feat_df["hdim_1"] == [49])
+    assert np.all(new_feat_df["hdim_2"] == [5])
+
+    # now test max time apart
+    test_lat = np.linspace(-25, 24, 50)
+    in_xr = xr.Dataset(
+        {"data": (("time", "latitude", "longitude"), np.empty((2, 50, 50)))},
+        coords={
+            "latitude": test_lat,
+            "longitude": test_lon,
+            "time": [
+                datetime.datetime(2023, 1, 1, 0, 0),
+                datetime.datetime(2023, 1, 1, 0, 5),
+            ],
+        },
+    )
+
+    orig_feat_df["time"] = datetime.datetime(2023, 1, 1, 0, 0, 5)
+    new_feat_df = tb_utils.general.transform_feature_points(
+        orig_feat_df,
+        in_xr["data"].to_iris(),
+        max_time_away=datetime.timedelta(minutes=10),
+        max_space_away=20 * 1000,
+    )
+    # we should still have both features, but they should have the new time.
+    assert np.all(new_feat_df["hdim_1"] == [25, 30])
+    assert np.all(new_feat_df["hdim_2"] == [5, 15])
+    assert np.all(
+        new_feat_df["time"]
+        == [datetime.datetime(2023, 1, 1, 0, 0), datetime.datetime(2023, 1, 1, 0, 0)]
+    )
+
+    # now make the features have time on the next day
+    # both should be dropped.
+    orig_feat_df["time"] = datetime.datetime(2023, 1, 2, 0, 0)
+    new_feat_df = tb_utils.general.transform_feature_points(
+        orig_feat_df,
+        in_xr["data"].to_iris(),
+        max_time_away=datetime.timedelta(minutes=1),
+    )
+
+    assert np.all(new_feat_df["hdim_1"] == [])
+    assert np.all(new_feat_df["hdim_2"] == [])
+
+
+def test_transform_feature_points_3D():
+    """Tests tobac.utils.general.transform_feature_points for a 3D case"""
+
+    orig_feat_df_1 = tb_test.generate_single_feature(
+        0, 95, 10, max_h1=1000, max_h2=1000
+    )
+    orig_feat_df_2 = tb_test.generate_single_feature(
+        5, 105, 20, max_h1=1000, max_h2=1000
+    )
+
+    orig_feat_df = tb_utils.combine_tobac_feats([orig_feat_df_1, orig_feat_df_2])
+
+    orig_feat_df["latitude"] = orig_feat_df["hdim_1"]
+    orig_feat_df["longitude"] = orig_feat_df["hdim_2"]
+    orig_feat_df["altitude"] = orig_feat_df["vdim"] * 1000
+
+    test_lat = np.linspace(-25, 24, 50)
+    test_lon = np.linspace(90, 139, 50)
+    test_alt = np.arange(0, 21, 2) * 1000
+    in_xr = xr.Dataset(
+        {"data": (("altitude", "latitude", "longitude"), np.empty((11, 50, 50)))},
+        coords={"latitude": test_lat, "longitude": test_lon, "altitude": test_alt},
+    )
+
+    new_feat_df = tb_utils.general.transform_feature_points(
+        orig_feat_df,
+        in_xr["data"].to_iris(),
+        max_time_away=datetime.timedelta(minutes=1),
+        max_space_away=20 * 1000,
+        max_vspace_away=200,
+    )
+
+    assert np.all(new_feat_df["hdim_1"] == [25, 30])
+    assert np.all(new_feat_df["hdim_2"] == [5, 15])
+    assert np.all(new_feat_df["vdim"] == [5, 10])
