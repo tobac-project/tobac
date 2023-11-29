@@ -149,3 +149,42 @@ def test_merge_split_MEST_PBC():
     )
 
     assert len(mergesplit_output_hdim_2_pbc["track"]) == 2
+
+
+def test_merge_split_MEST_frame_len():
+    """
+    Test the frame_len parameter of merge_split_MEST
+    """
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3, 4],
+            "hdim_1": [50, 50, 50, 50],
+            "hdim_2": [50, 50, 50, 50],
+            "cell": [1, 1, 2, 2],
+            "frame": [0, 1, 3, 4],
+            "time": [
+                datetime.datetime(2000, 1, 1),
+                datetime.datetime(2000, 1, 1),
+                datetime.datetime(2000, 1, 1, 0, 5),
+                datetime.datetime(2000, 1, 1, 0, 5),
+            ],
+        }
+    )
+
+    # Test with short frame_len, expect no link
+    mergesplit_output = mergesplit.merge_split_MEST(
+        test_features,
+        dxy=1,
+        distance=25,
+        frame_len=1,
+    )
+    assert len(mergesplit_output["track"]) == 2
+
+    # Test with longer frame_len, expect link
+    mergesplit_output = mergesplit.merge_split_MEST(
+        test_features,
+        dxy=1,
+        distance=25,
+        frame_len=2,
+    )
+    assert len(mergesplit_output["track"]) == 1

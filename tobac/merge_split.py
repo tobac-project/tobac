@@ -170,25 +170,28 @@ def merge_split_MEST(
 
     # Input data to the graph which will perform the spanning tree.
     g = nx.Graph()
-    start_node_cells = first["cell"].values[
-        np.repeat(np.arange(len(neighbours), dtype=int), [len(n) for n in neighbours])
-    ]
-    end_node_cells = last["cell"].values[np.concatenate(neighbours)]
+    nodes = np.repeat(
+        np.arange(len(neighbours), dtype=int), [len(n) for n in neighbours]
+    )
+    neighbours = np.concatenate(neighbours)
     weights = np.concatenate(distances)
-    g.add_weighted_edges_from(zip(start_node_cells, end_node_cells, weights))
 
-    tree = nx.minimum_spanning_edges(g)
-    tree_list = list(tree)
+    wh_frame_len = (
+        np.abs(first["frame"].values[nodes] - last["frame"].values[neighbours])
+        <= frame_len
+    )
+    start_node_cells = first["cell"].values[nodes[wh_frame_len]]
+    end_node_cells = last["cell"].values[neighbours[wh_frame_len]]
 
-    new_tree = []
+    g.add_weighted_edges_from(
+        zip(start_node_cells, end_node_cells, weights[wh_frame_len])
+    )
 
-    # Pruning the tree for time limits.
-    for i, j in enumerate(tree_list):
-        frame_a = np.nanmax(track_groups[j[0]].frame.values)
-        frame_b = np.nanmin(track_groups[j[1]].frame.values)
-        if np.abs(frame_a - frame_b) <= frame_len:
-            new_tree.append(tree_list[i][0:2])
-    new_tree_arr = np.array(new_tree)
+    tree = list(nx.minimum_spanning_edges(g))
+    if len(tree):
+        tree_arr = np.array(tree)[:, :2].astype(int)
+    else:
+        tree_arr = np.array([], dtype=int)
 
     tracks["cell_parent_track_id"] = np.zeros(len(tracks["cell"].values))
     cell_id = np.unique(
@@ -203,18 +206,18 @@ def merge_split_MEST(
         if len(j[0]) > 0:
             continue
         else:
-            k = np.where(new_tree_arr == p)
+            k = np.where(tree_arr == p)
             if len(k[0]) == 0:
                 track_id[p] = [p]
                 arr = np.append(arr, p)
             else:
-                temp1 = list(np.unique(new_tree_arr[k[0]]))
-                temp = list(np.unique(new_tree_arr[k[0]]))
+                temp1 = list(np.unique(tree_arr[k[0]]))
+                temp = list(np.unique(tree_arr[k[0]]))
 
                 for l in range(len(cell_id)):
                     for i in temp1:
-                        k2 = np.where(new_tree_arr == i)
-                        temp.append(list(np.unique(new_tree_arr[k2[0]]).squeeze()))
+                        k2 = np.where(tree_arr == i)
+                        temp.append(list(np.unique(tree_arr[k2[0]]).squeeze()))
                         temp = list(flatten(temp))
                         temp = list(np.unique(temp))
 
@@ -223,8 +226,8 @@ def merge_split_MEST(
                     temp1 = np.array(temp)
 
                 for i in temp1:
-                    k2 = np.where(new_tree_arr == i)
-                    temp.append(list(np.unique(new_tree_arr[k2[0]]).squeeze()))
+                    k2 = np.where(tree_arr == i)
+                    temp.append(list(np.unique(tree_arr[k2[0]]).squeeze()))
 
                 temp = list(flatten(temp))
                 temp = list(np.unique(temp))
