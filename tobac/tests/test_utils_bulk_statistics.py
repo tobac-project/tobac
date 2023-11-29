@@ -224,11 +224,12 @@ def test_bulk_statistics_multiple_fields():
         bulk_statistics_output["weighted_mean"] == expected_weighted_mean_result
     )
 
+
 def test_bulk_statistics_time_invariant_field():
     """
-    Some fields, such as area, are time invariant, and so passing an array with 
-    a time dimension is memory inefficient. Here we test if 
-    `get_statistics_from_mask` works if an input field has no time dimension, 
+    Some fields, such as area, are time invariant, and so passing an array with
+    a time dimension is memory inefficient. Here we test if
+    `get_statistics_from_mask` works if an input field has no time dimension,
     by passing the whole field to `get_statistics` rather than a time slice.
     """
 
@@ -303,4 +304,95 @@ def test_bulk_statistics_time_invariant_field():
     )
 
     assert np.all(bulk_statistics_output["sum"] == expected_sum_result)
-    
+
+
+def test_bulk_statistics_broadcasting():
+    """
+    Test whether field broadcasting works for bulk_statistics, with both leading and trailing dimensions tested
+    """
+    test_labels = np.array(
+        [
+            [
+                [0, 0, 0, 0, 0],
+                [0, 1, 0, 2, 0],
+                [0, 1, 0, 2, 0],
+                [0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+            ],
+            [
+                [0, 0, 0, 0, 0],
+                [0, 3, 0, 0, 0],
+                [0, 3, 0, 4, 0],
+                [0, 3, 0, 4, 0],
+                [0, 0, 0, 0, 0],
+            ],
+        ],
+        dtype=int,
+    )
+
+    test_labels = xr.DataArray(
+        test_labels,
+        dims=("time", "y", "x"),
+        coords={
+            "time": [datetime(2000, 1, 1), datetime(2000, 1, 1, 0, 5)],
+            "y": np.arange(5),
+            "x": np.arange(5),
+        },
+    )
+
+    test_values = np.array(
+        [
+            [0.25, 0.5, 0.75, 1, 1],
+            [1.25, 1.5, 1.75, 2, 2],
+        ]
+    )
+
+    test_values = xr.DataArray(
+        test_values,
+        dims=("time", "x"),
+        coords={"time": test_labels.time, "x": test_labels.x},
+    )
+
+    test_weights = np.array([0, 0, 1, 0, 0]).reshape([5, 1])
+
+    test_weights = xr.DataArray(
+        test_weights, dims=("y", "z"), coords={"y": test_labels.y}
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3, 4],
+            "frame": [0, 0, 1, 1],
+            "time": [
+                datetime(2000, 1, 1),
+                datetime(2000, 1, 1),
+                datetime(2000, 1, 1, 0, 5),
+                datetime(2000, 1, 1, 0, 5),
+            ],
+        }
+    )
+
+    statistics_sum = {"sum": np.sum}
+
+    expected_sum_result = np.array([1.5, 2, 4.5, 4])
+
+    bulk_statistics_output = tb_utils.get_statistics_from_mask(
+        test_features, test_labels, test_values, statistic=statistics_sum
+    )
+
+    statistics_weighted_sum = {"weighted_sum": (lambda x, y: np.sum(x * y))}
+
+    expected_weighted_sum_result = np.array([0.5, 1, 1.5, 2])
+
+    bulk_statistics_output = tb_utils.get_statistics_from_mask(
+        bulk_statistics_output,
+        test_labels,
+        test_values,
+        test_weights,
+        statistic=statistics_weighted_sum,
+    )
+
+    assert np.all(bulk_statistics_output["sum"] == expected_sum_result)
+    assert np.all(
+        bulk_statistics_output["weighted_sum"] == expected_weighted_sum_result
+    )

@@ -56,15 +56,15 @@ def get_statistics(
      features: pd.DataFrame
          Updated feature dataframe with bulk statistics for each feature saved in a new column
     """
-    # raise error if mask and input data dimensions do not match
+    # if mask and input data dimensions do not match we can broadcast using numpy broadcasting rules
     for field in fields:
         if labels.shape != field.shape:
-            raise ValueError("Input labels and field do not have the same shape")
-    # Broadcast input labels and fields to ensure they work according to numpy broadcasting rules
-    # broadcast_fields = np.broadcast_arrays(labels, *fields)
-    # labels = broadcast_fields[0]
-    # fields = broadcast_fields[1:]
-
+            # Broadcast input labels and fields to ensure they work according to numpy broadcasting rules
+            broadcast_fields = np.broadcast_arrays(labels, *fields)
+            labels = broadcast_fields[0]
+            fields = broadcast_fields[1:]
+            break
+    
     # mask must contain positive values to calculate statistics
     if labels[labels > 0].size > 0:
         if index is None:
@@ -189,7 +189,9 @@ def get_statistics_from_mask(
     # check that mask and input data have the same dimensions
     for field in fields:
         if segmentation_mask.shape != field.shape:
-            warnings.warn("One or more field does not have the same shape as segmentation_mask. Numpy broadcasting rules will be applied")
+            warnings.warn(
+                "One or more field does not have the same shape as segmentation_mask. Numpy broadcasting rules will be applied"
+            )
 
     # warning when feature labels are not unique in dataframe
     if not features.feature.is_unique:
