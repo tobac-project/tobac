@@ -64,7 +64,7 @@ def get_statistics(
             labels = broadcast_fields[0]
             fields = broadcast_fields[1:]
             break
-    
+
     # mask must contain positive values to calculate statistics
     if labels[labels > 0].size > 0:
         if index is None:
