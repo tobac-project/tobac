@@ -11,7 +11,6 @@ import logging
 
 import numpy as np
 import pandas as pd
-from pandas.core.common import flatten
 import xarray as xr
 from sklearn.neighbors import BallTree
 import scipy.sparse
