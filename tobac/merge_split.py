@@ -145,13 +145,19 @@ def merge_split_MEST(
         cell_end_locations[0] *= dz
         cell_end_locations[1:] *= dxy
     else:
-        cell_start_locations = np.stack(
-            [first[var].values for var in [y_coordinate_name, x_coordinate_name]],
-            axis=-1,
+        cell_start_locations = (
+            np.stack(
+                [first[var].values for var in [y_coordinate_name, x_coordinate_name]],
+                axis=-1,
+            )
+            * dxy
         )
-        cell_end_locations = np.stack(
-            [last[var].values for var in [y_coordinate_name, x_coordinate_name]],
-            axis=-1,
+        cell_end_locations = (
+            np.stack(
+                [last[var].values for var in [y_coordinate_name, x_coordinate_name]],
+                axis=-1,
+            )
+            * dxy
         )
 
     if PBC_flag in ["hdim_1", "hdim_2", "both"]:

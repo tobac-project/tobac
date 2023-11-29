@@ -78,7 +78,7 @@ def test_merge_split_MEST():
 
     # Test a successful merger
     mergesplit_output_merged = mergesplit.merge_split_MEST(
-        output, dxy=1, distance=dist_between + 50
+        output, dxy=10, distance=(dist_between + 50) * 10
     )
 
     # These cells should have merged together.
@@ -86,7 +86,7 @@ def test_merge_split_MEST():
 
     # Test an unsuccessful merger.
     mergesplit_output_unmerged = mergesplit.merge_split_MEST(
-        output, dxy=1, distance=dist_between - 50
+        output, dxy=10, distance=(dist_between - 50) * 10
     )
 
     # These cells should NOT have merged together.
