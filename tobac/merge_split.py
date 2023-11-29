@@ -7,14 +7,12 @@
     
 """
 
-import datetime
 import logging
 
 import numpy as np
 import pandas as pd
 from pandas.core.common import flatten
 import xarray as xr
-from scipy.spatial import KDTree
 from sklearn.neighbors import BallTree
 
 try:
