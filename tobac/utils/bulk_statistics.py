@@ -4,6 +4,7 @@ or within feature detection or segmentation.
 
 """
 import logging
+import warnings
 from . import internal as internal_utils
 from typing import Callable, Union
 from functools import partial
@@ -59,6 +60,10 @@ def get_statistics(
     for field in fields:
         if labels.shape != field.shape:
             raise ValueError("Input labels and field do not have the same shape")
+    # Broadcast input labels and fields to ensure they work according to numpy broadcasting rules
+    # broadcast_fields = np.broadcast_arrays(labels, *fields)
+    # labels = broadcast_fields[0]
+    # fields = broadcast_fields[1:]
 
     # mask must contain positive values to calculate statistics
     if labels[labels > 0].size > 0:
@@ -184,7 +189,7 @@ def get_statistics_from_mask(
     # check that mask and input data have the same dimensions
     for field in fields:
         if segmentation_mask.shape != field.shape:
-            raise ValueError("Input labels and field do not have the same shape")
+            warnings.warn("One or more field does not have the same shape as segmentation_mask. Numpy broadcasting rules will be applied")
 
     # warning when feature labels are not unique in dataframe
     if not features.feature.is_unique:
@@ -198,7 +203,10 @@ def get_statistics_from_mask(
     for tt in pd.to_datetime(segmentation_mask.time):
         # select specific timestep
         segmentation_mask_t = segmentation_mask.sel(time=tt).data
-        fields_t = (field.sel(time=tt).values for field in fields)
+        fields_t = (
+            field.sel(time=tt).values if "time" in field.coords else field.values
+            for field in fields
+        )
         features_t = features.loc[features.time == tt].copy()
 
         # make sure that the labels in the segmentation mask exist in feature dataframe
