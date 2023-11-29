@@ -286,7 +286,7 @@ def merge_split_MEST(
             "feature_parent_track_id": feature_parent_track_id,
             "track_child_cell_count": track_child_cell_count,
             "cell_child_feature_count": cell_child_feature_count,
-            "cell_start_with_split": cell_starts_with_split,
+            "cell_starts_with_split": cell_starts_with_split,
             "cell_ends_with_merge": cell_ends_with_merge,
         },
         coords={feature_dim: feature_id, cell_dim: cell_id, track_dim: track_id},
