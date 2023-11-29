@@ -184,8 +184,8 @@ def merge_split_MEST(
         <= frame_len
     )
     wh_valid_edge = np.logical_and(wh_frame_len, nodes != neighbours)
-    start_node_cells = first.index.values[nodes[wh_valid_edge]]
-    end_node_cells = last.index.values[neighbours[wh_valid_edge]]
+    start_node_cells = first.index.values[nodes[wh_valid_edge]].astype(np.int32)
+    end_node_cells = last.index.values[neighbours[wh_valid_edge]].astype(np.int32)
 
     cell_id = np.unique(tracks.cell.values)
     cell_id = cell_id[cell_id != cell_number_unassigned].astype(int)
