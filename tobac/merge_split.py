@@ -7,6 +7,7 @@
     
 """
 
+import datetime
 import logging
 
 import numpy as np
@@ -169,13 +170,14 @@ def merge_split_MEST(
         cell_end_locations, r=distance, return_distance=True
     )
 
-    # This is inputing data to the object which will perform the spanning tree.
+    # Input data to the graph which will perform the spanning tree.
     g = nx.Graph()
-    for i, (neighbour_list, distance_list) in enumerate(zip(neighbours, distances)):
-        start_node_cell = first["cell"].values[i]
-        for j, dist in zip(neighbour_list, distance_list):
-            end_node_cell = last["cell"].values[j]
-            g.add_edge(start_node_cell, end_node_cell, weight=dist)
+    start_node_cells = first["cell"].values[
+        np.repeat(np.arange(len(neighbours), dtype=int), [len(n) for n in neighbours])
+    ]
+    end_node_cells = last["cell"].values[np.concatenate(neighbours)]
+    weights = np.concatenate(distances)
+    g.add_weighted_edges_from(zip(start_node_cells, end_node_cells, weights))
 
     tree = nx.minimum_spanning_edges(g)
     tree_list = list(tree)
