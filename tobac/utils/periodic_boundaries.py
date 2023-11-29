@@ -1,6 +1,6 @@
 from __future__ import annotations
 import numpy as np
-from .internal import njit_if_available
+from tobac.utils.decorators import njit_if_available
 
 
 def adjust_pbc_point(in_dim: int, dim_min: int, dim_max: int) -> int:

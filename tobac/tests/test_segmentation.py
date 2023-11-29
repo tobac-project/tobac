@@ -613,6 +613,7 @@ def test_segmentation_multiple_features():
         threshold=[1, 2, 3],
         n_min_threshold=test_min_num,
         target="maximum",
+        statistic={"features_mean": np.mean},
     )
 
     # add feature IDs to data frame for one time step
@@ -620,13 +621,24 @@ def test_segmentation_multiple_features():
 
     # perform segmentation
     out_seg_mask, out_df = segmentation.segmentation_timestep(
-        field_in=test_data_iris, features_in=fd_output, dxy=test_dxy, threshold=1.5
+        field_in=test_data_iris,
+        features_in=fd_output,
+        dxy=test_dxy,
+        threshold=1.5,
+        statistic={"segments_mean": np.mean},
     )
     out_seg_mask_arr = out_seg_mask.core_data()
 
     # assure that the number of grid cells belonging to each feature (ncells) are consistent with segmentation mask
     assert int(out_df[out_df.feature == 1].ncells.values) == size_feature1
     assert int(out_df[out_df.feature == 2].ncells.values) == size_feature2
+    # assure that bulk statistic columns are created in output (one column added after segmentation)
+    assert out_df.columns.size - fd_output.columns.size > 1
+    # assure that statistics are calculated everywhere where an area for ncells is found
+    assert (
+        out_df.ncells[out_df["ncells"] > 0].shape
+        == out_df.ncells[out_df["features_mean"] > 0].shape
+    )
 
 
 # TODO: add more tests to make sure buddy box code is run.
@@ -782,7 +794,7 @@ def test_segmentation_timestep_3d_buddy_box(
     out_seg_mask_shifted, out_df = seg.segmentation_timestep(
         field_in=test_data_iris_shifted,
         features_in=test_feature_ds_shifted,
-        **common_seg_opts
+        **common_seg_opts,
     )
 
     # Now, shift output back.
@@ -845,14 +857,14 @@ def test_add_markers_pbcs(
         start_h1=feat_1_loc[1],
         start_h2=feat_1_loc[2],
         feature_num=1,
-        **common_feat_opts
+        **common_feat_opts,
     )
     test_feature_ds_2 = testing.generate_single_feature(
         start_v=feat_2_loc[0],
         start_h1=feat_2_loc[1],
         start_h2=feat_2_loc[2],
         feature_num=2,
-        **common_feat_opts
+        **common_feat_opts,
     )
     test_feature_ds = pd.concat([test_feature_ds_1, test_feature_ds_2])
 
@@ -875,14 +887,14 @@ def test_add_markers_pbcs(
         start_h1=feat_1_loc[1] + shift_domain[1],
         start_h2=feat_1_loc[2] + shift_domain[2],
         feature_num=1,
-        **common_feat_opts
+        **common_feat_opts,
     )
     test_feature_ds_2 = testing.generate_single_feature(
         start_v=feat_2_loc[0] + shift_domain[0],
         start_h1=feat_2_loc[1] + shift_domain[1],
         start_h2=feat_2_loc[2] + shift_domain[2],
         feature_num=2,
-        **common_feat_opts
+        **common_feat_opts,
     )
     test_feature_ds_shifted = pd.concat([test_feature_ds_1, test_feature_ds_2])
 

@@ -15,3 +15,4 @@ pytables
 s3fs
 arm_pyart
 h5netcdf
+typing_extensions

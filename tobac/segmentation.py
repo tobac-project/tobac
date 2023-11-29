@@ -31,19 +31,31 @@ References
 """
 import copy
 import logging
+
+import iris.cube
 import numpy as np
+import pandas as pd
+from typing_extensions import Literal
+from typing import Union, Callable
 
 import skimage
 import numpy as np
+import pandas as pd
 
 from . import utils as tb_utils
 from .utils import periodic_boundaries as pbc_utils
 from .utils import internal as internal_utils
+from .utils import get_statistics
 
 
 def add_markers(
-    features, marker_arr, seed_3D_flag, seed_3D_size=5, level=None, PBC_flag="none"
-):
+    features: pd.DataFrame,
+    marker_arr: np.array,
+    seed_3D_flag: Literal["column", "box"],
+    seed_3D_size: Union[int, tuple[int]] = 5,
+    level: Union[None, slice] = None,
+    PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
+) -> np.array:
     """Adds markers for watershedding using the `features` dataframe
     to the marker_arr.
 
@@ -269,6 +281,7 @@ def segmentation_3D(
     max_distance=None,
     PBC_flag="none",
     seed_3D_flag="column",
+    statistic=None,
 ):
     """Wrapper for the segmentation()-function."""
 
@@ -283,6 +296,7 @@ def segmentation_3D(
         max_distance=max_distance,
         PBC_flag=PBC_flag,
         seed_3D_flag=seed_3D_flag,
+        statistic=statistic,
     )
 
 
@@ -297,6 +311,7 @@ def segmentation_2D(
     max_distance=None,
     PBC_flag="none",
     seed_3D_flag="column",
+    statistic=None,
 ):
     """Wrapper for the segmentation()-function."""
     return segmentation(
@@ -310,25 +325,27 @@ def segmentation_2D(
         max_distance=max_distance,
         PBC_flag=PBC_flag,
         seed_3D_flag=seed_3D_flag,
+        statistic=statistic,
     )
 
 
 def segmentation_timestep(
-    field_in,
-    features_in,
-    dxy,
-    threshold=3e-3,
-    target="maximum",
-    level=None,
-    method="watershed",
-    max_distance=None,
-    vertical_coord=None,
-    PBC_flag="none",
-    seed_3D_flag="column",
-    seed_3D_size=5,
-    segment_number_below_threshold=0,
-    segment_number_unassigned=0,
-):
+    field_in: iris.cube.Cube,
+    features_in: pd.DataFrame,
+    dxy: float,
+    threshold: float = 3e-3,
+    target: Literal["maximum", "minimum"] = "maximum",
+    level: Union[None, slice] = None,
+    method: Literal["watershed"] = "watershed",
+    max_distance: Union[None, float] = None,
+    vertical_coord: Union[str, None] = None,
+    PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
+    seed_3D_flag: Literal["column", "box"] = "column",
+    seed_3D_size: Union[int, tuple[int]] = 5,
+    segment_number_below_threshold: int = 0,
+    segment_number_unassigned: int = 0,
+    statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
+) -> tuple[iris.cube.Cube, pd.DataFrame]:
     """Perform watershedding for an individual time step of the data. Works
     for both 2D and 3D data
 
@@ -345,7 +362,7 @@ def segmentation_timestep(
         Grid spacing of the input data in metres
 
     threshold : float, optional
-        Threshold for the watershedding field to be used for the mask.
+        Threshold for the watershedding field to be used for the mask. The watershedding is exclusive of the threshold value, i.e. values greater (less) than the threshold are included in the target region, while values equal to the threshold value are excluded.
         Default is 3e-3.
 
     target : {'maximum', 'minimum'}, optional
@@ -393,6 +410,9 @@ def segmentation_timestep(
     segment_number_unassigned: int
         the marker to use to indicate a segmentation point is above the threshold but unsegmented.
         This can be the same as `segment_number_below_threshold`, but can also be set separately.
+    statistics: boolean, optional
+        Default is None. If True, bulk statistics for the data points assigned to each feature are saved in output.
+
 
     Returns
     -------
@@ -1010,16 +1030,23 @@ def segmentation_timestep(
     segmentation_mask[wh_below_threshold] = segment_number_below_threshold
     segmentation_out.data = segmentation_mask
 
-    # count number of grid cells associated to each tracked cell and write that into DataFrame:
-    values, count = np.unique(segmentation_mask, return_counts=True)
-    counts = dict(zip(values, count))
-    ncells = np.zeros(len(features_out))
-    for i, (index, row) in enumerate(features_out.iterrows()):
-        if row["feature"] in counts.keys():
-            # assign a value for ncells for the respective feature in data frame
-            features_out.loc[features_out.feature == row["feature"], "ncells"] = counts[
-                row["feature"]
-            ]
+    # add ncells to feature dataframe with new statistic method
+    features_out = get_statistics(
+        features_out,
+        np.array(segmentation_out.data.copy()),
+        np.array(field_in.data.copy()),
+        statistic={"ncells": np.count_nonzero},
+        default=0,
+    )
+
+    # compute additional statistics, if requested
+    if statistic:
+        features_out = get_statistics(
+            features_out,
+            segmentation_out.data.copy(),
+            field_in.data.copy(),
+            statistic=statistic,
+        )
 
     return segmentation_out, features_out
 
@@ -1032,7 +1059,7 @@ def check_add_unseeded_across_bdrys(
     border_max: int,
     markers_arr: np.array,
     inplace: bool = True,
-):
+) -> np.array:
     """Add new markers to unseeded but eligible regions when they are bordering
     an appropriate boundary.
 
@@ -1089,21 +1116,22 @@ def check_add_unseeded_across_bdrys(
 
 
 def segmentation(
-    features,
-    field,
-    dxy,
-    threshold=3e-3,
-    target="maximum",
-    level=None,
-    method="watershed",
-    max_distance=None,
-    vertical_coord=None,
-    PBC_flag="none",
-    seed_3D_flag="column",
-    seed_3D_size=5,
-    segment_number_below_threshold=0,
-    segment_number_unassigned=0,
-):
+    features: pd.DataFrame,
+    field: iris.cube.Cube,
+    dxy: float,
+    threshold: float = 3e-3,
+    target: Literal["maximum", "minimum"] = "maximum",
+    level: Union[None, slice] = None,
+    method: Literal["watershed"] = "watershed",
+    max_distance: Union[None, float] = None,
+    vertical_coord: Union[str, None] = None,
+    PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
+    seed_3D_flag: Literal["column", "box"] = "column",
+    seed_3D_size: Union[int, tuple[int]] = 5,
+    segment_number_below_threshold: int = 0,
+    segment_number_unassigned: int = 0,
+    statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
+) -> tuple[iris.cube.Cube, pd.DataFrame]:
     """Use watershedding to determine region above a threshold
     value around initial seeding position for all time steps of
     the input data. Works both in 2D (based on single seeding
@@ -1122,7 +1150,7 @@ def segmentation(
         Containing the field to perform the watershedding on.
 
     dxy : float
-        Grid spacing of the input data.
+        Grid spacing of the input data in meters.
 
     threshold : float, optional
         Threshold for the watershedding field to be used for the mask.
@@ -1172,6 +1200,9 @@ def segmentation(
         the marker to use to indicate a segmentation point is below the threshold.
     segment_number_unassigned: int
         the marker to use to indicate a segmentation point is above the threshold but unsegmented.
+    statistic : dict, optional
+        Default is None. Optional parameter to calculate bulk statistics within feature detection.
+        Dictionary with callable function(s) to apply over the region of each detected feature and the name of the statistics to appear in the feature output dataframe. The functions should be the values and the names of the metric the keys (e.g. {'mean': np.mean})
 
 
     Returns
@@ -1231,6 +1262,7 @@ def segmentation(
             seed_3D_size=seed_3D_size,
             segment_number_unassigned=segment_number_unassigned,
             segment_number_below_threshold=segment_number_below_threshold,
+            statistic=statistic,
         )
         segmentation_out_list.append(segmentation_out_i)
         features_out_list.append(features_out_i)
