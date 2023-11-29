@@ -14,6 +14,7 @@ import pandas as pd
 from pandas.core.common import flatten
 import xarray as xr
 from sklearn.neighbors import BallTree
+import scipy.sparse
 
 try:
     import networkx as nx
@@ -29,6 +30,7 @@ def merge_split_MEST(
     dz: float = None,
     distance: float = None,
     frame_len: int = 5,
+    cell_number_unassigned: int = -1,
     PBC_flag: "str" = None,
     min_h1: int = None,
     max_h1: int = None,
@@ -59,6 +61,9 @@ def merge_split_MEST(
     frame_len : float, optional
         Threshold for the maximum number of frames that can separate the end of cell and the start of a related cell.
         Default is five (5) frames.
+
+    cell_number_unassigned: int, optional
+        Value given tp unassigned/non-tracked cells by tracking. Default is -1
 
     PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both'), optional
         Sets whether to use periodic boundaries, and if so in which directions.
@@ -189,115 +194,81 @@ def merge_split_MEST(
 
     tree = list(nx.minimum_spanning_edges(g))
     if len(tree):
-        tree_arr = np.array(tree)[:, :2].astype(int)
+        tree_arr = np.array([t[:2] for t in tree], dtype=int)
     else:
         tree_arr = np.array([], dtype=int)
-
-    tracks["cell_parent_track_id"] = np.zeros(len(tracks["cell"].values))
-    cell_id = np.unique(
-        tracks.cell.values.astype(int)[~np.isnan(tracks.cell.values.astype(int))]
-    )
-    track_id = dict()  # same size as number of total merged tracks
-
-    # Cleaning up tracks, combining tracks which contain the same cells.
-    arr = np.array([0])
-    for p in cell_id:
-        j = np.where(arr == int(p))
-        if len(j[0]) > 0:
-            continue
-        else:
-            k = np.where(tree_arr == p)
-            if len(k[0]) == 0:
-                track_id[p] = [p]
-                arr = np.append(arr, p)
-            else:
-                temp1 = list(np.unique(tree_arr[k[0]]))
-                temp = list(np.unique(tree_arr[k[0]]))
-
-                for l in range(len(cell_id)):
-                    for i in temp1:
-                        k2 = np.where(tree_arr == i)
-                        temp.append(list(np.unique(tree_arr[k2[0]]).squeeze()))
-                        temp = list(flatten(temp))
-                        temp = list(np.unique(temp))
-
-                    if len(temp1) == len(temp):
-                        break
-                    temp1 = np.array(temp)
-
-                for i in temp1:
-                    k2 = np.where(tree_arr == i)
-                    temp.append(list(np.unique(tree_arr[k2[0]]).squeeze()))
-
-                temp = list(flatten(temp))
-                temp = list(np.unique(temp))
-                arr = np.append(arr, np.unique(temp))
-
-                track_id[np.nanmax(np.unique(temp))] = list(np.unique(temp))
-
-    cell_id = list(np.unique(tracks.cell.values.astype(int)))
-    logging.debug("found cell ids")
-
-    cell_parent_track_id = np.zeros(len(cell_id))
-    cell_parent_track_id[:] = -1
-
-    for i, id in enumerate(track_id, start=0):
-        for j in track_id[int(id)]:
-            cell_parent_track_id[cell_id.index(j)] = int(i)
-
-    logging.debug("found cell parent track ids")
-
-    track_ids = np.array(np.unique(cell_parent_track_id))
-    logging.debug("found track ids")
-
-    feature_parent_cell_id = list(tracks.cell.values.astype(int))
-    logging.debug("found feature parent cell ids")
-
-    #     # This version includes all the feature regardless of if they are used in cells or not.
-    feature_id = list(tracks.feature.values.astype(int))
-    logging.debug("found feature ids")
-
-    feature_parent_track_id = []
-    feature_parent_track_id = np.zeros(len(feature_id))
-    for i, id in enumerate(feature_id):
-        cellid = feature_parent_cell_id[i]
-        if cellid < 0:
-            feature_parent_track_id[i] = -1
-        else:
-            feature_parent_track_id[i] = cell_parent_track_id[cell_id.index(cellid)]
-
-    track_child_cell_count = np.zeros(len(track_id))
-    for i, id in enumerate(track_id):
-        track_child_cell_count[i] = len(np.where(cell_parent_track_id == i)[0])
-    logging.debug("found track child cell count")
-
-    cell_child_feature_count = np.zeros(len(cell_id))
-    for i, id in enumerate(cell_id):
-        cell_child_feature_count[i] = len(track_groups[id].feature.values)
-    logging.debug("found cell child feature count")
 
     track_dim = "track"
     cell_dim = "cell"
     feature_dim = "feature"
 
-    d = xr.Dataset(
-        {
-            "track": (track_dim, track_ids),
-            "cell": (cell_dim, cell_id),
-            "cell_parent_track_id": (cell_dim, cell_parent_track_id),
-            "feature": (feature_dim, feature_id),
-            "feature_parent_cell_id": (feature_dim, feature_parent_cell_id),
-            "feature_parent_track_id": (feature_dim, feature_parent_track_id),
-            "track_child_cell_count": (track_dim, track_child_cell_count),
-            "cell_child_feature_count": (cell_dim, cell_child_feature_count),
-        }
+    cell_id = np.unique(tracks.cell.values)
+    cell_id = cell_id[cell_id != cell_number_unassigned].astype(int)
+
+    # Use scipy.sparse.csgraph connected_components to join linked cells into tracks
+    if tree_arr.size:
+        max_cell = np.max(cell_id)
+        sparse_map = scipy.sparse.coo_array(
+            (np.ones(tree_arr.shape[0]), (tree_arr[:, 0], tree_arr[:, 1])),
+            shape=(max_cell + 1, max_cell + 1),
+        )
+        cell_parent_track_id = scipy.sparse.csgraph.connected_components(sparse_map)[1][
+            cell_id
+        ]
+        cell_parent_track_id = (
+            np.unique(cell_parent_track_id, return_inverse=True)[1] + 1
+        )
+    else:
+        cell_parent_track_id = np.arange(cell_id.size, dtype=int) + 1
+
+    cell_parent_track_id = xr.DataArray(
+        cell_parent_track_id, dims=(cell_dim,), coords={cell_dim: cell_id}
+    )
+    logging.debug("found cell parent track ids")
+
+    track_id = np.unique(cell_parent_track_id)
+    logging.debug("found track ids")
+
+    # This version includes all the feature regardless of if they are used in cells or not.
+    feature_id = tracks.feature.values.astype(int)
+    logging.debug("found feature ids")
+
+    feature_parent_cell_id = tracks.cell.values.astype(int)
+    feature_parent_cell_id = xr.DataArray(
+        feature_parent_cell_id,
+        dims=(feature_dim,),
+        coords={feature_dim: feature_id},
+    )
+    logging.debug("found feature parent cell ids")
+
+    feature_parent_track_id = cell_parent_track_id.loc[feature_parent_cell_id].values
+    feature_parent_track_id = xr.DataArray(
+        feature_parent_track_id,
+        dims=(feature_dim,),
+        coords={feature_dim: feature_id},
     )
 
-    d = d.set_coords(["feature", "cell", "track"])
+    track_child_cell_count = np.bincount(cell_parent_track_id.values)[track_id]
+    track_child_cell_count = xr.DataArray(
+        track_child_cell_count,
+        dims=(track_dim,),
+        coords={track_dim: track_id},
+    )
 
-    #     assert len(cell_id) == len(cell_parent_track_id)
-    #     assert len(feature_id) == len(feature_parent_cell_id)
-    #     assert sum(track_child_cell_count) == len(cell_id)
-    #     assert sum(cell_child_feature_count) == len(feature_id)
+    cell_child_feature_count = np.bincount(feature_parent_cell_id.values)[cell_id]
+    cell_child_feature_count = xr.DataArray(
+        cell_child_feature_count, dims=(cell_dim), coords={cell_dim: cell_id}
+    )
 
-    return d
+    merge_split_ds = xr.Dataset(
+        data_vars={
+            "cell_parent_track_id": cell_parent_track_id,
+            "feature_parent_cell_id": feature_parent_cell_id,
+            "feature_parent_track_id": feature_parent_track_id,
+            "track_child_cell_count": track_child_cell_count,
+            "cell_child_feature_count": cell_child_feature_count,
+        },
+        coords={feature_dim: feature_id, cell_dim: cell_id, track_dim: track_id},
+    )
+
+    return merge_split_ds
