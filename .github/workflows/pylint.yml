@@ -6,8 +6,9 @@ on:
 
 jobs:
   build:
-    permissions: write-all
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v3
