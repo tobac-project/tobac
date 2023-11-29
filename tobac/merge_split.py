@@ -146,10 +146,11 @@ def merge_split_MEST(
     else:
         cell_start_locations = np.stack(
             [first[var].values for var in [y_coordinate_name, x_coordinate_name]],
-            axis=0,
+            axis=-1,
         )
         cell_end_locations = np.stack(
-            [last[var].values for var in [y_coordinate_name, x_coordinate_name]], axis=0
+            [last[var].values for var in [y_coordinate_name, x_coordinate_name]],
+            axis=-1,
         )
 
     if PBC_flag in ["hdim_1", "hdim_2", "both"]:
@@ -163,6 +164,7 @@ def merge_split_MEST(
 
     else:
         cell_start_tree = BallTree(cell_start_locations, metric="euclidean")
+
     neighbours, distances = cell_start_tree.query_radius(
         cell_end_locations, r=distance, return_distance=True
     )
