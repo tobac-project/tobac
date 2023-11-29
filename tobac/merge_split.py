@@ -269,6 +269,16 @@ def merge_split_MEST(
         cell_child_feature_count, dims=(cell_dim), coords={cell_dim: cell_id}
     )
 
+    cell_starts_with_split = np.isin(cell_id, start_node_cells)
+    cell_starts_with_split = xr.DataArray(
+        cell_starts_with_split, dims=(cell_dim), coords={cell_dim: cell_id}
+    )
+
+    cell_ends_with_merge = np.isin(cell_id, end_node_cells)
+    cell_ends_with_merge = xr.DataArray(
+        cell_ends_with_merge, dims=(cell_dim), coords={cell_dim: cell_id}
+    )
+
     merge_split_ds = xr.Dataset(
         data_vars={
             "cell_parent_track_id": cell_parent_track_id,
@@ -276,6 +286,8 @@ def merge_split_MEST(
             "feature_parent_track_id": feature_parent_track_id,
             "track_child_cell_count": track_child_cell_count,
             "cell_child_feature_count": cell_child_feature_count,
+            "cell_start_with_split": cell_starts_with_split,
+            "cell_ends_with_merge": cell_ends_with_merge,
         },
         coords={feature_dim: feature_id, cell_dim: cell_id, track_dim: track_id},
     )
