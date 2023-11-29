@@ -12,13 +12,8 @@ import logging
 import numpy as np
 import pandas as pd
 import xarray as xr
-from sklearn.neighbors import BallTree
 import scipy.sparse
-
-try:
-    import networkx as nx
-except ImportError:
-    networkx = None
+from sklearn.neighbors import BallTree
 
 from tobac.tracking import build_distance_function
 
@@ -177,45 +172,36 @@ def merge_split_MEST(
     )
 
     # Input data to the graph which will perform the spanning tree.
-    g = nx.Graph()
     nodes = np.repeat(
         np.arange(len(neighbours), dtype=int), [len(n) for n in neighbours]
     )
     neighbours = np.concatenate(neighbours)
     weights = np.concatenate(distances)
 
+    # Remove edges where the frame gap is greater than frame_len, and also remove connections to the same cell
     wh_frame_len = (
         np.abs(first["frame"].values[nodes] - last["frame"].values[neighbours])
         <= frame_len
     )
-    start_node_cells = first.index.values[nodes[wh_frame_len]]
-    end_node_cells = last.index.values[neighbours[wh_frame_len]]
-
-    g.add_weighted_edges_from(
-        zip(start_node_cells, end_node_cells, weights[wh_frame_len])
-    )
-
-    tree = list(nx.minimum_spanning_edges(g))
-    if len(tree):
-        tree_arr = np.array([t[:2] for t in tree], dtype=int)
-    else:
-        tree_arr = np.array([], dtype=int)
-
-    track_dim = "track"
-    cell_dim = "cell"
-    feature_dim = "feature"
+    wh_valid_edge = np.logical_and(wh_frame_len, nodes != neighbours)
+    start_node_cells = first.index.values[nodes[wh_valid_edge]]
+    end_node_cells = last.index.values[neighbours[wh_valid_edge]]
 
     cell_id = np.unique(tracks.cell.values)
     cell_id = cell_id[cell_id != cell_number_unassigned].astype(int)
+    max_cell = np.max(cell_id)
 
-    # Use scipy.sparse.csgraph connected_components to join linked cells into tracks
-    if tree_arr.size:
-        max_cell = np.max(cell_id)
-        sparse_map = scipy.sparse.coo_array(
-            (np.ones(tree_arr.shape[0]), (tree_arr[:, 0], tree_arr[:, 1])),
+    if len(start_node_cells):
+        # We need to add a small value to the dists to prevent 0-length edges
+        cell_graph = scipy.sparse.coo_array(
+            (weights[wh_valid_edge] + 0.01, (start_node_cells, end_node_cells)),
             shape=(max_cell + 1, max_cell + 1),
         )
-        cell_parent_track_id = scipy.sparse.csgraph.connected_components(sparse_map)[1][
+        cell_graph = scipy.sparse.csgraph.minimum_spanning_tree(
+            cell_graph, overwrite=True
+        )
+
+        cell_parent_track_id = scipy.sparse.csgraph.connected_components(cell_graph)[1][
             cell_id
         ]
         cell_parent_track_id = (
@@ -223,6 +209,10 @@ def merge_split_MEST(
         )
     else:
         cell_parent_track_id = np.arange(cell_id.size, dtype=int) + 1
+
+    track_dim = "track"
+    cell_dim = "cell"
+    feature_dim = "feature"
 
     cell_parent_track_id = xr.DataArray(
         cell_parent_track_id, dims=(cell_dim,), coords={cell_dim: cell_id}
