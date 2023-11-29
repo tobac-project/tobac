@@ -1534,8 +1534,8 @@ def filter_min_distance(
         feature_locations = features[
             [z_coordinate_name, y_coordinate_name, x_coordinate_name]
         ].to_numpy()
-        feature_locations[0] *= dz
-        feature_locations[1:] *= dxy
+        feature_locations[:, 0] *= dz
+        feature_locations[:, 1:] *= dxy
     else:
         feature_locations = (
             features[[y_coordinate_name, x_coordinate_name]].to_numpy() * dxy
