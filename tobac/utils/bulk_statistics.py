@@ -6,6 +6,7 @@ or within feature detection or segmentation.
 import logging
 import warnings
 from . import internal as internal_utils
+from . import decorators
 from typing import Callable, Union
 from functools import partial
 import numpy as np
@@ -146,7 +147,7 @@ def get_statistics(
     return features
 
 
-@internal_utils.iris_to_xarray
+@decorators.iris_to_xarray
 def get_statistics_from_mask(
     features: pd.DataFrame,
     segmentation_mask: xr.DataArray,

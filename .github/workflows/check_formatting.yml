@@ -19,4 +19,4 @@ jobs:
         shell: bash -l {0}
         run:
           mamba install --quiet --yes --file requirements.txt black &&
-          black tobac --check
+          black tobac --check --diff 
