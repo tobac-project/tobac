@@ -1,0 +1,69 @@
+name: Linting
+on:
+  pull_request:
+    branches:
+      - '*'
+permissions:
+  pull-requests: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.9'
+
+      - name: Store the PR branch
+        run: |
+          echo "SHA=$(git rev-parse "$GITHUB_SHA")" >> $GITHUB_OUTPUT
+        id: git
+
+      - name: Switch to main branch
+        uses: actions/checkout@v3
+        with:
+          ref: main
+
+      - name: Install tobac and pylint 
+        run: |
+          pip install .
+          pip install --upgrade pylint
+      - name: Get pylint score of main branch
+        run: |
+          pylint tobac --disable=C --exit-zero
+        id: main_score
+
+      - name: Switch to PR branch
+        uses: actions/checkout@v3
+        with:
+          ref: "${{ steps.git.outputs.SHA}}"  
+
+      - name: Get pylint score of PR branch
+        run: |
+          # use shell script to save only tail of output  
+          OUTPUT_PART=$(pylint tobac --disable=C | tail -n 2)
+          # but post entire output in the action details 
+          pylint tobac --disable=C --exit-zero
+          # define random delimiter for multiline string
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "MESSAGE<<$EOF" >> "$GITHUB_OUTPUT"
+          echo "$OUTPUT_PART" >> "$GITHUB_OUTPUT"
+          echo "$EOF" >> "$GITHUB_OUTPUT"
+        id: pr_score
+
+      - name: Post result to PR
+        uses: mshick/add-pr-comment@v1
+        with:
+          message: |
+            Linting results by Pylint:
+            --------------------------
+            ${{ steps.pr_score.outputs.MESSAGE}}
+            <sub>The linting score is an indicator that reflects how well your code version follows Pylint’s coding standards and quality metrics with respect to the main branch.
+            A decrease usually indicates your new code does not fully meet style guidelines or has potential errors.<sup>
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token-user-login: 'github-actions[bot]' # The user.login for temporary GitHub token
+          allow-repeats: false # This is the default
