@@ -3,6 +3,7 @@
 
 import pandas as pd
 import numpy as np
+import pytest
 
 import datetime
 
@@ -218,3 +219,54 @@ def test_merge_split_MEST_no_cell():
     assert len(mergesplit_output["track"]) == 1
 
     assert mergesplit_output["feature_parent_cell_id"].values[1] == -1
+
+
+def test_merge_split_MEST_3D():
+    """
+    Test merge/split support for 3D tracks and dz input
+    """
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3, 4],
+            "vdim": [1, 2, 1, 2],
+            "hdim_1": [50, 40, 50, 40],
+            "hdim_2": [50, 50, 50, 50],
+            "cell": [1, 2, 1, 2],
+            "frame": [0, 0, 1, 1],
+            "time": [
+                datetime.datetime(2000, 1, 1),
+                datetime.datetime(2000, 1, 1),
+                datetime.datetime(2000, 1, 1, 0, 5),
+                datetime.datetime(2000, 1, 1, 0, 5),
+            ],
+        }
+    )
+
+    # Test that failing to provide dz causes an error
+    with pytest.raises(ValueError):
+        mergesplit.merge_split_MEST(
+            test_features,
+            dxy=1,
+            distance=20,
+        )
+
+    # Test with dz=10, expect merge
+    mergesplit_output_3d_merge = mergesplit.merge_split_MEST(
+        test_features,
+        dxy=1,
+        dz=10,
+        distance=20,
+    )
+
+    assert len(mergesplit_output_3d_merge["track"]) == 1
+
+    # Test with dz=25, expect no merge
+    mergesplit_output_3d_nomerge = mergesplit.merge_split_MEST(
+        test_features,
+        dxy=1,
+        dz=25,
+        distance=20,
+    )
+
+    assert len(mergesplit_output_3d_nomerge["track"]) == 2

@@ -131,16 +131,16 @@ def merge_split_MEST(
                 first[var].values
                 for var in [z_coordinate_name, y_coordinate_name, x_coordinate_name]
             ],
-            axis=0,
+            axis=-1,
         )
-        cell_start_locations[0] *= dz
-        cell_start_locations[1:] *= dxy
+        cell_start_locations[:, 0] *= dz
+        cell_start_locations[:, 1:] *= dxy
         cell_end_locations = np.stack(
             [
                 last[var].values
                 for var in [z_coordinate_name, y_coordinate_name, x_coordinate_name]
             ],
-            axis=0,
+            axis=-1,
         )
         cell_end_locations[0] *= dz
         cell_end_locations[1:] *= dxy
