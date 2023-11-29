@@ -3,12 +3,12 @@ on:
   pull_request:
     branches:
       - '*'
+permissions:
+  pull-requests: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v3
