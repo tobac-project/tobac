@@ -92,3 +92,60 @@ def test_merge_split_MEST():
     # These cells should NOT have merged together.
     print(mergesplit_output_unmerged["track"])
     assert len(mergesplit_output_unmerged["track"]) == 2
+
+
+def test_merge_split_MEST_PBC():
+    """
+    Test PBC handling for merge_split_MEST
+    """
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3, 4],
+            "hdim_1": [1, 89, 1, 99],
+            "hdim_2": [50, 50, 50, 50],
+            "cell": [1, 2, 1, 2],
+            "frame": [0, 0, 1, 1],
+            "time": [
+                datetime.datetime(2000, 1, 1),
+                datetime.datetime(2000, 1, 1),
+                datetime.datetime(2000, 1, 1, 0, 5),
+                datetime.datetime(2000, 1, 1, 0, 5),
+            ],
+        }
+    )
+    # Test without PBCs
+    mergesplit_output_no_pbc = mergesplit.merge_split_MEST(
+        test_features,
+        dxy=1,
+        distance=25,
+    )
+
+    assert len(mergesplit_output_no_pbc["track"]) == 2
+
+    # Test with PBC in hdim_1, cells should merge
+    mergesplit_output_hdim_1_pbc = mergesplit.merge_split_MEST(
+        test_features,
+        dxy=1,
+        distance=25,
+        PBC_flag="hdim_1",
+        min_h1=0,
+        max_h1=100,
+        min_h2=0,
+        max_h2=100,
+    )
+
+    assert len(mergesplit_output_hdim_1_pbc["track"]) == 1
+
+    # Test with PBC in hdim_2, cells should not merge
+    mergesplit_output_hdim_2_pbc = mergesplit.merge_split_MEST(
+        test_features,
+        dxy=1,
+        distance=25,
+        PBC_flag="hdim_2",
+        min_h1=0,
+        max_h1=100,
+        min_h2=0,
+        max_h2=100,
+    )
+
+    assert len(mergesplit_output_hdim_2_pbc["track"]) == 2
