@@ -188,3 +188,33 @@ def test_merge_split_MEST_frame_len():
         frame_len=2,
     )
     assert len(mergesplit_output["track"]) == 1
+
+
+def test_merge_split_MEST_no_cell():
+    """
+    Test merge/split in cases with features with no cell
+    """
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3],
+            "hdim_1": [25, 30, 50],
+            "hdim_2": [25, 30, 50],
+            "cell": [1, -1, 1],
+            "frame": [0, 0, 1],
+            "time": [
+                datetime.datetime(2000, 1, 1),
+                datetime.datetime(2000, 1, 1),
+                datetime.datetime(2000, 1, 1, 0, 5),
+            ],
+        }
+    )
+
+    mergesplit_output = mergesplit.merge_split_MEST(
+        test_features,
+        dxy=1,
+        distance=25,
+    )
+
+    assert len(mergesplit_output["track"]) == 1
+
+    assert mergesplit_output["feature_parent_cell_id"].values[1] == -1

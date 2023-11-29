@@ -108,9 +108,7 @@ def merge_split_MEST(
 
     """
 
-    # Immediately convert pandas dataframe of track information to xarray:
-    tracks = tracks.to_xarray()
-    track_groups = tracks.groupby("cell")
+    track_groups = tracks[tracks["cell"] != cell_number_unassigned].groupby("cell")
     first = track_groups.first()
     last = track_groups.last()
 
@@ -185,8 +183,8 @@ def merge_split_MEST(
         np.abs(first["frame"].values[nodes] - last["frame"].values[neighbours])
         <= frame_len
     )
-    start_node_cells = first["cell"].values[nodes[wh_frame_len]]
-    end_node_cells = last["cell"].values[neighbours[wh_frame_len]]
+    start_node_cells = first.index.values[nodes[wh_frame_len]]
+    end_node_cells = last.index.values[neighbours[wh_frame_len]]
 
     g.add_weighted_edges_from(
         zip(start_node_cells, end_node_cells, weights[wh_frame_len])
@@ -241,7 +239,11 @@ def merge_split_MEST(
     )
     logging.debug("found feature parent cell ids")
 
-    feature_parent_track_id = cell_parent_track_id.loc[feature_parent_cell_id].values
+    wh_feature_in_cell = (feature_parent_cell_id != cell_number_unassigned).values
+    feature_parent_track_id = np.full(wh_feature_in_cell.shape, cell_number_unassigned)
+    feature_parent_track_id[wh_feature_in_cell] = cell_parent_track_id.loc[
+        feature_parent_cell_id[wh_feature_in_cell]
+    ].values
     feature_parent_track_id = xr.DataArray(
         feature_parent_track_id,
         dims=(feature_dim,),
@@ -255,7 +257,9 @@ def merge_split_MEST(
         coords={track_dim: track_id},
     )
 
-    cell_child_feature_count = np.bincount(feature_parent_cell_id.values)[cell_id]
+    cell_child_feature_count = np.bincount(
+        feature_parent_cell_id[wh_feature_in_cell].values
+    )[cell_id]
     cell_child_feature_count = xr.DataArray(
         cell_child_feature_count, dims=(cell_dim), coords={cell_dim: cell_id}
     )
