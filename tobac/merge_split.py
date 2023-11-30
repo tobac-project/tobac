@@ -200,6 +200,8 @@ def merge_split_MEST(
         cell_graph = scipy.sparse.csgraph.minimum_spanning_tree(
             cell_graph, overwrite=True
         )
+        # Find remaining start/end nodes after calculating minimum spanning tree
+        start_node_cells, end_node_cells = cell_graph.nonzero()
 
         cell_parent_track_id = scipy.sparse.csgraph.connected_components(cell_graph)[1][
             cell_id
