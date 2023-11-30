@@ -245,16 +245,21 @@ def merge_split_MEST(
         coords={feature_dim: feature_id},
     )
 
-    track_child_cell_count = np.bincount(cell_parent_track_id.values)[track_id]
+    track_child_cell_count = (
+        cell_parent_track_id.groupby(cell_parent_track_id).reduce(np.size).values
+    )
     track_child_cell_count = xr.DataArray(
         track_child_cell_count,
         dims=(track_dim,),
         coords={track_dim: track_id},
     )
 
-    cell_child_feature_count = np.bincount(
-        feature_parent_cell_id[wh_feature_in_cell].values
-    )[cell_id]
+    cell_child_feature_count = (
+        feature_parent_cell_id[wh_feature_in_cell]
+        .groupby(feature_parent_cell_id[wh_feature_in_cell])
+        .reduce(np.size)
+        .values
+    )
     cell_child_feature_count = xr.DataArray(
         cell_child_feature_count, dims=(cell_dim), coords={cell_dim: cell_id}
     )
