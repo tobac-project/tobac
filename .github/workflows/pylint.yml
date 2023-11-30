@@ -9,14 +9,27 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v3
+      - name: Set up conda
+        uses: conda-incubator/setup-miniconda@v2
         with:
-          python-version: '3.9'
+          miniforge-version: latest
+          miniforge-variant: mambaforge
+          channel-priority: strict
+          channels: conda-forge
+          show-channel-urls: true
+          use-only-tar-bz2: true
+
+      - name: Install tobac and pylint
+        run: |
+          mamba install --yes pylint
+          pip install .
 
       - name: Store the PR branch
         run: |
@@ -36,11 +49,6 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: ${{ steps.branch_name.outputs.RC_BRANCH }}
-
-      - name: Install tobac and pylint 
-        run: |
-          pip install .
-          pip install --upgrade pylint
           
       - name: Get pylint score of RC branch
         run: |
@@ -50,12 +58,12 @@ jobs:
       - name: Checkout PR branch
         uses: actions/checkout@v3
         with:
-          ref: "${{ steps.git.outputs.SHA}}"  
+          ref: "${{ steps.git.outputs.SHA }}"  
 
       - name: Get pylint score of PR branch
         run: |
           # use shell script to save only tail of output  
-          OUTPUT_PART=$(pylint tobac --disable=C | tail -n 2)
+          OUTPUT_PART=$(pylint tobac --disable=C --exit-zero | tail -n 2)
           # but post entire output in the action details 
           pylint tobac --disable=C --exit-zero
           # define random delimiter for multiline string
@@ -71,8 +79,8 @@ jobs:
           message: |
             Linting results by Pylint:
             --------------------------
-            ${{ steps.pr_score.outputs.MESSAGE}}
-            <sub>The linting score is an indicator that reflects how well your code version follows Pylint’s coding standards and quality metrics with respect to the ${{ steps.branch_name.outputs.RC_BRANCH}} branch.
+            ${{ steps.pr_score.outputs.MESSAGE }}
+            <sub>The linting score is an indicator that reflects how well your code version follows Pylint’s coding standards and quality metrics with respect to the ${{ steps.branch_name.outputs.RC_BRANCH }} branch.
             A decrease usually indicates your new code does not fully meet style guidelines or has potential errors.<sup>
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           repo-token-user-login: 'github-actions[bot]' # The user.login for temporary GitHub token
