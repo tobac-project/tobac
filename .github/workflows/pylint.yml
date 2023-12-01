@@ -36,19 +36,10 @@ jobs:
           echo "SHA=$(git rev-parse "$GITHUB_SHA")" >> $GITHUB_OUTPUT
         id: git
 
-      - name: Get RC branch name
-        run: |
-          git fetch --all
-          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
-          echo "RC_BRANCH<<$EOF" >> $GITHUB_OUTPUT
-          echo "$(git branch -r --list 'origin/RC*' --sort=-committerdate | head -n 1 | sed 's/origin\///' | xargs)" >> $GITHUB_OUTPUT
-          echo "$EOF" >> $GITHUB_OUTPUT
-        id: branch_name
-
       - name: Checkout RC branch
         uses: actions/checkout@v3
         with:
-          ref: ${{ steps.branch_name.outputs.RC_BRANCH }}
+          ref: ${{ github.base_ref }}
           
       - name: Get pylint score of RC branch
         run: |
