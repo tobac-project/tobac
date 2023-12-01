@@ -1,6 +1,8 @@
 """
 Test for the trackpy tracking functions
 """
+import datetime
+
 import pytest
 import tobac.testing
 import tobac.tracking
@@ -557,3 +559,94 @@ def test_untracked_nat():
     # the exact data type depends on architecture, so
     # instead just check by name
     assert output["time_cell"].dtype.name == "timedelta64[ns]"
+
+
+@pytest.mark.parametrize(
+    "cell_time_lengths, min_time_length, expected_there",
+    [
+        (
+            [0, 5, 10, 120, 300],
+            0,
+            [True, True, True, True, True],
+        ),
+        (
+            [0, 5, 10, 120, 300],
+            5,
+            [False, False, True, True, True],
+        ),
+        (
+            [0, 5, 10, 120, 300],
+            6,
+            [False, False, True, True, True],
+        ),
+        (
+            [0, 5, 10, 120, 300],
+            120,
+            [False, False, False, False, True],
+        ),
+        (
+            [0, 5, 10, 120, 300],
+            900,
+            [False, False, False, False, False],
+        ),
+    ],
+)
+def test_time_cell_min(
+    cell_time_lengths: list[int],
+    min_time_length: int,
+    expected_there: list[bool],
+):
+    """
+    Tests time_cell_min in particle-based tracking
+    Parameters
+    ----------
+    cell_time_lengths: list[int]
+        Length that each cell appears for
+    min_time_length: int
+        time_cell_min value
+    expected_there: list[bool]
+        whether to expect the cell there.
+
+    """
+    # delta time automatically set by smallest difference between cell lengths
+    delta_time = 1
+    # how far horizontally to separate test features
+    sep_factor = 2
+    all_feats = list()
+    # generate dataframes
+    for i, cell_time in enumerate(cell_time_lengths):
+        curr_feat = tobac.testing.generate_single_feature(
+            start_h1=i * sep_factor,
+            start_h2=i * sep_factor,
+            spd_h1=1,
+            spd_h2=1,
+            max_h1=1000,
+            max_h2=1000,
+            num_frames=cell_time // delta_time,
+            dt=datetime.timedelta(seconds=delta_time),
+        )
+        curr_feat["orig_cell_num"] = i
+
+        all_feats.append(curr_feat)
+    all_feats_df = tobac.utils.combine_feature_dataframes(all_feats)
+
+    all_feats_tracked = tobac.tracking.linking_trackpy(
+        all_feats_df,
+        field_in=None,
+        dt=delta_time,
+        dxy=1000,
+        v_max=(1000 * 2) / delta_time,
+        cell_number_unassigned=-1,
+        time_cell_min=min_time_length,
+    )
+    all_feats_tracked_drop_no_cells = all_feats_tracked[all_feats_tracked["cell"] != -1]
+
+    for i, cell_expected in enumerate(expected_there):
+        if cell_expected:
+            expected_val = cell_time_lengths[i] // delta_time
+        else:
+            expected_val = 0
+        assert (
+            np.sum(all_feats_tracked_drop_no_cells["orig_cell_num"] == i)
+            == expected_val
+        )
