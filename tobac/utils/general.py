@@ -96,7 +96,6 @@ def add_coordinates_3D(
             variable_cube,
             vertical_coord=vertical_coord,
             vertical_axis=vertical_axis,
-            assume_coords_fixed_in_time=assume_coords_fixed_in_time,
         )
     raise ValueError(
         "add_coordinates_3D only supports xarray.DataArray and iris.cube.Cube"

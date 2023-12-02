@@ -21,12 +21,12 @@ import tobac.utils.internal.xarray_utils as xr_utils
         (
             ((0, 0, 0), (9, 9, 9)),
             {"x": ("x", np.linspace(0, 10, 10)), "z": ("z", np.linspace(0, 10, 10))},
-            {"x": (0, 9)},
+            {"x": (0, 10)},
         ),
         (
             ((0, 0), (9, 9)),
             {"x": ("x", np.linspace(0, 10, 10))},
-            {"x": (0, 9)},
+            {"x": (0, 10)},
         ),
         (
             ((0, 0), (9, 9), (5, 7)),

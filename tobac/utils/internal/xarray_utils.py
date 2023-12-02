@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import copy
 from typing import Union
+
+import cftime
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -263,6 +265,7 @@ def add_coordinates_to_features(
     vertical_axis: Union[int, None] = None,
     use_standard_names: bool = True,
     interp_dims_without_coords: bool = False,
+    preserve_iris_datetime_types: bool = True,
 ) -> pd.DataFrame:
     """Function to populate the interpolated coordinates to feature
 
@@ -290,8 +293,12 @@ def add_coordinates_to_features(
     interp_dims_without_coords: bool
         If True, interpolates dimensions without coordinates
         If False, skips dimensions without coordinates
+    preserve_iris_datetime_types: bool
+        If True, uses the same datetime types as iris (cftime)
+        If False, converts datetime output to pandas standard
     Returns
     -------
+    Dataframe with coordinates added
 
     """
     # make a copy to avoid editing in place.
@@ -333,55 +340,55 @@ def add_coordinates_to_features(
         else:
             raise ValueError("DataArray has too many or too few dimensions")
 
-    # create new coordinates that are simply the i, j, k values
+    # If the dimensions share a name with the coordinates and those coordinates do not match
+    # with the i, j, k-style indices, you cannot `interp` along those i, j, k indices.
+    # so, instead, we rename the dimensions to random strings so that we can
+    # run interpolation.
+
+    hdim1_name_original = variable_da.dims[hdim1_axis]
+    hdim2_name_original = variable_da.dims[hdim2_axis]
 
     # generate random names for the new coordinates that are based on i, j, k values
-    hdim1_name = "".join(
+    hdim1_name_new = "".join(
         random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits)
         for _ in range(16)
     )
-    hdim2_name = "".join(
+    hdim2_name_new = "".join(
         random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits)
         for _ in range(16)
     )
 
-    new_coords = {
-        hdim1_name: (
-            variable_da.dims[hdim1_axis],
-            np.arange(0, variable_da.shape[hdim1_axis], 1),
-        ),
-        hdim2_name: (
-            variable_da.dims[hdim2_axis],
-            np.arange(0, variable_da.shape[hdim2_axis], 1),
-        ),
+    dim_new_names = {
+        hdim1_name_original: hdim1_name_new,
+        hdim2_name_original: hdim2_name_new,
     }
-
-    # hdim1_name = variable_da.dims[hdim1_axis]
-    # hdim2_name = variable_da.dims[hdim2_axis]
-
     dim_interp_coords = {
-        hdim1_name: xr.DataArray(return_feat_df["hdim_1"].values, dims="features"),
-        hdim2_name: xr.DataArray(return_feat_df["hdim_2"].values, dims="features"),
+        hdim1_name_new: xr.DataArray(return_feat_df["hdim_1"].values, dims="features"),
+        hdim2_name_new: xr.DataArray(return_feat_df["hdim_2"].values, dims="features"),
     }
 
     if is_3d:
-        vdim_name = "".join(
+        vdim_name_original = variable_da.dims[vertical_axis]
+        vdim_name_new = "".join(
             random.choice(
                 string.ascii_uppercase + string.ascii_lowercase + string.digits
             )
             for _ in range(16)
         )
-        dim_interp_coords[vdim_name] = xr.DataArray(
+        dim_interp_coords[vdim_name_new] = xr.DataArray(
             return_feat_df["vdim"].values, dims="features"
         )
-        new_coords[vdim_name] = (
-            (
-                variable_da.dims[vertical_axis],
-                np.arange(0, variable_da.shape[vertical_axis], 1),
-            ),
-        )
-    variable_da_new_coords = variable_da.assign_coords(coords=new_coords)
-    interpolated_df = variable_da_new_coords.interp(coords=dim_interp_coords)
+
+        dim_new_names[vdim_name_original] = vdim_name_new
+
+    # you can only rename dims alone when operating on datasets, so add our dataarray to a
+    # dataset
+    renamed_dim_ds = xr.Dataset({"var": variable_da}).rename_dims(dim_new_names)
+
+    interpolated_df = renamed_dim_ds["var"].interp(coords=dim_interp_coords)
+    interpolated_df = interpolated_df.drop([hdim1_name_new, hdim2_name_new])
+    if is_3d:
+        interpolated_df = interpolated_df.drop([vdim_name_new])
     return_feat_df[time_dim_name] = variable_da[time_dim_name].values[
         return_feat_df["frame"]
     ]
@@ -407,4 +414,12 @@ def add_coordinates_to_features(
                 pass
 
         return_feat_df[interp_coord_name] = interpolated_df[interp_coord].values
+    if preserve_iris_datetime_types:
+        import cftime
+
+        return_feat_df[time_dim_name] = return_feat_df[time_dim_name].apply(
+            lambda x: cftime.datetime(
+                x.year, x.month, x.day, x.hour, x.minute, x.second, x.microsecond
+            )
+        )
     return return_feat_df
