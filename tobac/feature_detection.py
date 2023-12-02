@@ -292,12 +292,12 @@ def remove_parents(
         Dataframe containing detected features.
 
     regions_i : dict
-        Dictionary containing the regions above/below
+        Dictionary containing the regions greater/lower than and equal to
         threshold for the newly detected feature
         (feature ids as keys).
 
     regions_old : dict
-        Dictionary containing the regions above/below
+        Dictionary containing the regions greater/lower than and equal to
         threshold from previous threshold
         (feature ids as keys).
 
@@ -409,8 +409,10 @@ def feature_detection_threshold(
         Number of the current timestep.
 
     threshold : float, optional
-        Threshold value used to select target regions to track. Default
-                is None.
+        Threshold value used to select target regions to track.  The feature detection is inclusive of the
+        threshold value(s), i.e. values greater/less than or equal are included in the target region. The
+        feature detection is inclusive of the threshold value(s), i.e. values greater/less than or equal are
+        included in the target region. Default is None.
 
     target : {'maximum', 'minimum'}, optional
         Flag to determine if tracking is targetting minima or maxima
@@ -425,14 +427,14 @@ def feature_detection_threshold(
         Standard deviation for intial filtering step. Default is 0.5.
 
     n_erosion_threshold: int, optional
-        Number of pixel by which to erode the identified features.
+        Number of pixels by which to erode the identified features.
         Default is 0.
 
     n_min_threshold : int, optional
-        Minimum number of identified features. Default is 0.
+        Minimum number of identified contiguous pixels for a feature to be detected. Default is 0.
 
     min_distance : float, optional
-        Minimum distance between detected features (in meter). Default is 0.
+        Minimum distance between detected features (in meters). Default is 0.
 
     idx_start : int, optional
         Feature id to start with. Default is 0.
@@ -906,7 +908,7 @@ def feature_detection_multithreshold_timestep(
     dxy: float = -1,
     wavelength_filtering: tuple[float] = None,
     strict_thresholding: bool = False,
-    statistics: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
+    statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
 ) -> pd.DataFrame:
     """Find features in each timestep.
 
@@ -924,8 +926,7 @@ def feature_detection_multithreshold_timestep(
         Number of the current timestep.
 
     threshold : list of floats, optional
-        Threshold value used to select target regions to track. Default
-        is None.
+        Threshold value used to select target regions to track. The feature detection is inclusive of the threshold value(s), i.e. values greater/less than or equal are included in the target region. Default is None.
 
     min_num : int, optional
         This parameter is not used in the function. Default is 0.
@@ -943,14 +944,14 @@ def feature_detection_multithreshold_timestep(
         Standard deviation for intial filtering step. Default is 0.5.
 
     n_erosion_threshold: int, optional
-        Number of pixel by which to erode the identified features.
+        Number of pixels by which to erode the identified features.
         Default is 0.
 
     n_min_threshold : int, optional
-        Minimum number of identified features. Default is 0.
+        Minimum number of identified contiguous pixels for a feature to be detected. Default is 0.
 
     min_distance : float, optional
-        Minimum distance between detected features (in meter). Default is 0.
+        Minimum distance between detected features (in meters). Default is 0.
 
     feature_number_start : int, optional
         Feature id to start with. Default is 1.
@@ -965,16 +966,16 @@ def feature_detection_multithreshold_timestep(
     vertical_axis: int
         The vertical axis number of the data.
     dxy : float
-        Grid spacing in meter.
+        Grid spacing in meters.
 
     wavelength_filtering: tuple, optional
-       Minimum and maximum wavelength for spectral filtering in meter. Default is None.
+       Minimum and maximum wavelength for spectral filtering in meters. Default is None.
 
     strict_thresholding: Bool, optional
         If True, a feature can only be detected if all previous thresholds have been met.
         Default is False.
 
-    statistics : dict, optional
+    statistic : dict, optional
             Default is None. Optional parameter to calculate bulk statistics within feature detection.
             Dictionary with callable function(s) to apply over the region of each detected feature and the name of the statistics to appear in the feature ou            tput dataframe. The functions should be the values and the names of the metric the keys (e.g. {'mean': np.mean})
 
@@ -1103,7 +1104,7 @@ def feature_detection_multithreshold_timestep(
         elif i_threshold == 0:
             regions_old = regions_i
 
-        if statistics:
+        if statistic:
             # reconstruct the labeled regions based on the regions dict
             labels = np.zeros(track_data.shape)
             labels = labels.astype(int)
@@ -1112,10 +1113,10 @@ def feature_detection_multithreshold_timestep(
                 # apply function to get statistics based on labeled regions and functions provided by the user
                 # the feature dataframe is updated by appending a column for each metric
             features_thresholds = get_statistics(
+                features_thresholds,
                 labels,
                 track_data,
-                features=features_thresholds,
-                statistic=statistics,
+                statistic=statistic,
                 index=np.unique(labels[labels > 0]),
                 id_column="idx",
             )
@@ -1151,7 +1152,7 @@ def feature_detection_multithreshold(
     wavelength_filtering: tuple = None,
     dz: Union[float, None] = None,
     strict_thresholding: bool = False,
-    statistics: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
+    statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
 ) -> pd.DataFrame:
     """Perform feature detection based on contiguous regions.
 
@@ -1167,8 +1168,8 @@ def feature_detection_multithreshold(
         Grid spacing of the input data (in meter).
 
     thresholds : list of floats, optional
-        Threshold values used to select target regions to track.
-        Default is None.
+        Threshold values used to select target regions to track. The feature detection is inclusive of the threshold value(s), i.e. values
+        greater/less than or equal are included in the target region. Default is None.
 
     target : {'maximum', 'minimum'}, optional
         Flag to determine if tracking is targetting minima or maxima in
@@ -1179,25 +1180,18 @@ def feature_detection_multithreshold(
         Flag choosing method used for the position of the tracked
         feature. Default is 'center'.
 
-    coord_interp_kind : str, optional
-        The kind of interpolation for coordinates. Default is 'linear'.
-        For 1d interp, {'linear', 'nearest', 'nearest-up', 'zero',
-                        'slinear', 'quadratic', 'cubic',
-                        'previous', 'next'}.
-        For 2d interp, {'linear', 'cubic', 'quintic'}.
-
     sigma_threshold: float, optional
         Standard deviation for intial filtering step. Default is 0.5.
 
     n_erosion_threshold: int, optional
-        Number of pixel by which to erode the identified features.
+        Number of pixels by which to erode the identified features.
         Default is 0.
 
     n_min_threshold : int, optional
-        Minimum number of identified features. Default is 0.
+        Minimum number of identified contiguous pixels for a feature to be detected. Default is 0.
 
     min_distance : float, optional
-        Minimum distance between detected features (in meter). Default is 0.
+        Minimum distance between detected features (in meters). Default is 0.
 
     feature_number_start : int, optional
         Feature id to start with. Default is 1.
@@ -1366,7 +1360,7 @@ def feature_detection_multithreshold(
             dxy=dxy,
             wavelength_filtering=wavelength_filtering,
             strict_thresholding=strict_thresholding,
-            statistics=statistics,
+            statistic=statistic,
         )
         # check if list of features is not empty, then merge features from different threshold
         # values into one DataFrame and append to list for individual timesteps:
@@ -1442,15 +1436,15 @@ def filter_min_distance(
     features:      pandas DataFrame
                    features
     dxy:           float
-        Constant horzontal grid spacing (m).
+        Constant horzontal grid spacing (meters).
     dz: float
-        Constant vertical grid spacing (m), optional. If not specified
+        Constant vertical grid spacing (meters), optional. If not specified
         and the input is 3D, this function requires that `z_coordinate_name` is available
         in the `features` input. If you specify a value here, this function assumes
         that it is the constant z spacing between points, even if ```z_coordinate_name```
         is specified.
     min_distance:  float
-        minimum distance between detected features (m)
+        minimum distance between detected features (meters)
     x_coordinate_name: str
         The name of the x coordinate to calculate distance based on in meters.
         This is typically `projection_x_coordinate`. Currently unused.
@@ -1461,7 +1455,7 @@ def filter_min_distance(
         The name of the z coordinate to calculate distance based on in meters.
         This is typically `altitude`. If None, tries to auto-detect.
     target: {'maximum', 'minimum'}, optional
-        Flag to determine if tracking is targetting minima or maxima in
+        Flag to determine if tracking is targeting minima or maxima in
         the data. Default is 'maximum'.
     PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
         Sets whether to use periodic boundaries, and if so in which directions.
@@ -1477,7 +1471,6 @@ def filter_min_distance(
         Minimum real point in hdim_2, for use with periodic boundaries.
     max_h2: int, optional
         Maximum point in hdim_2, exclusive. max_h2-min_h2 should be the size.
-
 
     Returns
     -------

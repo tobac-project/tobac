@@ -70,9 +70,9 @@ def add_markers(
          or a box of user-set size
     seed_3D_size: int or tuple (dimensions equal to dimensions of `field`)
         This sets the size of the seed box when `seed_3D_flag` is 'box'. If it's an
-        integer, the seed box is identical in all dimensions. If it's a tuple, it specifies the
-        seed area for each dimension separately.
-        Note: we recommend the use of odd numbers for this. If you give
+        integer (units of number of pixels), the seed box is identical in all dimensions.
+        If it's a tuple, it specifies the seed area for each dimension separately, in units of pixels.
+        Note: we strongly recommend the use of odd numbers for this. If you give
         an even number, your seed box will be biased and not centered
         around the feature.
         Note: if two seed boxes overlap, the feature that is seeded will be the
@@ -281,7 +281,7 @@ def segmentation_3D(
     max_distance=None,
     PBC_flag="none",
     seed_3D_flag="column",
-    statistics=None,
+    statistic=None,
 ):
     """Wrapper for the segmentation()-function."""
 
@@ -296,7 +296,7 @@ def segmentation_3D(
         max_distance=max_distance,
         PBC_flag=PBC_flag,
         seed_3D_flag=seed_3D_flag,
-        statistics=statistics,
+        statistic=statistic,
     )
 
 
@@ -311,7 +311,7 @@ def segmentation_2D(
     max_distance=None,
     PBC_flag="none",
     seed_3D_flag="column",
-    statistics=None,
+    statistic=None,
 ):
     """Wrapper for the segmentation()-function."""
     return segmentation(
@@ -325,7 +325,7 @@ def segmentation_2D(
         max_distance=max_distance,
         PBC_flag=PBC_flag,
         seed_3D_flag=seed_3D_flag,
-        statistics=statistics,
+        statistic=statistic,
     )
 
 
@@ -344,7 +344,7 @@ def segmentation_timestep(
     seed_3D_size: Union[int, tuple[int]] = 5,
     segment_number_below_threshold: int = 0,
     segment_number_unassigned: int = 0,
-    statistics: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
+    statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
 ) -> tuple[iris.cube.Cube, pd.DataFrame]:
     """Perform watershedding for an individual time step of the data. Works
     for both 2D and 3D data
@@ -362,11 +362,11 @@ def segmentation_timestep(
         Grid spacing of the input data in metres
 
     threshold : float, optional
-        Threshold for the watershedding field to be used for the mask.
+        Threshold for the watershedding field to be used for the mask. The watershedding is exclusive of the threshold value, i.e. values greater (less) than the threshold are included in the target region, while values equal to the threshold value are excluded.
         Default is 3e-3.
 
     target : {'maximum', 'minimum'}, optional
-        Flag to determine if tracking is targetting minima or maxima in
+        Flag to determine if tracking is targeting minima or maxima in
         the data to determine from which direction to approach the threshold
         value. Default is 'maximum'.
 
@@ -376,11 +376,11 @@ def segmentation_timestep(
 
     method : {'watershed'}, optional
         Flag determining the algorithm to use (currently watershedding
-        implemented). 'random_walk' could be uncommented.
+        implemented).
 
     max_distance : float, optional
         Maximum distance from a marker allowed to be classified as
-        belonging to that cell. Default is None.
+        belonging to that cell in meters. Default is None.
 
     vertical_coord : str, optional
         Vertical coordinate in 3D input data. If None, input is checked for
@@ -398,14 +398,18 @@ def segmentation_timestep(
          or a box of user-set size
     seed_3D_size: int or tuple (dimensions equal to dimensions of `field`)
         This sets the size of the seed box when `seed_3D_flag` is 'box'. If it's an
-        integer, the seed box is identical in all dimensions. If it's a tuple, it specifies the
-        seed area for each dimension separately. Note: we recommend the use
-        of odd numbers for this. If you give an even number, your seed box will be
-        biased and not centered around the feature.
+        integer (units of number of pixels), the seed box is identical in all dimensions.
+        If it's a tuple, it specifies the seed area for each dimension separately, in units of pixels.
+        Note: we strongly recommend the use of odd numbers for this. If you give
+        an even number, your seed box will be biased and not centered
+        around the feature.
+        Note: if two seed boxes overlap, the feature that is seeded will be the
+        closer feature.
     segment_number_below_threshold: int
         the marker to use to indicate a segmentation point is below the threshold.
     segment_number_unassigned: int
         the marker to use to indicate a segmentation point is above the threshold but unsegmented.
+        This can be the same as `segment_number_below_threshold`, but can also be set separately.
     statistics: boolean, optional
         Default is None. If True, bulk statistics for the data points assigned to each feature are saved in output.
 
@@ -1028,20 +1032,20 @@ def segmentation_timestep(
 
     # add ncells to feature dataframe with new statistic method
     features_out = get_statistics(
+        features_out,
         np.array(segmentation_out.data.copy()),
         np.array(field_in.data.copy()),
-        features=features_out,
         statistic={"ncells": np.count_nonzero},
         default=0,
     )
 
     # compute additional statistics, if requested
-    if statistics:
+    if statistic:
         features_out = get_statistics(
+            features_out,
             segmentation_out.data.copy(),
             field_in.data.copy(),
-            features=features_out,
-            statistic=statistics,
+            statistic=statistic,
         )
 
     return segmentation_out, features_out
@@ -1126,103 +1130,96 @@ def segmentation(
     seed_3D_size: Union[int, tuple[int]] = 5,
     segment_number_below_threshold: int = 0,
     segment_number_unassigned: int = 0,
-    statistics: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
+    statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
 ) -> tuple[iris.cube.Cube, pd.DataFrame]:
     """Use watershedding to determine region above a threshold
-            value around initial seeding position for all time steps of
-            the input data. Works both in 2D (based on single seeding
-            point) and 3D and returns a mask with zeros everywhere around
-            the identified regions and the feature id inside the regions.
+    value around initial seeding position for all time steps of
+    the input data. Works both in 2D (based on single seeding
+    point) and 3D and returns a mask with zeros everywhere around
+    the identified regions and the feature id inside the regions.
 
-            Calls segmentation_timestep at each individal timestep of the
-            input data.
+    Calls segmentation_timestep at each individal timestep of the
+    input data.
 
-            Parameters
-            ----------
-            features : pandas.DataFrame
-                Output from trackpy/maketrack.
+    Parameters
+    ----------
+    features : pandas.DataFrame
+        Output from trackpy/maketrack.
 
-            field : iris.cube.Cube
-                Containing the field to perform the watershedding on.
+    field : iris.cube.Cube
+        Containing the field to perform the watershedding on.
 
-            dxy : float
-                Grid spacing of the input data.
+    dxy : float
+        Grid spacing of the input data in meters.
 
-            statistics : dict, optional
-                Default is None. Optional parameter to calculate bulk statistics within feature detection.
-                Dictionary with callable function(s) to apply over the region of each detected feature and the name of the statistics to appear in the feature output dataframe. The functions should be the values and the names of the metric the keys (e.g. {'mean': np.mean})
+    threshold : float, optional
+        Threshold for the watershedding field to be used for the mask.
+        Default is 3e-3.
 
-    boolean, optional
-                Default is False. If True, bulk statistics for the data points assigned to each feature are saved in output.
+    target : {'maximum', 'minimum'}, optional
+        Flag to determine if tracking is targetting minima or maxima in
+        the data. Default is 'maximum'.
 
-            Output:
-            segmentation_out: iris.cube.Cube
-                           Cloud mask, 0 outside and integer numbers according to track inside the cloud
-        =======
-            threshold : float, optional
-                Threshold for the watershedding field to be used for the mask.
-                Default is 3e-3.
+    level : slice of iris.cube.Cube, optional
+        Levels at which to seed the cells for the watershedding
+        algorithm. Default is None.
 
-            target : {'maximum', 'minimum'}, optional
-                Flag to determine if tracking is targetting minima or maxima in
-                the data. Default is 'maximum'.
+    method : {'watershed'}, optional
+        Flag determining the algorithm to use (currently watershedding
+        implemented). 'random_walk' could be uncommented.
 
-            level : slice of iris.cube.Cube, optional
-                Levels at which to seed the cells for the watershedding
-                algorithm. Default is None.
+    max_distance : float, optional
+        Maximum distance from a marker allowed to be classified as
+        belonging to that cell in meters. Default is None.
 
-            method : {'watershed'}, optional
-                Flag determining the algorithm to use (currently watershedding
-                implemented). 'random_walk' could be uncommented.
+    vertical_coord : {'auto', 'z', 'model_level_number', 'altitude',
+                      'geopotential_height'}, optional
+        Name of the vertical coordinate for use in 3D segmentation case
 
-            max_distance : float, optional
-                Maximum distance from a marker allowed to be classified as
-                belonging to that cell. Default is None.
+    PBC_flag : {'none', 'hdim_1', 'hdim_2', 'both'}
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
 
-            vertical_coord : {'auto', 'z', 'model_level_number', 'altitude',
-                              'geopotential_height'}, optional
-                Name of the vertical coordinate for use in 3D segmentation case
+    seed_3D_flag: str('column', 'box')
+        Seed 3D field at feature positions with either the full column (default)
+         or a box of user-set size
 
-            PBC_flag : {'none', 'hdim_1', 'hdim_2', 'both'}
-                Sets whether to use periodic boundaries, and if so in which directions.
-                'none' means that we do not have periodic boundaries
-                'hdim_1' means that we are periodic along hdim1
-                'hdim_2' means that we are periodic along hdim2
-                'both' means that we are periodic along both horizontal dimensions
-
-            seed_3D_flag: str('column', 'box')
-                Seed 3D field at feature positions with either the full column (default)
-                 or a box of user-set size
-
-            seed_3D_size: int or tuple (dimensions equal to dimensions of `field`)
-                This sets the size of the seed box when `seed_3D_flag` is 'box'. If it's an
-                integer, the seed box is identical in all dimensions. If it's a tuple, it specifies the
-                seed area for each dimension separately. Note: we recommend the use
-                of odd numbers for this. If you give an even number, your seed box will be
-                biased and not centered around the feature.
-            segment_number_below_threshold: int
-                the marker to use to indicate a segmentation point is below the threshold.
-            segment_number_unassigned: int
-                the marker to use to indicate a segmentation point is above the threshold but unsegmented.
-        statistics: boolean, optional
-            Default is False. If True, bulk statistics for the data points assigned to each feature are saved in output.
+    seed_3D_size: int or tuple (dimensions equal to dimensions of `field`)
+        This sets the size of the seed box when `seed_3D_flag` is 'box'. If it's an
+        integer (units of number of pixels), the seed box is identical in all dimensions.
+        If it's a tuple, it specifies the seed area for each dimension separately, in units of pixels.
+        Note: we strongly recommend the use of odd numbers for this. If you give
+        an even number, your seed box will be biased and not centered
+        around the feature.
+        Note: if two seed boxes overlap, the feature that is seeded will be the
+        closer feature.
+    segment_number_below_threshold: int
+        the marker to use to indicate a segmentation point is below the threshold.
+    segment_number_unassigned: int
+        the marker to use to indicate a segmentation point is above the threshold but unsegmented.
+    statistic : dict, optional
+        Default is None. Optional parameter to calculate bulk statistics within feature detection.
+        Dictionary with callable function(s) to apply over the region of each detected feature and the name of the statistics to appear in the feature output dataframe. The functions should be the values and the names of the metric the keys (e.g. {'mean': np.mean})
 
 
-            Returns
-            -------
-            segmentation_out : iris.cube.Cube
-                Mask, 0 outside and integer numbers according to track
-                inside the area/volume of the feature.
+    Returns
+    -------
+    segmentation_out : iris.cube.Cube
+        Mask, 0 outside and integer numbers according to track
+        inside the area/volume of the feature.
 
-            features_out : pandas.DataFrame
-                Feature dataframe including the number of cells (2D or 3D) in
-                the segmented area/volume of the feature at the timestep.
+    features_out : pandas.DataFrame
+        Feature dataframe including the number of cells (2D or 3D) in
+        the segmented area/volume of the feature at the timestep.
 
-            Raises
-            ------
-            ValueError
-                If field_in.ndim is neither 3 nor 4 and 'time' is not included
-                in coords.
+    Raises
+    ------
+    ValueError
+        If field_in.ndim is neither 3 nor 4 and 'time' is not included
+        in coords.
     """
     import pandas as pd
     from iris.cube import CubeList
@@ -1265,7 +1262,7 @@ def segmentation(
             seed_3D_size=seed_3D_size,
             segment_number_unassigned=segment_number_unassigned,
             segment_number_below_threshold=segment_number_below_threshold,
-            statistics=statistics,
+            statistic=statistic,
         )
         segmentation_out_list.append(segmentation_out_i)
         features_out_list.append(features_out_i)

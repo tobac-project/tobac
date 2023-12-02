@@ -613,7 +613,7 @@ def test_segmentation_multiple_features():
         threshold=[1, 2, 3],
         n_min_threshold=test_min_num,
         target="maximum",
-        statistics={"features_mean": np.mean},
+        statistic={"features_mean": np.mean},
     )
 
     # add feature IDs to data frame for one time step
@@ -625,7 +625,7 @@ def test_segmentation_multiple_features():
         features_in=fd_output,
         dxy=test_dxy,
         threshold=1.5,
-        statistics={"segments_mean": np.mean},
+        statistic={"segments_mean": np.mean},
     )
     out_seg_mask_arr = out_seg_mask.core_data()
 
@@ -794,7 +794,7 @@ def test_segmentation_timestep_3d_buddy_box(
     out_seg_mask_shifted, out_df = seg.segmentation_timestep(
         field_in=test_data_iris_shifted,
         features_in=test_feature_ds_shifted,
-        **common_seg_opts
+        **common_seg_opts,
     )
 
     # Now, shift output back.
@@ -857,14 +857,14 @@ def test_add_markers_pbcs(
         start_h1=feat_1_loc[1],
         start_h2=feat_1_loc[2],
         feature_num=1,
-        **common_feat_opts
+        **common_feat_opts,
     )
     test_feature_ds_2 = testing.generate_single_feature(
         start_v=feat_2_loc[0],
         start_h1=feat_2_loc[1],
         start_h2=feat_2_loc[2],
         feature_num=2,
-        **common_feat_opts
+        **common_feat_opts,
     )
     test_feature_ds = pd.concat([test_feature_ds_1, test_feature_ds_2])
 
@@ -887,14 +887,14 @@ def test_add_markers_pbcs(
         start_h1=feat_1_loc[1] + shift_domain[1],
         start_h2=feat_1_loc[2] + shift_domain[2],
         feature_num=1,
-        **common_feat_opts
+        **common_feat_opts,
     )
     test_feature_ds_2 = testing.generate_single_feature(
         start_v=feat_2_loc[0] + shift_domain[0],
         start_h1=feat_2_loc[1] + shift_domain[1],
         start_h2=feat_2_loc[2] + shift_domain[2],
         feature_num=2,
-        **common_feat_opts
+        **common_feat_opts,
     )
     test_feature_ds_shifted = pd.concat([test_feature_ds_1, test_feature_ds_2])
 

@@ -4,7 +4,9 @@ or within feature detection or segmentation.
 
 """
 import logging
+import warnings
 from . import internal as internal_utils
+from . import decorators
 from typing import Callable, Union
 from functools import partial
 import numpy as np
@@ -13,9 +15,9 @@ import xarray as xr
 
 
 def get_statistics(
+    features: pd.DataFrame,
     labels: np.ndarray[int],
     *fields: tuple[np.ndarray],
-    features: pd.DataFrame,
     statistic: dict[str, Union[Callable, tuple[Callable, dict]]] = {
         "ncells": np.count_nonzero
     },
@@ -55,10 +57,14 @@ def get_statistics(
      features: pd.DataFrame
          Updated feature dataframe with bulk statistics for each feature saved in a new column
     """
-    # raise error if mask and input data dimensions do not match
+    # if mask and input data dimensions do not match we can broadcast using numpy broadcasting rules
     for field in fields:
         if labels.shape != field.shape:
-            raise ValueError("Input labels and field do not have the same shape")
+            # Broadcast input labels and fields to ensure they work according to numpy broadcasting rules
+            broadcast_fields = np.broadcast_arrays(labels, *fields)
+            labels = broadcast_fields[0]
+            fields = broadcast_fields[1:]
+            break
 
     # mask must contain positive values to calculate statistics
     if labels[labels > 0].size > 0:
@@ -91,7 +97,7 @@ def get_statistics(
                 func = statistic[stats_name]
 
             # default needs to be sequence when function output is array-like
-            output = func(np.random.rand(10))
+            output = func(*([np.random.rand(10)] * len(fields)))
             if hasattr(output, "__len__"):
                 default = np.full(output.shape, default)
 
@@ -141,11 +147,11 @@ def get_statistics(
     return features
 
 
-@internal_utils.iris_to_xarray
+@decorators.iris_to_xarray
 def get_statistics_from_mask(
+    features: pd.DataFrame,
     segmentation_mask: xr.DataArray,
     *fields: xr.DataArray,
-    features: pd.DataFrame,
     statistic: dict[str, tuple[Callable]] = {"Mean": np.mean},
     index: Union[None, list[int]] = None,
     default: Union[None, float] = None,
@@ -184,7 +190,9 @@ def get_statistics_from_mask(
     # check that mask and input data have the same dimensions
     for field in fields:
         if segmentation_mask.shape != field.shape:
-            raise ValueError("Input labels and field do not have the same shape")
+            warnings.warn(
+                "One or more field does not have the same shape as segmentation_mask. Numpy broadcasting rules will be applied"
+            )
 
     # warning when feature labels are not unique in dataframe
     if not features.feature.is_unique:
@@ -198,7 +206,10 @@ def get_statistics_from_mask(
     for tt in pd.to_datetime(segmentation_mask.time):
         # select specific timestep
         segmentation_mask_t = segmentation_mask.sel(time=tt).data
-        field_t = field.sel(time=tt).data
+        fields_t = (
+            field.sel(time=tt).values if "time" in field.coords else field.values
+            for field in fields
+        )
         features_t = features.loc[features.time == tt].copy()
 
         # make sure that the labels in the segmentation mask exist in feature dataframe
@@ -213,9 +224,9 @@ def get_statistics_from_mask(
             # make sure that features are not double-defined
             step_statistics.append(
                 get_statistics(
+                    features_t,
                     segmentation_mask_t,
-                    field_t,
-                    features=features_t,
+                    *fields_t,
                     statistic=statistic,
                     default=default,
                     index=index,

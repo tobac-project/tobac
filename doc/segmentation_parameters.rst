@@ -26,7 +26,7 @@ The :code:`target` parameter works similarly to how it works in feature detectio
 =========
 Threshold
 =========
-Unlike in multiple threshold detection in Feature Detection, Watershedding Segmentation only accepts one threshold. This value will set either the minimum (for :code:`target='maximum'`) or maximum (for :code:`target='minimum'`) value to be segmented. 
+Unlike in multiple threshold detection in Feature Detection, Watershedding Segmentation only accepts one threshold. This value will set either the minimum (for :code:`target='maximum'`) or maximum (for :code:`target='minimum'`) value to be segmented. Note that the segmentation is not inclusive of the threshold value, meaning that only values greater than (for :code:`target='maximum'`) or smaller than (for :code:`target='minimum'`) the threshold are included in the segmented region. 
 
 
 .. _Level:
