@@ -1,10 +1,9 @@
-from setuptools import setup
-
 """
 This code is from the python documentation and is
 designed to read in the version number.
 See: https://packaging.python.org/en/latest/guides/single-sourcing-package-version/
 """
+from setuptools import setup
 from pathlib import Path
 
 
