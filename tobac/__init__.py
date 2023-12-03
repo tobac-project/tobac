@@ -47,15 +47,13 @@ from .analysis.analysis import (
     lifetime_histogram,
     histogram_featurewise,
     histogram_cellwise,
-    calculate_velocity,
-    calculate_distance,
-    calculate_area,
     calculate_nearestneighbordistance,
     velocity_histogram,
     nearestneighbordistance_histogram,
     area_histogram,
     calculate_overlap,
 )
+from .analysis.spatial import calculate_velocity, calculate_distance, calculate_area
 from .utils.mask import (
     mask_cell,
     mask_cell_surface,
