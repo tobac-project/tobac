@@ -173,7 +173,6 @@ def cell_statistics(
     None
     """
 
-    
     warnings.warn(
         "cell_statistics is depreciated and will be removed or significantly changed in v2.0.",
         DeprecationWarning,
@@ -705,7 +704,6 @@ def calculate_nearestneighbordistance(features, method_distance=None):
 
     """
 
-    
     features["min_distance"] = np.nan
     for time_i, features_i in features.groupby("time"):
         logging.debug(str(time_i))
