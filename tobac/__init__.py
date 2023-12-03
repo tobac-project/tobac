@@ -41,7 +41,7 @@ from .plotting import (
     make_map,
     map_tracks,
 )
-from .analysis import (
+from .analysis.analysis import (
     cell_statistics,
     cog_cell,
     lifetime_histogram,
