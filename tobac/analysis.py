@@ -26,14 +26,23 @@ Notes
 -----
 """
 
-import pandas as pd
-import numpy as np
 import logging
 import os
 import warnings
+from itertools import combinations
+
+import numpy as np
+import pandas as pd
+from iris.cube import Cube, CubeList
+from iris.coords import AuxCoord
+from iris import Constraint, save
+from iris.analysis.cartography import area_weights
+from scipy.ndimage import labeled_comprehension
 
 from tobac.centerofgravity import calculate_cog
-from .utils import mask_cell, mask_cell_surface, mask_cube_cell, get_bounding_box
+from tobac.utils.mask import mask_cell, mask_cell_surface, mask_cube_cell
+from tobac.utils.general import get_bounding_box
+from tobac.utils import mask_features_surface, mask_features
 
 
 def cell_statistics_all(
@@ -164,10 +173,7 @@ def cell_statistics(
     None
     """
 
-    from iris.cube import Cube, CubeList
-    from iris.coords import AuxCoord
-    from iris import Constraint, save
-
+    
     warnings.warn(
         "cell_statistics is depreciated and will be removed or significantly changed in v2.0.",
         DeprecationWarning,
@@ -328,8 +334,6 @@ def cog_cell(
         "cog_cell is depreciated and will be removed or significantly changed in v2.0.",
         DeprecationWarning,
     )
-
-    from iris import Constraint
 
     logging.debug("Start calculating COG for " + str(cell))
     Track = Tracks[Tracks["cell"] == cell]
@@ -701,8 +705,7 @@ def calculate_nearestneighbordistance(features, method_distance=None):
 
     """
 
-    from itertools import combinations
-
+    
     features["min_distance"] = np.nan
     for time_i, features_i in features.groupby("time"):
         logging.debug(str(time_i))
@@ -905,11 +908,6 @@ def calculate_area(features, mask, method_area=None):
         'xy' nor 'latlon'.
 
     """
-
-    from tobac.utils import mask_features_surface, mask_features
-    from iris import Constraint
-    from iris.analysis.cartography import area_weights
-    from scipy.ndimage import labeled_comprehension
 
     features["area"] = np.nan
 
