@@ -233,13 +233,6 @@ def get_statistics_from_mask(
      features: pd.DataFrame
          Updated feature dataframe with bulk statistics for each feature saved in a new column
     """
-    # check that mask and input data have the same dimensions
-    for field in fields:
-        if segmentation_mask.shape != field.shape:
-            warnings.warn(
-                "One or more field does not have the same shape as segmentation_mask. Numpy broadcasting rules will be applied"
-            )
-
     # warning when feature labels are not unique in dataframe
     if not features.feature.is_unique:
         raise logging.warning(
