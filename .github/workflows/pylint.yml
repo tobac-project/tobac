@@ -64,15 +64,23 @@ jobs:
           echo "$EOF" >> "$GITHUB_OUTPUT"
         id: pr_score
 
-      - name: Post result to PR
-        uses: mshick/add-pr-comment@v1
+      - name: Find Comment
+        uses: peter-evans/find-comment@v2
+        id: comment
         with:
-          message: |
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: Linting results by Pylint
+
+      - name: Post result to PR
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.comment.outputs.comment-id }}
+          edit-mode: replace
+          body: |
             Linting results by Pylint:
             --------------------------
             ${{ steps.pr_score.outputs.MESSAGE }}
-            <sub>The linting score is an indicator that reflects how well your code version follows Pylint’s coding standards and quality metrics with respect to the ${{ steps.branch_name.outputs.RC_BRANCH }} branch.
+            <sub>The linting score is an indicator that reflects how well your code version follows Pylint’s coding standards and quality metrics with respect to the ${{ github.base_ref }} branch.
             A decrease usually indicates your new code does not fully meet style guidelines or has potential errors.<sup>
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          repo-token-user-login: 'github-actions[bot]' # The user.login for temporary GitHub token
-          allow-repeats: false # This is the default
