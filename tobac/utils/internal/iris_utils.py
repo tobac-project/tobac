@@ -91,7 +91,7 @@ def find_hdim_axes_3d(
     field_in: iris.cube.Cube,
     vertical_coord: Union[str, None] = None,
     vertical_axis: Union[int, None] = None,
-) -> tuple[int]:
+) -> tuple[int, int]:
     """Finds what the hdim axes are given a 3D (including z) or
     4D (including z and time) dataset.
 

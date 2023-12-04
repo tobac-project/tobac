@@ -47,6 +47,7 @@ from . import utils as tb_utils
 from .utils import periodic_boundaries as pbc_utils
 from .utils import internal as internal_utils
 from .utils import get_statistics
+from .utils import decorators as tobac_decorators
 
 
 def add_markers(
@@ -330,7 +331,7 @@ def segmentation_2D(
     )
 
 
-@internal_utils.iris_to_xarray
+@tobac_decorators.iris_to_xarray()
 def segmentation_timestep(
     field_in: xr.DataArray,
     features_in: pd.DataFrame,
@@ -463,10 +464,9 @@ def segmentation_timestep(
         vertical_axis = internal_utils.find_vertical_axis_from_coord(
             field_in, vertical_coord=vertical_coord
         )
-        ndim_vertical = internal_utils.find_axis_from_coord(vertical_axis)
-        if len(ndim_vertical) > 1:
-            raise ValueError("please specify 1 dimensional vertical coordinate")
-        vertical_coord_axis = ndim_vertical[0]
+        vertical_coord_axis = internal_utils.find_axis_from_coord(
+            field_in, vertical_axis
+        )
         # Once we know the vertical coordinate, we can resolve the
         # horizontal coordinates
         # To make things easier, we will transpose the axes

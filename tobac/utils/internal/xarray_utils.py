@@ -217,7 +217,11 @@ def find_hdim_axes_3d(
         if vertical_coord != "auto":
             raise ValueError("Cannot set both vertical_coord and vertical_axis.")
 
-    time_axis = find_axis_from_dim_coord(field_in, time_dim_coord_name)
+    try:
+        time_axis = find_axis_from_dim_coord(field_in, time_dim_coord_name)
+    except ValueError:
+        # time axis not found
+        time_axis = None
     # we have already specified the axis.
     if vertical_axis is not None:
         vertical_coord_axis = vertical_axis
