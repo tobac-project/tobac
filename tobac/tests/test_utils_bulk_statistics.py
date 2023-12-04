@@ -1,6 +1,7 @@
 from datetime import datetime
 import numpy as np
 import pandas as pd
+import pytest
 import xarray as xr
 import tobac
 import tobac.utils as tb_utils
@@ -396,3 +397,104 @@ def test_bulk_statistics_broadcasting():
     assert np.all(
         bulk_statistics_output["weighted_sum"] == expected_weighted_sum_result
     )
+
+
+def test_get_statistics_collapse_axis():
+    """
+    Test the collapse_axis keyword of get_statistics
+    """
+    test_labels = np.array(
+        [
+            [0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0],
+            [0, 1, 0, 2, 0],
+            [0, 1, 0, 2, 0],
+            [0, 0, 0, 0, 0],
+        ],
+        dtype=int,
+    )
+
+    test_values = np.array([0.25, 0.5, 0.75, 1, 1])
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2],
+            "frame": [0, 0],
+            "time": [
+                datetime(2000, 1, 1),
+                datetime(2000, 1, 1),
+            ],
+        }
+    )
+    statistics_sum = {"sum": np.sum}
+
+    expected_sum_result_axis0 = np.array([0.5, 1])
+    output_collapse_axis0 = tb_utils.get_statistics(
+        test_features,
+        test_labels,
+        test_values,
+        statistic=statistics_sum,
+        collapse_axis=0,
+    )
+    assert np.all(output_collapse_axis0["sum"] == expected_sum_result_axis0)
+
+    expected_sum_result_axis1 = np.array([2.25, 1.75])
+    output_collapse_axis1 = tb_utils.get_statistics(
+        test_features,
+        test_labels,
+        test_values,
+        statistic=statistics_sum,
+        collapse_axis=1,
+    )
+    assert np.all(output_collapse_axis1["sum"] == expected_sum_result_axis1)
+
+    # Check that attempting broadcast raises a ValueError
+    with pytest.raises(ValueError):
+        _ = tb_utils.get_statistics(
+            test_features,
+            test_labels,
+            test_values.reshape([5, 1]),
+            statistic=statistics_sum,
+            collapse_axis=0,
+        )
+
+    # Check that attempting to collapse all axes raises a ValueError:
+    with pytest.raises(ValueError):
+        _ = tb_utils.get_statistics(
+            test_features,
+            test_labels,
+            test_values,
+            statistic=statistics_sum,
+            collapse_axis=[0, 1],
+        )
+
+    # Test with collpasing multiple axes
+    test_labels = np.array(
+        [
+            [
+                [0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0],
+                [0, 1, 0, 2, 0],
+                [0, 1, 0, 2, 0],
+                [0, 0, 0, 0, 0],
+            ],
+            [
+                [0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0],
+                [0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+            ],
+        ],
+        dtype=int,
+    )
+    test_values = np.array([0.5, 1])
+    expected_sum_result_axis12 = np.array([1.5, 0.5])
+    output_collapse_axis12 = tb_utils.get_statistics(
+        test_features,
+        test_labels,
+        test_values,
+        statistic=statistics_sum,
+        collapse_axis=[1, 2],
+    )
+    assert np.all(output_collapse_axis12["sum"] == expected_sum_result_axis12)

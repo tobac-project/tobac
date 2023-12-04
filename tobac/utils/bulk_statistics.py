@@ -10,6 +10,12 @@ from . import decorators
 from typing import Callable, Union
 from functools import partial
 import numpy as np
+
+# numpy renamed core to _core recently
+try:
+    from numpy._core import multiarray as mu
+except ModuleNotFoundError:
+    from numpy.core import multiarray as mu
 import pandas as pd
 import xarray as xr
 
@@ -24,6 +30,7 @@ def get_statistics(
     index: Union[None, list[int]] = None,
     default: Union[None, float] = None,
     id_column: str = "feature",
+    collapse_axis: Union[None, int, list[int]] = None,
 ) -> pd.DataFrame:
     """
     Get bulk statistics for objects (e.g. features or segmented features) given a labelled mask of the objects
@@ -50,7 +57,11 @@ def get_statistics(
     default: None | float, optional (default: None)
         default value to return in a region that has no values
     id_column: str, optional (default: "feature")
-       Name of the column in feature dataframe that contains IDs that match with the labels in mask. The default is the column "feature".
+        Name of the column in feature dataframe that contains IDs that match with the labels in mask. The default is the column "feature".
+    collapse_axis: None | int | list[int], optional (default: None):
+        Index or indices of axes of labels to collapse. This will reduce the dimensionality of labels
+        while allowing labelled features to overlap. This can be used, for example, to calculate the
+        footprint area (2D) of 3D labels
 
      Returns:
      -------
@@ -58,16 +69,38 @@ def get_statistics(
          Updated feature dataframe with bulk statistics for each feature saved in a new column
     """
     # if mask and input data dimensions do not match we can broadcast using numpy broadcasting rules
-    for field in fields:
-        if labels.shape != field.shape:
+    if collapse_axis is not None:
+        # Test if iterable and if not make a list
+        try:
+            collapse_axis = list(iter(collapse_axis))
+        except TypeError:
+            collapse_axis = [collapse_axis]
+
+        # Normalise axes to handle negative axis number conventions
+        ndim = len(labels.shape)
+        collapse_axis = [mu.normalize_axis_index(axis, ndim) for axis in collapse_axis]
+        collapsed_shape = tuple(
+            [s for i, s in enumerate(labels.shape) if i not in collapse_axis]
+        )
+        broadcast_flag = any([collapsed_shape != field.shape for field in fields])
+        if broadcast_flag:
+            raise ValueError("Broadcasting not supported with collapse_axis")
+        uncollapsed_axes = [
+            i for i, _ in enumerate(labels.shape) if i not in collapse_axis
+        ]
+        if not len(uncollapsed_axes):
+            raise ValueError("Cannot collapse all axes of labels")
+
+    else:
+        broadcast_flag = any([labels.shape != field.shape for field in fields])
+        if broadcast_flag:
             # Broadcast input labels and fields to ensure they work according to numpy broadcasting rules
             broadcast_fields = np.broadcast_arrays(labels, *fields)
             labels = broadcast_fields[0]
             fields = broadcast_fields[1:]
-            break
 
     # mask must contain positive values to calculate statistics
-    if labels[labels > 0].size > 0:
+    if np.any(labels > 0):
         if index is None:
             index = features.feature.to_numpy()
         else:
@@ -81,6 +114,20 @@ def get_statistics(
         # set negative markers to 0 as they are unsegmented
         bins = np.cumsum(np.bincount(np.maximum(labels.ravel(), 0)))
         argsorted = np.argsort(labels.ravel())
+
+        # Create lambdas to get (ravelled) label locations using argsorted and bins
+        if collapse_axis is None:
+            label_locs = lambda i: argsorted[bins[i - 1] : bins[i]]
+        else:
+            # Collapse ravelled locations to the remaining axes
+            label_locs = lambda i: np.unique(
+                np.ravel_multi_index(
+                    np.array(
+                        np.unravel_index(argsorted[bins[i - 1] : bins[i]], labels.shape)
+                    )[uncollapsed_axes],
+                    collapsed_shape,
+                )
+            )
 
         # apply each function given per statistic parameter for the labeled regions sorted in ascending order
         for stats_name in statistic.keys():
@@ -103,12 +150,7 @@ def get_statistics(
 
             stats = np.array(
                 [
-                    func(
-                        *(
-                            field.ravel()[argsorted[bins[i - 1] : bins[i]]]
-                            for field in fields
-                        )
-                    )
+                    func(*(field.ravel()[label_locs(i)] for field in fields))
                     if i < bins.size and bins[i] > bins[i - 1]
                     else default
                     for i in index
