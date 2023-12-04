@@ -888,7 +888,7 @@ def feature_detection_threshold(
     return features_threshold, regions
 
 
-@internal_utils.irispandas_to_xarray
+@internal_utils.irispandas_to_xarray()
 def feature_detection_multithreshold_timestep(
     data_i: xr.DataArray,
     i_time: int,
@@ -1130,7 +1130,7 @@ def feature_detection_multithreshold_timestep(
     return features_thresholds
 
 
-@internal_utils.irispandas_to_xarray
+@internal_utils.irispandas_to_xarray(save_iris_info=True)
 def feature_detection_multithreshold(
     field_in: xr.DataArray,
     dxy: float = None,
@@ -1153,6 +1153,7 @@ def feature_detection_multithreshold(
     dz: Union[float, None] = None,
     strict_thresholding: bool = False,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
+    **kwargs,
 ) -> pd.DataFrame:
     """Perform feature detection based on contiguous regions.
 
@@ -1401,10 +1402,17 @@ def feature_detection_multithreshold(
         #    features_filtered.drop(columns=['idx','num','threshold_value'],inplace=True)
         if "vdim" in features:
             features = add_coordinates_3D(
-                features, field_in, vertical_coord=vertical_coord
+                features,
+                field_in,
+                vertical_coord=vertical_coord,
+                preserve_iris_datetime_types=kwargs["converted_from_iris"],
             )
         else:
-            features = add_coordinates(features, field_in)
+            features = add_coordinates(
+                features,
+                field_in,
+                preserve_iris_datetime_types=kwargs["converted_from_iris"],
+            )
     else:
         features = None
         logging.debug("No features detected")

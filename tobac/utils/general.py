@@ -18,7 +18,9 @@ import warnings
 
 
 def add_coordinates(
-    t: pd.DataFrame, variable_cube: Union[xr.DataArray, iris.cube.Cube]
+    t: pd.DataFrame,
+    variable_cube: Union[xr.DataArray, iris.cube.Cube],
+    preserve_iris_datetime_types: bool = True,
 ) -> pd.DataFrame:
     """Add coordinates from the input cube of the feature detection
     to the trajectories/features.
@@ -32,6 +34,10 @@ def add_coordinates(
         Input data used for the tracking with coordinate information
         to transfer to the resulting DataFrame. Needs to contain the
         coordinate 'time'.
+    preserve_iris_datetime_types: bool
+        If True, uses the same datetime types as iris (cftime)
+        If False, converts datetime output to pandas standard
+        Used for xarray inputs only
 
     Returns
     -------
@@ -42,7 +48,9 @@ def add_coordinates(
     if isinstance(variable_cube, iris.cube.Cube):
         return internal_utils.iris_utils.add_coordinates(t, variable_cube)
     if isinstance(variable_cube, xr.DataArray):
-        return internal_utils.xr_utils.add_coordinates_to_features(t, variable_cube)
+        return internal_utils.xr_utils.add_coordinates_to_features(
+            t, variable_cube, preserve_iris_datetime_types=preserve_iris_datetime_types
+        )
     raise ValueError(
         "add_coordinates only supports xarray.DataArray and iris.cube.Cube"
     )
@@ -54,14 +62,15 @@ def add_coordinates_3D(
     vertical_coord: Union[str, int] = None,
     vertical_axis: Union[int, None] = None,
     assume_coords_fixed_in_time: bool = True,
+    preserve_iris_datetime_types: bool = True,
 ):
     """Function adding coordinates from the tracking cube to the trajectories
         for the 3D case: time, longitude&latitude, x&y dimensions, and altitude
 
     Parameters
     ----------
-    t:             pandas DataFrame
-                   trajectories/features
+    t: pandas DataFrame
+        Input features
     variable_cube: iris.cube.Cube
         Cube (usually the one you are tracking on) at least conaining the dimension of 'time'.
         Typically, 'longitude','latitude','x_projection_coordinate','y_projection_coordinate',
@@ -80,6 +89,10 @@ def add_coordinates_3D(
         coordinates say they vary in time. This is, by default, True, to preserve
         legacy functionality. If False, it assumes that if a coordinate says
         it varies in time, it takes the coordinate at its word.
+    preserve_iris_datetime_types: bool
+        If True, uses the same datetime types as iris (cftime)
+        If False, converts datetime output to pandas standard
+        Used for xarray inputs only
 
     Returns
     -------
@@ -96,6 +109,7 @@ def add_coordinates_3D(
             variable_cube,
             vertical_coord=vertical_coord,
             vertical_axis=vertical_axis,
+            preserve_iris_datetime_types=preserve_iris_datetime_types,
         )
     raise ValueError(
         "add_coordinates_3D only supports xarray.DataArray and iris.cube.Cube"
@@ -419,7 +433,7 @@ def combine_feature_dataframes(
     return combined_sorted
 
 
-@internal_utils.irispandas_to_xarray
+@internal_utils.irispandas_to_xarray()
 def transform_feature_points(
     features,
     new_dataset,
