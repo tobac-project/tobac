@@ -185,6 +185,7 @@ def test_calculate_area_1D_latlon():
 def test_calculate_areas_2Dlatlon():
     """
     Test calculation of area array from 2D lat/lon coords
+    Note, in future this needs to be updated to account for non-orthogonal lat/lon arrays
     """
 
     test_labels = np.ones([1, 5, 5], dtype=int)
