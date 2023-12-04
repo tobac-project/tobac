@@ -1,0 +1,86 @@
+name: Linting
+on:
+  pull_request:
+    branches:
+      - '*'
+permissions:
+  pull-requests: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v3
+
+      - name: Set up conda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-version: latest
+          miniforge-variant: mambaforge
+          channel-priority: strict
+          channels: conda-forge
+          show-channel-urls: true
+          use-only-tar-bz2: true
+
+      - name: Install tobac and pylint
+        run: |
+          mamba install --yes pylint
+          pip install .
+
+      - name: Store the PR branch
+        run: |
+          echo "SHA=$(git rev-parse "$GITHUB_SHA")" >> $GITHUB_OUTPUT
+        id: git
+
+      - name: Checkout RC branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.base_ref }}
+          
+      - name: Get pylint score of RC branch
+        run: |
+          pylint tobac --disable=C --exit-zero
+        id: main_score
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v3
+        with:
+          ref: "${{ steps.git.outputs.SHA }}"  
+
+      - name: Get pylint score of PR branch
+        run: |
+          # use shell script to save only tail of output  
+          OUTPUT_PART=$(pylint tobac --disable=C --exit-zero | tail -n 2)
+          # but post entire output in the action details 
+          pylint tobac --disable=C --exit-zero
+          # define random delimiter for multiline string
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "MESSAGE<<$EOF" >> "$GITHUB_OUTPUT"
+          echo "$OUTPUT_PART" >> "$GITHUB_OUTPUT"
+          echo "$EOF" >> "$GITHUB_OUTPUT"
+        id: pr_score
+
+      - name: Find Comment
+        uses: peter-evans/find-comment@v2
+        id: comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: Linting results by Pylint
+
+      - name: Post result to PR
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.comment.outputs.comment-id }}
+          edit-mode: replace
+          body: |
+            Linting results by Pylint:
+            --------------------------
+            ${{ steps.pr_score.outputs.MESSAGE }}
+            <sub>The linting score is an indicator that reflects how well your code version follows Pylint’s coding standards and quality metrics with respect to the ${{ github.base_ref }} branch.
+            A decrease usually indicates your new code does not fully meet style guidelines or has potential errors.<sup>
