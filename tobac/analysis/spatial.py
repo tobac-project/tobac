@@ -6,8 +6,12 @@ from itertools import combinations
 import logging
 import numpy as np
 import pandas as pd
+import xarray as xr
 from iris.analysis.cartography import area_weights
 from scipy.ndimage import labeled_comprehension
+
+from tobac.utils.bulk_statistics import get_statistics_from_mask
+from tobac.utils.internal.basic import find_vertical_axis_from_coord
 
 
 def haversine(lat1, lon1, lat2, lon2):
@@ -312,7 +316,7 @@ def calculate_areas_2Dlatlon(_2Dlat_coord, _2Dlon_coord):
     return area
 
 
-def calculate_area(features, mask, method_area=None):
+def calculate_area(features, mask, method_area=None, vertical_coord=None):
     """Calculate the area of the segments for each feature.
 
     Parameters
@@ -332,6 +336,11 @@ def calculate_area(features, mask, method_area=None):
         area_weights method of iris.analysis.cartography, None
         checks wether the required coordinates are present and
         starts with 'xy'. Default is None.
+
+    vertical_coord: None | str, optional (default: None)
+        Name of the vertical coordinate. If None, tries to auto-detect.
+        It looks for the coordinate or the dimension name corresponding
+        to the string.
 
     Returns
     -------
@@ -357,7 +366,17 @@ def calculate_area(features, mask, method_area=None):
 
     features["area"] = np.nan
 
-    mask_coords = [coord.name() for coord in mask.coords()]
+    # Get the first time step of mask to remove time dimension of calculated areas
+    mask_slice = next(mask.slices_over("time"))
+    is_3d = len(mask_slice.core_data().shape) == 3
+    if is_3d:
+        vertical_coord_name = find_vertical_axis_from_coord(mask_slice, vertical_coord)
+        # Need to get var_name as xarray uses this to label dims
+        collapse_dim = mask_slice.coords(vertical_coord_name)[0].var_name
+    else:
+        collapse_dim = None
+
+    mask_coords = [coord.name() for coord in mask_slice.coords()]
     if method_area is None:
         if ("projection_x_coordinate" in mask_coords) and (
             "projection_y_coordinate" in mask_coords
@@ -372,37 +391,48 @@ def calculate_area(features, mask, method_area=None):
     # logging.debug("calculating area using method " + method_area)
     if method_area == "xy":
         if not (
-            mask.coord("projection_x_coordinate").has_bounds()
-            and mask.coord("projection_y_coordinate").has_bounds()
+            mask_slice.coord("projection_x_coordinate").has_bounds()
+            and mask_slice.coord("projection_y_coordinate").has_bounds()
         ):
-            mask.coord("projection_x_coordinate").guess_bounds()
-            mask.coord("projection_y_coordinate").guess_bounds()
+            mask_slice.coord("projection_x_coordinate").guess_bounds()
+            mask_slice.coord("projection_y_coordinate").guess_bounds()
         area = np.outer(
-            np.diff(mask.coord("projection_x_coordinate").bounds, axis=1),
-            np.diff(mask.coord("projection_y_coordinate").bounds, axis=1),
+            np.diff(mask_slice.coord("projection_x_coordinate").bounds, axis=1),
+            np.diff(mask_slice.coord("projection_y_coordinate").bounds, axis=1),
         )
     elif method_area == "latlon":
-        if (mask.coord("latitude").ndim == 1) and (mask.coord("latitude").ndim == 1):
+        if (mask_slice.coord("latitude").ndim == 1) and (
+            mask_slice.coord("latitude").ndim == 1
+        ):
             if not (
-                mask.coord("latitude").has_bounds()
-                and mask.coord("longitude").has_bounds()
+                mask_slice.coord("latitude").has_bounds()
+                and mask_slice.coord("longitude").has_bounds()
             ):
-                mask.coord("latitude").guess_bounds()
-                mask.coord("longitude").guess_bounds()
-            area = area_weights(mask, normalize=False)
-        elif mask.coord("latitude").ndim == 2 and mask.coord("longitude").ndim == 2:
+                mask_slice.coord("latitude").guess_bounds()
+                mask_slice.coord("longitude").guess_bounds()
+            area = area_weights(mask_slice, normalize=False)
+        elif (
+            mask_slice.coord("latitude").ndim == 2
+            and mask_slice.coord("longitude").ndim == 2
+        ):
             area = calculate_areas_2Dlatlon(
-                mask.coord("latitude"), mask.coord("longitude")
+                mask_slice.coord("latitude"), mask_slice.coord("longitude")
             )
         else:
             raise ValueError("latitude/longitude coordinate shape not supported")
     else:
         raise ValueError("method undefined")
 
-    feature_areas = labeled_comprehension(
-        area, mask.data, features["feature"], np.sum, area.dtype, np.nan
-    )
+    # Area needs to be a dataarray for get_statistics from mask, but otherwise dims/coords don't actually matter
+    area = xr.DataArray(area, dims=("a", "b"))
 
-    features["area"] = feature_areas
+    features = get_statistics_from_mask(
+        features,
+        mask,
+        area,
+        statistic={"area": np.sum},
+        default=np.nan,
+        collapse_dim=collapse_dim,
+    )
 
     return features
