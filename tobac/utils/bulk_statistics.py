@@ -79,17 +79,17 @@ def get_statistics(
         # Normalise axes to handle negative axis number conventions
         ndim = len(labels.shape)
         collapse_axis = [mu.normalize_axis_index(axis, ndim) for axis in collapse_axis]
+        uncollapsed_axes = [
+            i for i, _ in enumerate(labels.shape) if i not in collapse_axis
+        ]
+        if not len(uncollapsed_axes):
+            raise ValueError("Cannot collapse all axes of labels")
         collapsed_shape = tuple(
             [s for i, s in enumerate(labels.shape) if i not in collapse_axis]
         )
         broadcast_flag = any([collapsed_shape != field.shape for field in fields])
         if broadcast_flag:
             raise ValueError("Broadcasting not supported with collapse_axis")
-        uncollapsed_axes = [
-            i for i, _ in enumerate(labels.shape) if i not in collapse_axis
-        ]
-        if not len(uncollapsed_axes):
-            raise ValueError("Cannot collapse all axes of labels")
 
     else:
         broadcast_flag = any([labels.shape != field.shape for field in fields])
