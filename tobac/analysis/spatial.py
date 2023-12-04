@@ -2,13 +2,13 @@
 Calulcate spatial properties (distances, velocities, areas, volumes) of tracked objects
 """
 
-from itertools import combinations
 import logging
+from itertools import combinations
+
 import numpy as np
 import pandas as pd
 import xarray as xr
 from iris.analysis.cartography import area_weights
-from scipy.ndimage import labeled_comprehension
 
 from tobac.utils.bulk_statistics import get_statistics_from_mask
 from tobac.utils.internal.basic import find_vertical_axis_from_coord

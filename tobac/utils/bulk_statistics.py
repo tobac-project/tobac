@@ -5,10 +5,9 @@ or within feature detection or segmentation.
 """
 import logging
 import warnings
-from . import internal as internal_utils
-from . import decorators
-from typing import Callable, Union
 from functools import partial
+from typing import Callable, Union
+
 import numpy as np
 
 # numpy renamed core to _core recently
@@ -18,6 +17,8 @@ except ModuleNotFoundError:
     from numpy.core import multiarray as mu
 import pandas as pd
 import xarray as xr
+
+from tobac.utils import decorators
 
 
 def get_statistics(
