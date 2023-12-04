@@ -43,11 +43,11 @@ import skimage
 import numpy as np
 import pandas as pd
 
-from . import utils as tb_utils
-from .utils import periodic_boundaries as pbc_utils
-from .utils import internal as internal_utils
-from .utils import get_statistics
-from .utils import decorators as tobac_decorators
+from tobac import utils as tb_utils
+from tobac.utils import periodic_boundaries as pbc_utils
+from tobac.utils import internal as internal_utils
+from tobac.utils import get_statistics
+from tobac.utils import decorators as tobac_decorators
 
 
 def add_markers(

@@ -1,5 +1,4 @@
 import pytest
-import tobac.testing as testing
 import tobac.segmentation as seg
 import numpy as np
 from tobac import segmentation, feature_detection, testing
