@@ -198,6 +198,7 @@ def get_statistics_from_mask(
     index: Union[None, list[int]] = None,
     default: Union[None, float] = None,
     id_column: str = "feature",
+    collapse_dim: Union[None, str, list[str]] = None,
 ) -> pd.DataFrame:
     """
     Derives bulk statistics for each object in the segmentation mask.
@@ -221,8 +222,10 @@ def get_statistics_from_mask(
     default: None | float, optional (default: None)
         default value to return in a region that has no values
     id_column: str, optional (default: "feature")
-       Name of the column in feature dataframe that contains IDs that match with the labels in mask. The default is the column "feature".
-
+        Name of the column in feature dataframe that contains IDs that match with the labels in mask. The default is the column "feature".
+    collapse_dim: None | str | list[str], optional (defailt: None)
+        Dimension names of labels to collapse, allowing, e.g. calulcation of statistics on 2D
+        fields for the footprint of 3D objects
 
      Returns:
      -------
@@ -241,6 +244,20 @@ def get_statistics_from_mask(
         raise logging.warning(
             "Feature labels are not unique which may cause unexpected results for the computation of bulk statistics."
         )
+
+    if collapse_dim is not None:
+        if isinstance(collapse_dim, str):
+            collapse_dim = [collapse_dim]
+        non_time_dims = [dim for dim in segmentation_mask.dims if dim != "time"]
+        collapse_axis = [
+            i for i, dim in enumerate(non_time_dims) if dim in collapse_dim
+        ]
+        if len(collapse_dim) != len(collapse_axis):
+            raise ValueError(
+                "One or more of collapse_dim not found in dimensions of segmentation_mask"
+            )
+    else:
+        collapse_axis = None
 
     # get bulk statistics for each timestep
     step_statistics = []
@@ -273,6 +290,7 @@ def get_statistics_from_mask(
                     default=default,
                     index=index,
                     id_column=id_column,
+                    collapse_axis=collapse_axis,
                 )
             )
 
