@@ -383,9 +383,8 @@ def add_coordinates_to_features(
 
     # you can only rename dims alone when operating on datasets, so add our dataarray to a
     # dataset
-    renamed_dim_ds = xr.Dataset({"var": variable_da}).rename_dims(dim_new_names)
-
-    interpolated_df = renamed_dim_ds["var"].interp(coords=dim_interp_coords)
+    renamed_dim_da = variable_da.swap_dims(dim_new_names)
+    interpolated_df = renamed_dim_da.interp(coords=dim_interp_coords)
     interpolated_df = interpolated_df.drop([hdim1_name_new, hdim2_name_new])
     if is_3d:
         interpolated_df = interpolated_df.drop([vdim_name_new])
