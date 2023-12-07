@@ -1,5 +1,10 @@
+"""Utilities for handling indexing and distance calculation with periodic boundaries
+"""
 from __future__ import annotations
+import functools
+
 import numpy as np
+
 from tobac.utils.decorators import njit_if_available
 
 
@@ -197,9 +202,9 @@ def get_pbc_coordinates(
 
 @njit_if_available
 def calc_distance_coords_pbc(
-    coords_1, coords_2, min_h1, max_h1, min_h2, max_h2, PBC_flag
-):
-    """Function to calculate the distance between cartesian
+    coords_1: np.ndarray[float], coords_2: np.ndarray[float], max_dims: np.ndarray[int]
+) -> float:
+    """Function to calculate the distance between 2D cartesian
     coordinate set 1 and coordinate set 2. Note that we assume both
     coordinates are within their min/max already.
 
@@ -210,20 +215,10 @@ def calc_distance_coords_pbc(
         coordinates or (hdim_1, hdim_2) coordinates.
     coords_2: 2D or 3D array-like
         Similar to coords_1, but for the second pair of coordinates
-    min_h1: int
-        Minimum point in hdim_1
-    max_h1: int
-        Maximum point in hdim_1, exclusive. max_h1-min_h1 should be the size.
-    min_h2: int
-        Minimum point in hdim_2
-    max_h2: int
-        Maximum point in hdim_2, exclusive. max_h2-min_h2 should be the size.
-    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
-        Sets whether to use periodic boundaries, and if so in which directions.
-        'none' means that we do not have periodic boundaries
-        'hdim_1' means that we are periodic along hdim1
-        'hdim_2' means that we are periodic along hdim2
-        'both' means that we are periodic along both horizontal dimensions
+    max_dims: array-like
+        Array of same length as dimensionality of coords. Each item in max_dims
+        corresponds to a dimension of coords ([(vdim), hdim_1, hdim_2]) with
+        value equal to the size of that dimension if periodic, or 0 if not
 
     Returns
     -------
@@ -231,31 +226,12 @@ def calc_distance_coords_pbc(
         Distance between coords_1 and coords_2 in cartesian space.
 
     """
-
-    is_3D = len(coords_1) == 3
-
-    if not is_3D:
-        # Let's make the accounting easier.
-        coords_1 = np.array((0, coords_1[0], coords_1[1]))
-        coords_2 = np.array((0, coords_2[0], coords_2[1]))
-
-    if PBC_flag in ["hdim_1", "both"]:
-        size_h1 = max_h1 - min_h1
-        mod_h1 = size_h1
-    else:
-        mod_h1 = 0
-    if PBC_flag in ["hdim_2", "both"]:
-        size_h2 = max_h2 - min_h2
-        mod_h2 = size_h2
-    else:
-        mod_h2 = 0
-    max_dims = np.array((0, mod_h1, mod_h2))
     deltas = np.abs(coords_1 - coords_2)
     deltas = np.where(deltas > 0.5 * max_dims, deltas - max_dims, deltas)
     return np.sqrt(np.sum(deltas**2))
 
 
-def build_distance_function(min_h1, max_h1, min_h2, max_h2, PBC_flag):
+def build_distance_function(min_h1, max_h1, min_h2, max_h2, PBC_flag, is_3D):
     """Function to build a partial ```calc_distance_coords_pbc``` function
     suitable for use with trackpy
 
@@ -275,6 +251,8 @@ def build_distance_function(min_h1, max_h1, min_h2, max_h2, PBC_flag):
         'hdim_1' means that we are periodic along hdim1
         'hdim_2' means that we are periodic along hdim2
         'both' means that we are periodic along both horizontal dimensions
+    is_3D : bool
+        True if coordinates are to be provided in 3D, False if 2D
 
     Returns
     -------
@@ -283,17 +261,15 @@ def build_distance_function(min_h1, max_h1, min_h2, max_h2, PBC_flag):
         just f(coords_1, coords_2)
 
     """
-    import functools
-
     h1_size, h2_size = validate_pbc_dims(min_h1, max_h1, min_h2, max_h2, PBC_flag)
 
+    if is_3D:
+        max_dims = np.array([0, h1_size, h2_size])
+    else:
+        max_dims = np.array([h1_size, h2_size])
     return functools.partial(
         calc_distance_coords_pbc,
-        min_h1=0,
-        max_h1=h1_size,
-        min_h2=0,
-        max_h2=h2_size,
-        PBC_flag=PBC_flag,
+        max_dims=max_dims,
     )
 
 
@@ -360,7 +336,7 @@ def invalid_limit_names(**limits) -> list[str]:
 
 class PBCflagError(ValueError):
     def __init__(self):
-        super.init(
+        super().__init__(
             "PBC_flag keyword is not valid, must be one of ['none', 'hdim_1', 'hdim_2', 'both']"
         )
 
@@ -368,7 +344,7 @@ class PBCflagError(ValueError):
 class PBCLimitError(ValueError):
     def __init__(self, invalid_limits, PBC_flag):
         self.message = f"Keyword parameters {invalid_limits} must be provided for PBC_flag {PBC_flag}"
-        super.init(self.message)
+        super().__init__(self.message)
 
 
 def weighted_circmean(

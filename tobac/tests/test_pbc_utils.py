@@ -4,7 +4,7 @@ import tobac.utils.periodic_boundaries as pbc_utils
 import tobac.testing as tb_test
 
 
-def test_calc_distance_coords_pbc():
+def test_calc_distance_coords_pbc_2D():
     """Tests ```tobac.utils.calc_distance_coords_pbc```
     Currently tests:
     two points in normal space
@@ -13,100 +13,224 @@ def test_calc_distance_coords_pbc():
     import numpy as np
 
     # Test first two points in normal space with varying PBC conditions
-    for PBC_condition in ["none", "hdim_1", "hdim_2", "both"]:
+    for max_dims in [
+        np.array([0, 0]),
+        np.array([10, 0]),
+        np.array([0, 10]),
+        np.array([10, 10]),
+    ]:
         assert pbc_utils.calc_distance_coords_pbc(
-            np.array((0, 0, 0)), np.array((0, 0, 0)), 0, 10, 0, 10, PBC_condition
+            np.array((0, 0)), np.array((0, 0)), max_dims
         ) == pytest.approx(0)
         assert pbc_utils.calc_distance_coords_pbc(
-            np.array((0, 0, 0)), np.array((0, 0, 1)), 0, 10, 0, 10, PBC_condition
+            np.array((0, 0)), np.array((0, 1)), max_dims
         ) == pytest.approx(1)
         assert pbc_utils.calc_distance_coords_pbc(
-            np.array((0, 0)), np.array((0, 1)), 0, 10, 0, 10, PBC_condition
-        ) == pytest.approx(1)
-        assert pbc_utils.calc_distance_coords_pbc(
-            np.array((0, 0, 0)), np.array((3, 3, 1)), 0, 10, 0, 10, PBC_condition
-        ) == pytest.approx(4.3588989, rel=1e-3)
+            np.array((0, 0)), np.array((3, 1)), max_dims
+        ) == pytest.approx(10**0.5, rel=1e-3)
 
     # Now test two points that will be closer along the hdim_1 boundary for cases without PBCs
-    for PBC_condition in ["hdim_1", "both"]:
+    for max_dims in [np.array([10, 0]), np.array([10, 10])]:
         assert pbc_utils.calc_distance_coords_pbc(
-            np.array((0, 0, 0)), np.array((0, 9, 0)), 0, 10, 0, 10, PBC_condition
+            np.array((0, 0)), np.array((9, 0)), max_dims
         ) == pytest.approx(1)
         assert pbc_utils.calc_distance_coords_pbc(
-            np.array((0, 9, 0)), np.array((0, 0, 0)), 0, 10, 0, 10, PBC_condition
+            np.array((9, 0)), np.array((0, 0)), max_dims
         ) == pytest.approx(1)
         assert pbc_utils.calc_distance_coords_pbc(
-            np.array((8, 0)), np.array((0, 0)), 0, 10, 0, 10, PBC_condition
-        ) == pytest.approx(2)
-        assert pbc_utils.calc_distance_coords_pbc(
-            np.array((4, 0, 4)), np.array((3, 7, 3)), 0, 10, 0, 10, PBC_condition
-        ) == pytest.approx(3.3166247)
-        assert pbc_utils.calc_distance_coords_pbc(
-            np.array((4, 0, 4)), np.array((3, 7, 3)), 0, 10, 0, 10, PBC_condition
-        ) == pytest.approx(3.3166247)
+            np.array((0, 4)), np.array((7, 3)), max_dims
+        ) == pytest.approx(10**0.5)
 
     # Test the same points, except without PBCs
-    for PBC_condition in ["none", "hdim_2"]:
+    for max_dims in [np.array([0, 0]), np.array([0, 10])]:
         assert pbc_utils.calc_distance_coords_pbc(
-            np.array((0, 0, 0)), np.array((0, 9, 0)), 0, 10, 0, 10, PBC_condition
+            np.array((0, 0)), np.array((9, 0)), max_dims
         ) == pytest.approx(9)
         assert pbc_utils.calc_distance_coords_pbc(
-            np.array((0, 9, 0)), np.array((0, 0, 0)), 0, 10, 0, 10, PBC_condition
+            np.array((9, 0)), np.array((0, 0)), max_dims
         ) == pytest.approx(9)
         assert pbc_utils.calc_distance_coords_pbc(
-            np.array((8, 0)), np.array((0, 0)), 0, 10, 0, 10, PBC_condition
-        ) == pytest.approx(8)
+            np.array((0, 4)), np.array((7, 3)), max_dims
+        ) == pytest.approx(50**0.5)
 
     # Now test two points that will be closer along the hdim_2 boundary for cases without PBCs
-    for PBC_condition in ["hdim_2", "both"]:
+    for max_dims in [np.array([0, 10]), np.array([10, 10])]:
         assert pbc_utils.calc_distance_coords_pbc(
-            np.array((0, 0, 0)), np.array((0, 0, 9)), 0, 10, 0, 10, PBC_condition
+            np.array((0, 0)), np.array((0, 9)), max_dims
         ) == pytest.approx(1)
         assert pbc_utils.calc_distance_coords_pbc(
-            np.array((0, 0, 9)), np.array((0, 0, 0)), 0, 10, 0, 10, PBC_condition
+            np.array((0, 9)), np.array((0, 0)), max_dims
         ) == pytest.approx(1)
-        assert pbc_utils.calc_distance_coords_pbc(
-            np.array((0, 8)), np.array((0, 0)), 0, 10, 0, 10, PBC_condition
-        ) == pytest.approx(2)
 
     # Test the same points, except without PBCs
-    for PBC_condition in ["none", "hdim_1"]:
+    for max_dims in [np.array([0, 0]), np.array([10, 0])]:
         assert pbc_utils.calc_distance_coords_pbc(
-            np.array((0, 0, 0)), np.array((0, 0, 9)), 0, 10, 0, 10, PBC_condition
+            np.array((0, 0)), np.array((0, 9)), max_dims
         ) == pytest.approx(9)
         assert pbc_utils.calc_distance_coords_pbc(
-            np.array((0, 0, 9)), np.array((0, 0, 0)), 0, 10, 0, 10, PBC_condition
+            np.array((0, 9)), np.array((0, 0)), max_dims
         ) == pytest.approx(9)
-        assert pbc_utils.calc_distance_coords_pbc(
-            np.array((0, 8)), np.array((0, 0)), 0, 10, 0, 10, PBC_condition
-        ) == pytest.approx(8)
 
     # Test points that will be closer for the both
-    PBC_condition = "both"
+    max_dims = np.array([10, 10])
     assert pbc_utils.calc_distance_coords_pbc(
-        np.array((0, 9, 9)), np.array((0, 0, 0)), 0, 10, 0, 10, PBC_condition
+        np.array((9, 9)), np.array((0, 0)), max_dims
     ) == pytest.approx(1.4142135, rel=1e-3)
     assert pbc_utils.calc_distance_coords_pbc(
-        np.array((0, 0, 9)), np.array((0, 9, 0)), 0, 10, 0, 10, PBC_condition
+        np.array((0, 9)), np.array((9, 0)), max_dims
     ) == pytest.approx(1.4142135, rel=1e-3)
 
     # Test the corner points for no PBCs
-    PBC_condition = "none"
+    max_dims = np.array([0, 0])
     assert pbc_utils.calc_distance_coords_pbc(
-        np.array((0, 9, 9)), np.array((0, 0, 0)), 0, 10, 0, 10, PBC_condition
+        np.array((9, 9)), np.array((0, 0)), max_dims
     ) == pytest.approx(12.727922, rel=1e-3)
     assert pbc_utils.calc_distance_coords_pbc(
-        np.array((0, 0, 9)), np.array((0, 9, 0)), 0, 10, 0, 10, PBC_condition
+        np.array((0, 9)), np.array((9, 0)), max_dims
     ) == pytest.approx(12.727922, rel=1e-3)
 
     # Test the corner points for hdim_1 and hdim_2
-    for PBC_condition in ["hdim_1", "hdim_2"]:
+    for max_dims in [np.array([10, 0]), np.array([0, 10])]:
         assert pbc_utils.calc_distance_coords_pbc(
-            np.array((0, 9, 9)), np.array((0, 0, 0)), 0, 10, 0, 10, PBC_condition
+            np.array((9, 9)), np.array((0, 0)), max_dims
         ) == pytest.approx(9.055385)
         assert pbc_utils.calc_distance_coords_pbc(
-            np.array((0, 0, 9)), np.array((0, 9, 0)), 0, 10, 0, 10, PBC_condition
+            np.array((0, 9)), np.array((9, 0)), max_dims
         ) == pytest.approx(9.055385)
+
+
+def test_calc_distance_coords_pbc_3D():
+    """Tests ```tobac.utils.calc_distance_coords_pbc```
+    Currently tests:
+    two points in normal space
+    Periodicity along hdim_1, hdim_2, and corners
+    """
+    import numpy as np
+
+    # Test first two points in normal space with varying PBC conditions
+    for max_dims in [
+        np.array([0, 0, 0]),
+        np.array([0, 10, 0]),
+        np.array([0, 0, 10]),
+        np.array([0, 10, 10]),
+    ]:
+        assert pbc_utils.calc_distance_coords_pbc(
+            np.array((0, 0, 0)), np.array((0, 0, 0)), max_dims
+        ) == pytest.approx(0)
+        assert pbc_utils.calc_distance_coords_pbc(
+            np.array((0, 0, 0)), np.array((0, 0, 1)), max_dims
+        ) == pytest.approx(1)
+        assert pbc_utils.calc_distance_coords_pbc(
+            np.array((0, 0, 0)), np.array((3, 3, 1)), max_dims
+        ) == pytest.approx(4.3588989, rel=1e-3)
+
+    # Now test two points that will be closer along the hdim_1 boundary for cases without PBCs
+    for max_dims in [np.array([0, 10, 0]), np.array([0, 10, 10])]:
+        assert pbc_utils.calc_distance_coords_pbc(
+            np.array((0, 0, 0)), np.array((0, 9, 0)), max_dims
+        ) == pytest.approx(1)
+        assert pbc_utils.calc_distance_coords_pbc(
+            np.array((0, 9, 0)), np.array((0, 0, 0)), max_dims
+        ) == pytest.approx(1)
+        assert pbc_utils.calc_distance_coords_pbc(
+            np.array((4, 0, 4)), np.array((3, 7, 3)), max_dims
+        ) == pytest.approx(3.3166247)
+        assert pbc_utils.calc_distance_coords_pbc(
+            np.array((4, 0, 4)), np.array((3, 7, 3)), max_dims
+        ) == pytest.approx(3.3166247)
+
+    # Test the same points, except without PBCs
+    for max_dims in [np.array([0, 0, 0]), np.array([0, 0, 10])]:
+        assert pbc_utils.calc_distance_coords_pbc(
+            np.array((0, 0, 0)), np.array((0, 9, 0)), max_dims
+        ) == pytest.approx(9)
+        assert pbc_utils.calc_distance_coords_pbc(
+            np.array((0, 9, 0)), np.array((0, 0, 0)), max_dims
+        ) == pytest.approx(9)
+
+    # Now test two points that will be closer along the hdim_2 boundary for cases without PBCs
+    for max_dims in [np.array([0, 0, 10]), np.array([0, 10, 10])]:
+        assert pbc_utils.calc_distance_coords_pbc(
+            np.array((0, 0, 0)), np.array((0, 0, 9)), max_dims
+        ) == pytest.approx(1)
+        assert pbc_utils.calc_distance_coords_pbc(
+            np.array((0, 0, 9)), np.array((0, 0, 0)), max_dims
+        ) == pytest.approx(1)
+
+    # Test the same points, except without PBCs
+    for max_dims in [np.array([0, 0, 0]), np.array([0, 10, 0])]:
+        assert pbc_utils.calc_distance_coords_pbc(
+            np.array((0, 0, 0)), np.array((0, 0, 9)), max_dims
+        ) == pytest.approx(9)
+        assert pbc_utils.calc_distance_coords_pbc(
+            np.array((0, 0, 9)), np.array((0, 0, 0)), max_dims
+        ) == pytest.approx(9)
+
+    # Test points that will be closer for the both
+    max_dims = np.array([0, 10, 10])
+    assert pbc_utils.calc_distance_coords_pbc(
+        np.array((0, 9, 9)), np.array((0, 0, 0)), max_dims
+    ) == pytest.approx(1.4142135, rel=1e-3)
+    assert pbc_utils.calc_distance_coords_pbc(
+        np.array((0, 0, 9)), np.array((0, 9, 0)), max_dims
+    ) == pytest.approx(1.4142135, rel=1e-3)
+
+    # Test the corner points for no PBCs
+    max_dims = np.array([0, 0, 0])
+    assert pbc_utils.calc_distance_coords_pbc(
+        np.array((0, 9, 9)), np.array((0, 0, 0)), max_dims
+    ) == pytest.approx(12.727922, rel=1e-3)
+    assert pbc_utils.calc_distance_coords_pbc(
+        np.array((0, 0, 9)), np.array((0, 9, 0)), max_dims
+    ) == pytest.approx(12.727922, rel=1e-3)
+
+    # Test the corner points for hdim_1 and hdim_2
+    for max_dims in [np.array([0, 10, 0]), np.array([0, 0, 10])]:
+        assert pbc_utils.calc_distance_coords_pbc(
+            np.array((0, 9, 9)), np.array((0, 0, 0)), max_dims
+        ) == pytest.approx(9.055385)
+        assert pbc_utils.calc_distance_coords_pbc(
+            np.array((0, 0, 9)), np.array((0, 9, 0)), max_dims
+        ) == pytest.approx(9.055385)
+
+
+def test_invalid_limit_names():
+    """
+    Test that invalid_limit_names will correctly return the names of keywords that equal None
+    """
+    assert pbc_utils.invalid_limit_names() == []
+    assert pbc_utils.invalid_limit_names(a=0, b=0) == []
+    assert pbc_utils.invalid_limit_names(a=None, b=0) == ["a"]
+    assert pbc_utils.invalid_limit_names(a=0, b=None) == ["b"]
+    assert pbc_utils.invalid_limit_names(a=None, b=None) == ["a", "b"]
+
+
+def test_validate_pbc_dims():
+    """
+    Test validate_pbc_dims works correctly and raise exceptions appropriately
+    """
+    # Assert that size is only returned if PBCs are required in that dimension
+    assert pbc_utils.validate_pbc_dims(0, 10, 0, 15, "none") == (0, 0)
+    assert pbc_utils.validate_pbc_dims(0, 10, 0, 15, "hdim_1") == (10, 0)
+    assert pbc_utils.validate_pbc_dims(0, 10, 0, 15, "hdim_2") == (0, 15)
+    assert pbc_utils.validate_pbc_dims(0, 10, 0, 15, "both") == (10, 15)
+
+    # Assert that giving None for limits of dimensions that are not PBCs is handled correctly
+    assert pbc_utils.validate_pbc_dims(None, None, None, None, "none") == (0, 0)
+    assert pbc_utils.validate_pbc_dims(0, 10, None, None, "hdim_1") == (10, 0)
+    assert pbc_utils.validate_pbc_dims(None, None, 0, 15, "hdim_2") == (0, 15)
+
+    # Test that an invalid option for PBC_flag raises the correct error
+    with pytest.raises(pbc_utils.PBCflagError):
+        _ = pbc_utils.validate_pbc_dims(0, 10, 0, 15, "invalid_pbc_option")
+
+    # Test that providing None for the limits of a PBC dimension raises the correct error
+    with pytest.raises(pbc_utils.PBCLimitError):
+        _ = pbc_utils.validate_pbc_dims(None, None, 0, 15, "hdim_1")
+    with pytest.raises(pbc_utils.PBCLimitError):
+        _ = pbc_utils.validate_pbc_dims(None, None, None, 15, "hdim_2")
+    with pytest.raises(pbc_utils.PBCLimitError):
+        _ = pbc_utils.validate_pbc_dims(0, None, 0, None, "both")
 
 
 @pytest.mark.parametrize(
@@ -135,16 +259,23 @@ def test_calc_distance_coords_pbc_param(loc_1, loc_2, bounds, PBC_flag, expected
     expected_dist: float
         Expected distance between the two points
     """
-    import numpy as np
-
-    assert pbc_utils.calc_distance_coords_pbc(
-        np.array(loc_1),
-        np.array(loc_2),
+    h1_size, h2_size = pbc_utils.validate_pbc_dims(
         bounds[0],
         bounds[1],
         bounds[2],
         bounds[3],
         PBC_flag,
+    )
+
+    if len(loc_1) == 3:
+        max_dims = np.array([0, h1_size, h2_size])
+    else:
+        max_dims = np.array([h1_size, h2_size])
+
+    assert pbc_utils.calc_distance_coords_pbc(
+        np.array(loc_1),
+        np.array(loc_2),
+        max_dims,
     ) == pytest.approx(expected_dist)
 
 
@@ -292,18 +423,18 @@ def test_build_distance_function_3D():
     that this produces an object that is suitable to call from trackpy
     """
 
-    test_func = pbc_utils.build_distance_function(0, 10, 0, 10, "both")
+    test_func = pbc_utils.build_distance_function(0, 10, 0, 10, "both", True)
     assert test_func(np.array((0, 9, 9)), np.array((0, 0, 0))) == pytest.approx(
         1.4142135
     )
 
-    test_func = pbc_utils.build_distance_function(0, 10, None, None, "hdim_1")
+    test_func = pbc_utils.build_distance_function(0, 10, None, None, "hdim_1", True)
     assert test_func(np.array((0, 9, 9)), np.array((0, 0, 9))) == pytest.approx(1)
 
-    test_func = pbc_utils.build_distance_function(None, None, 0, 10, "hdim_2")
+    test_func = pbc_utils.build_distance_function(None, None, 0, 10, "hdim_2", True)
     assert test_func(np.array((0, 9, 9)), np.array((0, 9, 0))) == pytest.approx(1)
 
-    test_func = pbc_utils.build_distance_function(None, None, None, None, "none")
+    test_func = pbc_utils.build_distance_function(None, None, None, None, "none", True)
     assert test_func(np.array((0, 9, 9)), np.array((0, 0, 0))) == pytest.approx(
         (2 * 81) ** 0.5
     )
@@ -315,16 +446,16 @@ def test_build_distance_function_2D():
     that this produces an object that is suitable to call from trackpy
     """
 
-    test_func = pbc_utils.build_distance_function(0, 10, 0, 10, "both")
+    test_func = pbc_utils.build_distance_function(0, 10, 0, 10, "both", False)
     assert test_func(np.array((9, 9)), np.array((0, 0))) == pytest.approx(1.4142135)
 
-    test_func = pbc_utils.build_distance_function(0, 10, None, None, "hdim_1")
+    test_func = pbc_utils.build_distance_function(0, 10, None, None, "hdim_1", False)
     assert test_func(np.array((9, 9)), np.array((0, 9))) == pytest.approx(1)
 
-    test_func = pbc_utils.build_distance_function(None, None, 0, 10, "hdim_2")
+    test_func = pbc_utils.build_distance_function(None, None, 0, 10, "hdim_2", False)
     assert test_func(np.array((9, 9)), np.array((9, 0))) == pytest.approx(1)
 
-    test_func = pbc_utils.build_distance_function(None, None, None, None, "none")
+    test_func = pbc_utils.build_distance_function(None, None, None, None, "none", False)
     assert test_func(np.array((9, 9)), np.array((0, 0))) == pytest.approx(
         (2 * 81) ** 0.5
     )

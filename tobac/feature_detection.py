@@ -1541,7 +1541,7 @@ def filter_min_distance(
     if PBC_flag in ["hdim_1", "hdim_2", "both"]:
         # Note that we multiply by dxy to get the distances in spatial coordinates
         dist_func = pbc_utils.build_distance_function(
-            min_h1 * dxy, max_h1 * dxy, min_h2 * dxy, max_h2 * dxy, PBC_flag
+            min_h1 * dxy, max_h1 * dxy, min_h2 * dxy, max_h2 * dxy, PBC_flag, is_3D
         )
         features_tree = BallTree(feature_locations, metric="pyfunc", func=dist_func)
         neighbours = features_tree.query_radius(feature_locations, r=min_distance)

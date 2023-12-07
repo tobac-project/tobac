@@ -330,7 +330,7 @@ def linking_trackpy(
         # I think this shouldn't change results, but it will degrade performance.
         neighbor_strategy = "BTree"
         dist_func = pbc_utils.build_distance_function(
-            min_h1, max_h1, min_h2, max_h2, PBC_flag
+            min_h1, max_h1, min_h2, max_h2, PBC_flag, is_3D
         )
 
     else:
