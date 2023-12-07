@@ -286,6 +286,50 @@ def test_get_pbc_coordinates():
     )
 
 
+def test_build_distance_function_3D():
+    """Tests ```pbc_utils.build_distance_function```
+    Currently tests:
+    that this produces an object that is suitable to call from trackpy
+    """
+
+    test_func = pbc_utils.build_distance_function(0, 10, 0, 10, "both")
+    assert test_func(np.array((0, 9, 9)), np.array((0, 0, 0))) == pytest.approx(
+        1.4142135
+    )
+
+    test_func = pbc_utils.build_distance_function(0, 10, None, None, "hdim_1")
+    assert test_func(np.array((0, 9, 9)), np.array((0, 0, 9))) == pytest.approx(1)
+
+    test_func = pbc_utils.build_distance_function(None, None, 0, 10, "hdim_2")
+    assert test_func(np.array((0, 9, 9)), np.array((0, 9, 0))) == pytest.approx(1)
+
+    test_func = pbc_utils.build_distance_function(None, None, None, None, "none")
+    assert test_func(np.array((0, 9, 9)), np.array((0, 0, 0))) == pytest.approx(
+        (2 * 81) ** 0.5
+    )
+
+
+def test_build_distance_function_2D():
+    """Tests ```pbc_utils.build_distance_function```
+    Currently tests:
+    that this produces an object that is suitable to call from trackpy
+    """
+
+    test_func = pbc_utils.build_distance_function(0, 10, 0, 10, "both")
+    assert test_func(np.array((9, 9)), np.array((0, 0))) == pytest.approx(1.4142135)
+
+    test_func = pbc_utils.build_distance_function(0, 10, None, None, "hdim_1")
+    assert test_func(np.array((9, 9)), np.array((0, 9))) == pytest.approx(1)
+
+    test_func = pbc_utils.build_distance_function(None, None, 0, 10, "hdim_2")
+    assert test_func(np.array((9, 9)), np.array((9, 0))) == pytest.approx(1)
+
+    test_func = pbc_utils.build_distance_function(None, None, None, None, "none")
+    assert test_func(np.array((9, 9)), np.array((0, 0))) == pytest.approx(
+        (2 * 81) ** 0.5
+    )
+
+
 def test_weighted_circmean() -> None:
     """
     Test that weighted_circmean gives the expected results compared to scipy.stats.circmean

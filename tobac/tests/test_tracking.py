@@ -2,15 +2,16 @@
 Test for the trackpy tracking functions
 """
 import datetime
+import copy
 
 import pytest
-import tobac.testing
-import tobac.tracking
-import copy
+import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal
-import numpy as np
 import trackpy as tp
+
+import tobac.testing
+import tobac.tracking
 
 
 def convert_cell_dtype_if_appropriate(output, expected_output):
@@ -271,50 +272,6 @@ def test_linking_trackpy():
     )
     assert_frame_equal(
         expected_out_feature.sort_index(axis=1), actual_out_feature.sort_index(axis=1)
-    )
-
-
-def test_build_distance_function_3D():
-    """Tests ```tobac.tracking.build_distance_function```
-    Currently tests:
-    that this produces an object that is suitable to call from trackpy
-    """
-
-    test_func = tobac.tracking.build_distance_function(0, 10, 0, 10, "both")
-    assert test_func(np.array((0, 9, 9)), np.array((0, 0, 0))) == pytest.approx(
-        1.4142135
-    )
-
-    test_func = tobac.tracking.build_distance_function(0, 10, None, None, "hdim_1")
-    assert test_func(np.array((0, 9, 9)), np.array((0, 0, 9))) == pytest.approx(1)
-
-    test_func = tobac.tracking.build_distance_function(None, None, 0, 10, "hdim_2")
-    assert test_func(np.array((0, 9, 9)), np.array((0, 9, 0))) == pytest.approx(1)
-
-    test_func = tobac.tracking.build_distance_function(None, None, None, None, "none")
-    assert test_func(np.array((0, 9, 9)), np.array((0, 0, 0))) == pytest.approx(
-        (2 * 81) ** 0.5
-    )
-
-
-def test_build_distance_function_2D():
-    """Tests ```tobac.tracking.build_distance_function```
-    Currently tests:
-    that this produces an object that is suitable to call from trackpy
-    """
-
-    test_func = tobac.tracking.build_distance_function(0, 10, 0, 10, "both")
-    assert test_func(np.array((9, 9)), np.array((0, 0))) == pytest.approx(1.4142135)
-
-    test_func = tobac.tracking.build_distance_function(0, 10, None, None, "hdim_1")
-    assert test_func(np.array((9, 9)), np.array((0, 9))) == pytest.approx(1)
-
-    test_func = tobac.tracking.build_distance_function(None, None, 0, 10, "hdim_2")
-    assert test_func(np.array((9, 9)), np.array((9, 0))) == pytest.approx(1)
-
-    test_func = tobac.tracking.build_distance_function(None, None, None, None, "none")
-    assert test_func(np.array((9, 9)), np.array((0, 0))) == pytest.approx(
-        (2 * 81) ** 0.5
     )
 
 

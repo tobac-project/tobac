@@ -255,6 +255,122 @@ def calc_distance_coords_pbc(
     return np.sqrt(np.sum(deltas**2))
 
 
+def build_distance_function(min_h1, max_h1, min_h2, max_h2, PBC_flag):
+    """Function to build a partial ```calc_distance_coords_pbc``` function
+    suitable for use with trackpy
+
+    Parameters
+    ----------
+    min_h1: int
+        Minimum point in hdim_1
+    max_h1: int
+        Maximum point in hdim_1
+    min_h2: int
+        Minimum point in hdim_2
+    max_h2: int
+        Maximum point in hdim_2
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
+
+    Returns
+    -------
+    function object
+        A version of calc_distance_coords_pbc suitable to be called by
+        just f(coords_1, coords_2)
+
+    """
+    import functools
+
+    h1_size, h2_size = validate_pbc_dims(min_h1, max_h1, min_h2, max_h2, PBC_flag)
+
+    return functools.partial(
+        calc_distance_coords_pbc,
+        min_h1=0,
+        max_h1=h1_size,
+        min_h2=0,
+        max_h2=h2_size,
+        PBC_flag=PBC_flag,
+    )
+
+
+def validate_pbc_dims(
+    min_h1: int, max_h1: int, min_h2: int, max_h2: int, PBC_flag: str
+) -> tuple[int, int]:
+    """Validate the input parameters for build_distance_function and return size of each axis
+
+    Parameters
+    ----------
+    min_h1: int
+        Minimum point in hdim_1
+    max_h1: int
+        Maximum point in hdim_1
+    min_h2: int
+        Minimum point in hdim_2
+    max_h2: int
+        Maximum point in hdim_2
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
+
+    Returns
+    -------
+    tuple[int, int]
+        size of domain in hdim1 and hdim2
+    """
+    if PBC_flag == "none":
+        return (0, 0)
+    if PBC_flag == "both":
+        invalid_dim_limits = invalid_limit_names(
+            min_h1=min_h1, max_h1=max_h1, min_h2=min_h2, max_h2=max_h2
+        )
+        if invalid_dim_limits:
+            raise PBCLimitError(invalid_dim_limits, PBC_flag)
+        return (max_h1 - min_h1, max_h2 - min_h2)
+    if PBC_flag == "hdim_1":
+        invalid_dim_limits = invalid_limit_names(min_h1=min_h1, max_h1=max_h1)
+        if invalid_dim_limits:
+            raise PBCLimitError(invalid_dim_limits, PBC_flag)
+        return (max_h1 - min_h1, 0)
+    if PBC_flag == "hdim_2":
+        invalid_dim_limits = invalid_limit_names(min_h2=min_h2, max_h2=max_h2)
+        if invalid_dim_limits:
+            raise PBCLimitError(invalid_dim_limits, PBC_flag)
+        return (0, max_h2 - min_h2)
+    # if PBC_flag not in ('none', 'hdim_1', 'hdim_2', 'both'):
+    raise PBCflagError()
+
+
+def invalid_limit_names(**limits) -> list[str]:
+    """Return the names of keywords if their value is None
+
+    Returns
+    -------
+    list[str]
+        List of provided keywords with value None
+    """
+    return [k for k, v in limits.items() if v is None]
+
+
+class PBCflagError(ValueError):
+    def __init__(self):
+        super.init(
+            "PBC_flag keyword is not valid, must be one of ['none', 'hdim_1', 'hdim_2', 'both']"
+        )
+
+
+class PBCLimitError(ValueError):
+    def __init__(self, invalid_limits, PBC_flag):
+        self.message = f"Keyword parameters {invalid_limits} must be provided for PBC_flag {PBC_flag}"
+        super.init(self.message)
+
+
 def weighted_circmean(
     values: np.ndarray,
     weights: np.ndarray,
