@@ -202,17 +202,16 @@ def add_markers(
                             # Get its global index so that we can calculate
                             # distance and set the array.
                             local_index = it.multi_index
-                            global_index = np.array(
-                                (
-                                    local_index[0] + z_seed_start,
-                                    local_index[1] + seed_box[0],
-                                    local_index[2] + seed_box[2],
-                                )
+                            global_index = (
+                                local_index[0] + z_seed_start,
+                                local_index[1] + seed_box[0],
+                                local_index[2] + seed_box[2],
                             )
+
                             # If it's a background marker, we can just set it
                             # with the feature we're working on.
                             if curr_box_pt == bg_marker:
-                                marker_arr[*global_index] = row["feature"]
+                                marker_arr[global_index] = row["feature"]
                                 continue
                             # it has another feature in it. Calculate the distance
                             # from its current set feature and the new feature.
@@ -223,7 +222,9 @@ def add_markers(
                             else:
                                 curr_coord = np.array((0, row["hdim_1"], row["hdim_2"]))
 
-                            dist_from_curr_pt = dist_func(global_index, curr_coord)
+                            dist_from_curr_pt = dist_func(
+                                np.array(global_index), curr_coord
+                            )
 
                             # This is technically an O(N^2) operation, but
                             # hopefully performance isn't too bad as this should
@@ -243,14 +244,16 @@ def add_markers(
                                 orig_coord = np.array(
                                     (0, orig_row["hdim_1"], orig_row["hdim_2"])
                                 )
-                            dist_from_orig_pt = dist_func(global_index, orig_coord)
+                            dist_from_orig_pt = dist_func(
+                                np.array(global_index), orig_coord
+                            )
                             # The current point center is further away
                             # than the original point center, so do nothing
                             if dist_from_curr_pt > dist_from_orig_pt:
                                 continue
                             else:
                                 # the current point center is closer.
-                                marker_arr[*global_index] = row["feature"]
+                                marker_arr[global_index] = row["feature"]
                 # completely unseeded region so far.
                 else:
                     marker_arr[
