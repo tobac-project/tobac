@@ -34,13 +34,13 @@ def get_statistics(
 
     Parameters
     ----------
-    labels : np.ndarray[int]
-        Mask with labels of each regions to apply function to (e.g. output of segmentation for a specific timestep)
-    *fields : tuple[np.ndarray]
-        Fields to give as arguments to each function call. Must have the same shape as labels.
     features: pd.DataFrame
         Dataframe with features or segmented features (output from feature detection or segmentation)
         can be for the specific timestep or for the whole dataset
+    labels : np.ndarray[int]
+        Mask with labels of each regions to apply function to (e.g. output of segmentation for a specific timestep)
+    *fields : tuple[np.ndarray]
+        Fields to give as arguments to each function call. If the shape does not match that of labels, numpy-style broadcasting will be applied.
     statistic: dict[str, Callable], optional (default: {'ncells':np.count_nonzero})
         Dictionary with function(s) to apply over each region as values and the name of the respective statistics as keys
         default is to just count the number of cells associated with each feature and write it to the feature dataframe
@@ -163,13 +163,16 @@ def get_statistics_from_mask(
 
     Parameters:
     -----------
-    segmentation_mask : xr.DataArray
-        Segmentation mask output
-    *fields : xr.DataArray[np.ndarray]
-        Field(s) with input data. Needs to have the same dimensions as the segmentation mask.
     features: pd.DataFrame
         Dataframe with segmented features (output from feature detection or segmentation).
         Timesteps must not be exactly the same as in segmentation mask but all labels in the mask need to be present in the feature dataframe.
+    segmentation_mask : xr.DataArray
+        Segmentation mask output
+    *fields : xr.DataArray[np.ndarray]
+        Field(s) with input data. If field does not have a time dimension it
+        will be considered time invariant, and the entire field will be passed
+        for each time step in segmentation_mask. If the shape does not match
+        that of labels, numpy-style broadcasting will be applied.
     statistic: dict[str, Callable], optional (default: {'ncells':np.count_nonzero})
         Dictionary with function(s) to apply over each region as values and the name of the respective statistics as keys
         default is to just count the number of cells associated with each feature and write it to the feature dataframe
