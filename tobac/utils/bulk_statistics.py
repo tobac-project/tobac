@@ -25,12 +25,14 @@ def get_statistics(
     default: Union[None, float] = None,
     id_column: str = "feature",
 ) -> pd.DataFrame:
-    """
-    Get bulk statistics for objects (e.g. features or segmented features) given a labelled mask of the objects
-    and any input field with the same dimensions.
+    """Get bulk statistics for objects (e.g. features or segmented features)
+    given a labelled mask of the objects and any input field with the same
+    dimensions or that can be broadcast with labels according to numpy-like
+    broadcasting rules.
 
-    The statistics are added as a new column to the existing feature dataframe. Users can specify which statistics are computed by
-    providing a dictionary with the column name of the metric and the respective function.
+    The statistics are added as a new column to the existing feature dataframe.
+    Users can specify which statistics are computed by providing a dictionary
+    with the column name of the metric and the respective function.
 
     Parameters
     ----------
@@ -64,12 +66,13 @@ def get_statistics(
         Name of the column in feature dataframe that contains IDs that match with
         the labels in mask. The default is the column "feature".
 
-    Returns:
+    Returns
     -------
     features: pd.DataFrame
         Updated feature dataframe with bulk statistics for each feature saved
         in a new column.
     """
+
     # if mask and input data dimensions do not match we can broadcast using numpy broadcasting rules
     for field in fields:
         if labels.shape != field.shape:
@@ -170,11 +173,11 @@ def get_statistics_from_mask(
     default: Union[None, float] = None,
     id_column: str = "feature",
 ) -> pd.DataFrame:
-    """
-    Derives bulk statistics for each object in the segmentation mask.
+    """Derives bulk statistics for each object in the segmentation mask, and
+    returns a features Dataframe with these properties for each feature.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     features: pd.DataFrame
         Dataframe with segmented features (output from feature detection or
         segmentation). Timesteps must not be exactly the same as in segmentation
@@ -203,14 +206,15 @@ def get_statistics_from_mask(
         default value to return in a region that has no values
 
     id_column: str, optional (default: "feature")
-        Name of the column in feature dataframe that contains IDs that match 
+        Name of the column in feature dataframe that contains IDs that match
         with the labels in mask. The default is the column "feature".
 
-    Returns:
+    Returns
     -------
     features: pd.DataFrame
         Updated feature dataframe with bulk statistics for each feature saved in a new column
     """
+
     # check that mask and input data have the same dimensions
     for field in fields:
         if segmentation_mask.shape != field.shape:
