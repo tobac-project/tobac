@@ -13,6 +13,7 @@ _**Version 1.5.2:**_
 - Path to data in example notebooks fixed after changes to zenodo [#357](https://github.com/tobac-project/tobac/pull/357)
 - Bulk statistics updated to use multiple fields correctly and perform numpy-style broadcasting [#368](https://github.com/tobac-project/tobac/pull/368)
 - PBCs now work when using predictive tracking [#376](https://github.com/tobac-project/tobac/pull/376)
+- Fixed error with PBC distance calculation using numba if all of `min_h1`, `max_h1`, `min_h2`, `max_h2` were not specified, even if not calculating PBCs over one of the dimensions [#384](https://github.com/tobac-project/tobac/pull/384)
 
 **Documentation**
 
