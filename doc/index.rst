@@ -67,7 +67,7 @@ The project is currently being extended by several contributors to include addit
 
 
 .. toctree::
-   :caption: Compute bulk statistics online or in postprocessing
+   :caption: Compute bulk statistics
    :maxdepth: 2
 
    bulk_statistics/index
