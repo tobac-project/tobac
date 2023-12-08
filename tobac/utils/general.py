@@ -1,9 +1,9 @@
 """General tobac utilities
 
 """
+
 import copy
 import logging
-
 import pandas as pd
 
 from . import internal as internal_utils
@@ -623,10 +623,16 @@ def combine_feature_dataframes(
     if old_feature_column_name is not None:
         combined_df[old_feature_column_name] = combined_df["feature"]
     # count_per_time = combined_feats.groupby('time')['index'].count()
-    combined_df["frame"] = combined_df["time"].rank(method="dense").astype(int) - 1
+    original_frame_dtype = combined_df["frame"].dtype
+    combined_df["frame"] = (
+        combined_df["time"].rank(method="dense").astype(original_frame_dtype) - 1
+    )
     combined_sorted = combined_df.sort_values(sort_features_by, ignore_index=True)
     if renumber_features:
-        combined_sorted["feature"] = np.arange(1, len(combined_sorted) + 1)
+        original_feature_dtype = combined_df["feature"].dtype
+        combined_sorted["feature"] = np.arange(
+            1, len(combined_sorted) + 1, dtype=original_feature_dtype
+        )
     combined_sorted = combined_sorted.reset_index(drop=True)
     return combined_sorted
 
@@ -786,6 +792,9 @@ def transform_feature_points(
         warnings.warn(
             "Dropping feature numbers: " + str(removed_features.values), UserWarning
         )
+
+    # make sure that feature points are converted back to int64
+    ret_features["feature"] = ret_features.feature.astype(int)
 
     return ret_features
 

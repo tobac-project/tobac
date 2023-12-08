@@ -86,7 +86,7 @@ setup(
         "peter.marinescu@colostate.edu",
     ],
     license="BSD-3-Clause License",
-    packages=[PACKAGE_NAME, PACKAGE_NAME + ".utils"],
+    packages=[PACKAGE_NAME, PACKAGE_NAME + ".utils", PACKAGE_NAME + ".utils.internal"],
     install_requires=get_requirements("requirements.txt"),
     test_requires=["pytest"],
     zip_safe=False,
