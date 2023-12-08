@@ -285,6 +285,17 @@ def test_build_distance_function():
         1.4142135
     )
 
+    test_func = tobac.tracking.build_distance_function(0, 10, None, None, "hdim_1")
+    assert test_func(np.array((0, 9, 9)), np.array((0, 0, 9))) == pytest.approx(1)
+
+    test_func = tobac.tracking.build_distance_function(None, None, 0, 10, "hdim_2")
+    assert test_func(np.array((0, 9, 9)), np.array((0, 9, 0))) == pytest.approx(1)
+
+    test_func = tobac.tracking.build_distance_function(None, None, None, None, "none")
+    assert test_func(np.array((0, 9, 9)), np.array((0, 0, 0))) == pytest.approx(
+        (2 * 81) ** 0.5
+    )
+
 
 @pytest.mark.parametrize(
     "point_init, speed, dxy, actual_dz, v_max, use_dz, features_connected",
