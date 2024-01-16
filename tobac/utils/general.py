@@ -913,3 +913,25 @@ def standardize_track_dataset(TrackedFeatures, Mask, Projection=None):
         ds["ProjectionCoordinateSystem"] = Projection
 
     return ds
+
+
+@internal_utils.iris_to_xarray
+def identify_feature_families(
+    feature_df: pd.DataFrame,
+    in_segmentation: xr.DataArray,
+    start_family_number: int = 0,
+):
+    """
+
+    Parameters
+    ----------
+    feature_df: pd.DataFrame
+        Input feature dataframe
+    in_segmentation: xr.Data
+    start_family_number
+
+    Returns
+    -------
+
+    """
+    pass

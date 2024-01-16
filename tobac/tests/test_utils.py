@@ -586,3 +586,15 @@ def test_transform_feature_points_3D():
     assert np.all(new_feat_df["hdim_1"] == [25, 30])
     assert np.all(new_feat_df["hdim_2"] == [5, 15])
     assert np.all(new_feat_df["vdim"] == [5, 10])
+
+
+def test_identify_feature_families():
+    """tests tobac.utils.general.identify_feature_families"""
+    orig_feat_df_1 = tb_test.generate_single_feature(
+        0, 95, 10, max_h1=1000, max_h2=1000
+    )
+    orig_feat_df_2 = tb_test.generate_single_feature(
+        5, 105, 20, max_h1=1000, max_h2=1000
+    )
+
+    orig_feat_df = tb_utils.combine_feature_dataframes([orig_feat_df_1, orig_feat_df_2])
