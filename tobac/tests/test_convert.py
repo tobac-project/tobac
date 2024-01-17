@@ -9,7 +9,7 @@ from iris.cube import Cube
 import pandas as pd
 from pandas.testing import assert_frame_equal
 from copy import deepcopy
-from tobac.utils.internal import (
+from tobac.utils.decorators import (
     xarray_to_iris,
     iris_to_xarray,
     xarray_to_irispandas,

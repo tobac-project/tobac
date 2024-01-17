@@ -1,4 +1,3 @@
-from multiprocessing.sharedctypes import Value
 import pytest
 import tobac.testing
 import tobac.testing as tbtest
@@ -10,7 +9,6 @@ import tobac.utils as tb_utils
 import tobac.utils.internal as internal_utils
 import tobac.testing as tb_test
 
-import pandas as pd
 import pandas.testing as pd_test
 import numpy as np
 from scipy import fft
