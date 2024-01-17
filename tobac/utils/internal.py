@@ -4,6 +4,7 @@ import numpy as np
 import skimage.measure
 import xarray as xr
 import iris
+import iris.cube
 import warnings
 
 
@@ -110,7 +111,6 @@ def iris_to_xarray(func):
         Function including decorator
     """
 
-    import iris
     import xarray
 
     def wrapper(*args, **kwargs):

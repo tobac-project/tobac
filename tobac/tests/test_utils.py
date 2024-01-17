@@ -591,10 +591,26 @@ def test_transform_feature_points_3D():
 def test_identify_feature_families():
     """tests tobac.utils.general.identify_feature_families"""
     orig_feat_df_1 = tb_test.generate_single_feature(
-        0, 95, 10, max_h1=1000, max_h2=1000
+        10, 30, 10, max_h1=50, max_h2=50, feature_num=1
     )
     orig_feat_df_2 = tb_test.generate_single_feature(
-        5, 105, 20, max_h1=1000, max_h2=1000
+        30, 30, 20, max_h1=50, max_h2=50, feature_num=2
     )
 
-    orig_feat_df = tb_utils.combine_feature_dataframes([orig_feat_df_1, orig_feat_df_2])
+    orig_feat_df = tb_utils.combine_feature_dataframes(
+        [orig_feat_df_1, orig_feat_df_2], renumber_features=False
+    )
+
+    # make fake segmentation
+    test_arr = np.zeros((2, 50, 50), dtype=int)
+    test_arr[0, 5:15, 20:40] = 1
+    test_arr[0, 15:40, 20:40] = 2
+
+    test_xr = xr.DataArray(data=test_arr, dims=["time", "hdim_1", "hdim_2"])
+
+    out_df, out_grid = tb_utils.general.identify_feature_families(
+        orig_feat_df, test_xr, return_grid=True, family_column_name="family"
+    )
+    assert np.unique(out_df["family"] == 1)
+    assert np.all(out_grid[0, 5:15, 20:40] == 1)
+    assert np.all(out_grid[0, 15:40, 20:40] == 1)

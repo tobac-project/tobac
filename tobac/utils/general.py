@@ -3,8 +3,10 @@
 """
 import copy
 import logging
+from typing import Union
 
 import pandas as pd
+import skimage
 
 from . import internal as internal_utils
 import numpy as np
@@ -919,8 +921,11 @@ def standardize_track_dataset(TrackedFeatures, Mask, Projection=None):
 def identify_feature_families(
     feature_df: pd.DataFrame,
     in_segmentation: xr.DataArray,
-    start_family_number: int = 0,
-):
+    return_grid: bool = False,
+    family_column_name: str = "feature_family_id",
+    unsegmented_point_values: int = 0,
+    below_threshold_values: int = -1,
+) -> Union[tuple[pd.DataFrame, xr.DataArray], pd.DataFrame]:
     """
 
     Parameters
@@ -934,4 +939,46 @@ def identify_feature_families(
     -------
 
     """
-    pass
+
+    # we need to label the data, but we currently label using skimage label, not dask label.
+
+
+    # 3D should be 4-D (time, then 3 spatial).
+    # 2D should be 3-D (time, then 2 spatial)
+    is_3D = len(in_segmentation.shape) ==4
+    seg_family_dict = dict()
+    out_families = copy.deepcopy(in_segmentation)
+
+    for time_index in range(in_segmentation.shape[0]):
+        in_arr = np.array(in_segmentation.values[time_index])
+
+        segmented_arr = np.logical_and(
+            in_arr != unsegmented_point_values, in_arr != below_threshold_values
+        )
+        # These are our families
+        family_labeled_data = skimage.measure.label(
+            segmented_arr,
+        )
+
+        # now we need to note feature->family relationship in the dataframe.
+        segmentation_props = skimage.measure.regionprops(in_arr)
+
+        # associate feature ID -> family ID
+        for seg_area in segmentation_props:
+            if is_3D:
+                seg_family = family_labeled_data[seg_area.coords[0, 0], seg_area.coords[0, 1], seg_area.cords[0,2]]
+            else:
+                seg_family = family_labeled_data[seg_area.coords[0, 0], seg_area.coords[0, 1]]
+            seg_family_dict[seg_area.label] = seg_family
+
+        out_families[time_index] = segmented_arr
+
+    family_series = pd.Series(seg_family_dict, name=family_column_name)
+    feature_series = pd.Series({x: x for x in seg_family_dict.keys()}, name="feature")
+    family_df = pd.concat([family_series, feature_series], axis=1)
+    out_df = feature_df.merge(family_df, on="feature", how="inner")
+
+    if return_grid:
+        return out_df, out_families
+    else:
+        return out_df
