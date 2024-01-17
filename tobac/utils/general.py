@@ -10,6 +10,7 @@ import pandas as pd
 import skimage
 
 from . import internal as internal_utils
+from . import decorators
 import numpy as np
 import sklearn
 import sklearn.neighbors
@@ -927,7 +928,7 @@ def standardize_track_dataset(TrackedFeatures, Mask, Projection=None):
     return ds
 
 
-@internal_utils.iris_to_xarray
+@decorators.iris_to_xarray
 def identify_feature_families(
     feature_df: pd.DataFrame,
     in_segmentation: xr.DataArray,
