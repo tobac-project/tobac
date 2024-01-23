@@ -366,7 +366,10 @@ def get_bounding_box(x, buffer=1):
     return bbox
 
 
-def get_spacings(field_in, grid_spacing=None, time_spacing=None):
+@internal_utils.xarray_to_iris
+def get_spacings(
+    field_in, grid_spacing=None, time_spacing=None, average_type="arithmetic"
+):
     """Determine spatial and temporal grid spacing of the
     input data.
 
@@ -382,6 +385,16 @@ def get_spacings(field_in, grid_spacing=None, time_spacing=None):
     time_spacing : float, optional
         Manually sets the time spacing if specified.
         Default is None.
+
+    average_type : string, optional
+        Defines how spacings in x- and y-direction are
+        combined.
+
+        - 'arithmetic' : standard arithmetic mean like (dx+dy)/2
+        - 'geometric' : geometric mean; conserves gridbox area
+
+        Default is 'arithmetic'.
+
 
     Returns
     -------
@@ -415,7 +428,13 @@ def get_spacings(field_in, grid_spacing=None, time_spacing=None):
         y_coord = deepcopy(field_in.coord("projection_y_coordinate"))
         y_coord.convert_units("metre")
         dy = np.diff(field_in.coord("projection_y_coordinate")[0:2].points)[0]
-        dxy = 0.5 * (dx + dy)
+
+        if average_type == "arithmetic":
+            dxy = 0.5 * (np.abs(dx) + np.abs(dy))
+        elif average_type == "geometric":
+            # I would prefer a geometric mean
+            dxy = np.sqrt(np.abs(dx) * np.abs(dy))
+
     elif grid_spacing is not None:
         dxy = grid_spacing
     else:
