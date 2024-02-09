@@ -37,6 +37,7 @@ from .utils import mask_cell, mask_cell_surface, mask_cube_cell, get_bounding_bo
 from .utils import internal as internal_utils
 from .utils import decorators
 
+
 def cell_statistics_all(
     input_cubes,
     track,
