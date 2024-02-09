@@ -58,8 +58,11 @@ When running feature detection on a 3D dataset and then using these detected fea
 
 **Box** seeding (:code:`seed_3D_flag='box'`) sets a cube or rectangular seed markers around the detected feature in 3D space. The marker size is user defined (in array coordinates) by :code:`seed_3D_size` as either an integer (for a cube) or a tuple of :code:`(int, int, int)`, ordered :code:`(vertical, hdim_1, hdim_2)`. Note that :code:`seed_3D_size` must be odd number to avoid the box becoming biased to one side. If two seed boxes overlap, the seeded area is marked with the closest feature centroid.
 
-	.. image:: images/box_vs_column_seeding.png
-            :width: 500 px
+.. figure:: images/box_vs_column_seeding.png
+   :scale: 50 %
+   :alt: an example 3D plot showing column seeding linking features that should not be linked
+
+   An example plot from a numerical model simulation showing the real-world difference between column and box seeding with a tilted feature. As this image demonstrates, box seeding is typically recommended for 3D data.
 
 
 .. _Max Distance:
