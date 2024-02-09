@@ -46,6 +46,7 @@ from . import utils as tb_utils
 from .utils import periodic_boundaries as pbc_utils
 from .utils import internal as internal_utils
 from .utils import get_statistics
+from .utils import decorators
 
 
 def add_markers(
@@ -329,7 +330,7 @@ def segmentation_2D(
     )
 
 
-@internal_utils.xarray_to_iris
+@decorators.xarray_to_iris
 def segmentation_timestep(
     field_in: iris.cube.Cube,
     features_in: pd.DataFrame,
@@ -1116,7 +1117,7 @@ def check_add_unseeded_across_bdrys(
     return markers_out
 
 
-@internal_utils.xarray_to_iris
+@decorators.xarray_to_iris
 def segmentation(
     features: pd.DataFrame,
     field: iris.cube.Cube,

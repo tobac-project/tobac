@@ -35,7 +35,7 @@ import warnings
 from tobac.centerofgravity import calculate_cog
 from .utils import mask_cell, mask_cell_surface, mask_cube_cell, get_bounding_box
 from .utils import internal as internal_utils
-
+from .utils import decorators
 
 def cell_statistics_all(
     input_cubes,
@@ -864,7 +864,7 @@ def calculate_areas_2Dlatlon(_2Dlat_coord, _2Dlon_coord):
     return area
 
 
-@internal_utils.xarray_to_iris
+@decorators.xarray_to_iris
 def calculate_area(features, mask, method_area=None):
     """Calculate the area of the segments for each feature.
 
