@@ -1,5 +1,55 @@
 ### Tobac Changelog
 
+_**Version 1.5.2:**_
+
+**Enhancements for Users**
+
+- Let users optionally derive bulk statistics of the data points belonging to each feature. Bulk statistics can be calulcated during feature detection, segmentation or afterwards by applying one of more functions to each feature [#293](https://github.com/tobac-project/tobac/pull/293)
+- Wrapped functions now show the correct docstring [#359](https://github.com/tobac-project/tobac/pull/359)
+
+**Bug fixes**
+
+- Fixed an out-of-bounds error that could occur when performing segmentation with PBCs [#350](https://github.com/tobac-project/tobac/pull/350)
+- Path to data in example notebooks fixed after changes to zenodo [#357](https://github.com/tobac-project/tobac/pull/357)
+- Bulk statistics updated to use multiple fields correctly and perform numpy-style broadcasting [#368](https://github.com/tobac-project/tobac/pull/368)
+- PBCs now work when using predictive tracking [#376](https://github.com/tobac-project/tobac/pull/376)
+- Fixed error with PBC distance calculation using numba if all of `min_h1`, `max_h1`, `min_h2`, `max_h2` were not specified, even if not calculating PBCs over one of the dimensions [#384](https://github.com/tobac-project/tobac/pull/384)
+
+**Documentation**
+
+- Documentation on use of `time_cell_min` in tracking added [#361](https://github.com/tobac-project/tobac/pull/361)
+- Documentation on how thresholding is applied in segmentation update [#365](https://github.com/tobac-project/tobac/pull/365)
+- References to tobac papers updated [#365](https://github.com/tobac-project/tobac/pull/365)
+
+**Internal Enhancements**
+
+- Type hints added for feature detection [#337](https://github.com/tobac-project/tobac/pull/337)
+- Reorganisation and addition of type hints to interal utils [#241](https://github.com/tobac-project/tobac/pull/241)
+- Type hints added for segmentation [#351](https://github.com/tobac-project/tobac/pull/351)
+
+**Repository Enhancements**
+
+- Matrix CI testing added for multiple python versions on Linux, MacOS and Windows [#353](https://github.com/tobac-project/tobac/pull/353)
+- Issue templates with checklists added [#358](https://github.com/tobac-project/tobac/pull/358)
+- Black reformatting updated to say what is wrong [#362](https://github.com/tobac-project/tobac/pull/362)
+- Pylint CI workflow added to assess code quality and compare to base branch [#373](https://github.com/tobac-project/tobac/pull/373)
+
+
+_**Version 1.5.1:**_
+
+**Bug fixes**
+
+- The `strict_thresholding` option in feature detection now works correctly for detecting minima, and produces the same results as without strict thresholding if the `n_min_threshold` is a scalar value [#316](https://github.com/tobac-project/tobac/pull/316)
+- utils.general.standardize_track_dataset was added back after being inadvertently removed in version 1.5.0 [#330](https://github.com/tobac-project/tobac/pull/330)
+- All Numba import errors are now caught with the exception of KeyboardInterrupts. [#335](https://github.com/tobac-project/tobac/pull/335)
+
+**Documentation**
+- Fix to readthedocs building after system packages no longer imported [#336](https://github.com/tobac-project/tobac/pull/336)
+
+**Repository Enhancements**
+- Fix to Jupyter Notebook CI that was timing out due to installing packages with `conda`, switched to `mamba` to resolve. [#340](https://github.com/tobac-project/tobac/pull/340)
+
+
 _**Version 1.5.0:**_
 
 **Enhancements for Users**
@@ -58,7 +108,7 @@ _**Version 1.5.0:**_
 _**Version 1.4.2:**_
 
 
-**Bug fix**
+**Bug fixes**
 
 - Fixed a bug in the segmentation procedure that assigned the wrong grid cell areas to features in data frame  [#246](https://github.com/tobac-project/tobac/pull/246)
 

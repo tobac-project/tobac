@@ -71,7 +71,7 @@ tobac.tracking module
 tobac.utils modules
 ------------------
 
-tobac.utils.general modules
+tobac.utils.general module
 ------------------
 
 .. automodule:: tobac.utils.general
@@ -79,7 +79,15 @@ tobac.utils.general modules
    :undoc-members:
    :show-inheritance:
 
-tobac.utils.mask modules
+tobac.utils.bulk_statistics module
+------------------
+
+.. automodule:: tobac.utils.bulk_statistics
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+tobac.utils.mask module
 ------------------
 
 .. automodule:: tobac.utils.mask

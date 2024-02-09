@@ -48,7 +48,7 @@ def cell_statistics_all(
     width=10000,
     z_coord="model_level_number",
     dimensions=["x", "y"],
-    **kwargs
+    **kwargs,
 ):
     """
     Parameters
@@ -108,7 +108,7 @@ def cell_statistics_all(
             output_name=output_name,
             width=width,
             z_coord=z_coord,
-            **kwargs
+            **kwargs,
         )
 
 
@@ -123,7 +123,7 @@ def cell_statistics(
     width=10000,
     z_coord="model_level_number",
     dimensions=["x", "y"],
-    **kwargs
+    **kwargs,
 ):
     """
     Parameters

@@ -22,7 +22,7 @@ First, you must determine whether you want to detect features on maxima or minim
 ==========
 Thresholds
 ==========
-You can select to detect features on either one or multiple thresholds. The first threshold (or the single threshold) sets the minimum magnitude (either lowest value for :code:`target='maximum'` or highest value for :code:`target='minimum'`) that a feature can be detected on. For example, if you have a field made up of values lower than :code:`10`, and you set :code:`target='maximum', threshold=[10,]`, *tobac* will detect no features. 
+You can select to detect features on either one or multiple thresholds. The first threshold (or the single threshold) sets the minimum magnitude (either lowest value for :code:`target='maximum'` or highest value for :code:`target='minimum'`) that a feature can be detected on. For example, if you have a field made up of values lower than :code:`10`, and you set :code:`target='maximum', threshold=[10,]`, *tobac* will detect no features. The feature detection uses the threshold value in an inclusive way, which means that if you set :code:`target='maximum', threshold=[10,]` and your field does not only contain values lower than :code:`10`, it will include all values **greater than and equal to** :code:`10`. 
 
 Including *multiple* thresholds will allow *tobac* to refine the detection of features and detect multiple features that are connected through a contiguous region of less restrictive threshold values. You can see a conceptual diagram of that here: :doc:`feature_detection_overview`. To examine how setting different thresholds can change the number of features detected, see the example in this notebook: :doc:`feature_detection/notebooks/multiple_thresholds_example`.
 
@@ -61,4 +61,4 @@ The second filtering option is a binary erosion (`skimage.morphology.binary_eros
 ================
 Minimum Distance
 ================
-The parameter :code:`min_distance` sets the minimum distance between two detected features. If two detected features are within :code:`min_distance` of each other, the feature with the larger value is kept, and the feature with the smaller value is discarded. 
+The parameter :code:`min_distance` sets the minimum distance between two detected features. If two detected features are within :code:`min_distance` of each other, the feature with the more extreme value is kept, and the feature with the less extreme value is discarded. 
