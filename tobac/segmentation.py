@@ -67,7 +67,7 @@ def add_markers(
         Array to add the markers to. Assumes a (z, y, x) configuration.
     seed_3D_flag: str('column', 'box')
         Seed 3D field at feature positions with either the full column
-         or a box of user-set size
+        or a box of user-set size
     seed_3D_size: int or tuple (dimensions equal to dimensions of `field`)
         This sets the size of the seed box when `seed_3D_flag` is 'box'. If it's an
         integer (units of number of pixels), the seed box is identical in all dimensions.
@@ -395,7 +395,7 @@ def segmentation_timestep(
         'both' means that we are periodic along both horizontal dimensions
     seed_3D_flag: str('column', 'box')
         Seed 3D field at feature positions with either the full column (default)
-         or a box of user-set size
+        or a box of user-set size
     seed_3D_size: int or tuple (dimensions equal to dimensions of `field`)
         This sets the size of the seed box when `seed_3D_flag` is 'box'. If it's an
         integer (units of number of pixels), the seed box is identical in all dimensions.
@@ -1185,7 +1185,7 @@ def segmentation(
 
     seed_3D_flag: str('column', 'box')
         Seed 3D field at feature positions with either the full column (default)
-         or a box of user-set size
+        or a box of user-set size
 
     seed_3D_size: int or tuple (dimensions equal to dimensions of `field`)
         This sets the size of the seed box when `seed_3D_flag` is 'box'. If it's an
