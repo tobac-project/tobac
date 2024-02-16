@@ -56,7 +56,7 @@ When running feature detection on a 3D dataset and then using these detected fea
 
 **Column** seeding (:code:`seed_3D_flag='column'`) works by setting seed markers throughout some or all of the vertical column at all detected feature centroids (i.e., one column per feature detected). While the default behavior is to seed throughout the full vertical column, the vertical extent of the seeds can be set by passing a `slice <https://docs.python.org/3/c-api/slice.html>`_ into the :code:`level` parameter. Note that :code:`level` operates in *array* coordinates rather than physical coordinates.
 
-**Box** seeding (:code:`seed_3D_flag='box'`) sets a cube or rectangular seed markers around the detected feature in 3D space. The marker size is user defined (in array coordinates) by :code:`seed_3D_size` as either an integer (for a cube) or a tuple of :code:`(int, int, int)`, ordered :code:`(vertical, hdim_1, hdim_2)`. Note that :code:`seed_3D_size` must be odd number to avoid the box becoming biased to one side. If two seed boxes overlap, the seeded area is marked with the closest feature centroid.
+**Box** seeding (:code:`seed_3D_flag='box'`) sets a cube or rectangular seed markers around the detected feature in 3D space. The marker size is user defined (in array coordinates) by :code:`seed_3D_size` as either an integer (for a cube) or a tuple of :code:`(int, int, int)`, ordered :code:`(vertical, hdim_1, hdim_2)`. Note that :code:`seed_3D_size` must be an odd number to avoid the box becoming biased to one side. If two seed boxes overlap, the seeded area is marked with the closest feature centroid.
 
 .. figure:: images/box_vs_column_seeding.png
    :scale: 50 %
