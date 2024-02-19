@@ -397,8 +397,8 @@ def calculate_area(features, mask, method_area=None, vertical_coord=None):
             mask_slice.coord("projection_x_coordinate").guess_bounds()
             mask_slice.coord("projection_y_coordinate").guess_bounds()
         area = np.outer(
-            np.diff(mask_slice.coord("projection_x_coordinate").bounds, axis=1),
             np.diff(mask_slice.coord("projection_y_coordinate").bounds, axis=1),
+            np.diff(mask_slice.coord("projection_x_coordinate").bounds, axis=1),
         )
     elif method_area == "latlon":
         if (mask_slice.coord("latitude").ndim == 1) and (
