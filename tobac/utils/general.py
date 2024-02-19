@@ -367,7 +367,7 @@ def get_bounding_box(x, buffer=1):
 
 
 def get_spacings(
-    field_in, grid_spacing=None, time_spacing=None, average_type="arithmetic"
+    field_in, grid_spacing=None, time_spacing=None, average_method="arithmetic"
 ):
     """Determine spatial and temporal grid spacing of the
     input data.
@@ -385,7 +385,7 @@ def get_spacings(
         Manually sets the time spacing if specified.
         Default is None.
 
-    average_type : string, optional
+    average_method : string, optional
         Defines how spacings in x- and y-direction are
         combined.
 
@@ -423,14 +423,14 @@ def get_spacings(
     ) and (grid_spacing is None):
         x_coord = deepcopy(field_in.coord("projection_x_coordinate"))
         x_coord.convert_units("metre")
-        dx = np.diff(field_in.coord("projection_y_coordinate")[0:2].points)[0]
+        dx = np.diff(x_coord[0:2].points)[0]
         y_coord = deepcopy(field_in.coord("projection_y_coordinate"))
         y_coord.convert_units("metre")
-        dy = np.diff(field_in.coord("projection_y_coordinate")[0:2].points)[0]
+        dy = np.diff(y_coord[0:2].points)[0]
 
-        if average_type == "arithmetic":
+        if average_method == "arithmetic":
             dxy = 0.5 * (np.abs(dx) + np.abs(dy))
-        elif average_type == "geometric":
+        elif average_method == "geometric":
             # I would prefer a geometric mean
             dxy = np.sqrt(np.abs(dx) * np.abs(dy))
 
