@@ -53,6 +53,52 @@ def _conv_kwargs_irispandas_to_xarray(conv_kwargs: dict):
     }
 
 
+def _conv_kwargs_xarray_to_iris(conv_kwargs: dict):
+    """
+    Internal function to convert  xarray dataarray kwargs back to iris cubes
+
+    Parameters
+    ----------
+    conv_kwargs : dict
+        Input kwargs to convert
+
+    Returns
+    -------
+    dict
+        Output keyword arguments with all xarray dataarrays converted back to
+        iris cubes
+    """
+    return {
+        key: xr.DataArray.to_iris(arg) if isinstance(arg, xr.DataArray) else arg
+        for key, arg in zip(conv_kwargs.keys(), conv_kwargs.values())
+    }
+
+
+def _conv_kwargs_xarray_to_irispandas(conv_kwargs: dict):
+    """
+    Internal function to convert xarray dataarrays back to iris cubes/pandas dataframes
+
+    Parameters
+    ----------
+    conv_kwargs : dict
+        Input kwargs to convert
+
+    Returns
+    -------
+    dict
+        Output keyword arguments with all xarray dataarrays converted back to
+        iris cubes
+    """
+    return {
+        key: xr.DataArray.to_iris(arg)
+        if isinstance(arg, xr.DataArray)
+        else arg.to_dataframe()
+        if isinstance(arg, xr.Dataset)
+        else arg
+        for key, arg in zip(conv_kwargs.keys(), conv_kwargs.values())
+    }
+
+
 def iris_to_xarray(save_iris_info: bool = False):
     def iris_to_xarray_i(func):
         """Decorator that converts all input of a function that is in the form of
@@ -175,17 +221,7 @@ def xarray_to_iris():
                     ]
                 )
                 if kwargs:
-                    kwargs_new = dict(
-                        zip(
-                            kwargs.keys(),
-                            [
-                                xarray.DataArray.to_iris(arg)
-                                if type(arg) == xarray.DataArray
-                                else arg
-                                for arg in kwargs.values()
-                            ],
-                        )
-                    )
+                    kwargs_new = _conv_kwargs_xarray_to_iris(kwargs)
                 else:
                     kwargs_new = kwargs
                 # print(args)
@@ -361,19 +397,7 @@ def xarray_to_irispandas():
                     ]
                 )
                 if kwargs:
-                    kwargs_new = dict(
-                        zip(
-                            kwargs.keys(),
-                            [
-                                xarray.DataArray.to_iris(arg)
-                                if type(arg) == xarray.DataArray
-                                else arg.to_dataframe()
-                                if type(arg) == xarray.Dataset
-                                else arg
-                                for arg in kwargs.values()
-                            ],
-                        )
-                    )
+                    kwargs_new = _conv_kwargs_xarray_to_irispandas(kwargs)
                 else:
                     kwargs_new = kwargs
                 # print(args)
