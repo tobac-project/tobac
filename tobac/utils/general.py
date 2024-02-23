@@ -487,9 +487,7 @@ def transform_feature_points(
     RADIUS_EARTH_M = 6371000
     is_3D = "vdim" in features
     if is_3D:
-        vert_coord = internal_utils.find_vertical_axis_from_coord(
-            new_dataset, altitude_name
-        )
+        vert_coord = internal_utils.find_vertical_coord_name(new_dataset, altitude_name)
 
     lat_coord, lon_coord = internal_utils.detect_latlon_coord_name(
         new_dataset, latitude_name=latitude_name, longitude_name=longitude_name

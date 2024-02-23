@@ -457,7 +457,7 @@ def segmentation_timestep(
         hdim_1_axis = 0
         hdim_2_axis = 1
     elif field_in.ndim == 3:
-        vertical_axis = internal_utils.find_vertical_axis_from_coord(
+        vertical_axis = internal_utils.find_vertical_coord_name(
             field_in, vertical_coord=vertical_coord
         )
         ndim_vertical = field_in.coord_dims(vertical_axis)

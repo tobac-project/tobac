@@ -5,13 +5,12 @@ from __future__ import annotations
 import copy
 from typing import Union
 
-import cftime
 import numpy as np
 import pandas as pd
 import xarray as xr
 from . import basic as tb_utils_gi
-import datetime
-import random, string
+import random
+import string
 
 
 def find_axis_from_dim_coord(
@@ -30,8 +29,7 @@ def find_axis_from_dim_coord(
     Returns
     -------
     axis_number: int
-        the number of the axis of the given coordinate, or None if the coordinate
-        is not found in the cube or not a dimensional coordinate
+        the number of the axis of the given coordinate
 
     Raises
     ------
@@ -57,8 +55,8 @@ def find_axis_from_dim_coord(
         return dim_axis
     if dim_axis is None and len(coord_axes) == 1:
         return coord_axes[0]
-
-    return None
+    raise ValueError("Coordinate/Dimension " + dim_coord_name + " not found.")
+    # return None
 
 
 def find_axis_from_dim(in_da: xr.DataArray, dim_name: str) -> Union[int, None]:

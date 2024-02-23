@@ -110,7 +110,7 @@ def get_indices_of_labels_from_reg_prop_dict(region_property_dict: dict) -> tupl
         return [curr_loc_indices, y_indices, x_indices]
 
 
-def find_vertical_axis_from_coord(
+def find_vertical_coord_name(
     variable_cube: Union[iris.cube.Cube, xr.DataArray],
     vertical_coord: Union[str, None] = None,
 ) -> str:

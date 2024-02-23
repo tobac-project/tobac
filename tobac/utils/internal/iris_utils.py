@@ -370,7 +370,7 @@ def add_coordinates_3D(
         ndim_vertical = vertical_coord
         vertical_axis = None
     else:
-        vertical_axis = tb_utils_gi.find_vertical_axis_from_coord(
+        vertical_axis = tb_utils_gi.find_vertical_coord_name(
             variable_cube, vertical_coord=vertical_coord
         )
 
