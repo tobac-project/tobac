@@ -190,7 +190,8 @@ def xarray_to_iris():
 
         Examples
         --------
-        >>> segmentation_xarray = xarray_to_iris(segmentation)
+        >>> segmentation_xarray_conv = xarray_to_iris()
+        >>> segmentation_xarray = segmentation_xarray_conv(segmentation)
 
         This line creates a new function that can process xarray fields and
         also outputs fields in xarray format, but otherwise works just like
