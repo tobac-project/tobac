@@ -5,7 +5,7 @@ import functools
 import warnings
 
 
-def iris_to_xarray():
+def iris_to_xarray(save_iris_info: bool = False):
     def iris_to_xarray_i(func):
         """Decorator that converts all input of a function that is in the form of
         Iris cubes into xarray DataArrays and converts all outputs with type
@@ -23,11 +23,21 @@ def iris_to_xarray():
         """
 
         import iris
+        import iris.cube
         import xarray
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             # print(kwargs)
+
+            if save_iris_info:
+                if any([(type(arg) == iris.cube.Cube) for arg in args]) or any(
+                    [(type(arg) == iris.cube.Cube) for arg in kwargs.values()]
+                ):
+                    kwargs["converted_from_iris"] = True
+                else:
+                    kwargs["converted_from_iris"] = False
+
             if any([type(arg) == iris.cube.Cube for arg in args]) or any(
                 [type(arg) == iris.cube.Cube for arg in kwargs.values()]
             ):
