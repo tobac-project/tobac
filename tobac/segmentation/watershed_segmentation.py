@@ -31,6 +31,7 @@ References
 """
 import copy
 import logging
+import datetime
 
 import iris.cube
 import xarray as xr
@@ -1117,9 +1118,10 @@ def check_add_unseeded_across_bdrys(
     return markers_out
 
 
+@tobac_decorators.iris_to_xarray()
 def segmentation(
     features: pd.DataFrame,
-    field: iris.cube.Cube,
+    field: xr.DataArray,
     dxy: float,
     threshold: float = 3e-3,
     target: Literal["maximum", "minimum"] = "maximum",
@@ -1133,7 +1135,7 @@ def segmentation(
     segment_number_below_threshold: int = 0,
     segment_number_unassigned: int = 0,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
-) -> tuple[iris.cube.Cube, pd.DataFrame]:
+) -> tuple[xr.Dataset, pd.DataFrame]:
     """Use watershedding to determine region above a threshold
     value around initial seeding position for all time steps of
     the input data. Works both in 2D (based on single seeding
@@ -1148,7 +1150,7 @@ def segmentation(
     features : pandas.DataFrame
         Output from trackpy/maketrack.
 
-    field : iris.cube.Cube
+    field : iris.cube.Cube or xarray.DataArray
         Containing the field to perform the watershedding on.
 
     dxy : float
@@ -1226,31 +1228,39 @@ def segmentation(
     import pandas as pd
     from iris.cube import CubeList
 
-    logging.info("Start watershedding 3D")
+    time_var_name: str = "time"
+    seg_out_type: str = "int64"
+
+    logging.info("Start watershedding")
 
     # check input for right dimensions:
     if not (field.ndim == 3 or field.ndim == 4):
         raise ValueError(
             "input to segmentation step must be 3D or 4D including a time dimension"
         )
-    if "time" not in [coord.name() for coord in field.coords()]:
+    try:
+        ndim_time = internal_utils.find_axis_from_coord(field, time_var_name)
+    except ValueError as exc:
         raise ValueError(
-            "input to segmentation step must include a dimension named 'time'"
-        )
+            "input to segmentation step must include a dimension named '{0}'".format(
+                time_var_name
+            )
+        ) from exc
 
-    # CubeList and list to store individual segmentation masks and feature DataFrames with information about segmentation
-    segmentation_out_list = CubeList()
+    # create our output dataarray
+    segmentation_out_data = (
+        field.astype("int64", casting="unsafe")
+        .rename("segmentation_mask")
+        .assign_attrs(threshold=threshold)
+    )
     features_out_list = []
 
-    # loop over individual input timesteps for segmentation:
-    # OR do segmentation on single timestep
-    field_time = field.slices_over("time")
-
-    for i, field_i in enumerate(field_time):
-        time_i = field_i.coord("time").units.num2date(field_i.coord("time").points[0])
-        features_i = features.loc[features["time"] == np.datetime64(time_i)]
+    for i_time, time_i in enumerate(field.coords[time_var_name]):
+        field_at_time = field.isel({time_var_name: i_time})
+        # TODO: allow more variability in time than exactly equal.
+        features_i = features.loc[features["time"] == time_i]
         segmentation_out_i, features_out_i = segmentation_timestep(
-            field_i,
+            field_at_time,
             features_i,
             dxy,
             threshold=threshold,
@@ -1266,18 +1276,18 @@ def segmentation(
             segment_number_below_threshold=segment_number_below_threshold,
             statistic=statistic,
         )
-        segmentation_out_list.append(segmentation_out_i)
+        segmentation_out_data.loc[{time_var_name: time_i}] = segmentation_out_i
         features_out_list.append(features_out_i)
         logging.debug(
-            "Finished segmentation for " + time_i.strftime("%Y-%m-%d_%H:%M:%S")
+            "Finished segmentation for "
+            + pd.to_datetime(time_i.values).strftime("%Y-%m-%d %H:%M:%S")
         )
 
     # Merge output from individual timesteps:
-    segmentation_out = segmentation_out_list.merge_cube()
     features_out = pd.concat(features_out_list)
-
+    # segmentation_out = segmentation_out_data.to_dataset()
     logging.debug("Finished segmentation")
-    return segmentation_out, features_out
+    return segmentation_out_data, features_out
 
 
 def watershedding_3D(track, field_in, **kwargs):
