@@ -431,7 +431,6 @@ def get_spacings(
         if average_method == "arithmetic":
             dxy = 0.5 * (np.abs(dx) + np.abs(dy))
         elif average_method == "geometric":
-            # I would prefer a geometric mean
             dxy = np.sqrt(np.abs(dx) * np.abs(dy))
 
     elif grid_spacing is not None:
@@ -452,6 +451,10 @@ def get_spacings(
     elif time_spacing is not None:
         # use value of time_spacing for dt:
         dt = time_spacing
+    else:
+        raise ValueError(
+            "no information about time spacing, need either input cube with time or keyword argument time_spacing"
+        )
     return dxy, dt
 
 
