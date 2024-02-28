@@ -160,8 +160,6 @@ def iris_to_xarray(save_iris_info: bool = False):
                 elif type(output) == xarray.DataArray:
                     output = xarray.DataArray.to_iris(output)
                 # if output is neither tuple nor an xr.DataArray
-                else:
-                    output = func(*args, **kwargs)
 
             else:
                 output = func(*args, **kwargs)
