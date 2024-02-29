@@ -368,7 +368,9 @@ def get_bounding_box(x, buffer=1):
 
 
 @decorators.xarray_to_iris
-def get_spacings(field_in, grid_spacing=None, time_spacing=None):
+def get_spacings(
+    field_in, grid_spacing=None, time_spacing=None, average_method="arithmetic"
+):
     """Determine spatial and temporal grid spacing of the
     input data.
 
@@ -384,6 +386,16 @@ def get_spacings(field_in, grid_spacing=None, time_spacing=None):
     time_spacing : float, optional
         Manually sets the time spacing if specified.
         Default is None.
+
+    average_method : string, optional
+        Defines how spacings in x- and y-direction are
+        combined.
+
+        - 'arithmetic' : standard arithmetic mean like (dx+dy)/2
+        - 'geometric' : geometric mean; conserves gridbox area
+
+        Default is 'arithmetic'.
+
 
     Returns
     -------
@@ -413,11 +425,16 @@ def get_spacings(field_in, grid_spacing=None, time_spacing=None):
     ) and (grid_spacing is None):
         x_coord = deepcopy(field_in.coord("projection_x_coordinate"))
         x_coord.convert_units("metre")
-        dx = np.diff(field_in.coord("projection_y_coordinate")[0:2].points)[0]
+        dx = np.diff(x_coord[0:2].points)[0]
         y_coord = deepcopy(field_in.coord("projection_y_coordinate"))
         y_coord.convert_units("metre")
-        dy = np.diff(field_in.coord("projection_y_coordinate")[0:2].points)[0]
-        dxy = 0.5 * (dx + dy)
+        dy = np.diff(y_coord[0:2].points)[0]
+
+        if average_method == "arithmetic":
+            dxy = 0.5 * (np.abs(dx) + np.abs(dy))
+        elif average_method == "geometric":
+            dxy = np.sqrt(np.abs(dx) * np.abs(dy))
+
     elif grid_spacing is not None:
         dxy = grid_spacing
     else:
@@ -436,6 +453,10 @@ def get_spacings(field_in, grid_spacing=None, time_spacing=None):
     elif time_spacing is not None:
         # use value of time_spacing for dt:
         dt = time_spacing
+    else:
+        raise ValueError(
+            "no information about time spacing, need either input cube with time or keyword argument time_spacing"
+        )
     return dxy, dt
 
 
