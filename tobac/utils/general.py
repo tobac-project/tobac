@@ -7,6 +7,7 @@ import logging
 import pandas as pd
 
 from . import internal as internal_utils
+from . import decorators
 import numpy as np
 import sklearn
 import sklearn.neighbors
@@ -366,6 +367,7 @@ def get_bounding_box(x, buffer=1):
     return bbox
 
 
+@decorators.xarray_to_iris
 def get_spacings(
     field_in, grid_spacing=None, time_spacing=None, average_method="arithmetic"
 ):
