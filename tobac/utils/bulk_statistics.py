@@ -66,7 +66,7 @@ def get_statistics(
 
     index: None | list[int], optional (default: None)
         list of indices of regions in labels to apply function to. If None, will
-            default to all integer feature labels in labels
+        default to all integer feature labels in labels.
 
     default: None | float, optional (default: None)
         default value to return in a region that has no values.
