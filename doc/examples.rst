@@ -4,7 +4,7 @@ tobac is provided with a set of Jupyter notebooks that show examples of the appl
 
 
 .. nbgallery::
-   :caption: Tracking for Beginners - Idealized Tracking
+   :caption: Fundamentals of Detection and Tracking
    
    Test Blob in 2D <examples4doc/Basics/Idealized-Case-1_Tracking-of-a-Test-Blob-in-2D>
    Two crossing Blobs <examples4doc/Basics/Idealized-Case-2_Two_crossing_Blobs.ipynb>
@@ -18,14 +18,14 @@ tobac is provided with a set of Jupyter notebooks that show examples of the appl
 
 
 .. nbgallery::
-   :caption: Advanced Tracking: Observations
+   :caption: Examples of Using _tobac_ with Observations
    
    OLR from GOES-13 Satellite <examples4doc/Example_OLR_Tracking_satellite/Example_OLR_Tracking_satellite>
    Combine Radar & Satellite <examples4doc/Example_Track_on_Radar_Segment_on_Satellite/Example_Track_on_Radar_Segment_on_Satellite>
 
 
 .. nbgallery::
-   :caption: Advanced Tracking: Simulations
+   :caption: Examples of Using _tobac_ with Model Data
 
    WRF OLR <examples4doc/Example_OLR_Tracking_model/Example_OLR_Tracking_model>
    WRF Precip <examples4doc/Example_Precip_Tracking/Example_Precip_Tracking>
