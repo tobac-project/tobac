@@ -33,30 +33,43 @@ def get_statistics(
     id_column: str = "feature",
     collapse_axis: Union[None, int, list[int]] = None,
 ) -> pd.DataFrame:
-    """
-    Get bulk statistics for objects (e.g. features or segmented features) given a labelled mask of the objects
-    and any input field with the same dimensions.
+    """Get bulk statistics for objects (e.g. features or segmented features)
+    given a labelled mask of the objects and any input field with the same
+    dimensions or that can be broadcast with labels according to numpy-like
+    broadcasting rules.
 
-    The statistics are added as a new column to the existing feature dataframe. Users can specify which statistics are computed by
-    providing a dictionary with the column name of the metric and the respective function.
+    The statistics are added as a new column to the existing feature dataframe.
+    Users can specify which statistics are computed by providing a dictionary
+    with the column name of the metric and the respective function.
 
     Parameters
     ----------
-    labels : np.ndarray[int]
-        Mask with labels of each regions to apply function to (e.g. output of segmentation for a specific timestep)
-    *fields : tuple[np.ndarray]
-        Fields to give as arguments to each function call. Must have the same shape as labels.
     features: pd.DataFrame
-        Dataframe with features or segmented features (output from feature detection or segmentation)
-        can be for the specific timestep or for the whole dataset
+        Dataframe with features or segmented features (output from feature
+        detection or segmentation), which can be for the specific timestep or
+        for the whole dataset
+
+    labels : np.ndarray[int]
+        Mask with labels of each regions to apply function to (e.g. output of
+        segmentation for a specific timestep)
+
+    *fields : tuple[np.ndarray]
+        Fields to give as arguments to each function call. If the shape does not
+        match that of labels, numpy-style broadcasting will be applied.
+
     statistic: dict[str, Callable], optional (default: {'ncells':np.count_nonzero})
-        Dictionary with function(s) to apply over each region as values and the name of the respective statistics as keys
-        default is to just count the number of cells associated with each feature and write it to the feature dataframe
+        Dictionary with function(s) to apply over each region as values and the
+        name of the respective statistics as keys. Default is to just count the
+        number of cells associated with each feature and write it to the feature
+        dataframe.
+
     index: None | list[int], optional (default: None)
         list of indices of regions in labels to apply function to. If None, will
-            default to all integer feature labels in labels
+        default to all integer feature labels in labels.
+
     default: None | float, optional (default: None)
-        default value to return in a region that has no values
+        default value to return in a region that has no values.
+
     id_column: str, optional (default: "feature")
         Name of the column in feature dataframe that contains IDs that match with the labels in mask. The default is the column "feature".
     collapse_axis: None | int | list[int], optional (default: None):
@@ -64,11 +77,13 @@ def get_statistics(
         while allowing labelled features to overlap. This can be used, for example, to calculate the
         footprint area (2D) of 3D labels
 
-     Returns:
-     -------
-     features: pd.DataFrame
-         Updated feature dataframe with bulk statistics for each feature saved in a new column
+    Returns
+    -------
+    features: pd.DataFrame
+        Updated feature dataframe with bulk statistics for each feature saved
+        in a new column.
     """
+
     # if mask and input data dimensions do not match we can broadcast using numpy broadcasting rules
     if collapse_axis is not None:
         # Test if iterable and if not make a list
@@ -201,27 +216,38 @@ def get_statistics_from_mask(
     id_column: str = "feature",
     collapse_dim: Union[None, str, list[str]] = None,
 ) -> pd.DataFrame:
-    """
-    Derives bulk statistics for each object in the segmentation mask.
+    """Derives bulk statistics for each object in the segmentation mask, and
+    returns a features Dataframe with these properties for each feature.
 
+    Parameters
+    ----------
+    features: pd.DataFrame
+        Dataframe with segmented features (output from feature detection or
+        segmentation). Timesteps must not be exactly the same as in segmentation
+        mask but all labels in the mask need to be present in the feature
+        dataframe.
 
-    Parameters:
-    -----------
     segmentation_mask : xr.DataArray
         Segmentation mask output
+
     *fields : xr.DataArray[np.ndarray]
-        Field(s) with input data. Needs to have the same dimensions as the segmentation mask.
-    features: pd.DataFrame
-        Dataframe with segmented features (output from feature detection or segmentation).
-        Timesteps must not be exactly the same as in segmentation mask but all labels in the mask need to be present in the feature dataframe.
+        Field(s) with input data. If field does not have a time dimension it
+        will be considered time invariant, and the entire field will be passed
+        for each time step in segmentation_mask. If the shape does not match
+        that of labels, numpy-style broadcasting will be applied.
+
     statistic: dict[str, Callable], optional (default: {'ncells':np.count_nonzero})
-        Dictionary with function(s) to apply over each region as values and the name of the respective statistics as keys
-        default is to just count the number of cells associated with each feature and write it to the feature dataframe
+        Dictionary with function(s) to apply over each region as values and the
+        name of the respective statistics as keys. Default is to calculate the
+        mean value of the field over each feature.
+
     index: None | list[int], optional (default: None)
         list of indexes of regions in labels to apply function to. If None, will
-            default to all integers between 1 and the maximum value in labels
+        default to all integers between 1 and the maximum value in labels
+
     default: None | float, optional (default: None)
         default value to return in a region that has no values
+
     id_column: str, optional (default: "feature")
         Name of the column in feature dataframe that contains IDs that match with the labels in mask. The default is the column "feature".
     collapse_dim: None | str | list[str], optional (defailt: None)
