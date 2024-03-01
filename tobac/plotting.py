@@ -20,11 +20,11 @@ import logging
 import numpy as np
 import matplotlib as mpl
 
-from .analysis.analysis import (
+from tobac.analysis.cell_analysis import (
     lifetime_histogram,
     histogram_cellwise,
-    histogram_featurewise,
 )
+from tobac.analysis.feature_analysis import histogram_featurewise
 
 
 def plot_tracks_mask_field_loop(

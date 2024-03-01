@@ -41,19 +41,25 @@ from .plotting import (
     make_map,
     map_tracks,
 )
-from .analysis.analysis import (
+from tobac.analysis.cell_analysis import (
     cell_statistics,
     cog_cell,
     lifetime_histogram,
-    histogram_featurewise,
     histogram_cellwise,
-    calculate_nearestneighbordistance,
     velocity_histogram,
-    nearestneighbordistance_histogram,
-    area_histogram,
     calculate_overlap,
 )
-from .analysis.spatial import calculate_velocity, calculate_distance, calculate_area
+from tobac.analysis.feature_analysis import (
+    histogram_featurewise,
+    calculate_nearestneighbordistance,
+    nearestneighbordistance_histogram,
+    area_histogram,
+)
+from tobac.analysis.spatial import (
+    calculate_velocity,
+    calculate_distance,
+    calculate_area,
+)
 from .utils.mask import (
     mask_cell,
     mask_cell_surface,
