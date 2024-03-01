@@ -825,15 +825,15 @@ def segmentation_timestep(
                 )
 
                 # edit value in buddy_features dataframe
-                buddy_features.hdim_1.values[buddy_looper] = (
-                    pbc_utils.transfm_pbc_point(
-                        float(buddy_feat.hdim_1), hdim1_min, hdim1_max
-                    )
+                buddy_features.hdim_1.values[
+                    buddy_looper
+                ] = pbc_utils.transfm_pbc_point(
+                    float(buddy_feat.hdim_1), hdim1_min, hdim1_max
                 )
-                buddy_features.hdim_2.values[buddy_looper] = (
-                    pbc_utils.transfm_pbc_point(
-                        float(buddy_feat.hdim_2), hdim2_min, hdim2_max
-                    )
+                buddy_features.hdim_2.values[
+                    buddy_looper
+                ] = pbc_utils.transfm_pbc_point(
+                    float(buddy_feat.hdim_2), hdim2_min, hdim2_max
                 )
 
                 buddy_looper = buddy_looper + 1
@@ -1011,9 +1011,9 @@ def segmentation_timestep(
                                 segmentation_mask_3[z_val_o, y_val_o, x_val_o]
                                 != segmentation_mask_4.data[z_seg, y_seg, x_seg]
                             ):
-                                segmentation_mask_3[z_val_o, y_val_o, x_val_o] = (
-                                    segmentation_mask_4.data[z_seg, y_seg, x_seg]
-                                )
+                                segmentation_mask_3[
+                                    z_val_o, y_val_o, x_val_o
+                                ] = segmentation_mask_4.data[z_seg, y_seg, x_seg]
         if not is_3D_seg:
             segmentation_mask_3 = segmentation_mask_3[0]
 

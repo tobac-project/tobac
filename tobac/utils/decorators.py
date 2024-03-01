@@ -209,7 +209,9 @@ def irispandas_to_xarray(func):
                     (
                         xarray.DataArray.from_iris(arg)
                         if type(arg) == iris.cube.Cube
-                        else arg.to_xarray() if type(arg) == pd.DataFrame else arg
+                        else arg.to_xarray()
+                        if type(arg) == pd.DataFrame
+                        else arg
                     )
                     for arg in args
                 ]
@@ -221,7 +223,9 @@ def irispandas_to_xarray(func):
                         (
                             xarray.DataArray.from_iris(arg)
                             if type(arg) == iris.cube.Cube
-                            else arg.to_xarray() if type(arg) == pd.DataFrame else arg
+                            else arg.to_xarray()
+                            if type(arg) == pd.DataFrame
+                            else arg
                         )
                         for arg in kwargs.values()
                     ],
@@ -312,7 +316,9 @@ def xarray_to_irispandas(func):
                     (
                         xarray.DataArray.to_iris(arg)
                         if type(arg) == xarray.DataArray
-                        else arg.to_dataframe() if type(arg) == xarray.Dataset else arg
+                        else arg.to_dataframe()
+                        if type(arg) == xarray.Dataset
+                        else arg
                     )
                     for arg in args
                 ]
