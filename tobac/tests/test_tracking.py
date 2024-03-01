@@ -1,6 +1,7 @@
 """
 Test for the trackpy tracking functions
 """
+
 import datetime
 
 import pytest

@@ -3,6 +3,7 @@ Support functions to compute bulk statistics of features, either as a postproces
 or within feature detection or segmentation. 
 
 """
+
 import logging
 import warnings
 from functools import partial
@@ -66,19 +67,19 @@ def get_statistics(
     index: None | list[int], optional (default: None)
         list of indices of regions in labels to apply function to. If None, will
             default to all integer feature labels in labels
-    
+
     default: None | float, optional (default: None)
         default value to return in a region that has no values.
 
     id_column: str, optional (default: "feature")
         Name of the column in feature dataframe that contains IDs that match with
         the labels in mask. The default is the column "feature".
-    
+
     collapse_axis: None | int | list[int], optional (default: None):
         Index or indices of axes of labels to collapse. This will reduce the dimensionality of labels
         while allowing labelled features to overlap. This can be used, for example, to calculate the
         footprint area (2D) of 3D labels
-    
+
 
     Returns
     -------
@@ -169,9 +170,11 @@ def get_statistics(
 
             stats = np.array(
                 [
-                    func(*(field.ravel()[label_locs(i)] for field in fields))
-                    if i < bins.size and bins[i] > bins[i - 1]
-                    else default
+                    (
+                        func(*(field.ravel()[label_locs(i)] for field in fields))
+                        if i < bins.size and bins[i] > bins[i - 1]
+                        else default
+                    )
                     for i in index
                 ]
             )
