@@ -13,6 +13,15 @@ from iris.analysis.cartography import area_weights
 from tobac.utils.bulk_statistics import get_statistics_from_mask
 from tobac.utils.internal.basic import find_vertical_axis_from_coord
 
+__all__ = (
+    "haversine",
+    "calculate_distance",
+    "calculate_velocity",
+    "calculate_velocity_individual",
+    "calculate_areas_2Dlatlon",
+    "calculate_area",
+)
+
 
 def haversine(lat1, lon1, lat2, lon2):
     """Computes the Haversine distance in kilometers.
