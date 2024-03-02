@@ -12,6 +12,7 @@ from iris.analysis.cartography import area_weights
 
 from tobac.utils.bulk_statistics import get_statistics_from_mask
 from tobac.utils.internal.basic import find_vertical_axis_from_coord
+from tobac.utils import decorators
 
 __all__ = (
     "haversine",
@@ -324,7 +325,7 @@ def calculate_areas_2Dlatlon(_2Dlat_coord, _2Dlon_coord):
 
     return area
 
-
+@decorators.xarray_to_iris
 def calculate_area(features, mask, method_area=None, vertical_coord=None):
     """Calculate the area of the segments for each feature.
 
