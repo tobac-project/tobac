@@ -46,6 +46,7 @@ from . import utils as tb_utils
 from .utils import periodic_boundaries as pbc_utils
 from .utils import internal as internal_utils
 from .utils import get_statistics
+from .utils import decorators
 
 
 def add_markers(
@@ -67,7 +68,7 @@ def add_markers(
         Array to add the markers to. Assumes a (z, y, x) configuration.
     seed_3D_flag: str('column', 'box')
         Seed 3D field at feature positions with either the full column
-         or a box of user-set size
+        or a box of user-set size
     seed_3D_size: int or tuple (dimensions equal to dimensions of `field`)
         This sets the size of the seed box when `seed_3D_flag` is 'box'. If it's an
         integer (units of number of pixels), the seed box is identical in all dimensions.
@@ -329,6 +330,7 @@ def segmentation_2D(
     )
 
 
+@decorators.xarray_to_iris
 def segmentation_timestep(
     field_in: iris.cube.Cube,
     features_in: pd.DataFrame,
@@ -395,7 +397,7 @@ def segmentation_timestep(
         'both' means that we are periodic along both horizontal dimensions
     seed_3D_flag: str('column', 'box')
         Seed 3D field at feature positions with either the full column (default)
-         or a box of user-set size
+        or a box of user-set size
     seed_3D_size: int or tuple (dimensions equal to dimensions of `field`)
         This sets the size of the seed box when `seed_3D_flag` is 'box'. If it's an
         integer (units of number of pixels), the seed box is identical in all dimensions.
@@ -1115,6 +1117,7 @@ def check_add_unseeded_across_bdrys(
     return markers_out
 
 
+@decorators.xarray_to_iris
 def segmentation(
     features: pd.DataFrame,
     field: iris.cube.Cube,
@@ -1185,7 +1188,7 @@ def segmentation(
 
     seed_3D_flag: str('column', 'box')
         Seed 3D field at feature positions with either the full column (default)
-         or a box of user-set size
+        or a box of user-set size
 
     seed_3D_size: int or tuple (dimensions equal to dimensions of `field`)
         This sets the size of the seed box when `seed_3D_flag` is 'box'. If it's an

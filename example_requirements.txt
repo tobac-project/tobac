@@ -14,5 +14,10 @@ notebook
 pytables
 s3fs
 arm_pyart
+seaborn
 h5netcdf
 typing_extensions
+rioxarray
+numba
+dask
+
