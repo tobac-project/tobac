@@ -211,7 +211,7 @@ def get_statistics(
     return features
 
 
-@decorators.iris_to_xarray
+@decorators.iris_to_xarray()
 def get_statistics_from_mask(
     features: pd.DataFrame,
     segmentation_mask: xr.DataArray,

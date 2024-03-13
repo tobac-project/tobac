@@ -18,14 +18,14 @@ tobac is provided with a set of Jupyter notebooks that show examples of the appl
 
 
 .. nbgallery::
-   :caption: Examples of Using _tobac_ with Observations
+   :caption: Examples of Using *tobac* with Observations
    
    OLR from GOES-13 Satellite <examples4doc/Example_OLR_Tracking_satellite/Example_OLR_Tracking_satellite>
    Combine Radar & Satellite <examples4doc/Example_Track_on_Radar_Segment_on_Satellite/Example_Track_on_Radar_Segment_on_Satellite>
 
 
 .. nbgallery::
-   :caption: Examples of Using _tobac_ with Model Data
+   :caption: Examples of Using *tobac* with Model Data
 
    WRF OLR <examples4doc/Example_OLR_Tracking_model/Example_OLR_Tracking_model>
    WRF Precip <examples4doc/Example_Precip_Tracking/Example_Precip_Tracking>
