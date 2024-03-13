@@ -1208,7 +1208,6 @@ def segmentation(
         Default is None. Optional parameter to calculate bulk statistics within feature detection.
         Dictionary with callable function(s) to apply over the region of each detected feature and the name of the statistics to appear in the feature output dataframe. The functions should be the values and the names of the metric the keys (e.g. {'mean': np.mean})
 
-
     Returns
     -------
     segmentation_out : iris.cube.Cube
@@ -1255,10 +1254,13 @@ def segmentation(
     )
     features_out_list = []
 
+    # Iris workaround: convert cftime to datetime64
+    all_times = features["time"].map(np.datetime64)
+
     for i_time, time_i in enumerate(field.coords[time_var_name]):
         field_at_time = field.isel({time_var_name: i_time})
         # TODO: allow more variability in time than exactly equal.
-        features_i = features.loc[features["time"] == time_i]
+        features_i = features.loc[all_times == time_i.values]
         segmentation_out_i, features_out_i = segmentation_timestep(
             field_at_time,
             features_i,
