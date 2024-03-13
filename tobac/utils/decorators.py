@@ -3,35 +3,103 @@
 
 import functools
 import warnings
-import xarray as xr
 import iris.cube
+import pandas as pd
+import xarray as xr
 
 
-def _safe_convert_xarray_to_iris(
-    in_xr: xr.DataArray, int_fill_value=-999
-) -> iris.cube.Cube:
+def _conv_kwargs_iris_to_xarray(conv_kwargs: dict):
     """
-    Internal method to safely convert xarray
+    Internal function to convert iris cube kwargs to xarray dataarrays
+
     Parameters
     ----------
-    in_xr: xr.DataArray
-        Input xarray DataArray
-    int_fill_value: int
-        Fill value to use for integer arrays, instead of NaN
+    conv_kwargs : dict
+        Input kwargs to convert
 
     Returns
     -------
-    iris.cube.Cube
+    dict
+        Output keyword arguments without any Iris Cubes
     """
-
-    iris_out = in_xr.to_iris()
-    # this is not ideal, but the best way I can find so far.
-    if in_xr.dtype in ["int32", "int64", "uint"]:
-        iris_out.data.fill_value = int_fill_value
-    return iris_out
+    return {
+        key: xr.DataArray.from_iris(arg) if isinstance(arg, iris.cube.Cube) else arg
+        for key, arg in zip(conv_kwargs.keys(), conv_kwargs.values())
+    }
 
 
-def iris_to_xarray():
+def _conv_kwargs_irispandas_to_xarray(conv_kwargs: dict):
+    """
+    Internal function to convert iris cube and pandas dataframe kwargs to xarray dataarrays
+
+    Parameters
+    ----------
+    conv_kwargs : dict
+        Input kwargs to convert
+
+    Returns
+    -------
+    dict
+        Output keyword arguments without any Iris Cubes or pandas dataframes
+
+    """
+    return {
+        key: xr.DataArray.from_iris(arg)
+        if isinstance(arg, iris.cube.Cube)
+        else arg.to_xarray()
+        if isinstance(arg, pd.DataFrame)
+        else arg
+        for key, arg in zip(conv_kwargs.keys(), conv_kwargs.values())
+    }
+
+
+def _conv_kwargs_xarray_to_iris(conv_kwargs: dict):
+    """
+    Internal function to convert  xarray dataarray kwargs back to iris cubes
+
+    Parameters
+    ----------
+    conv_kwargs : dict
+        Input kwargs to convert
+
+    Returns
+    -------
+    dict
+        Output keyword arguments with all xarray dataarrays converted back to
+        iris cubes
+    """
+    return {
+        key: xr.DataArray.to_iris(arg) if isinstance(arg, xr.DataArray) else arg
+        for key, arg in zip(conv_kwargs.keys(), conv_kwargs.values())
+    }
+
+
+def _conv_kwargs_xarray_to_irispandas(conv_kwargs: dict):
+    """
+    Internal function to convert xarray dataarrays back to iris cubes/pandas dataframes
+
+    Parameters
+    ----------
+    conv_kwargs : dict
+        Input kwargs to convert
+
+    Returns
+    -------
+    dict
+        Output keyword arguments with all xarray dataarrays converted back to
+        iris cubes
+    """
+    return {
+        key: xr.DataArray.to_iris(arg)
+        if isinstance(arg, xr.DataArray)
+        else arg.to_dataframe()
+        if isinstance(arg, xr.Dataset)
+        else arg
+        for key, arg in zip(conv_kwargs.keys(), conv_kwargs.values())
+    }
+
+
+def iris_to_xarray(save_iris_info: bool = False):
     def iris_to_xarray_i(func):
         """Decorator that converts all input of a function that is in the form of
         Iris cubes into xarray DataArrays and converts all outputs with type
@@ -49,11 +117,21 @@ def iris_to_xarray():
         """
 
         import iris
+        import iris.cube
         import xarray
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             # print(kwargs)
+
+            if save_iris_info:
+                if any([(type(arg) == iris.cube.Cube) for arg in args]) or any(
+                    [(type(arg) == iris.cube.Cube) for arg in kwargs.values()]
+                ):
+                    kwargs["converted_from_iris"] = True
+                else:
+                    kwargs["converted_from_iris"] = False
+
             if any([type(arg) == iris.cube.Cube for arg in args]) or any(
                 [type(arg) == iris.cube.Cube for arg in kwargs.values()]
             ):
@@ -66,34 +144,22 @@ def iris_to_xarray():
                         for arg in args
                     ]
                 )
-                kwargs_new = dict(
-                    zip(
-                        kwargs.keys(),
-                        [
-                            xarray.DataArray.from_iris(arg)
-                            if type(arg) == iris.cube.Cube
-                            else arg
-                            for arg in kwargs.values()
-                        ],
-                    )
-                )
+                kwargs_new = _conv_kwargs_iris_to_xarray(kwargs)
                 # print(args)
                 # print(kwargs)
                 output = func(*args, **kwargs_new)
                 if type(output) == tuple:
                     output = tuple(
                         [
-                            _safe_convert_xarray_to_iris(output_item)
+                            xarray.DataArray.to_iris(output_item)
                             if type(output_item) == xarray.DataArray
                             else output_item
                             for output_item in output
                         ]
                     )
                 elif type(output) == xarray.DataArray:
-                    output = _safe_convert_xarray_to_iris(output)
+                    output = xarray.DataArray.to_iris(output)
                 # if output is neither tuple nor an xr.DataArray
-                else:
-                    output = func(*args, **kwargs)
 
             else:
                 output = func(*args, **kwargs)
@@ -122,7 +188,8 @@ def xarray_to_iris():
 
         Examples
         --------
-        >>> segmentation_xarray = xarray_to_iris(segmentation)
+        >>> segmentation_xarray_conv = xarray_to_iris()
+        >>> segmentation_xarray = segmentation_xarray_conv(segmentation)
 
         This line creates a new function that can process xarray fields and
         also outputs fields in xarray format, but otherwise works just like
@@ -146,24 +213,14 @@ def xarray_to_iris():
                 # print("converting xarray to iris and back")
                 args = tuple(
                     [
-                        _safe_convert_xarray_to_iris(arg)
+                        xarray.DataArray.to_iris(arg)
                         if type(arg) == xarray.DataArray
                         else arg
                         for arg in args
                     ]
                 )
                 if kwargs:
-                    kwargs_new = dict(
-                        zip(
-                            kwargs.keys(),
-                            [
-                                _safe_convert_xarray_to_iris(arg)
-                                if type(arg) == xarray.DataArray
-                                else arg
-                                for arg in kwargs.values()
-                            ],
-                        )
-                    )
+                    kwargs_new = _conv_kwargs_xarray_to_iris(kwargs)
                 else:
                     kwargs_new = kwargs
                 # print(args)
@@ -248,25 +305,13 @@ def irispandas_to_xarray(save_iris_info: bool = False):
                         for arg in args
                     ]
                 )
-                kwargs = dict(
-                    zip(
-                        kwargs.keys(),
-                        [
-                            xarray.DataArray.from_iris(arg)
-                            if type(arg) == iris.cube.Cube
-                            else arg.to_xarray()
-                            if type(arg) == pd.DataFrame
-                            else arg
-                            for arg in kwargs.values()
-                        ],
-                    )
-                )
+                kwargs = _conv_kwargs_irispandas_to_xarray(kwargs)
 
                 output = func(*args, **kwargs)
                 if type(output) == tuple:
                     output = tuple(
                         [
-                            _safe_convert_xarray_to_iris(output_item)
+                            xarray.DataArray.to_iris(output_item)
                             if type(output_item) == xarray.DataArray
                             else output_item.to_dataframe()
                             if type(output_item) == xarray.Dataset
@@ -276,7 +321,7 @@ def irispandas_to_xarray(save_iris_info: bool = False):
                     )
                 else:
                     if type(output) == xarray.DataArray:
-                        output = _safe_convert_xarray_to_iris(output)
+                        output = xarray.DataArray.to_iris(output)
                     elif type(output) == xarray.Dataset:
                         output = output.to_dataframe()
 
@@ -342,7 +387,7 @@ def xarray_to_irispandas():
                 # print("converting xarray to iris and back")
                 args = tuple(
                     [
-                        _safe_convert_xarray_to_iris(arg)
+                        xarray.DataArray.to_iris(arg)
                         if type(arg) == xarray.DataArray
                         else arg.to_dataframe()
                         if type(arg) == xarray.Dataset
@@ -351,19 +396,7 @@ def xarray_to_irispandas():
                     ]
                 )
                 if kwargs:
-                    kwargs_new = dict(
-                        zip(
-                            kwargs.keys(),
-                            [
-                                xarray.DataArray.to_iris(arg)
-                                if type(arg) == xarray.DataArray
-                                else arg.to_dataframe()
-                                if type(arg) == xarray.Dataset
-                                else arg
-                                for arg in kwargs.values()
-                            ],
-                        )
-                    )
+                    kwargs_new = _conv_kwargs_xarray_to_irispandas(kwargs)
                 else:
                     kwargs_new = kwargs
                 # print(args)

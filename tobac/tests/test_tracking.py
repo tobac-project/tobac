@@ -285,6 +285,17 @@ def test_build_distance_function():
         1.4142135
     )
 
+    test_func = tobac.tracking.build_distance_function(0, 10, None, None, "hdim_1")
+    assert test_func(np.array((0, 9, 9)), np.array((0, 0, 9))) == pytest.approx(1)
+
+    test_func = tobac.tracking.build_distance_function(None, None, 0, 10, "hdim_2")
+    assert test_func(np.array((0, 9, 9)), np.array((0, 9, 0))) == pytest.approx(1)
+
+    test_func = tobac.tracking.build_distance_function(None, None, None, None, "none")
+    assert test_func(np.array((0, 9, 9)), np.array((0, 0, 0))) == pytest.approx(
+        (2 * 81) ** 0.5
+    )
+
 
 @pytest.mark.parametrize(
     "point_init, speed, dxy, actual_dz, v_max, use_dz, features_connected",
@@ -650,3 +661,74 @@ def test_time_cell_min(
             np.sum(all_feats_tracked_drop_no_cells["orig_cell_num"] == i)
             == expected_val
         )
+
+
+def test_trackpy_predict_PBC():
+    """Test if predictive tracking with PBCs works correctly"""
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3, 4, 5, 6, 7, 8],
+            "hdim_1": [85, 15, 95, 5, 5, 95, 15, 85],
+            "hdim_2": [50, 45, 50, 45, 50, 45, 50, 45],
+            "frame": [0, 0, 1, 1, 2, 2, 3, 3],
+            "time": [
+                datetime.datetime(2000, 1, 1),
+                datetime.datetime(2000, 1, 1),
+                datetime.datetime(2000, 1, 1, 0, 5),
+                datetime.datetime(2000, 1, 1, 0, 5),
+                datetime.datetime(2000, 1, 1, 0, 10),
+                datetime.datetime(2000, 1, 1, 0, 10),
+                datetime.datetime(2000, 1, 1, 0, 15),
+                datetime.datetime(2000, 1, 1, 0, 15),
+            ],
+        }
+    )
+
+    output_random_no_pbc = tobac.linking_trackpy(
+        test_features, None, 1, 1, d_max=10, method_linking="random"
+    )
+
+    # Assert cell does not cross border
+    assert output_random_no_pbc["cell"].tolist() == [1, 2, 1, 2, 2, 1, 2, 1]
+
+    output_random_pbc = tobac.linking_trackpy(
+        test_features,
+        None,
+        1,
+        1,
+        d_max=10,
+        method_linking="random",
+        PBC_flag="hdim_1",
+        min_h1=0,
+        max_h1=100,
+        min_h2=0,
+        max_h2=100,
+    )
+
+    # Assert cell does not cross border even with PBC because of random tracking
+    assert output_random_pbc["cell"].tolist() == [1, 2, 1, 2, 2, 1, 2, 1]
+
+    output_predict_no_pbc = tobac.linking_trackpy(
+        test_features, None, 1, 1, d_max=10, method_linking="predict"
+    )
+
+    # Assert that without PBCs predictive tracking creates 4 cells because the d_max criteria is too small
+    assert output_predict_no_pbc["cell"].tolist() == [1, 2, 1, 2, 3, 4, 3, 4]
+
+    output_predict_pbc = tobac.linking_trackpy(
+        test_features,
+        None,
+        1,
+        1,
+        d_max=10,
+        method_linking="predict",
+        PBC_flag="hdim_1",
+        min_h1=0,
+        max_h1=100,
+        min_h2=0,
+        max_h2=100,
+    )
+
+    # Assert with PBCs and prdictive tracking the cells should cross the border
+    assert output_predict_pbc["cell"].tolist() == [1, 2, 1, 2, 1, 2, 1, 2]

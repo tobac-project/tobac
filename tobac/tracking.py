@@ -385,7 +385,7 @@ def linking_trackpy(
             link_strategy="auto",
             adaptive_step=adaptive_step,
             adaptive_stop=adaptive_stop,
-            # dist_func=dist_func
+            dist_func=dist_func
             #                                 copy_features=False, diagnostics=False,
             #                                 hash_size=None, box_size=None, verify_integrity=True,
             #                                 retain_index=False
@@ -643,9 +643,9 @@ def build_distance_function(min_h1, max_h1, min_h2, max_h2, PBC_flag):
 
     return functools.partial(
         pbc_utils.calc_distance_coords_pbc,
-        min_h1=min_h1,
-        max_h1=max_h1,
-        min_h2=min_h2,
-        max_h2=max_h2,
+        min_h1=min_h1 if min_h1 is not None else 0,
+        max_h1=max_h1 if max_h1 is not None else 0,
+        min_h2=min_h2 if min_h2 is not None else 0,
+        max_h2=max_h2 if max_h2 is not None else 0,
         PBC_flag=PBC_flag,
     )
