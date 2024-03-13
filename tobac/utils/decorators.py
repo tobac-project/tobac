@@ -10,6 +10,7 @@ import pandas as pd
 import xarray as xr
 import iris.cube
 
+
 def convert_cube_to_dataarray(cube):
     """
     Convert an iris cube to an xarray dataarray, averting error for integer dtype cubes in xarray<v2023.06
@@ -26,8 +27,12 @@ def convert_cube_to_dataarray(cube):
         the returned datarray will have a numpy array with masked values filled with the minimum value for
         that integer dtype. Otherwise the data will be identical to that produced using xr.DataArray.from_iris
     """
-    if isinstance(cube.core_data(), ma.core.MaskedArray) and np.issubdtype(cube.core_data().dtype, np.integer):
-        return xr.DataArray.from_iris(cube.copy(cube.core_data().filled(np.iinfo(cube.core_data().dtype).min)))
+    if isinstance(cube.core_data(), ma.core.MaskedArray) and np.issubdtype(
+        cube.core_data().dtype, np.integer
+    ):
+        return xr.DataArray.from_iris(
+            cube.copy(cube.core_data().filled(np.iinfo(cube.core_data().dtype).min))
+        )
     return xr.DataArray.from_iris(cube)
 
 
