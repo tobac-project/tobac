@@ -520,6 +520,7 @@ def make_dataset_from_arr(
     import xarray as xr
     import iris
 
+    time_dim_name = "time"
     has_time = time_dim_num is not None
 
     is_3D = z_dim_num is not None
@@ -530,10 +531,29 @@ def make_dataset_from_arr(
     if has_time:
         time_min = datetime.datetime(2022, 1, 1)
         time_num = in_arr.shape[time_dim_num]
+        time_vals = pd.date_range(start=time_min, periods=time_num).values.astype(
+            "datetime64[s]"
+        )
 
     if data_type == "xarray":
+        # add dimension and coordinates
+        if is_3D:
+            output_arr = output_arr.rename(
+                new_name_or_name_dict={"dim_" + str(z_dim_num): z_dim_name}
+            )
+            output_arr = output_arr.assign_coords(
+                {z_dim_name: (z_dim_name, np.arange(0, z_max))}
+            )
+        # add dimension and coordinates
+        if has_time:
+            output_arr = output_arr.rename(
+                new_name_or_name_dict={"dim_" + str(time_dim_num): time_dim_name}
+            )
+            output_arr = output_arr.assign_coords(
+                {time_dim_name: (time_dim_name, time_vals)}
+            )
         return output_arr
-    elif data_type == "iris":
+    if data_type == "iris":
         out_arr_iris = output_arr.to_iris()
 
         if is_3D:
@@ -544,10 +564,8 @@ def make_dataset_from_arr(
         if has_time:
             out_arr_iris.add_dim_coord(
                 iris.coords.DimCoord(
-                    pd.date_range(start=time_min, periods=time_num)
-                    .values.astype("datetime64[s]")
-                    .astype(int),
-                    standard_name="time",
+                    time_vals.astype(int),
+                    standard_name=time_dim_name,
                     units="seconds since epoch",
                 ),
                 time_dim_num,

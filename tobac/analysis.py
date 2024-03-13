@@ -865,7 +865,7 @@ def calculate_areas_2Dlatlon(_2Dlat_coord, _2Dlon_coord):
     return area
 
 
-@decorators.xarray_to_iris
+@decorators.xarray_to_iris()
 def calculate_area(features, mask, method_area=None):
     """Calculate the area of the segments for each feature.
 

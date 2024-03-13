@@ -4,7 +4,6 @@ import pytest
 import tobac
 import tobac.testing
 import xarray
-import iris
 from iris.cube import Cube
 import pandas as pd
 from pandas.testing import assert_frame_equal
