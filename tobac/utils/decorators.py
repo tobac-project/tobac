@@ -3,9 +3,32 @@
 
 import functools
 import warnings
-import iris.cube
+
+import numpy as np
+from numpy import ma
 import pandas as pd
 import xarray as xr
+import iris.cube
+
+def convert_cube_to_dataarray(cube):
+    """
+    Convert an iris cube to an xarray dataarray, averting error for integer dtype cubes in xarray<v2023.06
+
+    Parameters
+    ----------
+    cube : iris.cube.Cube
+        Iris data cube
+
+    Returns
+    -------
+    dataarray : xr.DataArray
+        dataarray converted from cube. If the cube's core data is a masked array and has integer dtype,
+        the returned datarray will have a numpy array with masked values filled with the minimum value for
+        that integer dtype. Otherwise the data will be identical to that produced using xr.DataArray.from_iris
+    """
+    if isinstance(cube.core_data(), ma.core.MaskedArray) and np.issubdtype(cube.core_data().dtype, np.integer):
+        return xr.DataArray.from_iris(cube.copy(cube.core_data().filled(np.iinfo(cube.core_data().dtype).min)))
+    return xr.DataArray.from_iris(cube)
 
 
 def _conv_kwargs_iris_to_xarray(conv_kwargs: dict):
@@ -23,7 +46,7 @@ def _conv_kwargs_iris_to_xarray(conv_kwargs: dict):
         Output keyword arguments without any Iris Cubes
     """
     return {
-        key: xr.DataArray.from_iris(arg) if isinstance(arg, iris.cube.Cube) else arg
+        key: convert_cube_to_dataarray(arg) if isinstance(arg, iris.cube.Cube) else arg
         for key, arg in zip(conv_kwargs.keys(), conv_kwargs.values())
     }
 
@@ -44,7 +67,7 @@ def _conv_kwargs_irispandas_to_xarray(conv_kwargs: dict):
 
     """
     return {
-        key: xr.DataArray.from_iris(arg)
+        key: convert_cube_to_dataarray(arg)
         if isinstance(arg, iris.cube.Cube)
         else arg.to_xarray()
         if isinstance(arg, pd.DataFrame)
@@ -138,7 +161,7 @@ def iris_to_xarray(save_iris_info: bool = False):
                 # print("converting iris to xarray and back")
                 args = tuple(
                     [
-                        xarray.DataArray.from_iris(arg)
+                        convert_cube_to_dataarray(arg)
                         if type(arg) == iris.cube.Cube
                         else arg
                         for arg in args
@@ -297,7 +320,7 @@ def irispandas_to_xarray(save_iris_info: bool = False):
                 # print("converting iris to xarray and back")
                 args = tuple(
                     [
-                        xarray.DataArray.from_iris(arg)
+                        convert_cube_to_dataarray(arg)
                         if type(arg) == iris.cube.Cube
                         else arg.to_xarray()
                         if type(arg) == pd.DataFrame
