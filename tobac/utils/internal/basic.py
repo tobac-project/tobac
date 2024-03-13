@@ -285,7 +285,7 @@ def find_axis_from_coord(
         raise ValueError("variable_arr must be Iris Cube or Xarray DataArray")
 
 
-@irispandas_to_xarray
+@irispandas_to_xarray()
 def detect_latlon_coord_name(
     in_dataset: Union[xr.DataArray, iris.cube.Cube],
     latitude_name: Union[str, None] = None,
