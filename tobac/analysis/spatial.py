@@ -1,5 +1,5 @@
 """
-Calulcate spatial properties (distances, velocities, areas, volumes) of tracked objects
+Calculate spatial properties (distances, velocities, areas, volumes) of tracked objects
 """
 
 import logging

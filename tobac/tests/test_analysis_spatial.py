@@ -365,7 +365,7 @@ def test_calculate_area_latlon():
     )
 
     with pytest.raises(ValueError):
-        calculate_area(test_features, test_labels)
+        calculate_area(test_features, test_labels, method_area="latlon")
 
 
 def test_calculate_area_1D_latlon():
