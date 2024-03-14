@@ -3,12 +3,93 @@ Test spatial analysis functions
 """
 
 from datetime import datetime
+import pytest
 import numpy as np
 import pandas as pd
 import xarray as xr
 from iris.analysis.cartography import area_weights
 
-from tobac.analysis.spatial import calculate_area, calculate_areas_2Dlatlon
+from tobac.analysis.spatial import (
+    calculate_distance,
+    calculate_velocity_individual,
+    calculate_area,
+    calculate_areas_2Dlatlon,
+)
+
+
+def test_calculate_distance():
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2],
+            "frame": [0, 0],
+            "time": [
+                datetime(2000, 1, 1),
+                datetime(2000, 1, 1),
+            ],
+        }
+    )
+
+    with pytest.raises(ValueError):
+        calculate_distance(test_features.iloc[0], test_features.iloc[1])
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2],
+            "frame": [0, 0],
+            "time": [
+                datetime(2000, 1, 1),
+                datetime(2000, 1, 1),
+            ],
+            "projection_x_coordinate": [0, 1000],
+            "projection_y_coordinate": [0, 0],
+        }
+    )
+
+    assert calculate_distance(test_features.iloc[0], test_features.iloc[1]) == 1000
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2],
+            "frame": [0, 0],
+            "time": [
+                datetime(2000, 1, 1),
+                datetime(2000, 1, 1),
+            ],
+            "longitude": [0, 1],
+            "latitude": [0, 0],
+        }
+    )
+
+    assert calculate_distance(
+        test_features.iloc[0], test_features.iloc[1]
+    ) == pytest.approx(1.11e5, rel=1e4)
+
+    with pytest.raises(ValueError):
+        calculate_distance(
+            test_features.iloc[0],
+            test_features.iloc[1],
+            method_distance="invalid_method",
+        )
+
+
+def test_calculate_velocity_individual():
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2],
+            "frame": [0, 0],
+            "time": [
+                datetime(2000, 1, 1, 0, 0),
+                datetime(2000, 1, 1, 0, 10),
+            ],
+            "projection_x_coordinate": [0, 6000],
+            "projection_y_coordinate": [0, 0],
+        }
+    )
+
+    assert (
+        calculate_velocity_individual(test_features.iloc[0], test_features.iloc[1])
+        == 10
+    )
 
 
 def test_calculate_area():
