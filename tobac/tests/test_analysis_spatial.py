@@ -349,7 +349,7 @@ def test_calculate_area_latlon():
         dims=(
             "time",
             "latitude",
-            "longitude",
+            "x_dim",
         ),
         coords={
             "time": [datetime(2000, 1, 1), datetime(2000, 1, 1, 1)],
@@ -358,7 +358,7 @@ def test_calculate_area_latlon():
             ),
             "longitude": xr.DataArray(
                 np.stack([np.arange(5)] * 5),
-                dims=("longitude", "latitude"),
+                dims=("x_dim", "latitude"),
                 attrs={"units": "degrees"},
             ),
         },
