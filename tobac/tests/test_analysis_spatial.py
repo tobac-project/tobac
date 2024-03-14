@@ -12,6 +12,7 @@ from iris.analysis.cartography import area_weights
 from tobac.analysis.spatial import (
     calculate_distance,
     calculate_velocity_individual,
+    calculate_velocity,
     calculate_area,
     calculate_areas_2Dlatlon,
 )
@@ -76,7 +77,7 @@ def test_calculate_velocity_individual():
     test_features = pd.DataFrame(
         {
             "feature": [1, 2],
-            "frame": [0, 0],
+            "frame": [0, 1],
             "time": [
                 datetime(2000, 1, 1, 0, 0),
                 datetime(2000, 1, 1, 0, 10),
@@ -90,6 +91,24 @@ def test_calculate_velocity_individual():
         calculate_velocity_individual(test_features.iloc[0], test_features.iloc[1])
         == 10
     )
+
+
+def test_calculate_velocity():
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2],
+            "frame": [0, 1],
+            "time": [
+                datetime(2000, 1, 1, 0, 0),
+                datetime(2000, 1, 1, 0, 10),
+            ],
+            "projection_x_coordinate": [0, 6000],
+            "projection_y_coordinate": [0, 0],
+            "cell": [1, 1],
+        }
+    )
+
+    assert calculate_velocity(test_features).at[0, "v"] == 10
 
 
 def test_calculate_area():
