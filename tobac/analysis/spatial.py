@@ -413,7 +413,7 @@ def calculate_area(features, mask, method_area=None, vertical_coord=None):
         )
     elif method_area == "latlon":
         if (mask_slice.coord("latitude").ndim == 1) and (
-            mask_slice.coord("latitude").ndim == 1
+            mask_slice.coord("longitude").ndim == 1
         ):
             if not (
                 mask_slice.coord("latitude").has_bounds()

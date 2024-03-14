@@ -339,13 +339,13 @@ def test_calculate_area_latlon():
 
     area = calculate_area(test_features, test_labels)
 
-    expected_areas = np.array([3, 2, 2, 3]) * 1.1e5**2
+    expected_areas = np.array([3, 2, 2, 3]) * 1.11e5**2
 
-    assert np.all(np.isclose(area["area"], expected_areas, atol=1e9))
+    assert np.all(np.isclose(area["area"], expected_areas, atol=1e8))
 
     # Test invalid lat/lon dimensions
     test_labels = xr.DataArray(
-        test_labels,
+        test_labels.values,
         dims=(
             "time",
             "latitude",
