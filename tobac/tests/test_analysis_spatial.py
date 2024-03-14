@@ -261,6 +261,112 @@ def test_calculate_area():
 
     assert np.all(area["area"] == expected_areas)
 
+    test_labels = xr.DataArray(
+        test_labels,
+        dims=(
+            "time",
+            "model_level_number",
+            "hdim_0",
+            "hdim_1",
+        ),
+        coords={
+            "time": [datetime(2000, 1, 1)],
+            "model_level_number": np.arange(2),
+        },
+    )
+
+    # Test failure to find valid coordinates
+    with pytest.raises(ValueError):
+        calculate_area(test_features, test_labels)
+
+    # Test failure for invalid method
+    with pytest.raises(ValueError):
+        calculate_area(test_features, test_labels, method_area="invalid_method")
+
+
+def test_calculate_area_latlon():
+    # Test with latitude/longitude
+    test_labels = np.array(
+        [
+            [
+                [0, 0, 0, 0, 0],
+                [0, 1, 0, 2, 0],
+                [0, 1, 0, 2, 0],
+                [0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+            ],
+            [
+                [0, 0, 0, 0, 0],
+                [0, 4, 0, 0, 0],
+                [0, 4, 0, 3, 0],
+                [0, 4, 0, 3, 0],
+                [0, 0, 0, 0, 0],
+            ],
+        ],
+        dtype=int,
+    )
+
+    test_labels = xr.DataArray(
+        test_labels,
+        dims=(
+            "time",
+            "latitude",
+            "longitude",
+        ),
+        coords={
+            "time": [datetime(2000, 1, 1), datetime(2000, 1, 1, 1)],
+            "latitude": xr.DataArray(
+                np.arange(5), dims="latitude", attrs={"units": "degrees"}
+            ),
+            "longitude": xr.DataArray(
+                np.arange(5), dims="longitude", attrs={"units": "degrees"}
+            ),
+        },
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3, 4],
+            "frame": [0, 0, 1, 1],
+            "time": [
+                datetime(2000, 1, 1, 0),
+                datetime(2000, 1, 1, 0),
+                datetime(2000, 1, 1, 1),
+                datetime(2000, 1, 1, 1),
+            ],
+        }
+    )
+
+    area = calculate_area(test_features, test_labels)
+
+    expected_areas = np.array([3, 2, 2, 3]) * 1.1e5**2
+
+    assert np.all(np.isclose(area["area"], expected_areas, atol=1e9))
+
+    # Test invalid lat/lon dimensions
+    test_labels = xr.DataArray(
+        test_labels,
+        dims=(
+            "time",
+            "latitude",
+            "longitude",
+        ),
+        coords={
+            "time": [datetime(2000, 1, 1), datetime(2000, 1, 1, 1)],
+            "latitude": xr.DataArray(
+                np.arange(5), dims="latitude", attrs={"units": "degrees"}
+            ),
+            "longitude": xr.DataArray(
+                np.stack([np.arange(5)] * 5),
+                dims=("longitude", "latitude"),
+                attrs={"units": "degrees"},
+            ),
+        },
+    )
+
+    with pytest.raises(ValueError):
+        calculate_area(test_features, test_labels)
+
 
 def test_calculate_area_1D_latlon():
     """
