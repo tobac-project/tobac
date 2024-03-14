@@ -13,6 +13,7 @@ from tobac.analysis.spatial import (
     calculate_distance,
     calculate_velocity_individual,
     calculate_velocity,
+    calculate_nearestneighbordistance,
     calculate_area,
     calculate_areas_2Dlatlon,
 )
@@ -109,6 +110,46 @@ def test_calculate_velocity():
     )
 
     assert calculate_velocity(test_features).at[0, "v"] == 10
+
+
+def test_calculate_nearestneighbordistance():
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3, 4],
+            "frame": [0, 0, 1, 1],
+            "time": [
+                datetime(2000, 1, 1, 0, 0),
+                datetime(2000, 1, 1, 0, 0),
+                datetime(2000, 1, 1, 0, 10),
+                datetime(2000, 1, 1, 0, 10),
+            ],
+            "projection_x_coordinate": [0, 1000, 0, 2000],
+            "projection_y_coordinate": [0, 0, 0, 0],
+            "cell": [1, 2, 1, 2],
+        }
+    )
+
+    assert calculate_nearestneighbordistance(test_features)[
+        "min_distance"
+    ].to_list() == [1000, 1000, 2000, 2000]
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2],
+            "frame": [0, 1],
+            "time": [
+                datetime(2000, 1, 1, 0, 0),
+                datetime(2000, 1, 1, 0, 10),
+            ],
+            "projection_x_coordinate": [0, 6000],
+            "projection_y_coordinate": [0, 0],
+            "cell": [1, 1],
+        }
+    )
+
+    assert np.all(
+        np.isnan(calculate_nearestneighbordistance(test_features)["min_distance"])
+    )
 
 
 def test_calculate_area():
