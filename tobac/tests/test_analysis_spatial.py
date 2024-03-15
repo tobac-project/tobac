@@ -344,21 +344,50 @@ def test_calculate_area_latlon():
     assert np.all(np.isclose(area["area"], expected_areas, atol=1e8))
 
     # Test invalid lat/lon dimensions
+
+    # Test 1D lat but 2D lon
     test_labels = xr.DataArray(
         test_labels.values,
         dims=(
             "time",
-            "latitude",
+            "y_dim",
             "x_dim",
         ),
         coords={
             "time": [datetime(2000, 1, 1), datetime(2000, 1, 1, 1)],
             "latitude": xr.DataArray(
-                np.arange(5), dims="latitude", attrs={"units": "degrees"}
+                np.arange(5), dims="y_dim", attrs={"units": "degrees"}  # 1D lat
             ),
             "longitude": xr.DataArray(
-                np.stack([np.arange(5)] * 5),
-                dims=("x_dim", "latitude"),
+                np.tile(np.arange(5), (5, 1)),
+                dims=("y_dim", "x_dim"),  # 2D lon
+                attrs={"units": "degrees"},
+            ),
+        },
+    )
+
+    with pytest.raises(ValueError):
+        calculate_area(test_features, test_labels, method_area="latlon")
+
+    # Test 3D lat/lon
+    test_labels = xr.DataArray(
+        np.tile(test_labels.values[:, np.newaxis, ...], (1, 2, 1, 1)),
+        dims=(
+            "time",
+            "z_dim",
+            "y_dim",
+            "x_dim",
+        ),
+        coords={
+            "time": [datetime(2000, 1, 1), datetime(2000, 1, 1, 1)],
+            "latitude": xr.DataArray(
+                np.tile(np.arange(5)[:, np.newaxis], (2, 1, 5)),
+                dims=("z_dim", "y_dim", "x_dim"),
+                attrs={"units": "degrees"},
+            ),
+            "longitude": xr.DataArray(
+                np.tile(np.arange(5), (2, 5, 1)),
+                dims=("z_dim", "y_dim", "x_dim"),
                 attrs={"units": "degrees"},
             ),
         },
