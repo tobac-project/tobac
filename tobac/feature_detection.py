@@ -16,6 +16,7 @@ References
    diverse datasets. Geoscientific Model Development,
    12(11), 4551-4570.
 """
+
 from __future__ import annotations
 from typing import Union, Callable
 import warnings

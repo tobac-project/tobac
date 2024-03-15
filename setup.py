@@ -1,10 +1,10 @@
-from setuptools import setup
-
 """
 This code is from the python documentation and is
 designed to read in the version number.
 See: https://packaging.python.org/en/latest/guides/single-sourcing-package-version/
 """
+
+from setuptools import setup
 from pathlib import Path
 
 
@@ -35,6 +35,14 @@ def get_requirements(requirements_filename):
         requirements.remove("iris")
         requirements.append("scitools-iris")
     return requirements
+
+
+def get_packages(package_name):
+    package = Path(package_name)
+    packages = [
+        str(path.parent).replace("/", ".") for path in package.rglob("__init__.py")
+    ]
+    return packages
 
 
 PACKAGE_NAME = "tobac"
@@ -86,7 +94,7 @@ setup(
         "peter.marinescu@colostate.edu",
     ],
     license="BSD-3-Clause License",
-    packages=[PACKAGE_NAME, PACKAGE_NAME + ".utils", PACKAGE_NAME + ".utils.internal"],
+    packages=get_packages(PACKAGE_NAME),
     install_requires=get_requirements("requirements.txt"),
     test_requires=["pytest"],
     zip_safe=False,

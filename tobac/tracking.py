@@ -385,7 +385,7 @@ def linking_trackpy(
             link_strategy="auto",
             adaptive_step=adaptive_step,
             adaptive_stop=adaptive_stop,
-            dist_func=dist_func
+            dist_func=dist_func,
             #                                 copy_features=False, diagnostics=False,
             #                                 hash_size=None, box_size=None, verify_integrity=True,
             #                                 retain_index=False
