@@ -14,13 +14,17 @@ References
    12(11), 4551-4570.
 """
 
-import matplotlib as mpl
 import warnings
 import logging
-from .analysis import lifetime_histogram
-from .analysis import histogram_cellwise, histogram_featurewise
 
 import numpy as np
+import matplotlib as mpl
+
+from tobac.analysis.cell_analysis import (
+    lifetime_histogram,
+    histogram_cellwise,
+)
+from tobac.analysis.feature_analysis import histogram_featurewise
 
 
 def plot_tracks_mask_field_loop(

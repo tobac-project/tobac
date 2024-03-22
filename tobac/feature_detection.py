@@ -16,6 +16,7 @@ References
    diverse datasets. Geoscientific Model Development,
    12(11), 4551-4570.
 """
+
 from __future__ import annotations
 from typing import Union, Callable
 import warnings
@@ -32,6 +33,8 @@ import xarray as xr
 
 from tobac.tracking import build_distance_function
 from tobac.utils import internal as internal_utils
+from tobac.utils import decorators
+
 from tobac.utils import periodic_boundaries as pbc_utils
 from tobac.utils.general import spectral_filtering
 from tobac.utils import get_statistics
@@ -1125,6 +1128,7 @@ def feature_detection_multithreshold_timestep(
     return features_thresholds
 
 
+@decorators.xarray_to_iris()
 def feature_detection_multithreshold(
     field_in: iris.cube.Cube,
     dxy: float = None,
