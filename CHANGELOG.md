@@ -1,5 +1,26 @@
 ### Tobac Changelog
 
+_**Version 1.5.3:**_
+
+**Enhancements for Users**
+
+- Update `calculate_area` to allow the calculation of the projected 2D area of 3D objects, and enhance bulk statistics to allow calculation of statistics on the projected footprint on 2D fields [#378](https://github.com/tobac-project/tobac/pull/378)
+
+**Bug fixes**
+
+- Fix a bug in `get_spacing` that would return a negative value if one coordinate was in ascending order and the other in descending order, and fix other bugs where the wrong coordinate was referenced [#400](https://github.com/tobac-project/tobac/pull/400)
+
+**Documentation**
+
+- Re-integration of notebooks from the tobac-tutorials repo [#334](https://github.com/tobac-project/tobac/pull/334)
+- Add example gallery to readthedocs page [#411](https://github.com/tobac-project/tobac/pull/411)
+
+**Internal Enhancements**
+
+- Add ability to save whether iris to xarray conversion ocurred and update decorators to allow keyword parameters [#380](https://github.com/tobac-project/tobac/pull/380)
+- Reorganisation of analysis tools into analysis package [#378](https://github.com/tobac-project/tobac/pull/378)
+
+
 _**Version 1.5.2:**_
 
 **Enhancements for Users**
