@@ -1,5 +1,6 @@
 """Internal tobac utilities for xarray datasets/dataarrays
 """
+
 from __future__ import annotations
 
 import copy
