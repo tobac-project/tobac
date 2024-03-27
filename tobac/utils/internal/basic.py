@@ -110,11 +110,13 @@ def get_indices_of_labels_from_reg_prop_dict(region_property_dict: dict) -> tupl
         return [curr_loc_indices, y_indices, x_indices]
 
 
-def find_vertical_axis_from_coord(
+def find_vertical_coord_name(
     variable_cube: Union[iris.cube.Cube, xr.DataArray],
     vertical_coord: Union[str, None] = None,
 ) -> str:
     """Function to find the vertical coordinate in the iris cube
+
+    TODO: this function should be renamed
 
     Parameters
     ----------
@@ -139,8 +141,8 @@ def find_vertical_axis_from_coord(
 
     if isinstance(variable_cube, iris.cube.Cube):
         return iris_utils.find_vertical_axis_from_coord(variable_cube, vertical_coord)
-    if isinstance(variable_cube, xr.Dataset) or isinstance(variable_cube, xr.DataArray):
-        return xr_utils.find_vertical_axis_from_coord(variable_cube, vertical_coord)
+    if isinstance(variable_cube, xr.DataArray):
+        return xr_utils.find_vertical_coord_name(variable_cube, vertical_coord)
 
     raise ValueError("variable_cube must be xr.DataArray or iris.cube.Cube")
 
@@ -251,7 +253,7 @@ def find_hdim_axes_3D(
     if type(field_in) is iris.cube.Cube:
         return iris_utils.find_hdim_axes_3d(field_in, vertical_coord, vertical_axis)
     elif type(field_in) is xr.DataArray:
-        raise NotImplementedError("Xarray find_hdim_axes_3D not implemented")
+        return xr_utils.find_hdim_axes_3d(field_in, vertical_coord, vertical_axis)
     else:
         raise ValueError("Unknown data type: " + type(field_in).__name__)
 
@@ -278,9 +280,7 @@ def find_axis_from_coord(
     if isinstance(variable_arr, iris.cube.Cube):
         return iris_utils.find_axis_from_coord(variable_arr, coord_name)
     elif isinstance(variable_arr, xr.DataArray):
-        raise NotImplementedError(
-            "xarray version of find_axis_from_coord not implemented."
-        )
+        return xr_utils.find_axis_from_dim_coord(variable_arr, coord_name)
     else:
         raise ValueError("variable_arr must be Iris Cube or Xarray DataArray")
 

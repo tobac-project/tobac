@@ -40,6 +40,10 @@ from tobac.utils.general import spectral_filtering
 from tobac.utils import get_statistics
 import warnings
 
+# from typing_extensions import Literal
+import iris
+import iris.cube
+
 
 def feature_position(
     hdim1_indices: list[int],
@@ -887,8 +891,9 @@ def feature_detection_threshold(
     return features_threshold, regions
 
 
+@internal_utils.irispandas_to_xarray()
 def feature_detection_multithreshold_timestep(
-    data_i: np.array,
+    data_i: xr.DataArray,
     i_time: int,
     threshold: list[float] = None,
     min_num: int = 0,
@@ -917,7 +922,7 @@ def feature_detection_multithreshold_timestep(
     Parameters
     ----------
 
-    data_i : iris.cube.Cube
+    data_i : iris.cube.Cube or xarray.DataArray
         3D field to perform the feature detection (single timestep) on.
 
     i_time : int
@@ -996,7 +1001,7 @@ def feature_detection_multithreshold_timestep(
         )
 
     # get actual numpy array and make a copy so as not to change the data in the iris cube
-    track_data = data_i.core_data().copy()
+    track_data = data_i.values.copy()
 
     track_data = gaussian_filter(
         track_data, sigma=sigma_threshold
@@ -1128,9 +1133,9 @@ def feature_detection_multithreshold_timestep(
     return features_thresholds
 
 
-@decorators.xarray_to_iris()
+@decorators.irispandas_to_xarray(save_iris_info=True)
 def feature_detection_multithreshold(
-    field_in: iris.cube.Cube,
+    field_in: xr.DataArray,
     dxy: float = None,
     threshold: list[float] = None,
     min_num: int = 0,
@@ -1151,6 +1156,7 @@ def feature_detection_multithreshold(
     dz: Union[float, None] = None,
     strict_thresholding: bool = False,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
+    **kwargs,
 ) -> pd.DataFrame:
     """Perform feature detection based on contiguous regions.
 
@@ -1158,8 +1164,8 @@ def feature_detection_multithreshold(
 
     Parameters
     ----------
-    field_in : iris.cube.Cube
-        2D field to perform the tracking on (needs to have coordinate
+    field_in : iris.cube.Cube or xarray.DataArray
+        2D or 3D field to perform the tracking on (needs to have coordinate
         'time' along one of its dimensions),
 
     dxy : float
@@ -1239,12 +1245,10 @@ def feature_detection_multithreshold(
     """
     from .utils import add_coordinates, add_coordinates_3D
 
+    time_var_name: str = "time"
     logging.debug("start feature detection based on thresholds")
 
-    if "time" not in [coord.name() for coord in field_in.coords()]:
-        raise ValueError(
-            "input to feature detection step must include a dimension named 'time'"
-        )
+    ndim_time = internal_utils.find_axis_from_coord(field_in, time_var_name)
 
     # Check whether we need to run 2D or 3D feature detection
     if field_in.ndim == 3:
@@ -1255,8 +1259,6 @@ def feature_detection_multithreshold(
         is_3D = True
     else:
         raise ValueError("Feature detection only works with 2D or 3D data")
-
-    ndim_time = field_in.coord_dims("time")[0]
 
     if detect_subset is not None:
         raise NotImplementedError("Subsetting feature detection not yet supported.")
@@ -1276,7 +1278,7 @@ def feature_detection_multithreshold(
         if vertical_axis is None:
             # We need to determine vertical axis.
             # first, find the name of the vertical axis
-            vertical_axis_name = internal_utils.find_vertical_axis_from_coord(
+            vertical_axis_name = internal_utils.find_vertical_coord_name(
                 field_in, vertical_coord=vertical_coord
             )
             # then find our axis number.
@@ -1298,9 +1300,6 @@ def feature_detection_multithreshold(
 
     # create empty list to store features for all timesteps
     list_features_timesteps = []
-
-    # loop over timesteps for feature identification:
-    data_time = field_in.slices_over("time")
 
     # if single threshold is put in as a single value, turn it into a list
     if type(threshold) in [int, float]:
@@ -1340,8 +1339,8 @@ def feature_detection_multithreshold(
                 "given in meter."
             )
 
-    for i_time, data_i in enumerate(data_time):
-        time_i = data_i.coord("time").units.num2date(data_i.coord("time").points[0])
+    for i_time, time_i in enumerate(field_in.coords[time_var_name]):
+        data_i = field_in.isel({time_var_name: i_time})
 
         features_thresholds = feature_detection_multithreshold_timestep(
             data_i,
@@ -1388,9 +1387,7 @@ def feature_detection_multithreshold(
                 )
         list_features_timesteps.append(features_thresholds)
 
-        logging.debug(
-            "Finished feature detection for " + time_i.strftime("%Y-%m-%d_%H:%M:%S")
-        )
+        logging.debug("Finished feature detection for %s", time_i)
 
     logging.debug("feature detection: merging DataFrames")
     # Check if features are detected and then concatenate features from different timesteps into
@@ -1403,10 +1400,17 @@ def feature_detection_multithreshold(
         #    features_filtered.drop(columns=['idx','num','threshold_value'],inplace=True)
         if "vdim" in features:
             features = add_coordinates_3D(
-                features, field_in, vertical_coord=vertical_coord
+                features,
+                field_in,
+                vertical_coord=vertical_coord,
+                preserve_iris_datetime_types=kwargs["converted_from_iris"],
             )
         else:
-            features = add_coordinates(features, field_in)
+            features = add_coordinates(
+                features,
+                field_in,
+                preserve_iris_datetime_types=kwargs["converted_from_iris"],
+            )
     else:
         features = None
         logging.debug("No features detected")

@@ -24,7 +24,7 @@ from tobac.utils import decorators
 
 def get_statistics(
     features: pd.DataFrame,
-    labels: np.ndarray[int],
+    labels: np.ndarray,
     *fields: tuple[np.ndarray],
     statistic: dict[str, Union[Callable, tuple[Callable, dict]]] = {
         "ncells": np.count_nonzero
