@@ -11,7 +11,7 @@ import xarray as xr
 from iris.analysis.cartography import area_weights
 
 from tobac.utils.bulk_statistics import get_statistics_from_mask
-from tobac.utils.internal.basic import find_vertical_axis_from_coord
+from tobac.utils.internal.basic import find_vertical_coord_name
 from tobac.utils import decorators
 
 __all__ = (
@@ -381,7 +381,7 @@ def calculate_area(features, mask, method_area=None, vertical_coord=None):
     mask_slice = next(mask.slices_over("time"))
     is_3d = len(mask_slice.core_data().shape) == 3
     if is_3d:
-        vertical_coord_name = find_vertical_axis_from_coord(mask_slice, vertical_coord)
+        vertical_coord_name = find_vertical_coord_name(mask_slice, vertical_coord)
         # Need to get var_name as xarray uses this to label dims
         collapse_dim = mask_slice.coords(vertical_coord_name)[0].var_name
     else:
