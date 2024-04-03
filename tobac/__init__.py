@@ -12,7 +12,7 @@ if sys.version_info < (3, 7):
 
     print(warning)
 
-from .segmentation import (
+from tobac.segmentation.watershed_segmentation import (
     segmentation_3D,
     segmentation_2D,
     watershedding_3D,
