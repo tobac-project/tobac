@@ -29,6 +29,7 @@ References
    diverse datasets. Geoscientific Model Development,
    12(11), 4551-4570.
 """
+
 import copy
 import logging
 import datetime
@@ -462,7 +463,7 @@ def segmentation_timestep(
         hdim_2_axis = 1
         vertical_coord_axis = None
     elif field_in.ndim == 3:
-        vertical_axis = internal_utils.find_vertical_axis_from_coord(
+        vertical_axis = internal_utils.find_vertical_coord_name(
             field_in, vertical_coord=vertical_coord
         )
         vertical_coord_axis = internal_utils.find_axis_from_coord(

@@ -1,6 +1,7 @@
 """Internal tobac utilities for iris cubes
 The goal will be to, ultimately, remove these when we sunset iris
 """
+
 from __future__ import annotations
 
 from typing import Union
@@ -370,7 +371,7 @@ def add_coordinates_3D(
         ndim_vertical = vertical_coord
         vertical_axis = None
     else:
-        vertical_axis = tb_utils_gi.find_vertical_axis_from_coord(
+        vertical_axis = tb_utils_gi.find_vertical_coord_name(
             variable_cube, vertical_coord=vertical_coord
         )
 

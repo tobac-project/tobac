@@ -2,6 +2,7 @@
 Audit of the testing functions that produce our test data.
 Who's watching the watchmen, basically.
 """
+
 import pytest
 from tobac.testing import (
     generate_single_feature,

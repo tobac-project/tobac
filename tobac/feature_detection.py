@@ -16,6 +16,7 @@ References
    diverse datasets. Geoscientific Model Development,
    12(11), 4551-4570.
 """
+
 from __future__ import annotations
 from typing import Union, Callable
 import warnings
@@ -1132,7 +1133,7 @@ def feature_detection_multithreshold_timestep(
     return features_thresholds
 
 
-@internal_utils.irispandas_to_xarray(save_iris_info=True)
+@decorators.irispandas_to_xarray(save_iris_info=True)
 def feature_detection_multithreshold(
     field_in: xr.DataArray,
     dxy: float = None,
@@ -1248,11 +1249,6 @@ def feature_detection_multithreshold(
     logging.debug("start feature detection based on thresholds")
 
     ndim_time = internal_utils.find_axis_from_coord(field_in, time_var_name)
-    if ndim_time is None:
-        raise ValueError(
-            "input to feature detection step must include a dimension named "
-            + time_var_name
-        )
 
     # Check whether we need to run 2D or 3D feature detection
     if field_in.ndim == 3:
@@ -1282,7 +1278,7 @@ def feature_detection_multithreshold(
         if vertical_axis is None:
             # We need to determine vertical axis.
             # first, find the name of the vertical axis
-            vertical_axis_name = internal_utils.find_vertical_axis_from_coord(
+            vertical_axis_name = internal_utils.find_vertical_coord_name(
                 field_in, vertical_coord=vertical_coord
             )
             # then find our axis number.
@@ -1343,8 +1339,8 @@ def feature_detection_multithreshold(
                 "given in meter."
             )
 
-    for i_time, data_i in enumerate(field_in.transpose(time_var_name, ...)):
-        time_i = data_i[time_var_name].values
+    for i_time, time_i in enumerate(field_in.coords[time_var_name]):
+        data_i = field_in.isel({time_var_name: i_time})
 
         features_thresholds = feature_detection_multithreshold_timestep(
             data_i,
