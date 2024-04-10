@@ -19,6 +19,7 @@ extensions = [
     "sphinx_rtd_theme",
     "sphinx.ext.napoleon",
     "nbsphinx",
+   "sphinx_gallery.load_style",
 ]
 
 
@@ -26,9 +27,8 @@ html_theme = "sphinx_rtd_theme"
 
 html_static_path = ["_static"]
 
-exclude_patterns = [
-    "_build",
-]
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+
 
 project = "tobac"
 
@@ -46,7 +46,7 @@ def setup(app):
 # This should include all modules used in tobac. These are dummy imports,
 # but should include both required and optional dependencies.
 autodoc_mock_imports = [
-    "numpy",
+    #    "numpy",
     "scipy",
     "scikit-image",
     "pandas",
@@ -59,6 +59,7 @@ autodoc_mock_imports = [
     "trackpy",
     "numba",
     "skimage",
+    "sklearn",
 ]
 
 sys.path.insert(0, os.path.abspath("../"))

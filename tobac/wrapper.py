@@ -12,7 +12,6 @@ def tracking_wrapper(
     parameters_tracking=None,
     parameters_segmentation=None,
 ):
-
     from .feature_detection import feature_detection_multithreshold
     from .tracking import linking_trackpy
     from .segmentation import segmentation_3D, segmentation_2D

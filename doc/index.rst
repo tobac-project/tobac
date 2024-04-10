@@ -14,6 +14,11 @@ Version 1.2 of tobac and some example applications are described in a peer-revie
 
 Heikenfeld, M., Marinescu, P. J., Christensen, M., Watson-Parris, D., Senf, F., van den Heever, S. C., and Stier, P.: tobac 1.2: towards a flexible framework for tracking and analysis of clouds in diverse datasets, Geosci. Model Dev., 12, 4551–4570, https://doi.org/10.5194/gmd-12-4551-2019, 2019.
 
+Version 1.5 of tobac and the major enhancements that came with that version are currently under review in Geoscientific Model Development:
+
+
+Sokolowsky, G. A., Freeman, S. W., Jones, W. K., Kukulies, J., Senf, F., Marinescu, P. J., Heikenfeld, M., Brunner, K. N., Bruning, E. C., Collis, S. M., Jackson, R. C., Leung, G. R., Pfeifer, N., Raut, B. A., Saleeby, S. M., Stier, P., and van den Heever, S. C.: tobac v1.5: Introducing Fast 3D Tracking, Splits and Mergers, and Other Enhancements for Identifying and Analysing Meteorological Phenomena, EGUsphere [preprint], https://doi.org/10.5194/egusphere-2023-1722, 2023.
+
 The project is currently being extended by several contributors to include additional workflows and algorithms using the same structure, syntax, and data formats.
 
 .. toctree::
@@ -45,6 +50,7 @@ The project is currently being extended by several contributors to include addit
    segmentation_parameters
    segmentation_output
    features_without_segmented_area
+   transform_segmentation
 
 .. toctree::
    :caption: Tracking
@@ -68,6 +74,12 @@ The project is currently being extended by several contributors to include addit
    contributing
    code_reviews
    mentoring
+
+.. toctree:: 
+   :caption: Compute bulk statistics
+   :maxdepth: 2
+
+   bulk_statistics/index
 
 .. toctree::
    :caption: API Reference

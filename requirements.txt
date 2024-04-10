@@ -9,4 +9,4 @@ iris
 xarray
 cartopy
 trackpy
-pre-commit
+typing_extensions

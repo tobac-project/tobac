@@ -1,2 +1,5 @@
 ipykernel
 nbsphinx
+numpy
+sphinx_rtd_theme
+sphinx-gallery

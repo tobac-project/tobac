@@ -17,25 +17,48 @@ References
    12(11), 4551-4570.
 """
 
+from __future__ import annotations
+from typing import Union, Callable
+import warnings
 import logging
+
+from typing_extensions import Literal
+
 import numpy as np
 import pandas as pd
-from .utils import internal as internal_utils
+from scipy.spatial import KDTree
+from sklearn.neighbors import BallTree
+import iris
+import xarray as xr
+
+from tobac.tracking import build_distance_function
+from tobac.utils import internal as internal_utils
+from tobac.utils import decorators
+
+from tobac.utils import periodic_boundaries as pbc_utils
 from tobac.utils.general import spectral_filtering
+from tobac.utils import get_statistics
 import warnings
 
 
 def feature_position(
-    hdim1_indices,
-    hdim2_indices,
-    vdim_indices=None,
-    region_small=None,
-    region_bbox=None,
-    track_data=None,
-    threshold_i=None,
-    position_threshold="center",
-    target=None,
-):
+    hdim1_indices: list[int],
+    hdim2_indices: list[int],
+    vdim_indices: Union[list[int], None] = None,
+    region_small: np.ndarray = None,
+    region_bbox: Union[list[int], tuple[int]] = None,
+    track_data: np.ndarray = None,
+    threshold_i: float = None,
+    position_threshold: Literal[
+        "center", "extreme", "weighted_diff", "weighted abs"
+    ] = "center",
+    target: Literal["maximum", "minimum"] = None,
+    PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
+    hdim1_min: int = 0,
+    hdim1_max: int = 0,
+    hdim2_min: int = 0,
+    hdim2_max: int = 0,
+) -> tuple[float]:
     """Determine feature position with regard to the horizontal
     dimensions in pixels from the identified region above
     threshold values
@@ -88,6 +111,29 @@ def feature_position(
         Used only when position_threshold is set to 'extreme',
         this sets whether it is looking for maxima or minima.
 
+    PBC_flag : {'none', 'hdim_1', 'hdim_2', 'both'}
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
+
+    hdim1_min : int
+        Minimum real array index of the first horizontal dimension (for PBCs)
+
+    hdim1_max: int
+        Maximum real array index of the first horizontal dimension (for PBCs)
+        Note that this coordinate is INCLUSIVE, meaning that this is
+        the maximum coordinate value, and it is not a length.
+
+    hdim2_min : int
+        Minimum real array index of the first horizontal dimension (for PBCs)
+
+    hdim2_max : int
+        Maximum real array index of the first horizontal dimension (for PBCs)
+        Note that this coordinate is INCLUSIVE, meaning that this is
+        the maximum coordinate value, and it is not a length.
+
     Returns
     -------
     2-element or 3-element tuple of floats
@@ -99,10 +145,19 @@ def feature_position(
         the first element is the feature position along the vertical dimension
         and the second two elements are the feature position on the first and
         second horizontal dimensions.
+        Note for PBCs: this point *can* be >hdim1_max or hdim2_max if the
+        point is between hdim1_max and hdim1_min. For example, if a feature
+        lies exactly between hdim1_max and hdim1_min, the output could be
+        between hdim1_max and hdim1_max+1. While a value between hdim1_min-1
+        and hdim1_min would also be valid, we choose to overflow on the max side of things.
     """
 
-    # are we 3D? if so, True.
-    is_3D = False
+    # First, if necessary, run PBC processing.
+    # processing of PBC indices
+    # checks to see if minimum and maximum values are present in dimensional array
+    # then if true, adds max value to any indices past the halfway point of their
+    # respective dimension. this, in essence, shifts the set of points to the high side.
+    pbc_options = ["hdim_1", "hdim_2", "both"]
 
     if len(region_bbox) == 4:
         # 2D case
@@ -120,13 +175,17 @@ def feature_position(
         ]
     else:
         raise ValueError("region_bbox must have 4 or 6 elements.")
-
+    # whether or not to run the means at the end
+    run_mean = False
     if position_threshold == "center":
         # get position as geometrical centre of identified region:
-        hdim1_index = np.mean(hdim1_indices)
-        hdim2_index = np.mean(hdim2_indices)
+
+        hdim1_weights = np.ones(np.size(hdim1_indices))
+        hdim2_weights = np.ones(np.size(hdim2_indices))
         if is_3D:
-            vdim_index = np.mean(vdim_indices)
+            vdim_weights = np.ones(np.size(hdim2_indices))
+
+        run_mean = True
 
     elif position_threshold == "extreme":
         # get position as max/min position inside the identified region:
@@ -144,25 +203,44 @@ def feature_position(
         weights = abs(track_data_region[region_small] - threshold_i)
         if sum(weights) == 0:
             weights = None
-        hdim1_index = np.average(hdim1_indices, weights=weights)
-        hdim2_index = np.average(hdim2_indices, weights=weights)
+        hdim1_weights = weights
+        hdim2_weights = weights
         if is_3D:
-            vdim_index = np.average(vdim_indices, weights=weights)
+            vdim_weights = weights
+
+        run_mean = True
 
     elif position_threshold == "weighted_abs":
         # get position as centre of identified region, weighted by absolute values if the field:
         weights = abs(track_data_region[region_small])
         if sum(weights) == 0:
             weights = None
-        hdim1_index = np.average(hdim1_indices, weights=weights)
-        hdim2_index = np.average(hdim2_indices, weights=weights)
+        hdim1_weights = weights
+        hdim2_weights = weights
         if is_3D:
-            vdim_index = np.average(vdim_indices, weights=weights)
+            vdim_weights = weights
+        run_mean = True
 
     else:
         raise ValueError(
             "position_threshold must be center,extreme,weighted_diff or weighted_abs"
         )
+
+    if run_mean:
+        if PBC_flag in ("hdim_1", "both"):
+            hdim1_index = pbc_utils.weighted_circmean(
+                hdim1_indices, weights=hdim1_weights, high=hdim1_max + 1, low=hdim1_min
+            )
+        else:
+            hdim1_index = np.average(hdim1_indices, weights=hdim1_weights)
+        if PBC_flag in ("hdim_2", "both"):
+            hdim2_index = pbc_utils.weighted_circmean(
+                hdim2_indices, weights=hdim2_weights, high=hdim2_max + 1, low=hdim2_min
+            )
+        else:
+            hdim2_index = np.average(hdim2_indices, weights=hdim2_weights)
+        if is_3D:
+            vdim_index = np.average(vdim_indices, weights=vdim_weights)
 
     if is_3D:
         return vdim_index, hdim1_index, hdim2_index
@@ -170,7 +248,9 @@ def feature_position(
         return hdim1_index, hdim2_index
 
 
-def test_overlap(region_inner, region_outer):
+def test_overlap(
+    region_inner: list[tuple[int]], region_outer: list[tuple[int]]
+) -> bool:
     """Test for overlap between two regions
 
     Parameters
@@ -194,7 +274,12 @@ def test_overlap(region_inner, region_outer):
     return not overlap
 
 
-def remove_parents(features_thresholds, regions_i, regions_old):
+def remove_parents(
+    features_thresholds: pd.DataFrame,
+    regions_i: dict,
+    regions_old: dict,
+    strict_thresholding: bool = False,
+) -> pd.DataFrame:
     """Remove parents of newly detected feature regions.
 
     Remove features where its regions surround newly
@@ -206,15 +291,18 @@ def remove_parents(features_thresholds, regions_i, regions_old):
         Dataframe containing detected features.
 
     regions_i : dict
-        Dictionary containing the regions above/below
+        Dictionary containing the regions greater/lower than and equal to
         threshold for the newly detected feature
         (feature ids as keys).
 
     regions_old : dict
-        Dictionary containing the regions above/below
+        Dictionary containing the regions greater/lower than and equal to
         threshold from previous threshold
         (feature ids as keys).
 
+    strict_thresholding: Bool, optional
+        If True, a feature can only be detected if all previous thresholds have been met.
+        Default is False.
     Returns
     -------
     features_thresholds : pandas.DataFrame
@@ -224,20 +312,48 @@ def remove_parents(features_thresholds, regions_i, regions_old):
 
     try:
         all_curr_pts = np.concatenate([vals for idx, vals in regions_i.items()])
+    except ValueError:
+        # the case where there are no new regions
+        if strict_thresholding:
+            return features_thresholds, {}
+        else:
+            return features_thresholds, regions_old
+    try:
         all_old_pts = np.concatenate([vals for idx, vals in regions_old.items()])
     except ValueError:
-        # the case where there are no regions
-        return features_thresholds
+        # the case where there are no old regions
+        if strict_thresholding:
+            return (
+                features_thresholds[
+                    ~features_thresholds["idx"].isin(list(regions_i.keys()))
+                ],
+                {},
+            )
+        else:
+            return features_thresholds, regions_i
+
     old_feat_arr = np.empty((len(all_old_pts)))
     curr_loc = 0
     for idx_old in regions_old:
         old_feat_arr[curr_loc : curr_loc + len(regions_old[idx_old])] = idx_old
         curr_loc += len(regions_old[idx_old])
 
-    common_pts, common_ix_new, common_ix_old = np.intersect1d(
+    _, common_ix_new, common_ix_old = np.intersect1d(
         all_curr_pts, all_old_pts, return_indices=True
     )
     list_remove = np.unique(old_feat_arr[common_ix_old])
+
+    if strict_thresholding:
+        new_feat_arr = np.empty((len(all_curr_pts)))
+        curr_loc = 0
+        for idx_new in regions_i:
+            new_feat_arr[curr_loc : curr_loc + len(regions_i[idx_new])] = idx_new
+            curr_loc += len(regions_i[idx_new])
+        regions_i_overlap = np.unique(new_feat_arr[common_ix_new])
+        no_prev_feature = np.array(list(regions_i.keys()))[
+            np.logical_not(np.isin(list(regions_i.keys()), regions_i_overlap))
+        ]
+        list_remove = np.concatenate([list_remove, no_prev_feature])
 
     # remove parent regions:
     if features_thresholds is not None:
@@ -245,36 +361,57 @@ def remove_parents(features_thresholds, regions_i, regions_old):
             ~features_thresholds["idx"].isin(list_remove)
         ]
 
-    return features_thresholds
+        if strict_thresholding:
+            keep_new_keys = np.isin(list(regions_i.keys()), features_thresholds["idx"])
+            regions_old = {
+                k: v for i, (k, v) in enumerate(regions_i.items()) if keep_new_keys[i]
+            }
+        else:
+            keep_old_keys = np.isin(
+                list(regions_old.keys()), features_thresholds["idx"]
+            )
+            regions_old = {
+                k: v for i, (k, v) in enumerate(regions_old.items()) if keep_old_keys[i]
+            }
+            regions_old.update(regions_i)
+    else:
+        regions_old = regions_i
+
+    return features_thresholds, regions_old
 
 
 def feature_detection_threshold(
-    data_i,
-    i_time,
-    threshold=None,
-    min_num=0,
-    target="maximum",
-    position_threshold="center",
-    sigma_threshold=0.5,
-    n_erosion_threshold=0,
-    n_min_threshold=0,
-    min_distance=0,
-    idx_start=0,
-    vertical_axis=0,
-):
+    data_i: np.array,
+    i_time: int,
+    threshold: float = None,
+    min_num: int = 0,
+    target: Literal["maximum", "minimum"] = "maximum",
+    position_threshold: Literal[
+        "center", "extreme", "weighted_diff", "weighted_abs"
+    ] = "center",
+    sigma_threshold: float = 0.5,
+    n_erosion_threshold: int = 0,
+    n_min_threshold: int = 0,
+    min_distance: float = 0,
+    idx_start: int = 0,
+    PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
+    vertical_axis: int = 0,
+) -> tuple[pd.DataFrame, dict]:
     """Find features based on individual threshold value.
 
     Parameters
     ----------
-    data_i : iris.cube.Cube
-        2D field to perform the feature detection (single timestep) on.
+    data_i : np.array
+        2D or 3D field to perform the feature detection (single timestep) on.
 
     i_time : int
         Number of the current timestep.
 
     threshold : float, optional
-        Threshold value used to select target regions to track. Default
-                is None.
+        Threshold value used to select target regions to track.  The feature detection is inclusive of the
+        threshold value(s), i.e. values greater/less than or equal are included in the target region. The
+        feature detection is inclusive of the threshold value(s), i.e. values greater/less than or equal are
+        included in the target region. Default is None.
 
     target : {'maximum', 'minimum'}, optional
         Flag to determine if tracking is targetting minima or maxima
@@ -289,17 +426,24 @@ def feature_detection_threshold(
         Standard deviation for intial filtering step. Default is 0.5.
 
     n_erosion_threshold: int, optional
-        Number of pixel by which to erode the identified features.
+        Number of pixels by which to erode the identified features.
         Default is 0.
 
     n_min_threshold : int, optional
-        Minimum number of identified features. Default is 0.
+        Minimum number of identified contiguous pixels for a feature to be detected. Default is 0.
 
     min_distance : float, optional
-        Minimum distance between detected features (in meter). Default is 0.
+        Minimum distance between detected features (in meters). Default is 0.
 
     idx_start : int, optional
         Feature id to start with. Default is 0.
+
+    PBC_flag : {'none', 'hdim_1', 'hdim_2', 'both'}
+         Sets whether to use periodic boundaries, and if so in which directions.
+         'none' means that we do not have periodic boundaries
+         'hdim_1' means that we are periodic along hdim1
+         'hdim_2' means that we are periodic along hdim2
+         'both' means that we are periodic along both horizontal dimensions
     vertical_axis: int
         The vertical axis number of the data.
 
@@ -320,7 +464,8 @@ def feature_detection_threshold(
 
     if min_num != 0:
         warnings.warn(
-            "min_num parameter has no effect and will be deprecated in a future version of tobac. Please use n_min_threshold instead",
+            "min_num parameter has no effect and will be deprecated in a future version of tobac. "
+            "Please use n_min_threshold instead",
             FutureWarning,
         )
 
@@ -363,6 +508,221 @@ def feature_detection_threshold(
     y_max = labels.shape[1] - 1
     x_min = 0
     x_max = labels.shape[2] - 1
+
+    # deal with PBCs
+    # all options that involve dealing with periodic boundaries
+    pbc_options = ["hdim_1", "hdim_2", "both"]
+    if PBC_flag not in pbc_options and PBC_flag != "none":
+        raise ValueError(
+            "Options for periodic are currently: none, " + ", ".join(pbc_options)
+        )
+
+    # we need to deal with PBCs in some way.
+    if PBC_flag in pbc_options and num_labels > 0:
+        #
+        # create our copy of `labels` to edit
+        labels_2 = deepcopy(labels)
+        # points we've already edited
+        skip_list = np.array([])
+        # labels that touch the PBC walls
+        wall_labels = np.array([], dtype=np.int32)
+
+        all_label_props = internal_utils.get_label_props_in_dict(labels)
+        [
+            all_labels_max_size,
+            all_label_locs_v,
+            all_label_locs_h1,
+            all_label_locs_h2,
+        ] = internal_utils.get_indices_of_labels_from_reg_prop_dict(all_label_props)
+
+        # find the points along the boundaries
+
+        # along hdim_1 or both horizontal boundaries
+        if PBC_flag == "hdim_1" or PBC_flag == "both":
+            # north and south wall
+            ns_wall = np.unique(labels[:, (y_min, y_max), :])
+            wall_labels = np.append(wall_labels, ns_wall)
+
+        # along hdim_2 or both horizontal boundaries
+        if PBC_flag == "hdim_2" or PBC_flag == "both":
+            # east/west wall
+            ew_wall = np.unique(labels[:, :, (x_min, x_max)])
+            wall_labels = np.append(wall_labels, ew_wall)
+
+        wall_labels = np.unique(wall_labels)
+
+        for label_ind in wall_labels:
+            new_label_ind = label_ind
+            # 0 isn't a real index
+            if label_ind == 0:
+                continue
+            # skip this label if we have already dealt with it.
+            if np.any(label_ind == skip_list):
+                continue
+
+            # create list for skip labels for this wall label only
+            skip_list_thisind = list()
+
+            # get all locations of this label.
+            # TODO: harmonize x/y/z vs hdim1/hdim2/vdim.
+            label_locs_v = all_label_locs_v[label_ind]
+            label_locs_h1 = all_label_locs_h1[label_ind]
+            label_locs_h2 = all_label_locs_h2[label_ind]
+
+            # loop through every point in the label
+            for label_z, label_y, label_x in zip(
+                label_locs_v, label_locs_h1, label_locs_h2
+            ):
+                # check if this is the special case of being a corner point.
+                # if it's doubly periodic AND on both x and y boundaries, it's a corner point
+                # and we have to look at the other corner.
+                # here, we will only look at the corner point and let the below deal with x/y only.
+                if PBC_flag == "both" and (
+                    np.any(label_y == [y_min, y_max])
+                    and np.any(label_x == [x_min, x_max])
+                ):
+                    # adjust x and y points to the other side
+                    y_val_alt = pbc_utils.adjust_pbc_point(label_y, y_min, y_max)
+                    x_val_alt = pbc_utils.adjust_pbc_point(label_x, x_min, x_max)
+
+                    label_on_corner = labels[label_z, y_val_alt, x_val_alt]
+
+                    if (label_on_corner != 0) and (
+                        ~np.any(label_on_corner == skip_list)
+                    ):
+                        # alt_inds = np.where(labels==alt_label_3)
+                        # get a list of indices where the label on the corner is so we can switch
+                        # them in the new list.
+
+                        labels_2[
+                            all_label_locs_v[label_on_corner],
+                            all_label_locs_h1[label_on_corner],
+                            all_label_locs_h2[label_on_corner],
+                        ] = label_ind
+                        skip_list = np.append(skip_list, label_on_corner)
+                        skip_list_thisind = np.append(
+                            skip_list_thisind, label_on_corner
+                        )
+
+                    # if it's labeled and has already been dealt with for this label
+                    elif (
+                        (label_on_corner != 0)
+                        and (np.any(label_on_corner == skip_list))
+                        and (np.any(label_on_corner == skip_list_thisind))
+                    ):
+                        # print("skip_list_thisind label - has already been treated this index")
+                        continue
+
+                    # if it's labeled and has already been dealt with via a previous label
+                    elif (
+                        (label_on_corner != 0)
+                        and (np.any(label_on_corner == skip_list))
+                        and (~np.any(label_on_corner == skip_list_thisind))
+                    ):
+                        # find the updated label, and overwrite all of label_ind indices with
+                        # updated label
+                        labels_2_alt = labels_2[label_z, y_val_alt, x_val_alt]
+                        labels_2[
+                            label_locs_v, label_locs_h1, label_locs_h2
+                        ] = labels_2_alt
+                        skip_list = np.append(skip_list, label_ind)
+                        break
+
+                # on the hdim1 boundary and periodic on hdim1
+                if (PBC_flag == "hdim_1" or PBC_flag == "both") and np.any(
+                    label_y == [y_min, y_max]
+                ):
+                    y_val_alt = pbc_utils.adjust_pbc_point(label_y, y_min, y_max)
+
+                    # get the label value on the opposite side
+                    label_alt = labels[label_z, y_val_alt, label_x]
+
+                    # if it's labeled and not already been dealt with
+                    if (label_alt != 0) and (~np.any(label_alt == skip_list)):
+                        # find the indices where it has the label value on opposite side and change
+                        # their value to original side
+                        # print(all_label_locs_v[label_alt], alt_inds[0])
+                        labels_2[
+                            all_label_locs_v[label_alt],
+                            all_label_locs_h1[label_alt],
+                            all_label_locs_h2[label_alt],
+                        ] = new_label_ind
+                        # we have already dealt with this label.
+                        skip_list = np.append(skip_list, label_alt)
+                        skip_list_thisind = np.append(skip_list_thisind, label_alt)
+
+                    # if it's labeled and has already been dealt with for this label
+                    elif (
+                        (label_alt != 0)
+                        and (np.any(label_alt == skip_list))
+                        and (np.any(label_alt == skip_list_thisind))
+                    ):
+                        continue
+
+                    # if it's labeled and has already been dealt with
+                    elif (
+                        (label_alt != 0)
+                        and (np.any(label_alt == skip_list))
+                        and (~np.any(label_alt == skip_list_thisind))
+                    ):
+                        # find the updated label, and overwrite all of label_ind indices with
+                        # updated label
+                        labels_2_alt = labels_2[label_z, y_val_alt, label_x]
+                        labels_2[
+                            label_locs_v, label_locs_h1, label_locs_h2
+                        ] = labels_2_alt
+                        new_label_ind = labels_2_alt
+                        skip_list = np.append(skip_list, label_ind)
+
+                if (PBC_flag == "hdim_2" or PBC_flag == "both") and np.any(
+                    label_x == [x_min, x_max]
+                ):
+                    x_val_alt = pbc_utils.adjust_pbc_point(label_x, x_min, x_max)
+
+                    # get the label value on the opposite side
+                    label_alt = labels[label_z, label_y, x_val_alt]
+
+                    # if it's labeled and not already been dealt with
+                    if (label_alt != 0) and (~np.any(label_alt == skip_list)):
+                        # find the indices where it has the label value on opposite side and change
+                        # their value to original side
+                        labels_2[
+                            all_label_locs_v[label_alt],
+                            all_label_locs_h1[label_alt],
+                            all_label_locs_h2[label_alt],
+                        ] = new_label_ind
+                        # we have already dealt with this label.
+                        skip_list = np.append(skip_list, label_alt)
+                        skip_list_thisind = np.append(skip_list_thisind, label_alt)
+
+                    # if it's labeled and has already been dealt with for this label
+                    elif (
+                        (label_alt != 0)
+                        and (np.any(label_alt == skip_list))
+                        and (np.any(label_alt == skip_list_thisind))
+                    ):
+                        continue
+
+                    # if it's labeled and has already been dealt with
+                    elif (
+                        (label_alt != 0)
+                        and (np.any(label_alt == skip_list))
+                        and (~np.any(label_alt == skip_list_thisind))
+                    ):
+                        # find the updated label, and overwrite all of label_ind indices with
+                        # updated label
+                        labels_2_alt = labels_2[label_z, label_y, x_val_alt]
+                        labels_2[
+                            label_locs_v, label_locs_h1, label_locs_h2
+                        ] = labels_2_alt
+                        new_label_ind = labels_2_alt
+                        skip_list = np.append(skip_list, label_ind)
+
+        # copy over new labels after we have adjusted everything
+        labels = labels_2
+
+    # END PBC treatment
+    # we need to get label properties again after we handle PBCs.
 
     label_props = internal_utils.get_label_props_in_dict(labels)
     if len(label_props) > 0:
@@ -467,6 +827,11 @@ def feature_detection_threshold(
                 threshold_i=threshold,
                 position_threshold=position_threshold,
                 target=target,
+                PBC_flag=PBC_flag,
+                hdim2_min=x_min,
+                hdim2_max=x_max,
+                hdim1_min=y_min,
+                hdim1_max=y_max,
             )
             if is_3D:
                 vdim_index, hdim1_index, hdim2_index = single_indices
@@ -514,7 +879,6 @@ def feature_detection_threshold(
             features_threshold = pd.DataFrame(
                 list_features_threshold, columns=column_names
             )
-
         # features_threshold=pd.DataFrame(list_features_threshold, columns = column_names)
     else:
         features_threshold = pd.DataFrame()
@@ -524,21 +888,26 @@ def feature_detection_threshold(
 
 
 def feature_detection_multithreshold_timestep(
-    data_i,
-    i_time,
-    threshold=None,
-    min_num=0,
-    target="maximum",
-    position_threshold="center",
-    sigma_threshold=0.5,
-    n_erosion_threshold=0,
-    n_min_threshold=0,
-    min_distance=0,
-    feature_number_start=1,
-    vertical_axis=None,
-    dxy=-1,
-    wavelength_filtering=None,
-):
+    data_i: np.array,
+    i_time: int,
+    threshold: list[float] = None,
+    min_num: int = 0,
+    target: Literal["maximum", "minimum"] = "maximum",
+    position_threshold: Literal[
+        "center", "extreme", "weighted_diff", "weighted abs"
+    ] = "center",
+    sigma_threshold: float = 0.5,
+    n_erosion_threshold: int = 0,
+    n_min_threshold: int = 0,
+    min_distance: float = 0,
+    feature_number_start: int = 1,
+    PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
+    vertical_axis: int = None,
+    dxy: float = -1,
+    wavelength_filtering: tuple[float] = None,
+    strict_thresholding: bool = False,
+    statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
+) -> pd.DataFrame:
     """Find features in each timestep.
 
     Based on iteratively finding regions above/below a set of
@@ -549,11 +918,13 @@ def feature_detection_multithreshold_timestep(
     ----------
 
     data_i : iris.cube.Cube
-        2D field to perform the feature detection (single timestep) on.
+        3D field to perform the feature detection (single timestep) on.
 
-    threshold : float, optional
-        Threshold value used to select target regions to track. Default
-        is None.
+    i_time : int
+        Number of the current timestep.
+
+    threshold : list of floats, optional
+        Threshold value used to select target regions to track. The feature detection is inclusive of the threshold value(s), i.e. values greater/less than or equal are included in the target region. Default is None.
 
     min_num : int, optional
         This parameter is not used in the function. Default is 0.
@@ -571,26 +942,40 @@ def feature_detection_multithreshold_timestep(
         Standard deviation for intial filtering step. Default is 0.5.
 
     n_erosion_threshold: int, optional
-        Number of pixel by which to erode the identified features.
+        Number of pixels by which to erode the identified features.
         Default is 0.
 
     n_min_threshold : int, optional
-        Minimum number of identified features. Default is 0.
+        Minimum number of identified contiguous pixels for a feature to be detected. Default is 0.
 
     min_distance : float, optional
-        Minimum distance between detected features (in meter). Default is 0.
+        Minimum distance between detected features (in meters). Default is 0.
 
     feature_number_start : int, optional
         Feature id to start with. Default is 1.
 
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
+
     vertical_axis: int
         The vertical axis number of the data.
     dxy : float
-        Grid spacing in meter.
+        Grid spacing in meters.
 
     wavelength_filtering: tuple, optional
-       Minimum and maximum wavelength for spectral filtering in meter. Default is None.
+       Minimum and maximum wavelength for spectral filtering in meters. Default is None.
 
+    strict_thresholding: Bool, optional
+        If True, a feature can only be detected if all previous thresholds have been met.
+        Default is False.
+
+    statistic : dict, optional
+            Default is None. Optional parameter to calculate bulk statistics within feature detection.
+            Dictionary with callable function(s) to apply over the region of each detected feature and the name of the statistics to appear in the feature ou            tput dataframe. The functions should be the values and the names of the metric the keys (e.g. {'mean': np.mean})
 
     Returns
     -------
@@ -610,8 +995,8 @@ def feature_detection_multithreshold_timestep(
             FutureWarning,
         )
 
-    # get actual numpy array
-    track_data = data_i.core_data()
+    # get actual numpy array and make a copy so as not to change the data in the iris cube
+    track_data = data_i.core_data().copy()
 
     track_data = gaussian_filter(
         track_data, sigma=sigma_threshold
@@ -624,13 +1009,15 @@ def feature_detection_multithreshold_timestep(
         )
 
     # sort thresholds from least extreme to most extreme
-    threshold_sorted = sorted(threshold, reverse=(target == "minimum"))
+    threshold_sorted = sorted(threshold, reverse=target == "minimum")
 
-    # check if each threshold has a n_min_threshold (minimum nr. of grid cells associated with thresholds), if multiple n_min_threshold are given
+    # check if each threshold has a n_min_threshold (minimum nr. of grid cells associated with
+    # thresholds), if multiple n_min_threshold are given
     if isinstance(n_min_threshold, list) or isinstance(n_min_threshold, dict):
         if len(n_min_threshold) is not len(threshold):
             raise ValueError(
-                "Number of elements in n_min_threshold needs to be the same as thresholds, if n_min_threshold is given as dict or list."
+                "Number of elements in n_min_threshold needs to be the same as thresholds, if "
+                "n_min_threshold is given as dict or list."
             )
 
         # check if thresholds in dict correspond to given thresholds
@@ -639,15 +1026,18 @@ def feature_detection_multithreshold_timestep(
                 n_min_threshold.keys(), reverse=(target == "minimum")
             ):
                 raise ValueError(
-                    "Ambiguous input for threshold values. If n_min_threshold is given as a dict, the keys not to correspond to the values in threshold."
+                    "Ambiguous input for threshold values. If n_min_threshold is given as a dict,"
+                    " the keys not to correspond to the values in threshold."
                 )
-            # sort dictionary by keys (threshold values) so that they match sorted thresholds and get values for n_min_threshold
+            # sort dictionary by keys (threshold values) so that they match sorted thresholds and
+            # get values for n_min_threshold
             n_min_threshold = [
                 n_min_threshold[threshold] for threshold in threshold_sorted
             ]
 
         elif isinstance(n_min_threshold, list):
-            # if n_min_threshold is a list, sort it such that it still matches with the sorted threshold values
+            # if n_min_threshold is a list, sort it such that it still matches with the sorted
+            # threshold values
             n_min_threshold = [
                 x
                 for _, x in sorted(
@@ -660,7 +1050,8 @@ def feature_detection_multithreshold_timestep(
         and not isinstance(n_min_threshold, int)
     ):
         raise ValueError(
-            "N_min_threshold must be an integer. If multiple values for n_min_threshold are given, please provide a dictionary or list."
+            "N_min_threshold must be an integer. If multiple values for n_min_threshold are given,"
+            " please provide a dictionary or list."
         )
 
     # create empty lists to store regions and features for individual timestep
@@ -689,6 +1080,7 @@ def feature_detection_multithreshold_timestep(
             n_min_threshold=n_min_threshold_i,
             min_distance=min_distance,
             idx_start=idx_start,
+            PBC_flag=PBC_flag,
             vertical_axis=vertical_axis,
         )
         if any([x is not None for x in features_threshold_i]):
@@ -696,13 +1088,36 @@ def feature_detection_multithreshold_timestep(
                 [features_thresholds, features_threshold_i], ignore_index=True
             )
 
-        # For multiple threshold, and features found both in the current and previous step, remove "parent" features from Dataframe
-        if i_threshold > 0 and not features_thresholds.empty and regions_old:
-            # for each threshold value: check if newly found features are surrounded by feature based on less restrictive threshold
-            features_thresholds = remove_parents(
-                features_thresholds, regions_i, regions_old
+        # For multiple threshold, and features found both in the current and previous step, remove
+        # "parent" features from Dataframe
+        if i_threshold > 0 and not features_thresholds.empty:
+            # For multiple threshold, and features found both in the current and previous step, remove
+            # "parent" features from Dataframe
+            features_thresholds, regions_old = remove_parents(
+                features_thresholds,
+                regions_i,
+                regions_old,
+                strict_thresholding=strict_thresholding,
             )
-        regions_old = regions_i
+        elif i_threshold == 0:
+            regions_old = regions_i
+
+        if statistic:
+            # reconstruct the labeled regions based on the regions dict
+            labels = np.zeros(track_data.shape)
+            labels = labels.astype(int)
+            for key in regions_old.keys():
+                labels.ravel()[regions_old[key]] = key
+                # apply function to get statistics based on labeled regions and functions provided by the user
+                # the feature dataframe is updated by appending a column for each metric
+            features_thresholds = get_statistics(
+                features_thresholds,
+                labels,
+                track_data,
+                statistic=statistic,
+                index=np.unique(labels[labels > 0]),
+                id_column="idx",
+            )
 
         logging.debug(
             "Finished feature detection for threshold "
@@ -713,24 +1128,30 @@ def feature_detection_multithreshold_timestep(
     return features_thresholds
 
 
+@decorators.xarray_to_iris()
 def feature_detection_multithreshold(
-    field_in,
-    dxy=None,
-    threshold=None,
-    min_num=0,
-    target="maximum",
-    position_threshold="center",
-    sigma_threshold=0.5,
-    n_erosion_threshold=0,
-    n_min_threshold=0,
-    min_distance=0,
-    feature_number_start=1,
-    vertical_coord="auto",
-    vertical_axis=None,
-    detect_subset=None,
-    wavelength_filtering=None,
-    dz=None,
-):
+    field_in: iris.cube.Cube,
+    dxy: float = None,
+    threshold: list[float] = None,
+    min_num: int = 0,
+    target: Literal["maximum", "minimum"] = "maximum",
+    position_threshold: Literal[
+        "center", "extreme", "weighted_diff", "weighted abs"
+    ] = "center",
+    sigma_threshold: float = 0.5,
+    n_erosion_threshold: int = 0,
+    n_min_threshold: int = 0,
+    min_distance: float = 0,
+    feature_number_start: int = 1,
+    PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
+    vertical_coord: str = None,
+    vertical_axis: int = None,
+    detect_subset: dict = None,
+    wavelength_filtering: tuple = None,
+    dz: Union[float, None] = None,
+    strict_thresholding: bool = False,
+    statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
+) -> pd.DataFrame:
     """Perform feature detection based on contiguous regions.
 
     The regions are above/below a threshold.
@@ -745,8 +1166,8 @@ def feature_detection_multithreshold(
         Grid spacing of the input data (in meter).
 
     thresholds : list of floats, optional
-        Threshold values used to select target regions to track.
-        Default is None.
+        Threshold values used to select target regions to track. The feature detection is inclusive of the threshold value(s), i.e. values
+        greater/less than or equal are included in the target region. Default is None.
 
     target : {'maximum', 'minimum'}, optional
         Flag to determine if tracking is targetting minima or maxima in
@@ -757,31 +1178,30 @@ def feature_detection_multithreshold(
         Flag choosing method used for the position of the tracked
         feature. Default is 'center'.
 
-    coord_interp_kind : str, optional
-        The kind of interpolation for coordinates. Default is 'linear'.
-        For 1d interp, {'linear', 'nearest', 'nearest-up', 'zero',
-                        'slinear', 'quadratic', 'cubic',
-                        'previous', 'next'}.
-        For 2d interp, {'linear', 'cubic', 'quintic'}.
-
     sigma_threshold: float, optional
         Standard deviation for intial filtering step. Default is 0.5.
 
     n_erosion_threshold: int, optional
-        Number of pixel by which to erode the identified features.
+        Number of pixels by which to erode the identified features.
         Default is 0.
 
     n_min_threshold : int, optional
-        Minimum number of identified features. Default is 0.
+        Minimum number of identified contiguous pixels for a feature to be detected. Default is 0.
 
     min_distance : float, optional
-        Minimum distance between detected features (in meter). Default is 0.
+        Minimum distance between detected features (in meters). Default is 0.
 
     feature_number_start : int, optional
         Feature id to start with. Default is 1.
 
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
     vertical_coord: str
-        Name of the vertical coordinate. If 'auto', tries to auto-detect.
+        Name of the vertical coordinate. If None, tries to auto-detect.
         It looks for the coordinate or the dimension name corresponding
         to the string.
     vertical_axis: int or None.
@@ -806,6 +1226,10 @@ def feature_detection_multithreshold(
         in the `features` input. If you specify a value here, this function assumes
         that it is the constant z spacing between points, even if ```z_coordinate_name```
         is specified.
+
+    strict_thresholding: Bool, optional
+        If True, a feature can only be detected if all previous thresholds have been met.
+        Default is False.
 
     Returns
     -------
@@ -882,8 +1306,8 @@ def feature_detection_multithreshold(
     if type(threshold) in [int, float]:
         threshold = [threshold]
 
-    # if wavelength_filtering is given, check that value cannot be larger than distances along x and y,
-    # that the value cannot be smaller or equal to the grid spacing
+    # if wavelength_filtering is given, check that value cannot be larger than distances along
+    # x and y, that the value cannot be smaller or equal to the grid spacing
     # and throw a warning if dxy and wavelengths have about the same order of magnitude
     if wavelength_filtering is not None:
         if is_3D:
@@ -899,17 +1323,21 @@ def feature_detection_multithreshold(
 
         if lambda_min > distance or lambda_max > distance:
             raise ValueError(
-                "The given wavelengths cannot be larger than the total distance in m along the axes of the domain."
+                "The given wavelengths cannot be larger than the total distance in m along the axes"
+                " of the domain."
             )
 
         elif lambda_min <= dxy:
             raise ValueError(
-                "The given minimum wavelength cannot be smaller than gridspacing dxy. Please note that both dxy and the values for wavelength_filtering should be given in meter."
+                "The given minimum wavelength cannot be smaller than gridspacing dxy. Please note "
+                "that both dxy and the values for wavelength_filtering should be given in meter."
             )
 
         elif np.floor(np.log10(lambda_min)) - np.floor(np.log10(dxy)) > 1:
             warnings.warn(
-                "Warning: The values for dxy and the minimum wavelength are close in order of magnitude. Please note that both dxy and for wavelength_filtering should be given in meter."
+                "Warning: The values for dxy and the minimum wavelength are close in order of "
+                "magnitude. Please note that both dxy and for wavelength_filtering should be "
+                "given in meter."
             )
 
     for i_time, data_i in enumerate(data_time):
@@ -927,14 +1355,23 @@ def feature_detection_multithreshold(
             n_min_threshold=n_min_threshold,
             min_distance=min_distance,
             feature_number_start=feature_number_start,
+            PBC_flag=PBC_flag,
             vertical_axis=vertical_axis,
             dxy=dxy,
             wavelength_filtering=wavelength_filtering,
+            strict_thresholding=strict_thresholding,
+            statistic=statistic,
         )
-        # check if list of features is not empty, then merge features from different threshold values
-        # into one DataFrame and append to list for individual timesteps:
+        # check if list of features is not empty, then merge features from different threshold
+        # values into one DataFrame and append to list for individual timesteps:
         if not features_thresholds.empty:
-            # Loop over DataFrame to remove features that are closer than distance_min to each other:
+            hdim1_ax, hdim2_ax = internal_utils.find_hdim_axes_3D(
+                field_in, vertical_coord=vertical_coord
+            )
+            hdim1_max = field_in.shape[hdim1_ax] - 1
+            hdim2_max = field_in.shape[hdim2_ax] - 1
+            # Loop over DataFrame to remove features that are closer than distance_min to each
+            # other:
             if min_distance > 0:
                 features_thresholds = filter_min_distance(
                     features_thresholds,
@@ -943,8 +1380,12 @@ def feature_detection_multithreshold(
                     min_distance=min_distance,
                     z_coordinate_name=vertical_coord,
                     target=target,
+                    PBC_flag=PBC_flag,
+                    min_h1=0,
+                    max_h1=hdim1_max,
+                    min_h2=0,
+                    max_h2=hdim2_max,
                 )
-
         list_features_timesteps.append(features_thresholds)
 
         logging.debug(
@@ -952,7 +1393,8 @@ def feature_detection_multithreshold(
         )
 
     logging.debug("feature detection: merging DataFrames")
-    # Check if features are detected and then concatenate features from different timesteps into one pandas DataFrame
+    # Check if features are detected and then concatenate features from different timesteps into
+    # one pandas DataFrame
     # If no features are detected raise error
     if any([not x.empty for x in list_features_timesteps]):
         features = pd.concat(list_features_timesteps, ignore_index=True)
@@ -973,15 +1415,20 @@ def feature_detection_multithreshold(
 
 
 def filter_min_distance(
-    features,
-    dxy=None,
-    dz=None,
-    min_distance=None,
-    x_coordinate_name=None,
-    y_coordinate_name=None,
-    z_coordinate_name=None,
-    target="maximum",
-):
+    features: pd.DataFrame,
+    dxy: float = None,
+    dz: float = None,
+    min_distance: float = None,
+    x_coordinate_name: str = None,
+    y_coordinate_name: str = None,
+    z_coordinate_name: str = None,
+    target: Literal["maximum", "minimum"] = "maximum",
+    PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
+    min_h1: int = 0,
+    max_h1: int = 0,
+    min_h2: int = 0,
+    max_h2: int = 0,
+) -> pd.DataFrame:
     """Function to remove features that are too close together.
     If two features are closer than `min_distance`, it keeps the
     larger feature.
@@ -991,15 +1438,15 @@ def filter_min_distance(
     features:      pandas DataFrame
                    features
     dxy:           float
-        Constant horzontal grid spacing (m).
+        Constant horzontal grid spacing (meters).
     dz: float
-        Constant vertical grid spacing (m), optional. If not specified
+        Constant vertical grid spacing (meters), optional. If not specified
         and the input is 3D, this function requires that `z_coordinate_name` is available
         in the `features` input. If you specify a value here, this function assumes
         that it is the constant z spacing between points, even if ```z_coordinate_name```
         is specified.
     min_distance:  float
-        minimum distance between detected features (m)
+        minimum distance between detected features (meters)
     x_coordinate_name: str
         The name of the x coordinate to calculate distance based on in meters.
         This is typically `projection_x_coordinate`. Currently unused.
@@ -1008,27 +1455,35 @@ def filter_min_distance(
         This is typically `projection_y_coordinate`. Currently unused.
     z_coordinate_name: str or None
         The name of the z coordinate to calculate distance based on in meters.
-        This is typically `altitude`. If `auto`, tries to auto-detect.
+        This is typically `altitude`. If None, tries to auto-detect.
     target: {'maximum', 'minimum'}, optional
-        Flag to determine if tracking is targetting minima or maxima in
+        Flag to determine if tracking is targeting minima or maxima in
         the data. Default is 'maximum'.
-
-    target : str {maximum | minimum}, optional
-        Whether the threshod target is a maxima or minima (defaults to
-        maximum)
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
+    min_h1: int, optional
+        Minimum real point in hdim_1, for use with periodic boundaries.
+    max_h1: int, optional
+        Maximum point in hdim_1, exclusive. max_h1-min_h1 should be the size.
+    min_h2: int, optional
+        Minimum real point in hdim_2, for use with periodic boundaries.
+    max_h2: int, optional
+        Maximum point in hdim_2, exclusive. max_h2-min_h2 should be the size.
 
     Returns
     -------
     pandas DataFrame
         features after filtering
     """
-
-    from itertools import combinations
-
     if dxy is None:
         raise NotImplementedError("dxy currently must be set.")
 
-    remove_list_distance = []
+    # if PBC_flag != "none":
+    #    raise NotImplementedError("We haven't yet implemented PBCs into this.")
 
     # if we are 3D, the vertical dimension is in features. if we are 2D, there
     # is no vertical dimension in features.
@@ -1057,88 +1512,90 @@ def filter_min_distance(
             "Both "
             + z_coordinate_name
             + " and dz available to filter_min_distance; using constant dz. "
-            "Set dz to none if you want to use altitude or set `z_coordinate_name` to None to use constant dz."
+            "Set dz to none if you want to use altitude or set `z_coordinate_name` to None to use "
+            "constant dz."
         )
+
+    # As optional coordinate names are not yet implemented, set to defaults here:
+    z_coordinate_name = "vdim"
+    y_coordinate_name = "hdim_1"
+    x_coordinate_name = "hdim_2"
 
     if target not in ["minimum", "maximum"]:
         raise ValueError(
             "target parameter must be set to either 'minimum' or 'maximum'"
         )
 
-    # create list of tuples with all combinations of features at the timestep:
-    indices = combinations(features.index.values, 2)
-    # Loop over combinations to remove features that are closer together than min_distance and keep larger one (either higher threshold or larger area)
-    for index_1, index_2 in indices:
-        if index_1 is not index_2:
-            if is_3D:
-                if dz is not None:
-                    z_coord_1 = dz * features.loc[index_1, "vdim"]
-                    z_coord_2 = dz * features.loc[index_2, "vdim"]
-                else:
-                    z_coord_1 = features.loc[index_1, z_coordinate_name]
-                    z_coord_2 = features.loc[index_2, z_coordinate_name]
+    # Calculate feature locations in cartesian coordinates
+    if is_3D:
+        feature_locations = features[
+            [z_coordinate_name, y_coordinate_name, x_coordinate_name]
+        ].to_numpy()
+        feature_locations[0] *= dz
+        feature_locations[1:] *= dxy
+    else:
+        feature_locations = (
+            features[[y_coordinate_name, x_coordinate_name]].to_numpy() * dxy
+        )
 
-                coord_1 = (
-                    z_coord_1,
-                    dxy * features.loc[index_1, "hdim_1"],
-                    dxy * features.loc[index_1, "hdim_2"],
-                )
-                coord_2 = (
-                    z_coord_2,
-                    dxy * features.loc[index_2, "hdim_1"],
-                    dxy * features.loc[index_2, "hdim_2"],
-                )
+    # Create array of flags for features to remove
+    removal_flag = np.zeros(len(features), dtype=bool)
+
+    # Create Tree of feature locations in cartesian coordinates
+    # Check if we have PBCs.
+    if PBC_flag in ["hdim_1", "hdim_2", "both"]:
+        # Note that we multiply by dxy to get the distances in spatial coordinates
+        dist_func = build_distance_function(
+            min_h1 * dxy, max_h1 * dxy, min_h2 * dxy, max_h2 * dxy, PBC_flag
+        )
+        features_tree = BallTree(feature_locations, metric="pyfunc", func=dist_func)
+        neighbours = features_tree.query_radius(feature_locations, r=min_distance)
+
+    else:
+        features_tree = KDTree(feature_locations)
+        # Find neighbours for each point
+        neighbours = features_tree.query_ball_tree(features_tree, r=min_distance)
+
+    # Iterate over list of neighbours to find which features to remove
+    for i, neighbour_list in enumerate(neighbours):
+        if len(neighbour_list) > 1:
+            # Remove the feature we're interested in as it's always included
+            neighbour_list = list(neighbour_list)
+            neighbour_list.remove(i)
+            # If maximum target check if any neighbours have a larger threshold value
+            if target == "maximum" and np.any(
+                features["threshold_value"].iloc[neighbour_list]
+                > features["threshold_value"].iloc[i]
+            ):
+                removal_flag[i] = True
+            # If minimum target check if any neighbours have a smaller threshold value
+            elif target == "minimum" and np.any(
+                features["threshold_value"].iloc[neighbour_list]
+                < features["threshold_value"].iloc[i]
+            ):
+                removal_flag[i] = True
+            # Else check if any neighbours have an equal threshold value
             else:
-                coord_1 = (
-                    dxy * features.loc[index_1, "hdim_1"],
-                    dxy * features.loc[index_1, "hdim_2"],
+                wh_equal_threshold = (
+                    features["threshold_value"].iloc[neighbour_list]
+                    == features["threshold_value"].iloc[i]
                 )
-                coord_2 = (
-                    dxy * features.loc[index_2, "hdim_1"],
-                    dxy * features.loc[index_2, "hdim_2"],
-                )
-
-            distance = internal_utils.calc_distance_coords(
-                coords_1=np.array(coord_1), coords_2=np.array(coord_2)
-            )
-
-            if distance <= min_distance:
-                # If same threshold value, remove based on number of pixels
-                if (
-                    features.loc[index_1, "threshold_value"]
-                    == features.loc[index_2, "threshold_value"]
-                ):
-                    if features.loc[index_1, "num"] > features.loc[index_2, "num"]:
-                        remove_list_distance.append(index_2)
-                    elif features.loc[index_1, "num"] < features.loc[index_2, "num"]:
-                        remove_list_distance.append(index_1)
-                    # Tie break if both have the same number of pixels
-                    elif features.loc[index_1, "num"] == features.loc[index_2, "num"]:
-                        remove_list_distance.append(index_2)
-                # Else remove based on comparison of thresholds and target
-                elif target == "maximum":
-                    if (
-                        features.loc[index_1, "threshold_value"]
-                        > features.loc[index_2, "threshold_value"]
+                if np.any(wh_equal_threshold):
+                    # Check if any have a larger number of points
+                    if np.any(
+                        features["num"].iloc[neighbour_list][wh_equal_threshold]
+                        > features["num"].iloc[i]
                     ):
-                        remove_list_distance.append(index_2)
-                    elif (
-                        features.loc[index_1, "threshold_value"]
-                        < features.loc[index_2, "threshold_value"]
-                    ):
-                        remove_list_distance.append(index_1)
+                        removal_flag[i] = True
+                    # Check if any have the same number of points and a lower index value
+                    else:
+                        wh_equal_area = (
+                            features["num"].iloc[neighbour_list][wh_equal_threshold]
+                            == features["num"].iloc[i]
+                        )
+                        if np.any(wh_equal_area):
+                            if np.any(wh_equal_area.index[wh_equal_area] < i):
+                                removal_flag[i] = True
 
-                elif target == "minimum":
-                    if (
-                        features.loc[index_1, "threshold_value"]
-                        < features.loc[index_2, "threshold_value"]
-                    ):
-                        remove_list_distance.append(index_2)
-                    elif (
-                        features.loc[index_1, "threshold_value"]
-                        > features.loc[index_2, "threshold_value"]
-                    ):
-                        remove_list_distance.append(index_1)
-
-    features = features[~features.index.isin(remove_list_distance)]
-    return features
+    # Return the features that are not flagged for removal
+    return features.iloc[~removal_flag]

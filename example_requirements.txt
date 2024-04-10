@@ -1,0 +1,23 @@
+# Python dependencies
+numpy
+scipy
+scikit-image
+scikit-learn
+pandas
+matplotlib
+iris
+xarray
+cartopy
+trackpy
+jupyter
+notebook
+pytables
+s3fs
+arm_pyart
+seaborn
+h5netcdf
+typing_extensions
+rioxarray
+numba
+dask
+

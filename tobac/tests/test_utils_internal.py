@@ -3,6 +3,7 @@ import tobac.testing as tbtest
 
 import pytest
 import numpy as np
+import xarray as xr
 
 
 @pytest.mark.parametrize(
@@ -60,3 +61,32 @@ def test_find_hdim_axes_3D(dset_type, time_axis, vertical_axis, expected_out):
     out_coords = internal_utils.find_hdim_axes_3D(cube_test)
 
     assert out_coords == expected_out
+
+
+@pytest.mark.parametrize(
+    "lat_name, lon_name, lat_name_test, lon_name_test, expected_result",
+    [
+        ("lat", "lon", None, None, ("lat", "lon")),
+        ("lat", "long", None, None, ("lat", "long")),
+        ("lat", "altitude", None, None, ("lat", None)),
+        ("lat", "longitude", "lat", "longitude", ("lat", "longitude")),
+    ],
+)
+def test_detect_latlon_coord_name(
+    lat_name, lon_name, lat_name_test, lon_name_test, expected_result
+):
+    """Tests tobac.utils.internal.detect_latlon_coord_name"""
+
+    in_arr = np.empty((50, 50))
+    lat_vals = np.empty(50)
+    lon_vals = np.empty(50)
+
+    in_xr = xr.Dataset(
+        {"data": ((lat_name, lon_name), in_arr)},
+        coords={lat_name: lat_vals, lon_name: lon_vals},
+    )
+    out_lat_name, out_lon_name = internal_utils.detect_latlon_coord_name(
+        in_xr["data"].to_iris(), lat_name_test, lon_name_test
+    )
+    assert out_lat_name == expected_result[0]
+    assert out_lon_name == expected_result[1]

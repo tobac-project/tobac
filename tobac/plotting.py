@@ -14,13 +14,17 @@ References
    12(11), 4551-4570.
 """
 
-import matplotlib as mpl
 import warnings
 import logging
-from .analysis import lifetime_histogram
-from .analysis import histogram_cellwise, histogram_featurewise
 
 import numpy as np
+import matplotlib as mpl
+
+from tobac.analysis.cell_analysis import (
+    lifetime_histogram,
+    histogram_cellwise,
+)
+from tobac.analysis.feature_analysis import histogram_featurewise
 
 
 def plot_tracks_mask_field_loop(
@@ -37,7 +41,7 @@ def plot_tracks_mask_field_loop(
     margin_right=0.05,
     margin_bottom=0.05,
     margin_top=0.05,
-    **kwargs
+    **kwargs,
 ):
     """Plot field, feature positions and segments
     onto individual maps for all timeframes and
@@ -133,7 +137,7 @@ def plot_tracks_mask_field_loop(
             mask=mask_i,
             features=features_i,
             axes=ax1,
-            **kwargs
+            **kwargs,
         )
         fig1.subplots_adjust(
             left=margin_left,
@@ -356,7 +360,6 @@ def plot_tracks_mask_field(
     if np.any(
         ~np.isnan(field.data)
     ):  # check if field to plot is not only nan, which causes error:
-
         plot_field = iplt.contourf(
             field,
             coords=["longitude", "latitude"],
@@ -559,7 +562,7 @@ def plot_mask_cell_track_follow(
     file_format=["png"],
     figsize=(10 / 2.54, 10 / 2.54),
     dpi=300,
-    **kwargs
+    **kwargs,
 ):
     """Make plots for all cells centred around cell and with one background field as filling and one background field as contrours
     Input:
@@ -584,7 +587,6 @@ def plot_mask_cell_track_follow(
 
     track_cell = track[track["cell"] == cell]
     for i_row, row in track_cell.iterrows():
-
         constraint_time = Constraint(time=row["time"])
         constraint_x = Constraint(
             projection_x_coordinate=lambda cell: row["projection_x_coordinate"] - width
@@ -648,7 +650,7 @@ def plot_mask_cell_track_follow(
             width=width,
             axes=ax1,
             title=title,
-            **kwargs
+            **kwargs,
         )
 
         out_dir = os.path.join(plotdir, name)
@@ -838,7 +840,6 @@ def plot_mask_cell_individual_follow(
         )
 
     if cog is not None:
-
         for i_row, row in cog.iterrows():
             cell = row["cell"]
 
@@ -857,7 +858,6 @@ def plot_mask_cell_individual_follow(
             )
 
     if features is not None:
-
         for i_row, row in features.iterrows():
             color = "purple"
             axes.plot(
@@ -894,7 +894,7 @@ def plot_mask_cell_track_static(
     file_format=["png"],
     figsize=(10 / 2.54, 10 / 2.54),
     dpi=300,
-    **kwargs
+    **kwargs,
 ):
     """Make plots for all cells with fixed frame including entire development of the cell and with one background field as filling and one background field as contrours
     Input:
@@ -934,7 +934,6 @@ def plot_mask_cell_track_static(
     )
     time_cell = time[slice(i_start, i_end)]
     for time_i in time_cell:
-
         #    for i_row,row in track_cell.iterrows():
         #        time_i=row['time']
         #        constraint_time = Constraint(time=row['time'])
@@ -1014,7 +1013,7 @@ def plot_mask_cell_track_static(
             ylim=[y_min / 1000, y_max / 1000],
             axes=ax1,
             title=title,
-            **kwargs
+            **kwargs,
         )
 
         out_dir = os.path.join(plotdir, name)
@@ -1208,7 +1207,6 @@ def plot_mask_cell_individual_static(
             linewidth=1,
         )
     if cog is not None:
-
         for i_row, row in cog.iterrows():
             cell = row["cell"]
 
@@ -1227,7 +1225,6 @@ def plot_mask_cell_individual_static(
             )
 
     if features is not None:
-
         for i_row, row in features.iterrows():
             color = "purple"
             axes.plot(
@@ -1266,7 +1263,7 @@ def plot_mask_cell_track_2D3Dstatic(
     dpi=300,
     ele=10,
     azim=30,
-    **kwargs
+    **kwargs,
 ):
     """Make plots for all cells with fixed frame including entire development of the cell and with one background field as filling and one background field as contrours
     Input:
@@ -1307,7 +1304,6 @@ def plot_mask_cell_track_2D3Dstatic(
     )
     time_cell = time[slice(i_start, i_end)]
     for time_i in time_cell:
-
         #    for i_row,row in track_cell.iterrows():
         #        time_i=row['time']
         #        constraint_time = Constraint(time=row['time'])
@@ -1396,7 +1392,7 @@ def plot_mask_cell_track_2D3Dstatic(
             ylim=[y_min / 1000, y_max / 1000],
             axes=ax1[0],
             title=title,
-            **kwargs
+            **kwargs,
         )
 
         ax1[1] = plot_mask_cell_individual_3Dstatic(
@@ -1413,7 +1409,7 @@ def plot_mask_cell_track_2D3Dstatic(
             title=title,
             ele=ele,
             azim=azim,
-            **kwargs
+            **kwargs,
         )
 
         out_dir = os.path.join(plotdir, name)
@@ -1445,7 +1441,7 @@ def plot_mask_cell_track_3Dstatic(
     file_format=["png"],
     figsize=(10 / 2.54, 10 / 2.54),
     dpi=300,
-    **kwargs
+    **kwargs,
 ):
     """Make plots for all cells with fixed frame including entire development of the cell and with one background field as filling and one background field as contrours
     Input:
@@ -1485,7 +1481,6 @@ def plot_mask_cell_track_3Dstatic(
     )
     time_cell = time[slice(i_start, i_end)]
     for time_i in time_cell:
-
         #    for i_row,row in track_cell.iterrows():
         #        time_i=row['time']
         #        constraint_time = Constraint(time=row['time'])
@@ -1571,7 +1566,7 @@ def plot_mask_cell_track_3Dstatic(
             ylim=[y_min / 1000, y_max / 1000],
             axes=ax1,
             title=title,
-            **kwargs
+            **kwargs,
         )
 
         out_dir = os.path.join(plotdir, name)
@@ -1811,7 +1806,7 @@ def plot_mask_cell_track_static_timeseries(
     file_format=["png"],
     figsize=(20 / 2.54, 10 / 2.54),
     dpi=300,
-    **kwargs
+    **kwargs,
 ):
     """Make plots for all cells with fixed frame including entire development of the cell and with one background field as filling and one background field as contrours
     Input:
@@ -1857,7 +1852,6 @@ def plot_mask_cell_track_static_timeseries(
     )
     time_cell = time[slice(i_start, i_end)]
     for time_i in time_cell:
-
         constraint_time = Constraint(time=time_i)
         constraint_x = Constraint(
             projection_x_coordinate=lambda cell: x_min < cell < x_max
@@ -1933,7 +1927,7 @@ def plot_mask_cell_track_static_timeseries(
             ylim=[y_min / 1000, y_max / 1000],
             axes=ax1[0],
             title=title,
-            **kwargs
+            **kwargs,
         )
 
         track_variable_past = track_variable_cell[
@@ -2154,7 +2148,7 @@ def plot_lifetime_histogram_bar(
     density=False,
     width_bar=1,
     shift=0.5,
-    **kwargs
+    **kwargs,
 ):
     """Plot the liftetime histogram of the cells as bar plot.
 

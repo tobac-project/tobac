@@ -1,0 +1,40 @@
+name: Jupyter Notebooks CI
+on: [push, pull_request]
+jobs:
+  Check-Notebooks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - name: check out repository code
+        uses: actions/checkout@v3
+      - name: set up conda environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-version: latest
+          miniforge-variant: mambaforge
+          channel-priority: strict
+          channels: conda-forge
+          show-channel-urls: true
+          use-only-tar-bz2: true
+          auto-update-conda: true
+          auto-activate-base: false
+          activate-environment: notebook-env
+      - name: Install tobac dependencies
+        run: |
+          mamba install -c conda-forge --yes ffmpeg gcc jupyter pytables
+          mamba install -c conda-forge --yes --file example_requirements.txt
+      - name: Install tobac
+        run: |
+          pip install .
+      - name: Find all notebook files
+        run: |
+          find . -type f -name '*.ipynb' > nbfiles.txt
+          cat nbfiles.txt
+      - name: Execute all notebook files
+        run: |
+          while IFS= read -r nbpath; do
+            jupyter nbconvert --inplace --ClearMetadataPreprocessor.enabled=True --clear-output $nbpath
+            jupyter nbconvert --to notebook --inplace --execute $nbpath
+          done < nbfiles.txt

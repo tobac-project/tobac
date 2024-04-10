@@ -5,3 +5,10 @@ htmlcov
 .coverage
 build
 .idea
+examples/*/Save
+examples/*/Plot
+examples/climate-processes-tobac_example_data-b3e69ee
+.ipynb_checkpoints
+.DS_Store
+*.egg-info
+

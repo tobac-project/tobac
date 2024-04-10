@@ -1,10 +1,10 @@
-from setuptools import setup
-
 """
 This code is from the python documentation and is
 designed to read in the version number.
 See: https://packaging.python.org/en/latest/guides/single-sourcing-package-version/
 """
+
+from setuptools import setup
 from pathlib import Path
 
 
@@ -21,6 +21,28 @@ def get_version(pkg_name):
             return line.split(delim)[1]
     else:
         raise RuntimeError("Unable to find version string.")
+
+
+def get_requirements(requirements_filename):
+    requirements_file = Path(__file__).parent / requirements_filename
+    assert requirements_file.exists()
+    with open(requirements_file) as f:
+        requirements = [
+            line.strip() for line in f.readlines() if not line.startswith("#")
+        ]
+    # Iris has a different name on PyPI...
+    if "iris" in requirements:
+        requirements.remove("iris")
+        requirements.append("scitools-iris")
+    return requirements
+
+
+def get_packages(package_name):
+    package = Path(package_name)
+    packages = [
+        str(path.parent).replace("/", ".") for path in package.rglob("__init__.py")
+    ]
+    return packages
 
 
 PACKAGE_NAME = "tobac"
@@ -67,24 +89,13 @@ setup(
         "max.heikenfeld@physics.ox.ac.uk",
         "william.jones@physics.ox.ac.uk",
         "senf@tropos.de",
-        "sean.freeman@colostate.edu",
+        "sean.freeman@uah.edu",
         "julia.kukulies@gu.se",
         "peter.marinescu@colostate.edu",
     ],
     license="BSD-3-Clause License",
-    packages=[PACKAGE_NAME, PACKAGE_NAME + ".utils"],
-    install_requires=[
-        "numpy",
-        "scipy",
-        "scikit-image",
-        "scikit-learn",
-        "pandas",
-        "matplotlib",
-        "xarray",
-        "trackpy",
-    ],
-    test_requires=[
-        "pytest",
-    ],
+    packages=get_packages(PACKAGE_NAME),
+    install_requires=get_requirements("requirements.txt"),
+    test_requires=["pytest"],
     zip_safe=False,
 )
