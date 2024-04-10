@@ -76,8 +76,17 @@ In brief: **Unless you are collaboratively working on a comprehensive feature or
 GitHub workflow
 =========================
 
-* Briefly describe how CI works
-* Other github actions such as code format check 
+We use several [GitHub actions](https://docs.github.com/en/actions/learn-github-actions/understanding-github-actions) to 
+assure continuous integration and to enable an efficient code development and release process. Our workflow 
+configuration can be found in 
+[.github/workflows](https://github.com/tobac-project/tobac/tree/main/.github/workflows) and encompass
+
+* check that code is formatted using the latest stable version of black 
+* linting of the latest code changes that checks the code quality and results in a score compared to the most recent 
+released version 
+* check of the zenodo JSON file that ensures that the citation is correct 
+* check that all unit tests pass (including testing on multiple operating testings) 
+* check that the example jupyter notebooks run without problems 
 
 =========================
 Writing unit tests

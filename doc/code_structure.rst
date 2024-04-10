@@ -1,4 +1,4 @@
-Code structure and key design koncepts 
+Code structure and key design concepts 
 --------------------------------------
 
 ==================================
