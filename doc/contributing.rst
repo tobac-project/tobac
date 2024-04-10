@@ -85,23 +85,37 @@ configuration can be found in
 * linting of the latest code changes that checks the code quality and results in a score compared to the most recent 
 released version 
 * check of the zenodo JSON file that ensures that the citation is correct 
-* check that all unit tests pass (including testing on multiple operating testings) 
+* check that all unit tests pass (including testing on multiple operating testings) and report test coverage 
 * check that the example jupyter notebooks run without problems 
+* check that the readthedocs page is properly built 
 
 =========================
 Writing unit tests
 =========================
 
-* Make use of :py:mod:`tobac.testing`
-* Pytest and pytest fixtures
-* Test coverage
+We use unit tests that ensure that the functions of each module and submodule work properly. If you add a new 
+functionality, you should also add a unit test. All tests are located in the [test 
+folder](https://github.com/tobac-project/tobac/tree/main/tobac/tests). The module :py:mod:`tobac.testing` may help to 
+create simple, idealized cases where objects can be tracked to test if the new features result in the expected outcome. 
+
+If you are unsure on how to contruct tests and run tests locally, you can find additional documentation on 
+[pytest](https://docs.pytest.org/en/7.1.x/getting-started.html) and [pytest 
+fixtures](https://docs.pytest.org/en/6.2.x/fixture.html). 
+
+You will also notice that we report the test coverage, i.e. how much of our current code is triggered and thus tested by 
+the unit tests. When you submit a pull request, you will see if your code changes have increased or decreased the test 
+coverage. Ideally, test coverage should not decrease, so please make sure to add appropriate unit tests that cover 
+all newly added functions. 
 
 =========================
 Add examples 
 =========================
 
-* Jupyter notebooks
-* Upload example data to zenodo
+In addition to the unit tests, we aim to provide examples on how to use all functionalities and how to choose different 
+tracking parameters. These [examples](https://github.com/tobac-project/tobac/tree/main/examples) are in form of jupyter 
+notebooks and can be based on simple, idealized test cases or real data. We strongly encourage the use of real data that 
+is publlicly accessible, but another option for new examples with real data is to upload the data tpo our [zenodo 
+repository](https://zenodo.org/records/10863405). 
 
 =========================
 Releasing a new version 
