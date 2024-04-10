@@ -45,7 +45,8 @@ Please provide **Numpy Docstrings** for all new functions.
 
 **Example**:
 
-``
+.. code::
+
    '''
    calculate centre of gravity and mass forech individual tracked cell in the simulation
 
@@ -70,7 +71,7 @@ Please provide **Numpy Docstrings** for all new functions.
         at each timestep
     
     '''
-``
+
 
 
 ===================================
