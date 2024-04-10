@@ -4,8 +4,7 @@
 How to contribute 
 -------------------------
 
-Step-by-step overview: https://github.com/tobac-project/tobac/blob/main/CONTRIBUTING.md
-
+Step-by-step overview of most important points: https://github.com/tobac-project/tobac/blob/main/CONTRIBUTING.md
 
 =========================
 Code of conduct 

@@ -68,7 +68,7 @@ The project is currently being extended by several contributors to include addit
 
 .. toctree::
    :caption: Developer guide
-   :maxdepth: 2
+   :maxdepth: 3
 
    code_structure
    contributing
