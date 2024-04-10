@@ -32,8 +32,10 @@ to learn about our project goals and check the
 [changelog.md](https://github.com/tobac-project/tobac/blob/main/CHANGELOG.md).
 * More details on the code structure and further help for code contributions can be found in our [developer 
 guide](https://tobac.readthedocs.io/code_structure.html)
-* Before you start a pull request, please make sure that you added [numpydoc docstrings](#docstringExample) to your 
-functions. This way the api documentation will be parsed properly.
+* Before you start a pull request, please make sure that you added [numpydoc 
+docstrings](https://numpydoc.readthedocs.io/en/latest/format.html) to your 
+functions. See [docstring example in the developer guide](https://tobac.readthedocs.io/contributing.html).This way the 
+api documentation will be parsed properly.
 * If it is a larger change or an newly added feature or workflow, please add an example in the [example 
 folder](https://github.com/tobac-project/tobac/tree/main/examples) or adapt the existing examples there.
 * The code should be PEP 8 compliant, as this facilitates our collaboration. Please use the first stable version (22.6.0) of [black](https://black.readthedocs.io/en/stable/) to format your code. When you submit a pull request, all files are checked for formatting.

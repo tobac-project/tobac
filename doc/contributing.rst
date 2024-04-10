@@ -37,6 +37,40 @@ git basics
   
 * **Create a pull request from your fork:** We use our personal forks of the tobac repository to create pull requests. This means that you have to first commit and push your local changes to your personal fork and then create a pull request from that fork: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork
 
+===================================
+Writing proper documentation
+===================================
+
+Please provide **Numpy Docstrings** for all new functions. 
+
+**Example**:
+
+``
+   '''
+   calculate centre of gravity and mass forech individual tracked cell in the simulation
+
+
+    Parameters
+    ----------
+    tracks : pandas.DataFram
+        DataFrame containing trajectories of cell centres
+        
+    param mass : iris.cube.Cube
+        cube of quantity (need coordinates 'time', 'geopotential_height','projection_x_coordinate' and 
+        'projection_y_coordinate')
+        
+    param mask : iris.cube.Cube
+        cube containing mask (int > where belonging to cloud volume, 0 everywhere else )
+
+
+    Returns
+    -------
+    track_out : pandas.DataFrame
+        Dataframe containing t,x,y,z positions of centre of gravity and total cloud mass each tracked cells 
+        at each timestep
+    
+    '''
+``
 
 
 ===================================
