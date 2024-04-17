@@ -584,3 +584,35 @@ def test_transform_feature_points_3D():
     assert np.all(new_feat_df["hdim_1"] == [25, 30])
     assert np.all(new_feat_df["hdim_2"] == [5, 15])
     assert np.all(new_feat_df["vdim"] == [5, 10])
+
+
+def test_get_spacings():
+    from iris.cube import Cube
+    from iris.coords import DimCoord
+
+    x_values = np.array([0, 10, 20, 30])
+    y_values = np.array([30, 20, 10, 0])
+    t_values = np.array([0, 1, 2])
+
+    x_coord = DimCoord(x_values, standard_name='projection_x_coordinate', units='meters')
+    y_coord = DimCoord(y_values, standard_name='projection_y_coordinate', units='meters')
+    time_coord = DimCoord(t_values, standard_name='time', units='hours since 1970-01-01 00:00:00')
+
+    cube = Cube(
+        np.zeros((len(t_values), len(y_values), len(x_values))),
+        dim_coords_and_dims=[(time_coord, 0), (y_coord, 1), (x_coord, 2)]
+    )
+
+    # Test with arithmetic average and different dx and dy
+    dxy, dt = tb_utils.get_spacings(cube)
+    assert dxy == (10 + 10) / 2
+    assert dt == 3600
+
+    # Test with geometric average and different dx and dy
+    dxy, _ = tb_utils.get_spacings(cube, average_method="geometric")
+    assert dxy == np.sqrt(10 * 10)
+
+    # Test with specified grid spacing and time spacing
+    dxy, dt = tb_utils.get_spacings(cube, grid_spacing=15, time_spacing=1800)
+    assert dxy == 15
+    assert dt == 1800
