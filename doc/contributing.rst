@@ -120,7 +120,6 @@ configuration can be found in
 * check of the zenodo JSON file that ensures that the citation is correct 
 * check that all unit tests pass (including testing on multiple operating systems) and report test coverage 
 * check that the example jupyter notebooks run without problems 
-* check that the readthedocs page is properly built 
 
 =========================
 Writing unit tests
@@ -156,15 +155,14 @@ Releasing a new version
 
 This is the checklist of steps for a release of a new **tobac** version:
 
-* Bump version in :code:`__init__.py` in :code:`hotfix`
-* Add changelog in :code:`hotfix` 
+* Bump version in :code:`__init__.py` in :code:`RC_vXXX`
+* Add changelog in :code:`RC_vXXX` 
 * Regenerate example notebooks with the new version
-* Get the additional bug fixes into :code:`hotfix`
-* Merge :code:`hotfix` into :code:`main` 
-* Merge :code:`main` into release and dev branches 
-* Delete :code:`hotfix` branch
+* Merge :code:`RC_vXXX` into :code:`main` 
+* Merge updated :code:`main` branch back into release and dev branches 
+* Delete :code:`RC_vXXX` branch
 * Create release
 * Push release to conda-forge: https://github.com/tobac-project/tobac-notes/blob/main/uploading_to_conda-forge.md
-* E-mail tobac mailing list
 * Create new tag
+* E-mail tobac mailing list
 
