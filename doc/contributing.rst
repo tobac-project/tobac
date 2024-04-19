@@ -27,7 +27,7 @@ git basics
    * Learn about `pull requests <https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests>`_
    * Learn about `how to commit and push changes from your local repository <https://docs.github.com/en/migrations/importing-source-code/using-the-command-line-to-import-source-code/adding-locally-hosted-code-to-github>`_ 
 
-* **Create an issue**: If you have an idea for a new feature or a suggestion for any kind of code changes, please create an issue for this. We sort `our issues <https://github.com/tobac-project/tobac/issues>`_ into `milestones <https://github.com/tobac-project/tobac/milestones>`_ to priorized work and manage our workflow, i.e. the different versions of **tobac** to come.
+* **Create an issue**: If you have an idea for a new feature or a suggestion for any kind of code changes, please create an issue for this. We sort `our issues <https://github.com/tobac-project/tobac/issues>`_ into `milestones <https://github.com/tobac-project/tobac/milestones>`_ to priorize work and manage our workflow, i.e. the different versions of **tobac** to come.
   
   The issues act, therefore, not only as a place for reporting bugs, but also as a collection of *to do* points. 
 
@@ -47,7 +47,7 @@ Please provide **Numpy Docstrings** for all new functions.
 .. code::
 
    '''
-   calculate centre of gravity and mass forech individual tracked cell in the simulation
+   Calculates centre of gravity and mass for each individually tracked cell in the simulation.
 
 
     Parameters
@@ -99,7 +99,7 @@ While you can use any type of branching strategy and naming as you work in your 
 
 :code:`RC_*` is the release candidate of the next tobac version. The asterisk stands here for the specific tobac version: RC_vx.x.x (e.g. RC_v1.5.0). Pull requests to this branch need two reviews to be accepted before it can be merged into main. 
 
-:code:`dev_*` is the development branch where we experiment with new features. This branch is perfectly suited to collaboratively work on a feature together with other **tobac** developers (see :doc:`mentoring`). In general, this branch is used for long-term, comprehensive code changes that might not be covered by a single pull request and where it might not be conceivable in which future **tobac** version to include the changes. There are no branch protection rules for this branch, which means that collaborators of our GitHub organization can directly push changes to this branch. Note that **dev_** can never directly merged into main, it has be merged into the release candidate branch :code:`RC_*` first! There can be more than one `dev_*` branch, therefore it we recommand to describe the feature to work on in the respective branch (e.g. :code:`dev_xarray_transition`). 
+:code:`dev_*` is the development branch where we experiment with new features. This branch is perfectly suited to collaboratively work on a feature together with other **tobac** developers (see :doc:`mentoring`). In general, this branch is used for long-term, comprehensive code changes that might not be covered by a single pull request and where it might not be conceivable in which future **tobac** version to include the changes. There are no branch protection rules for this branch, which means that collaborators of our GitHub organization can directly push changes to this branch. Note that **dev_** can never directly merged into main, it has be merged into the release candidate branch :code:`RC_*` first! There can be more than one `dev_*` branch, therefore it we recommend to describe the feature to work on in the respective branch (e.g. :code:`dev_xarray_transition`). 
 
 :code:`hotfix` is the branch we use for hotfixes, i.e. bug fixes that need to be released as fast as possible because it influences people's code. This branch needs only one review before it can directly merged into :code:`main`.
 
@@ -110,16 +110,15 @@ In brief: **Unless you are collaboratively working on a comprehensive feature or
 GitHub workflow
 =========================
 
-We use several [GitHub actions](https://docs.github.com/en/actions/learn-github-actions/understanding-github-actions) to 
+We use several `GitHub actions <https://docs.github.com/en/actions/learn-github-actions/understanding-github-actions>`_ to 
 assure continuous integration and to enable an efficient code development and release process. Our workflow 
 configuration can be found in 
-[.github/workflows](https://github.com/tobac-project/tobac/tree/main/.github/workflows) and encompass
+`.github/workflows <https://github.com/tobac-project/tobac/tree/main/.github/workflows>`_ and encompass
 
 * check that code is formatted using the latest stable version of black 
-* linting of the latest code changes that checks the code quality and results in a score compared to the most recent 
-released version 
+* linting of the latest code changes that checks the code quality and results in a score compared to the most recent released version 
 * check of the zenodo JSON file that ensures that the citation is correct 
-* check that all unit tests pass (including testing on multiple operating testings) and report test coverage 
+* check that all unit tests pass (including testing on multiple operating systems) and report test coverage 
 * check that the example jupyter notebooks run without problems 
 * check that the readthedocs page is properly built 
 
@@ -128,13 +127,13 @@ Writing unit tests
 =========================
 
 We use unit tests that ensure that the functions of each module and submodule work properly. If you add a new 
-functionality, you should also add a unit test. All tests are located in the [test 
-folder](https://github.com/tobac-project/tobac/tree/main/tobac/tests). The module :py:mod:`tobac.testing` may help to 
+functionality, you should also add a unit test. All tests are located in the `test 
+folder <https://github.com/tobac-project/tobac/tree/main/tobac/tests>`_ The module :py:mod:`tobac.testing` may help to 
 create simple, idealized cases where objects can be tracked to test if the new features result in the expected outcome. 
 
-If you are unsure on how to contruct tests and run tests locally, you can find additional documentation on 
-[pytest](https://docs.pytest.org/en/7.1.x/getting-started.html) and [pytest 
-fixtures](https://docs.pytest.org/en/6.2.x/fixture.html). 
+If you are unsure on how to construct tests and run tests locally, you can find additional documentation on 
+`pytest <https://docs.pytest.org/en/7.1.x/getting-started.html>`_ and `pytest 
+fixtures <https://docs.pytest.org/en/6.2.x/fixture.html>`_. 
 
 You will also notice that we report the test coverage, i.e. how much of our current code is triggered and thus tested by 
 the unit tests. When you submit a pull request, you will see if your code changes have increased or decreased the test 
@@ -146,10 +145,10 @@ Add examples
 =========================
 
 In addition to the unit tests, we aim to provide examples on how to use all functionalities and how to choose different 
-tracking parameters. These [examples](https://github.com/tobac-project/tobac/tree/main/examples) are in form of jupyter 
+tracking parameters. These `examples <https://github.com/tobac-project/tobac/tree/main/examples>`_ are in form of jupyter 
 notebooks and can be based on simple, idealized test cases or real data. We strongly encourage the use of real data that 
-is publlicly accessible, but another option for new examples with real data is to upload the data tpo our [zenodo 
-repository](https://zenodo.org/records/10863405). 
+is publicly accessible, but another option for new examples with real data is to either upload the data to our `zenodo 
+repository <https://zenodo.org/records/10863405>`_ or create your own data upload on zenodo. Please include the name "tobac" in the data title for the latter. 
 
 =========================
 Releasing a new version 
@@ -157,10 +156,10 @@ Releasing a new version
 
 This is the checklist of steps for a release of a new **tobac** version:
 
-* Bump version in `__init__.py `in :code:`hotfix`
+* Bump version in :code:`__init__.py` in :code:`hotfix`
 * Add changelog in :code:`hotfix` 
 * Regenerate example notebooks with the new version
-* Get the two additional bug fixes into :code:`hotfix`
+* Get the additional bug fixes into :code:`hotfix`
 * Merge :code:`hotfix` into :code:`main` 
 * Merge :code:`main` into release and dev branches 
 * Delete :code:`hotfix` branch

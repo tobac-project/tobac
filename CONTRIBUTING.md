@@ -41,37 +41,9 @@ folder](https://github.com/tobac-project/tobac/tree/main/examples) or adapt the 
 * The code should be PEP 8 compliant, as this facilitates our collaboration. Please use the first stable version (22.6.0) of [black](https://black.readthedocs.io/en/stable/) to format your code. When you submit a pull request, all files are checked for formatting.
 * The tobac repository is set up with pre-commit hooks to automatically format your code when commiting changes. Please run the command "pre-commit install" in the root directory of tobac to set up pre-commit formatting.
 
-We aim to respond to all new issues/pull requests as soon as possible, however at times this is not possible due to work commitments.
-
-### Numpydoc Example <a name='docstringExample'>
-```python
-  
-   '''
-   calculate centre of gravity and mass forech individual tracked cell in the simulation
+We aim to respond to all new issues/pull requests as soon as possible, however sometimes this is not possible due to work commitments.
 
 
-    Parameters
-    ----------
-    tracks : pandas.DataFram
-        DataFrame containing trajectories of cell centres
-        
-    param mass : iris.cube.Cube
-        cube of quantity (need coordinates 'time', 'geopotential_height','projection_x_coordinate' and 
-        'projection_y_coordinate')
-        
-    param mask : iris.cube.Cube
-        cube containing mask (int > where belonging to cloud volume, 0 everywhere else )
-
-
-    Returns
-    -------
-    track_out : pandas.DataFrame
-        Dataframe containing t,x,y,z positions of centre of gravity and total cloud mass each tracked cells 
-        at each timestep
-    
-    '''
-
-```
 
 ## Slack
 In addition to the workflow here on Github, there's a tobac workspace on Slack [tobac-dev.slack.com](tobac-dev.slack.com) that we use for some additional communication around the project. Please join us there to stay updated about all things tobac that go beyond the detailed work on the code.

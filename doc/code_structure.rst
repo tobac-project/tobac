@@ -39,23 +39,23 @@ One thing to note is that **tobac** as of now is purely functional. The plan is,
 Examples
 ========
 
-To help users get started with **tobac** and to demonstrate the various functionalities, **tobac** hosts several detailed and **illustrated examples** in the form of Jupyter notebooks. They are hosted under the directory `examples/` and be executed by the user.
+To help users get started with **tobac** and to demonstrate the various functionalities, **tobac** hosts several detailed and **illustrated examples** in the form of Jupyter notebooks. They are hosted under the directory `examples/` and be executed by the user. Our readthedocs page also hosts a rendered version of our examples as `gallery <https://tobac.readthedocs.io/en/latest/examples.html>`_
 
 
 ============================
 Migrating to xarray and dask
 ============================
 
-Currently, **tobac** uses [iris cubes](https://scitools-iris.readthedocs.io/en/latest/userguide/iris_cubes.html) as the 
+Currently, **tobac** uses `iris cubes <https://scitools-iris.readthedocs.io/en/latest/userguide/iris_cubes.html>`_ as the 
 primary data container. However, we are currently working on migrating the source code to 
-[xarray](https://docs.xarray.dev/en/stable/) such that all internal functions are based on [xr.DataArray 
-objects](https://docs.xarray.dev/en/stable/generated/xarray.DataArray.html). 
+`xarray <https://docs.xarray.dev/en/stable/>`_ such that all internal functions are based on `xr.DataArray 
+objects <https://docs.xarray.dev/en/stable/generated/xarray.DataArray.html>`_. 
 
 To ensure a robust transition from **iris** to **xarray**, we make use of various decorators that convert input and 
-output data for the main functions without changing their actual code. These decorators are located in the [decorator 
-submodule](https://github.com/tobac-project/tobac/blob/main/tobac/utils/decorators.py). 
+output data for the main functions without changing their actual code. These decorators are located in the `decorator 
+submodule <https://github.com/tobac-project/tobac/blob/main/tobac/utils/decorators.py>`_. 
 
-In addition, one of our main goals for the future is to fully support [dask](https://www.dask.org/), in order to scale 
+In addition, one of our main goals for the future is to fully support `dask <https://www.dask.org/>`_, in order to scale 
 to large datasets and enable parallelization.  
 
 
