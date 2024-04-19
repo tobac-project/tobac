@@ -34,7 +34,7 @@ to learn about our project goals and check the
 guide](https://tobac.readthedocs.io/code_structure.html)
 * Before you start a pull request, please make sure that you added [numpydoc 
 docstrings](https://numpydoc.readthedocs.io/en/latest/format.html) to your 
-functions. See [docstring example in the developer guide](https://tobac.readthedocs.io/contributing.html).This way the 
+functions. See [docstring example in the developer guide](https://tobac.readthedocs.io/contributing.html). This way the 
 api documentation will be parsed properly.
 * If it is a larger change or an newly added feature or workflow, please add an example in the [example 
 folder](https://github.com/tobac-project/tobac/tree/main/examples) or adapt the existing examples there.
