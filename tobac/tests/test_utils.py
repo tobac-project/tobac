@@ -595,13 +595,19 @@ def test_get_spacings():
     y_values = np.linspace(400, 200, 5)
     t_values = np.array([0, 1, 2])
 
-    x_coord = DimCoord(x_values, standard_name='projection_x_coordinate', units='meters')
-    y_coord = DimCoord(y_values, standard_name='projection_y_coordinate', units='meters')
-    time_coord = DimCoord(t_values, standard_name='time', units='hours since 1970-01-01 00:00:00')
+    x_coord = DimCoord(
+        x_values, standard_name="projection_x_coordinate", units="meters"
+    )
+    y_coord = DimCoord(
+        y_values, standard_name="projection_y_coordinate", units="meters"
+    )
+    time_coord = DimCoord(
+        t_values, standard_name="time", units="hours since 1970-01-01 00:00:00"
+    )
 
     cube = Cube(
         np.zeros((len(t_values), len(y_values), len(x_values))),
-        dim_coords_and_dims=[(time_coord, 0), (y_coord, 1), (x_coord, 2)]
+        dim_coords_and_dims=[(time_coord, 0), (y_coord, 1), (x_coord, 2)],
     )
 
     # Test with arithmetic average and different dx and dy
@@ -620,7 +626,7 @@ def test_get_spacings():
 
     cube = Cube(
         np.zeros((len(t_values), len(y_values), len(x_values))),
-        dim_coords_and_dims=[(time_coord, 0)]
+        dim_coords_and_dims=[(time_coord, 0)],
     )
 
     # Test with missing data
