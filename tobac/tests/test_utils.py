@@ -587,11 +587,12 @@ def test_transform_feature_points_3D():
 
 
 def test_get_spacings():
+    """Tests tobac.utils.get_spacings."""
     from iris.cube import Cube
     from iris.coords import DimCoord
 
-    x_values = np.array([0, 10, 20, 30])
-    y_values = np.array([30, 20, 10, 0])
+    x_values = np.linspace(100, 500, 5)
+    y_values = np.linspace(400, 200, 5)
     t_values = np.array([0, 1, 2])
 
     x_coord = DimCoord(x_values, standard_name='projection_x_coordinate', units='meters')
@@ -605,14 +606,23 @@ def test_get_spacings():
 
     # Test with arithmetic average and different dx and dy
     dxy, dt = tb_utils.get_spacings(cube)
-    assert dxy == (10 + 10) / 2
+    assert dxy == (100 + 50) / 2
     assert dt == 3600
 
     # Test with geometric average and different dx and dy
     dxy, _ = tb_utils.get_spacings(cube, average_method="geometric")
-    assert dxy == np.sqrt(10 * 10)
+    assert dxy == np.sqrt(100 * 50)
 
     # Test with specified grid spacing and time spacing
     dxy, dt = tb_utils.get_spacings(cube, grid_spacing=15, time_spacing=1800)
     assert dxy == 15
     assert dt == 1800
+
+    cube = Cube(
+        np.zeros((len(t_values), len(y_values), len(x_values))),
+        dim_coords_and_dims=[(time_coord, 0)]
+    )
+
+    # Test with missing data
+    with pytest.raises(ValueError):
+        tb_utils.get_spacings(cube)
