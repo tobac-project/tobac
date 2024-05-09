@@ -29,6 +29,7 @@ References
    diverse datasets. Geoscientific Model Development,
    12(11), 4551-4570.
 """
+
 import copy
 import logging
 
@@ -330,7 +331,7 @@ def segmentation_2D(
     )
 
 
-@decorators.xarray_to_iris
+@decorators.xarray_to_iris()
 def segmentation_timestep(
     field_in: iris.cube.Cube,
     features_in: pd.DataFrame,
@@ -1117,7 +1118,7 @@ def check_add_unseeded_across_bdrys(
     return markers_out
 
 
-@decorators.xarray_to_iris
+@decorators.xarray_to_iris()
 def segmentation(
     features: pd.DataFrame,
     field: iris.cube.Cube,

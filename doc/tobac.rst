@@ -7,7 +7,26 @@ Submodules
 tobac.analysis module
 ---------------------
 
-.. automodule:: tobac.analysis
+tobac.analysis.cell_analysis module
+---------------------
+
+.. automodule:: tobac.analysis.cell_analysis
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+tobac.analysis.feature_analysis module
+---------------------
+
+.. automodule:: tobac.analysis.feature_analysis
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+tobac.analysis.spatial module
+---------------------
+
+.. automodule:: tobac.analysis.spatial
    :members:
    :undoc-members:
    :show-inheritance:
@@ -71,14 +90,6 @@ tobac.tracking module
 tobac.utils modules
 ------------------
 
-tobac.utils.general module
-------------------
-
-.. automodule:: tobac.utils.general
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 tobac.utils.bulk_statistics module
 ------------------
 
@@ -87,10 +98,34 @@ tobac.utils.bulk_statistics module
    :undoc-members:
    :show-inheritance:
 
+tobac.utils.decorators module
+------------------
+
+.. automodule:: tobac.utils.decorators
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+tobac.utils.general module
+------------------
+
+.. automodule:: tobac.utils.general
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 tobac.utils.mask module
 ------------------
 
 .. automodule:: tobac.utils.mask
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+tobac.utils.periodic_boundaries module
+------------------
+
+.. automodule:: tobac.utils.periodic_boundaries
    :members:
    :undoc-members:
    :show-inheritance:

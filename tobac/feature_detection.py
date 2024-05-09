@@ -16,6 +16,7 @@ References
    diverse datasets. Geoscientific Model Development,
    12(11), 4551-4570.
 """
+
 from __future__ import annotations
 from typing import Union, Callable
 import warnings
@@ -1127,7 +1128,7 @@ def feature_detection_multithreshold_timestep(
     return features_thresholds
 
 
-@decorators.xarray_to_iris
+@decorators.xarray_to_iris()
 def feature_detection_multithreshold(
     field_in: iris.cube.Cube,
     dxy: float = None,
