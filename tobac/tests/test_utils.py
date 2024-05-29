@@ -597,10 +597,22 @@ def test_get_spacings():
         np.zeros((len(t_values), len(y_values), len(x_values))),
         dims=["time", "y", "x"],
         coords={
-            "x": ("x", x_values, {"units": "meters", "standard_name": "projection_x_coordinate"}),
-            "y": ("y", y_values, {"units": "meters", "standard_name": "projection_y_coordinate"}),
-            "time": ("time", t_values, {"units": "hours since 1970-01-01 00:00:00", "standard_name": "time"})
-        }
+            "x": (
+                "x",
+                x_values,
+                {"units": "meters", "standard_name": "projection_x_coordinate"},
+            ),
+            "y": (
+                "y",
+                y_values,
+                {"units": "meters", "standard_name": "projection_y_coordinate"},
+            ),
+            "time": (
+                "time",
+                t_values,
+                {"units": "hours since 1970-01-01 00:00:00", "standard_name": "time"},
+            ),
+        },
     )
 
     # Test with arithmetic average and different dx and dy
@@ -621,8 +633,12 @@ def test_get_spacings():
         np.zeros((len(t_values), len(y_values), len(x_values))),
         dims=["time", "y", "x"],
         coords={
-            "time": ("time", t_values, {"units": "hours since 1970-01-01 00:00:00", "standard_name": "time"})
-        }
+            "time": (
+                "time",
+                t_values,
+                {"units": "hours since 1970-01-01 00:00:00", "standard_name": "time"},
+            )
+        },
     )
 
     # Test with missing data
