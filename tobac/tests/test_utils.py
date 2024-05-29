@@ -588,47 +588,43 @@ def test_transform_feature_points_3D():
 
 def test_get_spacings():
     """Tests tobac.utils.get_spacings."""
-    from iris.cube import Cube
-    from iris.coords import DimCoord
 
     x_values = np.linspace(100, 500, 5)
     y_values = np.linspace(400, 200, 5)
     t_values = np.array([0, 1, 2])
 
-    x_coord = DimCoord(
-        x_values, standard_name="projection_x_coordinate", units="meters"
-    )
-    y_coord = DimCoord(
-        y_values, standard_name="projection_y_coordinate", units="meters"
-    )
-    time_coord = DimCoord(
-        t_values, standard_name="time", units="hours since 1970-01-01 00:00:00"
-    )
-
-    cube = Cube(
+    in_xr = xr.DataArray(
         np.zeros((len(t_values), len(y_values), len(x_values))),
-        dim_coords_and_dims=[(time_coord, 0), (y_coord, 1), (x_coord, 2)],
+        dims=["time", "y", "x"],
+        coords={
+            "x": ("x", x_values, {"units": "meters", "standard_name": "projection_x_coordinate"}),
+            "y": ("y", y_values, {"units": "meters", "standard_name": "projection_y_coordinate"}),
+            "time": ("time", t_values, {"units": "hours since 1970-01-01 00:00:00", "standard_name": "time"})
+        }
     )
 
     # Test with arithmetic average and different dx and dy
-    dxy, dt = tb_utils.get_spacings(cube)
+    dxy, dt = tb_utils.get_spacings(in_xr)
     assert dxy == (100 + 50) / 2
     assert dt == 3600
 
     # Test with geometric average and different dx and dy
-    dxy, _ = tb_utils.get_spacings(cube, average_method="geometric")
+    dxy, _ = tb_utils.get_spacings(in_xr, average_method="geometric")
     assert dxy == np.sqrt(100 * 50)
 
     # Test with specified grid spacing and time spacing
-    dxy, dt = tb_utils.get_spacings(cube, grid_spacing=15, time_spacing=1800)
+    dxy, dt = tb_utils.get_spacings(in_xr, grid_spacing=15, time_spacing=1800)
     assert dxy == 15
     assert dt == 1800
 
-    cube = Cube(
+    in_xr = xr.DataArray(
         np.zeros((len(t_values), len(y_values), len(x_values))),
-        dim_coords_and_dims=[(time_coord, 0)],
+        dims=["time", "y", "x"],
+        coords={
+            "time": ("time", t_values, {"units": "hours since 1970-01-01 00:00:00", "standard_name": "time"})
+        }
     )
 
     # Test with missing data
     with pytest.raises(ValueError):
-        tb_utils.get_spacings(cube)
+        tb_utils.get_spacings(in_xr)
