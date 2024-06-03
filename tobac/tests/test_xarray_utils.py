@@ -56,7 +56,7 @@ import tobac.utils.internal.xarray_utils as xr_utils
             },
             "latitude",  # coord_looking_for
             None,
-            False,
+            True,
         ),
         (
             ("time", "altitude", "x", "y"),  # dim_names
