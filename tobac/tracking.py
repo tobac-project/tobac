@@ -329,7 +329,9 @@ def linking_trackpy(
         # which we need for PBCs, neighbor_strategy must be 'BTree'.
         # I think this shouldn't change results, but it will degrade performance.
         neighbor_strategy = "BTree"
-        dist_func = build_distance_function(min_h1, max_h1, min_h2, max_h2, PBC_flag)
+        dist_func = pbc_utils.build_distance_function(
+            min_h1, max_h1, min_h2, max_h2, PBC_flag, is_3D
+        )
 
     else:
         neighbor_strategy = "KDTree"
@@ -609,43 +611,3 @@ def remap_particle_to_cell_nv(particle_cell_map, input_particle):
 
     """
     return particle_cell_map[input_particle]
-
-
-def build_distance_function(min_h1, max_h1, min_h2, max_h2, PBC_flag):
-    """Function to build a partial ```calc_distance_coords_pbc``` function
-    suitable for use with trackpy
-
-    Parameters
-    ----------
-    min_h1: int
-        Minimum point in hdim_1
-    max_h1: int
-        Maximum point in hdim_1
-    min_h2: int
-        Minimum point in hdim_2
-    max_h2: int
-        Maximum point in hdim_2
-    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
-        Sets whether to use periodic boundaries, and if so in which directions.
-        'none' means that we do not have periodic boundaries
-        'hdim_1' means that we are periodic along hdim1
-        'hdim_2' means that we are periodic along hdim2
-        'both' means that we are periodic along both horizontal dimensions
-
-    Returns
-    -------
-    function object
-        A version of calc_distance_coords_pbc suitable to be called by
-        just f(coords_1, coords_2)
-
-    """
-    import functools
-
-    return functools.partial(
-        pbc_utils.calc_distance_coords_pbc,
-        min_h1=min_h1 if min_h1 is not None else 0,
-        max_h1=max_h1 if max_h1 is not None else 0,
-        min_h2=min_h2 if min_h2 is not None else 0,
-        max_h2=max_h2 if max_h2 is not None else 0,
-        PBC_flag=PBC_flag,
-    )
