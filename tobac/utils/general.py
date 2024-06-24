@@ -35,9 +35,6 @@ def add_coordinates(
         to transfer to the resulting DataFrame. Needs to contain the
         coordinate 'time'.
 
-    PBC_flag : Literal["none", "hdim_1", "hdim_2", "both"]
-        Periodic boundary condition flag
-
     Returns
     -------
     pandas.DataFrame
