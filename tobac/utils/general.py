@@ -19,7 +19,8 @@ import warnings
 
 
 def add_coordinates(
-    features : pd.DataFrame, variable_cube: iris.cube.Cube, 
+    features: pd.DataFrame,
+    variable_cube: iris.cube.Cube,
 ):
     """Add coordinates from the input cube of the feature detection
     to the trajectories/features.
