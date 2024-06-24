@@ -18,7 +18,7 @@ References
 """
 
 from __future__ import annotations
-from typing import Union, Callable
+from typing import Optional, Union, Callable
 import warnings
 import logging
 
@@ -1143,10 +1143,10 @@ def feature_detection_multithreshold(
     min_distance: float = 0,
     feature_number_start: int = 1,
     PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
-    vertical_coord: str = None,
-    vertical_axis: int = None,
-    detect_subset: dict = None,
-    wavelength_filtering: tuple = None,
+    vertical_coord: Optional[str] = None,
+    vertical_axis: Optional[int] = None,
+    detect_subset: Optional[dict] = None,
+    wavelength_filtering: Optional[tuple] = None,
     dz: Union[float, None] = None,
     strict_thresholding: bool = False,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
