@@ -67,12 +67,20 @@ The project is currently being extended by several contributors to include addit
 
 
 .. toctree::
+   :caption: Developer guide
+   :maxdepth: 3
+
+   code_structure
+   contributing
+   code_reviews
+   mentoring
+
+.. toctree:: 
    :caption: Compute bulk statistics
    :maxdepth: 2
 
    bulk_statistics/index
 
-   
 .. toctree::
    :caption: API Reference
    :maxdepth: 3

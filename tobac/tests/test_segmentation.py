@@ -815,6 +815,11 @@ def test_segmentation_timestep_3d_buddy_box(
         ((20, 30, 40), (8, 1, 1), (8, 28, 38), (0, 15, 15), None),
         ((20, 30, 40), (8, 0, 0), (8, 28, 38), (0, -8, -8), None),
         ((20, 30, 40), (8, 0, 0), (8, 28, 38), (0, -8, -8), (5, 5, 5)),
+        ((30, 40), (0, 0), (3, 3), (-8, -8), None),
+        ((30, 40), (0, 0), (3, 3), (-8, -8), None),
+        ((30, 40), (1, 1), (28, 38), (15, 15), None),
+        ((30, 40), (0, 0), (28, 38), (-8, -8), None),
+        ((30, 40), (0, 0), (28, 38), (-8, -8), (5, 5)),
     ],
 )
 def test_add_markers_pbcs(
@@ -852,20 +857,34 @@ def test_add_markers_pbcs(
     }
 
     # Generate dummy feature dataset only on the first feature.
-    test_feature_ds_1 = testing.generate_single_feature(
-        start_v=feat_1_loc[0],
-        start_h1=feat_1_loc[1],
-        start_h2=feat_1_loc[2],
-        feature_num=1,
-        **common_feat_opts,
-    )
-    test_feature_ds_2 = testing.generate_single_feature(
-        start_v=feat_2_loc[0],
-        start_h1=feat_2_loc[1],
-        start_h2=feat_2_loc[2],
-        feature_num=2,
-        **common_feat_opts,
-    )
+    if is_3D:
+        test_feature_ds_1 = testing.generate_single_feature(
+            start_v=feat_1_loc[0],
+            start_h1=feat_1_loc[1],
+            start_h2=feat_1_loc[2],
+            feature_num=1,
+            **common_feat_opts,
+        )
+        test_feature_ds_2 = testing.generate_single_feature(
+            start_v=feat_2_loc[0],
+            start_h1=feat_2_loc[1],
+            start_h2=feat_2_loc[2],
+            feature_num=2,
+            **common_feat_opts,
+        )
+    else:
+        test_feature_ds_1 = testing.generate_single_feature(
+            start_h1=feat_1_loc[0],
+            start_h2=feat_1_loc[1],
+            feature_num=1,
+            **common_feat_opts,
+        )
+        test_feature_ds_2 = testing.generate_single_feature(
+            start_h1=feat_2_loc[0],
+            start_h2=feat_2_loc[1],
+            feature_num=2,
+            **common_feat_opts,
+        )
     test_feature_ds = pd.concat([test_feature_ds_1, test_feature_ds_2])
 
     common_marker_opts = dict()
@@ -882,20 +901,35 @@ def test_add_markers_pbcs(
     )
 
     # Now, shift the data over and re-run markers.
-    test_feature_ds_1 = testing.generate_single_feature(
-        start_v=feat_1_loc[0] + shift_domain[0],
-        start_h1=feat_1_loc[1] + shift_domain[1],
-        start_h2=feat_1_loc[2] + shift_domain[2],
-        feature_num=1,
-        **common_feat_opts,
-    )
-    test_feature_ds_2 = testing.generate_single_feature(
-        start_v=feat_2_loc[0] + shift_domain[0],
-        start_h1=feat_2_loc[1] + shift_domain[1],
-        start_h2=feat_2_loc[2] + shift_domain[2],
-        feature_num=2,
-        **common_feat_opts,
-    )
+    if is_3D:
+        test_feature_ds_1 = testing.generate_single_feature(
+            start_v=feat_1_loc[0] + shift_domain[0],
+            start_h1=feat_1_loc[1] + shift_domain[1],
+            start_h2=feat_1_loc[2] + shift_domain[2],
+            feature_num=1,
+            **common_feat_opts,
+        )
+        test_feature_ds_2 = testing.generate_single_feature(
+            start_v=feat_2_loc[0] + shift_domain[0],
+            start_h1=feat_2_loc[1] + shift_domain[1],
+            start_h2=feat_2_loc[2] + shift_domain[2],
+            feature_num=2,
+            **common_feat_opts,
+        )
+    else:
+        test_feature_ds_1 = testing.generate_single_feature(
+            start_h1=feat_1_loc[0] + shift_domain[0],
+            start_h2=feat_1_loc[1] + shift_domain[1],
+            feature_num=1,
+            **common_feat_opts,
+        )
+        test_feature_ds_2 = testing.generate_single_feature(
+            start_h1=feat_2_loc[0] + shift_domain[0],
+            start_h2=feat_2_loc[1] + shift_domain[1],
+            feature_num=2,
+            **common_feat_opts,
+        )
+
     test_feature_ds_shifted = pd.concat([test_feature_ds_1, test_feature_ds_2])
 
     marker_arr_shifted = seg.add_markers(
@@ -903,9 +937,14 @@ def test_add_markers_pbcs(
     )
 
     # Now, shift output back.
-    marker_arr_reshifted = np.roll(
-        marker_arr_shifted, tuple((-x for x in shift_domain)), axis=(0, 1, 2)
-    )
+    if is_3D:
+        marker_arr_reshifted = np.roll(
+            marker_arr_shifted, tuple((-x for x in shift_domain)), axis=(0, 1, 2)
+        )
+    else:
+        marker_arr_reshifted = np.roll(
+            marker_arr_shifted, tuple((-x for x in shift_domain)), axis=(0, 1)
+        )
 
     assert np.all(marker_arr == marker_arr_reshifted)
 
