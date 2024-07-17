@@ -4,6 +4,7 @@
 import copy
 import datetime
 
+import iris.cube
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -191,3 +192,30 @@ def test_add_coordinates_xarray_std_names(
         copy.deepcopy(all_feats), da_with_coords
     )
     pd.testing.assert_frame_equal(iris_coord_interp, xr_coord_interp)
+
+
+def test_preserve_iris_datetime_types():
+    """
+    Test that xarray.add_coordinates_to_features correctly returns the same time types as
+    iris when preserve_iris_datetime_types = True.
+    """
+
+    all_feats = tbtest.generate_single_feature(
+        0,
+        0,
+        feature_num=1,
+        max_h1=10,
+        max_h2=10,
+    )
+    var_array: iris.cube.Cube = tbtest.make_simple_sample_data_2D(data_type="iris")
+
+    xarray_output = xr_utils.add_coordinates_to_features(
+        all_feats, xr.DataArray.from_iris(var_array), preserve_iris_datetime_types=True
+    )
+    iris_output = iris_utils.add_coordinates(all_feats, var_array)
+
+    pd.testing.assert_frame_equal(xarray_output, iris_output)
+    assert xarray_output["time"].values[0] == iris_output["time"].values[0]
+    assert isinstance(
+        xarray_output["time"].values[0], type(iris_output["time"].values[0])
+    )

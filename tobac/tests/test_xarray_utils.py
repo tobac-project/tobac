@@ -139,3 +139,14 @@ def test_find_axis_from_dim_coord(
             assert out_val == expected_out
         else:
             assert out_val is None
+
+
+def test_preserve_iris_datetime_types():
+    """
+    Tests that xarray_utils.add_coordinates_to_features correctly preserves the Iris Datetime
+    types when processing coordinates through xarray.
+    Returns
+    -------
+
+    """
+    pass

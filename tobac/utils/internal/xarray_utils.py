@@ -415,11 +415,14 @@ def add_coordinates_to_features(
 
         return_feat_df[interp_coord_name] = interpolated_df[interp_coord].values
     if preserve_iris_datetime_types:
-        import cftime
+        # We should only need to switch from datetime to DatetimeGregorian.
+        # if the datetime type is anything else, it stays as the original type.
+        if "datetime64" in str(variable_da[time_dim_name].dtype):
+            import cftime
 
-        return_feat_df[time_dim_name] = return_feat_df[time_dim_name].apply(
-            lambda x: cftime.datetime(
-                x.year, x.month, x.day, x.hour, x.minute, x.second, x.microsecond
+            return_feat_df[time_dim_name] = return_feat_df[time_dim_name].apply(
+                lambda x: cftime.DatetimeGregorian(
+                    x.year, x.month, x.day, x.hour, x.minute, x.second, x.microsecond
+                )
             )
-        )
     return return_feat_df
