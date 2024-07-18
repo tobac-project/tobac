@@ -353,6 +353,7 @@ def add_coordinates_to_features(
     hdim1_name_new = "__temp_hdim1_name"
     hdim2_name_new = "__temp_hdim2_name"
     vdim_name_new = "__temp_vdim_name"
+    time_name_new = "__temp_time_name"
 
     if (
         hdim1_name_new in variable_da.dims
@@ -368,10 +369,12 @@ def add_coordinates_to_features(
     dim_new_names = {
         hdim1_name_original: hdim1_name_new,
         hdim2_name_original: hdim2_name_new,
+        time_dim_name: time_name_new,
     }
     dim_interp_coords = {
         hdim1_name_new: xr.DataArray(return_feat_df["hdim_1"].values, dims="features"),
         hdim2_name_new: xr.DataArray(return_feat_df["hdim_2"].values, dims="features"),
+        time_name_new: xr.DataArray(return_feat_df["frame"].values, dims="features"),
     }
 
     if is_3d:

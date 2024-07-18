@@ -8,6 +8,8 @@ import numpy as np
 import xarray as xr
 
 import tobac.utils.internal.xarray_utils as xr_utils
+import tobac.testing as tbtest
+import datetime
 
 
 @pytest.mark.parametrize(
@@ -141,12 +143,63 @@ def test_find_axis_from_dim_coord(
             assert out_val is None
 
 
-def test_preserve_iris_datetime_types():
-    """
-    Tests that xarray_utils.add_coordinates_to_features correctly preserves the Iris Datetime
-    types when processing coordinates through xarray.
-    Returns
-    -------
+@pytest.mark.parametrize(
+    "dim_names, coord_dim_map, feature_pos, expected_vals",
+    [
+        (
+            ["time", "x", "y"],
+            {
+                "test_coord1": (tuple(), 1),
+                "test_coord_time": ("time", [5, 6, 7, 8, 9, 10]),
+            },
+            (1, 1),
+            {"test_coord1": (1, 1, 1), "test_coord_time": (5, 6, 7)},
+        ),
+    ],
+)
+def test_add_coordinates_to_features_interpolate_along_other_dims(
+    dim_names: tuple[str],
+    coord_dim_map: dict,
+    feature_pos: tuple[int],
+    expected_vals: dict[str, tuple],
+):
+    time_len: int = 6
+    if len(feature_pos) == 2:
+        all_feats = tbtest.generate_single_feature(
+            feature_pos[0],
+            feature_pos[1],
+            feature_num=1,
+            num_frames=3,
+            max_h1=100,
+            max_h2=100,
+        )
+        arr_size = (time_len, 5, 5)
 
-    """
-    pass
+    elif len(feature_pos) == 3:
+        all_feats = tbtest.generate_single_feature(
+            feature_pos[1],
+            feature_pos[2],
+            start_v=feature_pos[0],
+            feature_num=1,
+            num_frames=3,
+            max_h1=100,
+            max_h2=100,
+        )
+        arr_size = (time_len, 1, 5, 5)
+    else:
+        raise ValueError("too many dimensions")
+    coord_dim_map["time"] = (
+        ("time",),
+        [
+            datetime.datetime(2000, 1, 1, 0) + datetime.timedelta(hours=x)
+            for x in range(time_len)
+        ],
+    )
+
+    test_xr_arr = xr.DataArray(np.empty(arr_size), dims=dim_names, coords=coord_dim_map)
+
+    resulting_df = xr_utils.add_coordinates_to_features(all_feats, test_xr_arr)
+    for coord in coord_dim_map:
+        assert coord in resulting_df
+        if coord != "time":
+            assert np.all(resulting_df[coord].values == expected_vals[coord])
