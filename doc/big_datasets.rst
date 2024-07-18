@@ -10,10 +10,11 @@ Split Feature Detection and Run in Parallel
 =======================
 Current versions of threshold feature detection (see :doc:`feature_detection_overview`) are time independent, meaning that one can easily parallelize feature detection across all times (although not across space). *tobac* provides the :py:meth:`tobac.utils.combine_feature_dataframes` function to combine a list of dataframes produced by a parallelization method (such as :code:`jug`,  :code:`multiprocessing.pool`, or :code:`dask.bag`) into a single combined dataframe suitable to perform tracking with.
 
-Below is a snippet from a larger notebook demonstrating how to run feature detection in parallel ( :doc:`big_datasets_examples/notebooks/parallel_processing_tobac`).
+Below is a snippet from a larger notebook demonstrating how to run feature detection in parallel ( :doc:`big_datasets_examples/notebooks/parallel_processing_tobac`):
 
 .. code-block:: python
-   # build list of tracked variables using Dask.Bag
+    :linenos:
+    # build list of tracked variables using Dask.Bag
 
     b = db.from_sequence(
         [
@@ -29,7 +30,7 @@ Below is a snippet from a larger notebook demonstrating how to run feature detec
         b,
     ).compute()
 
-   combined_dataframes = tobac.utils.general.combine_feature_dataframes(out_feature_dfs)
+    combined_dataframes = tobac.utils.general.combine_feature_dataframes(out_feature_dfs)
 
 
 .. _Split Segmentation:

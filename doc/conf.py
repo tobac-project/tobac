@@ -19,14 +19,14 @@ extensions = [
     "sphinx_rtd_theme",
     "sphinx.ext.napoleon",
     "nbsphinx",
-   "sphinx_gallery.load_style",
+    "sphinx_gallery.load_style",
 ]
 
 
 html_theme = "sphinx_rtd_theme"
 
 html_static_path = ["_static"]
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 project = "tobac"
 
@@ -61,6 +61,8 @@ autodoc_mock_imports = [
 ]
 
 sys.path.insert(0, os.path.abspath("../"))
+
+pygments_style = "sphinx"
 
 # Napoleon settings for configuring the Napoleon extension
 # See documentation here:
