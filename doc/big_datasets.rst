@@ -13,11 +13,23 @@ Current versions of threshold feature detection (see :doc:`feature_detection_ove
 Below is a snippet from a larger notebook demonstrating how to run feature detection in parallel ( :doc:`big_datasets_examples/notebooks/parallel_processing_tobac`).
 
 .. code-block:: python
-
    # build list of tracked variables using Dask.Bag
-   b = dask.bag.from_sequence([combined_ds['data'][x:x+1] for x in range(len(combined_ds['time']))], npartitions=1)
-   out_feature_dfs = dask.bag.map(lambda x: tobac.feature_detection_multithreshold(x.to_iris(), 4000, **parameters_features), b).compute()
-   combined_dataframes= tobac.utils.general.combine_feature_dataframes(out_feature_dfs)
+
+    b = db.from_sequence(
+        [
+            combined_ds["data"][x : x + 1]
+            for x in range(len(combined_ds["time"]))
+        ],
+        npartitions=1,
+    )
+    out_feature_dfs = db.map(
+        lambda x: tobac.feature_detection_multithreshold(
+            x.to_iris(), 4000, **parameters_features
+        ),
+        b,
+    ).compute()
+
+   combined_dataframes = tobac.utils.general.combine_feature_dataframes(out_feature_dfs)
 
 
 .. _Split Segmentation:
