@@ -20,6 +20,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "nbsphinx",
     "sphinx_gallery.load_style",
+    "sphinx_toolbox",
 ]
 
 
