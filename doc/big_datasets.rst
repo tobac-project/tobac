@@ -12,8 +12,8 @@ Current versions of threshold feature detection (see :doc:`feature_detection_ove
 
 Below is a snippet from a larger notebook demonstrating how to run feature detection in parallel ( :doc:`big_datasets_examples/notebooks/parallel_processing_tobac`):
 
-.. code-block:: numpy
-    :linenos:
+::
+
     # build list of tracked variables using Dask.Bag
 
     b = db.from_sequence(
