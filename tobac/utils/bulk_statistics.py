@@ -266,8 +266,8 @@ def get_statistics_from_mask(
          Updated feature dataframe with bulk statistics for each feature saved in a new column
     """
     # warning when feature labels are not unique in dataframe
-    if not features.feature.is_unique:
-        raise logging.warning(
+    if not features[id_column].is_unique:
+        logging.warning(
             "Feature labels are not unique which may cause unexpected results for the computation of bulk statistics."
         )
 
