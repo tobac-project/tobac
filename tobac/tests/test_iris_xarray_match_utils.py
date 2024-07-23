@@ -219,3 +219,11 @@ def test_preserve_iris_datetime_types():
     assert isinstance(
         xarray_output["time"].values[0], type(iris_output["time"].values[0])
     )
+
+    xarray_output_datetime_preserve_off = xr_utils.add_coordinates_to_features(
+        all_feats, xr.DataArray.from_iris(var_array), preserve_iris_datetime_types=False
+    )
+
+    assert isinstance(
+        xarray_output_datetime_preserve_off["time"].values[0], np.datetime64
+    )

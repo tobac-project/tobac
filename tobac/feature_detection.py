@@ -1156,6 +1156,7 @@ def feature_detection_multithreshold(
     dz: Union[float, None] = None,
     strict_thresholding: bool = False,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
+    preserve_iris_datetime_types: bool = True,
     **kwargs,
 ) -> pd.DataFrame:
     """Perform feature detection based on contiguous regions.
@@ -1236,6 +1237,11 @@ def feature_detection_multithreshold(
     strict_thresholding: Bool, optional
         If True, a feature can only be detected if all previous thresholds have been met.
         Default is False.
+
+    preserve_iris_datetime_types: bool, optional, default: True
+        If True, for iris input, preserve the original datetime type (typically
+        `cftime.DatetimeGregorian`) where possible. For xarray input, this parameter has no
+        effect.
 
     Returns
     -------
@@ -1403,13 +1409,15 @@ def feature_detection_multithreshold(
                 features,
                 field_in,
                 vertical_coord=vertical_coord,
-                preserve_iris_datetime_types=kwargs["converted_from_iris"],
+                preserve_iris_datetime_types=kwargs["converted_from_iris"]
+                & preserve_iris_datetime_types,
             )
         else:
             features = add_coordinates(
                 features,
                 field_in,
-                preserve_iris_datetime_types=kwargs["converted_from_iris"],
+                preserve_iris_datetime_types=kwargs["converted_from_iris"]
+                & preserve_iris_datetime_types,
             )
     else:
         features = None
