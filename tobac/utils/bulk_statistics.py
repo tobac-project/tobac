@@ -275,7 +275,9 @@ def get_statistics_from_mask(
         not np.unique(
             [
                 unique_features.size
-                for unique_features in features.groupby("time")[id_column].unique().values
+                for unique_features in features.groupby("time")[id_column]
+                .unique()
+                .values
             ]
         ).size
         == 1
