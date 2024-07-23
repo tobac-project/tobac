@@ -122,7 +122,7 @@ def get_statistics(
     # mask must contain positive values to calculate statistics
     if np.any(labels > 0):
         if index is None:
-            index = features.feature.to_numpy()
+            index = features[id_column].to_numpy()
         else:
             # get the statistics only for specified feature objects
             if np.max(index) > np.max(labels):
@@ -299,7 +299,7 @@ def get_statistics_from_mask(
 
         # make sure that the labels in the segmentation mask exist in feature dataframe
         if (
-            np.intersect1d(np.unique(segmentation_mask_t), features_t.feature).size
+            np.intersect1d(np.unique(segmentation_mask_t), features_t[id_column]).size
             > np.unique(segmentation_mask_t).size
         ):
             raise ValueError(
