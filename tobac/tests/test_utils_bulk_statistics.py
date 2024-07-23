@@ -7,7 +7,10 @@ import tobac
 import tobac.utils as tb_utils
 import tobac.testing as tb_test
 
-@pytest.mark.parametrize("id_column, index",[("feature", [1]), ("feature_id", [1]), ("cell", [1]) ])
+
+@pytest.mark.parametrize(
+    "id_column, index", [("feature", [1]), ("feature_id", [1]), ("cell", [1])]
+)
 def test_bulk_statistics(id_column, index):
     """
     Test to assure that bulk statistics for identified features are computed as expected.
@@ -46,10 +49,11 @@ def test_bulk_statistics(id_column, index):
     )
 
     #### checks
-    out_df = out_df.rename(columns={'feature': id_column } )
+    out_df = out_df.rename(columns={"feature": id_column})
     #  assure that bulk statistics in postprocessing give same result
     out_segmentation = tb_utils.get_statistics_from_mask(
-        out_df, out_seg_mask, test_data_iris, statistic=stats, id_column = id_column)
+        out_df, out_seg_mask, test_data_iris, statistic=stats, id_column=id_column
+    )
     assert out_segmentation.equals(out_df)
 
     # assure that column names in new dataframe correspond to keys in statistics dictionary
@@ -85,11 +89,12 @@ def test_bulk_statistics(id_column, index):
     )
 
     ##### checks #####
-    out_df = out_df.rename(columns = {'feature': id_column } )
+    out_df = out_df.rename(columns={"feature": id_column})
     #  assure that bulk statistics in postprocessing give same result
     out_segmentation = tb_utils.get_statistics_from_mask(
-        out_df, out_seg_mask, test_data_iris, statistic=stats, id_column= id_column)
-    
+        out_df, out_seg_mask, test_data_iris, statistic=stats, id_column=id_column
+    )
+
     assert out_segmentation.equals(out_df)
 
     # assure that column names in new dataframe correspond to keys in statistics dictionary

@@ -195,7 +195,7 @@ def get_statistics(
                     # test if values are scalars
                     if not hasattr(stats[idx], "__len__"):
                         # if yes, we can just assign the value to the new column and row of the respective feature
-                        features.loc[ features[id_column] == label, stats_name] = stats[
+                        features.loc[features[id_column] == label, stats_name] = stats[
                             idx
                         ]
                         # if stats output is array-like it has to be added in a different way
@@ -271,8 +271,18 @@ def get_statistics_from_mask(
             "Feature labels are not unique which may cause unexpected results for the computation of bulk statistics."
         )
     # extra warning when feature labels are not unique in timestep
-    if not np.unique([unique_features.size for unique_features in features.groupby('time').id.unique().values]).size == 1: 
-        logging.warning('Note that non-unique feature labels occur also in the same timestep.')
+    if (
+        not np.unique(
+            [
+                unique_features.size
+                for unique_features in features.groupby("time").id.unique().values
+            ]
+        ).size
+        == 1
+    ):
+        logging.warning(
+            "Note that non-unique feature labels occur also in the same timestep."
+        )
 
     if collapse_dim is not None:
         if isinstance(collapse_dim, str):
