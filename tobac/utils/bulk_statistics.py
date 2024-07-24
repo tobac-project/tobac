@@ -122,7 +122,7 @@ def get_statistics(
     # mask must contain positive values to calculate statistics
     if np.any(labels > 0):
         if index is None:
-            index = features.feature.to_numpy()
+            index = features[id_column].to_numpy().astype(int)
         else:
             # get the statistics only for specified feature objects
             if np.max(index) > np.max(labels):
@@ -266,9 +266,15 @@ def get_statistics_from_mask(
          Updated feature dataframe with bulk statistics for each feature saved in a new column
     """
     # warning when feature labels are not unique in dataframe
-    if not features.feature.is_unique:
-        raise logging.warning(
+    if not features[id_column].is_unique:
+        logging.warning(
             "Feature labels are not unique which may cause unexpected results for the computation of bulk statistics."
+        )
+    # extra warning when feature labels are not unique in timestep
+    uniques = features.groupby("time")[id_column].value_counts().values
+    if not uniques[uniques > 1].size == 0:
+        logging.warning(
+            "Note that non-unique feature labels occur also in the same timestep. This likely causes unexpected results for the computation of bulk statistics."
         )
 
     if collapse_dim is not None:
@@ -299,7 +305,7 @@ def get_statistics_from_mask(
 
         # make sure that the labels in the segmentation mask exist in feature dataframe
         if (
-            np.intersect1d(np.unique(segmentation_mask_t), features_t.feature).size
+            np.intersect1d(np.unique(segmentation_mask_t), features_t[id_column]).size
             > np.unique(segmentation_mask_t).size
         ):
             raise ValueError(
