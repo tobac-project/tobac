@@ -271,19 +271,10 @@ def get_statistics_from_mask(
             "Feature labels are not unique which may cause unexpected results for the computation of bulk statistics."
         )
     # extra warning when feature labels are not unique in timestep
-    if (
-        not np.unique(
-            [
-                unique_features.size
-                for unique_features in features.groupby("time")[id_column]
-                .unique()
-                .values
-            ]
-        ).size
-        == 1
-    ):
+    uniques = features.groupby("time")[id_column].value_counts().values
+    if not uniques[uniques > 1].size == 0:
         logging.warning(
-            "Note that non-unique feature labels occur also in the same timestep."
+            "Note that non-unique feature labels occur also in the same timestep. This likely causes unexpected results for the computation of bulk statistics."
         )
 
     if collapse_dim is not None:
