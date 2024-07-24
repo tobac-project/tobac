@@ -83,4 +83,4 @@ from .wrapper import tracking_wrapper
 from . import merge_split
 
 # Set version number
-__version__ = "1.5.2"
+__version__ = "1.5.3"
