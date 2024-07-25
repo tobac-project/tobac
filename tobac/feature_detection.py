@@ -31,7 +31,6 @@ from sklearn.neighbors import BallTree
 import iris
 import xarray as xr
 
-from tobac.tracking import build_distance_function
 from tobac.utils import internal as internal_utils
 from tobac.utils import decorators
 
@@ -1156,6 +1155,7 @@ def feature_detection_multithreshold(
     dz: Union[float, None] = None,
     strict_thresholding: bool = False,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
+    preserve_iris_datetime_types: bool = True,
     **kwargs,
 ) -> pd.DataFrame:
     """Perform feature detection based on contiguous regions.
@@ -1236,6 +1236,11 @@ def feature_detection_multithreshold(
     strict_thresholding: Bool, optional
         If True, a feature can only be detected if all previous thresholds have been met.
         Default is False.
+
+    preserve_iris_datetime_types: bool, optional, default: True
+        If True, for iris input, preserve the original datetime type (typically
+        `cftime.DatetimeGregorian`) where possible. For xarray input, this parameter has no
+        effect.
 
     Returns
     -------
@@ -1403,13 +1408,15 @@ def feature_detection_multithreshold(
                 features,
                 field_in,
                 vertical_coord=vertical_coord,
-                preserve_iris_datetime_types=kwargs["converted_from_iris"],
+                preserve_iris_datetime_types=kwargs["converted_from_iris"]
+                & preserve_iris_datetime_types,
             )
         else:
             features = add_coordinates(
                 features,
                 field_in,
-                preserve_iris_datetime_types=kwargs["converted_from_iris"],
+                preserve_iris_datetime_types=kwargs["converted_from_iris"]
+                & preserve_iris_datetime_types,
             )
     else:
         features = None
@@ -1549,8 +1556,8 @@ def filter_min_distance(
     # Check if we have PBCs.
     if PBC_flag in ["hdim_1", "hdim_2", "both"]:
         # Note that we multiply by dxy to get the distances in spatial coordinates
-        dist_func = build_distance_function(
-            min_h1 * dxy, max_h1 * dxy, min_h2 * dxy, max_h2 * dxy, PBC_flag
+        dist_func = pbc_utils.build_distance_function(
+            min_h1 * dxy, max_h1 * dxy, min_h2 * dxy, max_h2 * dxy, PBC_flag, is_3D
         )
         features_tree = BallTree(feature_locations, metric="pyfunc", func=dist_func)
         neighbours = features_tree.query_radius(feature_locations, r=min_distance)
