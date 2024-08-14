@@ -390,7 +390,7 @@ def feature_detection_threshold(
     ] = "center",
     sigma_threshold: float = 0.5,
     n_erosion_threshold: int = 0,
-    n_min_threshold: int = 0,
+    n_min_threshold: Union[int, dict[float, int], list[int]] = 0,
     min_distance: float = 0,
     idx_start: int = 0,
     PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
@@ -428,8 +428,10 @@ def feature_detection_threshold(
         Number of pixels by which to erode the identified features.
         Default is 0.
 
-    n_min_threshold : int, optional
+    n_min_threshold : int, dict of float to int, or list of int, optional
         Minimum number of identified contiguous pixels for a feature to be detected. Default is 0.
+        If given as a list, the number of elements must match number of thresholds.
+        If given as a dict, the keys need to match the thresholds and the values are the minimum number of identified contiguous pixels for a feature using that specific threshold.
 
     min_distance : float, optional
         Minimum distance between detected features (in meters). Default is 0.
@@ -897,7 +899,7 @@ def feature_detection_multithreshold_timestep(
     ] = "center",
     sigma_threshold: float = 0.5,
     n_erosion_threshold: int = 0,
-    n_min_threshold: int = 0,
+    n_min_threshold: Union[int, dict[float, int], list[int]] = 0,
     min_distance: float = 0,
     feature_number_start: int = 1,
     PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
@@ -944,8 +946,10 @@ def feature_detection_multithreshold_timestep(
         Number of pixels by which to erode the identified features.
         Default is 0.
 
-    n_min_threshold : int, optional
+    n_min_threshold :  int, dict of float to int, or list of int, optional
         Minimum number of identified contiguous pixels for a feature to be detected. Default is 0.
+        If given as a list, the number of elements must match number of thresholds.
+        If given as a dict, the keys need to match the thresholds and the values are the minimum number of identified contiguous pixels for a feature using that specific threshold.
 
     min_distance : float, optional
         Minimum distance between detected features (in meters). Default is 0.
@@ -1026,7 +1030,7 @@ def feature_detection_multithreshold_timestep(
             ):
                 raise ValueError(
                     "Ambiguous input for threshold values. If n_min_threshold is given as a dict,"
-                    " the keys not to correspond to the values in threshold."
+                    " the keys must correspond to the values in threshold."
                 )
             # sort dictionary by keys (threshold values) so that they match sorted thresholds and
             # get values for n_min_threshold
@@ -1139,7 +1143,7 @@ def feature_detection_multithreshold(
     ] = "center",
     sigma_threshold: float = 0.5,
     n_erosion_threshold: int = 0,
-    n_min_threshold: int = 0,
+    n_min_threshold: Union[int, dict[float, int], list[int]] = 0,
     min_distance: float = 0,
     feature_number_start: int = 1,
     PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
@@ -1184,8 +1188,10 @@ def feature_detection_multithreshold(
         Number of pixels by which to erode the identified features.
         Default is 0.
 
-    n_min_threshold : int, optional
+    n_min_threshold :  int, dict of float to int, or list of int, optional
         Minimum number of identified contiguous pixels for a feature to be detected. Default is 0.
+        If given as a list, the number of elements must match number of thresholds.
+        If given as a dict, the keys need to match the thresholds and the values are the minimum number of identified contiguous pixels for a feature using that specific threshold.
 
     min_distance : float, optional
         Minimum distance between detected features (in meters). Default is 0.
