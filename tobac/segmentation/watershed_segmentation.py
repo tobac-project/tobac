@@ -1255,7 +1255,12 @@ def segmentation(
     features_out_list = []
 
     # Iris workaround: convert cftime to datetime64
-    all_times = features["time"].map(np.datetime64)
+
+    if np.issubdtype(features["time"].dtype, np.datetime64):
+        # we are (likely) a numpy datetime
+        all_times = features["time"]
+    else:
+        all_times = features["time"].map(np.datetime64)
 
     for i_time, time_i in enumerate(field.coords[time_var_name]):
         field_at_time = field.isel({time_var_name: i_time})
