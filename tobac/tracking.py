@@ -19,6 +19,8 @@ References
    12(11), 4551-4570.
 """
 
+from typing import Optional, Literal
+
 import logging
 from operator import is_
 import numpy as np
@@ -35,32 +37,32 @@ from copy import deepcopy
 
 
 def linking_trackpy(
-    features,
-    field_in,
-    dt,
-    dxy,
-    dz=None,
-    v_max=None,
-    d_max=None,
-    d_min=None,
-    subnetwork_size=None,
-    memory=0,
-    stubs=1,
-    time_cell_min=None,
-    order=1,
-    extrapolate=0,
-    method_linking="random",
-    adaptive_step=None,
-    adaptive_stop=None,
-    cell_number_start=1,
-    cell_number_unassigned=-1,
-    vertical_coord="auto",
-    min_h1=None,
-    max_h1=None,
-    min_h2=None,
-    max_h2=None,
-    PBC_flag="none",
-):
+    features: pd.DataFrame,
+    field_in: None,
+    dt: float,
+    dxy: float,
+    dz: Optional[float] = None,
+    v_max: Optional[float] = None,
+    d_max: Optional[float] = None,
+    d_min: Optional[float] = None,
+    subnetwork_size: Optional[int] = None,
+    memory: int = 0,
+    stubs: int = 1,
+    time_cell_min: Optional[float] = None,
+    order: int = 1,
+    extrapolate: int = 0,
+    method_linking: Literal["random", "predict"] = "random",
+    adaptive_step: Optional[float] = None,
+    adaptive_stop: Optional[float] = None,
+    cell_number_start: int = 1,
+    cell_number_unassigned: int = -1,
+    vertical_coord: str = "auto",
+    min_h1: Optional[int] = None,
+    max_h1: Optional[int] = None,
+    min_h2: Optional[int] = None,
+    max_h2: Optional[int] = None,
+    PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
+) -> pd.DataFrame:
     """Perform Linking of features in trajectories.
 
     The linking determines which of the features detected in a specific
@@ -101,6 +103,11 @@ def linking_trackpy(
         that it is the constant z spacing between points, even if ```vertical_coord```
         is specified.
 
+    v_max : float, optional
+        Speed at which features are allowed to move in meters per second.
+        Only one of `d_max`, `d_min`, or `v_max` can be set.
+        Default is None.
+
     d_max : float, optional
         Maximum search range in meters. Only one of `d_max`, `d_min`, or `v_max` can be set.
         Default is None.
@@ -117,10 +124,6 @@ def linking_trackpy(
         If None, 30 is used for regular search and 15 for adaptive search.
         Default is None.
 
-    v_max : float, optional
-        Speed at which features are allowed to move in meters per second.
-        Only one of `d_max`, `d_min`, or `v_max` can be set.
-        Default is None.
 
     memory : int, optional
         Number of output timesteps features allowed to vanish for to
