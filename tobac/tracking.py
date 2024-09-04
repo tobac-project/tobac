@@ -223,35 +223,7 @@ def linking_trackpy(
 
     #    from trackpy import filter_stubs
     #    from .utils import add_coordinates
-
-    if (v_max is None) and (d_min is None) and (d_max is None):
-        raise ValueError(
-            "Neither d_max nor v_max has been provided. Either one of these arguments must be specified."
-        )
-
-    # calculate search range based on timestep and grid spacing
-    if v_max is not None:
-        search_range = dt * v_max / dxy
-
-    # calculate search range based on timestep and grid spacing
-    if d_max is not None:
-        if v_max is not None:
-            raise ValueError(
-                "Multiple parameter inputs for v_max, d_max or d_min have been provided. Only use one of these parameters as they supercede each other leading to unexpected behaviour"
-            )
-        search_range = d_max / dxy
-
-    # calculate search range based on timestep and grid spacing
-    if d_min is not None:
-        if (v_max is not None) or (d_max is not None):
-            raise ValueError(
-                "Multiple parameter inputs for v_max, d_max or d_min have been provided. Only use one of these parameters as they supercede each other leading to unexpected behaviour"
-            )
-        search_range = d_min / dxy
-        warnings.warn(
-            "d_min parameter will be deprecated in a future version of tobac. Please use d_max instead",
-            FutureWarning,
-        )
+    search_range = _calc_search_range(dt, dxy, v_max=v_max, d_max=d_max, d_min=d_min)
     # Check if we are 3D.
     if "vdim" in features:
         is_3D = True
@@ -493,6 +465,171 @@ def linking_trackpy(
     return trajectories_final
 
 
+def append_tracks_trackpy(
+    tracks_orig: pd.DataFrame,
+    new_features: pd.DataFrame,
+    dt: float,
+    dxy: float,
+    dz: Optional[float] = None,
+    v_max: Optional[float] = None,
+    d_max: Optional[float] = None,
+    d_min: Optional[float] = None,
+    subnetwork_size: Optional[int] = None,
+    memory: int = 0,
+    stubs: int = 1,
+    time_cell_min: Optional[float] = None,
+    order: int = 1,
+    extrapolate: int = 0,
+    method_linking: Literal["random", "predict"] = "random",
+    adaptive_step: Optional[float] = None,
+    adaptive_stop: Optional[float] = None,
+    cell_number_start: int = 1,
+    cell_number_unassigned: int = -1,
+    vertical_coord: str = "auto",
+    min_h1: Optional[int] = None,
+    max_h1: Optional[int] = None,
+    min_h2: Optional[int] = None,
+    max_h2: Optional[int] = None,
+    PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
+) -> pd.DataFrame:
+    """Append a new feature dataframe onto an existing tracked dataframe using the same logic as
+    tracking.linking_trackpy.
+
+    Parameters
+    ----------
+    tracks_orig: pd.DataFrame
+        Original tracked file. Must contain a 'cell' column.
+    new_features: pd.DataFrame
+        New features to be tracked. This dataframe can overlap with the tracks_orig dataframe
+        features, but only times where there is no cell information (either `cell` column for that
+        time are all equal to cell_number_unassigned or there is no cell column) for the
+        *whole time* are considered.
+    dt : float
+        Time resolution of tracked features in seconds.
+
+    dxy : float
+        Horizontal grid spacing of the input data in meters.
+
+    dz : float
+        Constant vertical grid spacing (meters), optional. If not specified
+        and the input is 3D, this function requires that `vertical_coord` is available
+        in the `features` input. If you specify a value here, this function assumes
+        that it is the constant z spacing between points, even if ```vertical_coord```
+        is specified.
+
+    v_max : float, optional
+        Speed at which features are allowed to move in meters per second.
+        Only one of `d_max`, `d_min`, or `v_max` can be set.
+        Default is None.
+
+    d_max : float, optional
+        Maximum search range in meters. Only one of `d_max`, `d_min`, or `v_max` can be set.
+        Default is None.
+
+    d_min : float, optional
+        Deprecated. Only one of `d_max`, `d_min`, or `v_max` can be set.
+        Default is None.
+
+    subnetwork_size : int, optional
+        Maximum size of subnetwork for linking. This parameter should be
+        adjusted when using adaptive search. Usually a lower value is desired
+        in that case. For a more in depth explanation have look
+        `here <https://soft-matter.github.io/trackpy/v0.5.0/tutorial/adaptive-search.html>`_
+        If None, 30 is used for regular search and 15 for adaptive search.
+        Default is None.
+
+
+    memory : int, optional
+        Number of output timesteps features allowed to vanish for to
+        be still considered tracked. Default is 0.
+        .. warning :: This parameter should be used with caution, as it
+                     can lead to erroneous trajectory linking,
+                     espacially for data with low time resolution.
+
+    stubs : int, optional
+        Minimum number of timesteps of a tracked cell to be reported
+        Default is 1
+
+    time_cell_min : float, optional
+        Minimum length in time that a cell must be tracked for to be considered a
+        valid cell in seconds.
+        Default is None.
+
+    order : int, optional
+        Order of polynomial used to extrapolate trajectory into gaps and
+        ond start and end point.
+        Default is 1.
+
+    extrapolate : int, optional
+        Number or timesteps to extrapolate trajectories. Currently unused.
+        Default is 0.
+
+    method_linking : {'random', 'predict'}, optional
+        Flag choosing method used for trajectory linking.
+        Default is 'random', although we typically encourage users to use 'predict'.
+
+    adaptive_step : float, optional
+        Reduce search range by multiplying it by this factor. Needs to be
+        used in combination with adaptive_stop. Default is None.
+
+    adaptive_stop : float, optional
+        If not None, when encountering an oversize subnet, retry by progressively
+        reducing search_range by multiplying with adaptive_step until the subnet
+        is solvable. If search_range becomes <= adaptive_stop, give up and raise
+        a SubnetOversizeException. Needs to be used in combination with
+        adaptive_step. Default is None.
+
+    cell_number_start : int, optional
+        Cell number for first tracked cell.
+        Default is 1
+
+    cell_number_unassigned: int
+        Number to set the unassigned/non-tracked cells to. Note that if you set this
+        to `np.nan`, the data type of 'cell' will change to float.
+        Default is -1
+
+    vertical_coord: str
+        Name of the vertical coordinate. The vertical coordinate used
+        must be meters. If None, tries to auto-detect.
+        It looks for the coordinate or the dimension name corresponding
+        to the string. To use `dz`, set this to `None`.
+
+    min_h1: int
+        Minimum hdim_1 value, required when PBC_flag is 'hdim_1' or 'both'
+
+    max_h1: int
+        Maximum hdim_1 value, required when PBC_flag is 'hdim_1' or 'both'
+
+    min_h2: int
+        Minimum hdim_2 value, required when PBC_flag is 'hdim_2' or 'both'
+
+    max_h2: int
+        Maximum hdim_2 value, required when PBC_flag is 'hdim_2' or 'both'
+
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
+
+    Returns
+    -------
+    trajectories_final : pandas.DataFrame
+        Dataframe of the linked features, containing the variable 'cell',
+        with integers indicating the affiliation of a feature to a specific
+        track, and the variable 'time_cell' with the time the cell has
+        already existed.
+
+    Raises
+    ------
+    ValueError
+        If method_linking is neither 'random' nor 'predict'.
+
+    """
+    pass
+
+
 def fill_gaps(
     t, order=1, extrapolate=0, frame_max=None, hdim_1_max=None, hdim_2_max=None
 ):
@@ -572,6 +709,78 @@ def fill_gaps(
     ]
     t_out = t_out.reset_index(drop=True)
     return t_out
+
+
+def _calc_search_range(
+    dt: float,
+    dxy: float,
+    v_max: Optional[float] = None,
+    d_max: Optional[float] = None,
+    d_min: Optional[float] = None,
+) -> float:
+    """Internal function to calculate the trackpy search_range given the various radius parameters.
+
+    Parameters
+    ----------
+    dt: float
+        Time resolution (in seconds)
+    dxy: float
+        Space resolution (in meters)
+    v_max: float, optional
+        Speed at which features are allowed to move in meters per second.
+        Only one of `d_max`, `d_min`, or `v_max` can be set.
+        Default is None.
+    d_max: float, optional
+        Maximum search range in meters. Only one of `d_max`, `d_min`, or `v_max` can be set.
+        Default is None.
+    d_min: float, optional
+        Deprecated. Only one of `d_max`, `d_min`, or `v_max` can be set.
+        Default is None.
+
+    Returns
+    -------
+    search_range: float
+        search_range in hdim_1/hdim_2 coordinates from physical coordinates
+
+    Raises
+    ------
+    ValueError:
+        Raises ValueError if there are multiple parameter inputs.
+
+    """
+    if (v_max is None) and (d_min is None) and (d_max is None):
+        raise ValueError(
+            "Neither d_max nor v_max has been provided. "
+            "Either one of these arguments must be specified."
+        )
+
+    # calculate search range based on timestep and grid spacing
+    if v_max is not None:
+        return dt * v_max / dxy
+
+    # calculate search range based on timestep and grid spacing
+    if d_max is not None:
+        if v_max is not None:
+            raise ValueError(
+                "Multiple parameter inputs for v_max, d_max or d_min have been provided. "
+                "Only use one of these parameters as they supercede each other leading to "
+                "unexpected behaviour."
+            )
+        return d_max / dxy
+
+    # calculate search range based on timestep and grid spacing
+    if d_min is not None:
+        if (v_max is not None) or (d_max is not None):
+            raise ValueError(
+                "Multiple parameter inputs for v_max, d_max or d_min have been provided. Only use one of these parameters as they supercede each other leading to unexpected behaviour"
+            )
+        warnings.warn(
+            "d_min parameter will be deprecated in tobac v1.6. Please use d_max instead",
+            FutureWarning,
+        )
+
+        return d_min / dxy
+    raise ValueError("Invalid choice for _calculate_search_radius")
 
 
 def add_cell_time(t: pd.DataFrame, cell_number_unassigned: int):
