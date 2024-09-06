@@ -8,6 +8,7 @@ from xarray import DataArray
 import pandas as pd
 from collections import Counter
 from .utils import periodic_boundaries as pbc_utils
+from typing import Union, Optional, Literal
 
 
 def make_simple_sample_data_2D(data_type="iris"):
@@ -815,24 +816,24 @@ def get_single_pbc_coordinate(
 
 
 def generate_single_feature(
-    start_h1,
-    start_h2,
-    start_v=None,
-    spd_h1=1,
-    spd_h2=1,
-    spd_v=1,
-    min_h1=0,
-    max_h1=None,
-    min_h2=0,
-    max_h2=None,
-    num_frames=1,
-    dt=datetime.timedelta(minutes=5),
-    start_date=datetime.datetime(2022, 1, 1, 0),
-    PBC_flag="none",
-    frame_start=0,
-    feature_num=1,
-    feature_size=None,
-    threshold_val=None,
+    start_h1: float,
+    start_h2: float,
+    start_v: Optional[float] = None,
+    spd_h1: float = 1,
+    spd_h2: float = 1,
+    spd_v: float = 1,
+    min_h1: float = 0,
+    max_h1: Optional[float] = None,
+    min_h2: float = 0,
+    max_h2: Optional[float] = None,
+    num_frames: int = 1,
+    dt: datetime.timedelta = datetime.timedelta(minutes=5),
+    start_date: datetime.datetime = datetime.datetime(2022, 1, 1, 0),
+    PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
+    frame_start: int = 0,
+    feature_num: int = 1,
+    feature_size: Optional[int] = None,
+    threshold_val: Optional[float] = None,
 ):
     """Function to generate a dummy feature dataframe to test the tracking functionality
 
