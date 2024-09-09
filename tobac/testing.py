@@ -8,7 +8,7 @@ from xarray import DataArray
 import pandas as pd
 from collections import Counter
 from .utils import periodic_boundaries as pbc_utils
-from typing import Union, Optional, Literal
+from typing import Union, Optional, Literal, Iterable
 
 
 def make_simple_sample_data_2D(data_type="iris"):
@@ -816,9 +816,9 @@ def get_single_pbc_coordinate(
 
 
 def generate_single_feature(
-    start_h1: float,
-    start_h2: float,
-    start_v: Optional[float] = None,
+    start_h1: Union[float, Iterable[float]],
+    start_h2: Union[float, Iterable[float]],
+    start_v: Optional[Union[float, Iterable[float]]] = None,
     spd_h1: float = 1,
     spd_h2: float = 1,
     spd_v: float = 1,
@@ -839,14 +839,19 @@ def generate_single_feature(
 
     Parameters
     ----------
-    start_h1: float
-        Starting point of the feature in hdim_1 space
+    start_h1: float or iterable of floats
+        Starting point of the feature in hdim_1 space if float
+        or all h1 points if iterable. If iterable is passed,
+        all other parameters are ignored.
 
-    start_h2: float
-        Starting point of the feature in hdim_2 space
+    start_h2: float or iterable of floats
+        Starting point of the feature in hdim_2 space if float
+        or all h2 points if iterable
 
     start_v: float, optional
-        Starting point of the feature in vdim space (if 3D). For 2D, set to None.
+        Starting point of the feature in vdim space (if 3D) if float
+        or all vertical points if iterable.
+        For 2D, set to None.
         Default is None
 
     spd_h1: float, optional
@@ -915,23 +920,50 @@ def generate_single_feature(
     if max_h1 is None or max_h2 is None:
         raise ValueError("Max coords must be specified.")
 
-    out_list_of_dicts = list()
-    curr_h1 = start_h1
-    curr_h2 = start_h2
-    curr_v = start_v
+    h1_list = []
+    h2_list = []
+    v_list = []
+
+    # check if start_h1, start_h2, and start_v are all arrays
+    if not np.isscalar(start_h1) and not np.isscalar(start_h2):
+        if start_v is not None and np.isscalar(start_h2):
+            raise ValueError(
+                "Must specify all start_h1, start_h2, and start_v as arrays."
+            )
+        h1_list = start_h1
+        h2_list = start_h2
+        if start_v is not None:
+            v_list = start_v
+    # we need to make the list of points.
+    else:
+        curr_h1 = start_h1
+        curr_h2 = start_h2
+        curr_v = start_v
+
+        for i in range(num_frames):
+            curr_h1, curr_h2 = get_single_pbc_coordinate(
+                min_h1, max_h1, min_h2, max_h2, curr_h1, curr_h2, PBC_flag
+            )
+
+            h1_list.append(curr_h1)
+            h2_list.append(curr_h2)
+            curr_h1 += spd_h1
+            curr_h2 += spd_h2
+
+            if start_v is not None:
+                v_list.append(curr_v)
+                curr_v += spd_v
+
+    out_list_of_dicts = []
     curr_dt = start_date
-    is_3D = not (start_v is None)
-    for i in range(num_frames):
+    for i in range(len(h1_list)):
         curr_dict = dict()
-        curr_h1, curr_h2 = get_single_pbc_coordinate(
-            min_h1, max_h1, min_h2, max_h2, curr_h1, curr_h2, PBC_flag
-        )
-        curr_dict["hdim_1"] = curr_h1
-        curr_dict["hdim_2"] = curr_h2
+        curr_dict["hdim_1"] = h1_list[i]
+        curr_dict["hdim_2"] = h2_list[i]
         curr_dict["frame"] = frame_start + i
         curr_dict["idx"] = 0
         if curr_v is not None:
-            curr_dict["vdim"] = curr_v
+            curr_dict["vdim"] = v_list[i]
             curr_v += spd_v
         curr_dict["time"] = curr_dt
         curr_dict["feature"] = feature_num + i
@@ -939,8 +971,6 @@ def generate_single_feature(
             curr_dict["num"] = feature_size
         if threshold_val is not None:
             curr_dict["threshold_value"] = threshold_val
-        curr_h1 += spd_h1
-        curr_h2 += spd_h2
         curr_dt += dt
         out_list_of_dicts.append(curr_dict)
 

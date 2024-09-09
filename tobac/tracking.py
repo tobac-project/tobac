@@ -627,6 +627,8 @@ def append_tracks_trackpy(
         If method_linking is neither 'random' nor 'predict'.
 
     """
+    if "cell" not in tracks_orig:
+        raise ValueError("Need to have existing tracks.")
     pass
 
 
