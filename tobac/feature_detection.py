@@ -18,7 +18,7 @@ References
 """
 
 from __future__ import annotations
-from typing import Union, Callable
+from typing import Optional, Union, Callable
 import warnings
 import logging
 
@@ -199,8 +199,8 @@ def feature_position(
 
     elif position_threshold == "weighted_diff":
         # get position as centre of identified region, weighted by difference from the threshold:
-        weights = abs(track_data_region[region_small] - threshold_i)
-        if sum(weights) == 0:
+        weights = np.abs(track_data_region[region_small] - threshold_i)
+        if np.sum(weights) == 0:
             weights = None
         hdim1_weights = weights
         hdim2_weights = weights
@@ -211,8 +211,8 @@ def feature_position(
 
     elif position_threshold == "weighted_abs":
         # get position as centre of identified region, weighted by absolute values if the field:
-        weights = abs(track_data_region[region_small])
-        if sum(weights) == 0:
+        weights = np.abs(track_data_region[region_small])
+        if np.sum(weights) == 0:
             weights = None
         hdim1_weights = weights
         hdim2_weights = weights
@@ -230,14 +230,18 @@ def feature_position(
             hdim1_index = pbc_utils.weighted_circmean(
                 hdim1_indices, weights=hdim1_weights, high=hdim1_max + 1, low=hdim1_min
             )
+            hdim1_index = np.clip(hdim1_index, 0, hdim1_max + 1)
         else:
             hdim1_index = np.average(hdim1_indices, weights=hdim1_weights)
+            hdim1_index = np.clip(hdim1_index, 0, hdim1_max)
         if PBC_flag in ("hdim_2", "both"):
             hdim2_index = pbc_utils.weighted_circmean(
                 hdim2_indices, weights=hdim2_weights, high=hdim2_max + 1, low=hdim2_min
             )
+            hdim2_index = np.clip(hdim2_index, 0, hdim2_max + 1)
         else:
             hdim2_index = np.average(hdim2_indices, weights=hdim2_weights)
+            hdim2_index = np.clip(hdim2_index, 0, hdim2_max)
         if is_3D:
             vdim_index = np.average(vdim_indices, weights=vdim_weights)
 
@@ -1147,10 +1151,10 @@ def feature_detection_multithreshold(
     min_distance: float = 0,
     feature_number_start: int = 1,
     PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
-    vertical_coord: str = None,
-    vertical_axis: int = None,
-    detect_subset: dict = None,
-    wavelength_filtering: tuple = None,
+    vertical_coord: Optional[str] = None,
+    vertical_axis: Optional[int] = None,
+    detect_subset: Optional[dict] = None,
+    wavelength_filtering: Optional[tuple] = None,
     dz: Union[float, None] = None,
     strict_thresholding: bool = False,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
