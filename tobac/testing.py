@@ -962,7 +962,7 @@ def generate_single_feature(
         curr_dict["hdim_2"] = h2_list[i]
         curr_dict["frame"] = frame_start + i
         curr_dict["idx"] = 0
-        if curr_v is not None:
+        if len(v_list) > 0:
             curr_dict["vdim"] = v_list[i]
             curr_v += spd_v
         curr_dict["time"] = curr_dt
@@ -975,6 +975,37 @@ def generate_single_feature(
         out_list_of_dicts.append(curr_dict)
 
     return pd.DataFrame.from_dict(out_list_of_dicts)
+
+
+def combine_single_features(
+    feat_list: list[pd.DataFrame], begin_feat_num: int = 1
+) -> pd.DataFrame:
+    """Combines multiple generate_single_feature outputs into one
+    coherent output
+
+    Parameters
+    ----------
+    feat_list
+
+    Returns
+    -------
+
+    """
+
+    time_col_name: str = "time"
+
+    comb_output = pd.concat(feat_list)
+
+    all_times = comb_output[time_col_name].unique()
+    all_times = sorted(all_times)
+    frame_nums = {str(np.datetime64(x, "ns")): i for i, x in enumerate(all_times)}
+    vec_frame_func = np.vectorize(lambda x: frame_nums[str(np.datetime64(x, "ns"))])
+    comb_output["frame"] = vec_frame_func(comb_output[time_col_name])
+    comb_output["idx"] = comb_output.groupby("frame").transform("cumcount")
+    comb_output = comb_output.sort_values(["frame", "idx"], axis=0)
+    feat_col = np.arange(begin_feat_num, begin_feat_num + len(comb_output))
+    comb_output["feature"] = feat_col
+    return comb_output
 
 
 def get_start_end_of_feat(center_point, size, axis_min, axis_max, is_pbc=False):
