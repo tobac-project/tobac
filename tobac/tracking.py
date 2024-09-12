@@ -746,7 +746,6 @@ def append_tracks_trackpy(
                 "y": "__temp_y_coord",
                 "x": "__temp_x_coord",
                 "z": "__temp_z_coord",
-                "cell": "particle",
             },
             inplace=True,
         )
@@ -755,7 +754,6 @@ def append_tracks_trackpy(
                 "y": "__temp_y_coord",
                 "x": "__temp_x_coord",
                 "z": "__temp_z_coord",
-                "cell": "particle",
             },
             inplace=True,
         )
@@ -794,6 +792,7 @@ def append_tracks_trackpy(
         trajectories_unfiltered = pd.concat(trajectories_unfiltered)
 
     elif method_linking == "predict":
+        raise NotImplementedError
         pred = tp.predict.NearestVelocityPredict(span=1)
         trajectories_unfiltered = pred.link_df_iter(
             comb_features_linking,
@@ -845,18 +844,31 @@ def append_tracks_trackpy(
     if is_3D:
         trajectories_unfiltered = trajectories_unfiltered.drop("vdim_adj", axis=1)
 
-    tracks_cut.rename(columns={"cell": "particle"}, inplace=True)
-    trajectories_unfiltered = pd.concat([tracks_cut, trajectories_unfiltered])
-
-    # Reset particle numbers from the arbitrary numbers at the end of the feature detection and linking to consecutive cell numbers
-    # keep 'particle' for reference to the feature detection step.
-    trajectories_unfiltered["cell"] = None
-    particle_num_to_cell_num = dict()
+    cell_particle_pairs = (
+        trajectories_unfiltered[["cell", "particle", "hdim_1"]]
+        .groupby(["cell", "particle"])
+        .nunique()
+        .index
+    )
+    # check to make sure that there are no double matches, which would be bad.
+    pairs_array = np.array([[a, b] for a, b in cell_particle_pairs])
+    if len(np.unique(pairs_array[:, 0])) != len(np.unique(pairs_array[:, 1])):
+        raise ValueError(
+            "Error in appending tracks. Multiple pairs of cell:particle found. Please report this bug."
+        )
+    # dictionary of particle:cell pairs
+    particle_num_to_cell_num = {b: a for a, b in cell_particle_pairs}
+    # update cells to link between pre-cut and post-cut.
+    cell_offset = max(trajectories_unfiltered["cell"].max(), tracks_cut["cell"].max())
+    i_additional_particle = 1
     for i_particle, particle in enumerate(
         pd.Series.unique(trajectories_unfiltered["particle"])
     ):
-        cell = int(i_particle + cell_number_start)
-        particle_num_to_cell_num[particle] = int(cell)
+        if particle not in particle_num_to_cell_num:
+            cell = int(i_additional_particle + cell_offset)
+            i_additional_particle += 1
+            particle_num_to_cell_num[particle] = int(cell)
+
     remap_particle_to_cell_vec = np.vectorize(remap_particle_to_cell_nv)
     trajectories_unfiltered["cell"] = remap_particle_to_cell_vec(
         particle_num_to_cell_num, trajectories_unfiltered["particle"]
@@ -864,13 +876,11 @@ def append_tracks_trackpy(
     trajectories_unfiltered["cell"] = trajectories_unfiltered["cell"].astype(int)
     trajectories_unfiltered.drop(columns=["particle"], inplace=True)
 
+    trajectories_unfiltered = pd.concat([tracks_cut, trajectories_unfiltered])
+
     trajectories_bycell = trajectories_unfiltered.groupby("cell")
     stub_cell_nums = list()
     for cell, trajectories_cell in trajectories_bycell:
-        # logging.debug("cell: "+str(cell))
-        # logging.debug("feature: "+str(trajectories_cell['feature'].values))
-        # logging.debug("trajectories_cell.shape[0]: "+ str(trajectories_cell.shape[0]))
-
         if trajectories_cell.shape[0] < stubs:
             logging.debug(
                 "cell"

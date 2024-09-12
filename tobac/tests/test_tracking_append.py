@@ -121,7 +121,7 @@ def test_append_tracking_single_track(
     curr_tracking_append = tobac.tracking.linking_trackpy(
         first_two_times_df, None, **tracking_params
     )
-    for i in range(3, max(all_feats["frame"]) + 1):
+    for i in range(2, max(all_feats["frame"]) + 1):
         curr_times_df = all_feats[all_feats["frame"] == i]
         curr_tracking_append = tobac.tracking.append_tracks_trackpy(
             curr_tracking_append, curr_times_df, **tracking_params
