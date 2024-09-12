@@ -792,8 +792,25 @@ def append_tracks_trackpy(
         trajectories_unfiltered = pd.concat(trajectories_unfiltered)
 
     elif method_linking == "predict":
-        raise NotImplementedError
-        pred = tp.predict.NearestVelocityPredict(span=1)
+        # if span is updated, need to make sure we have enough timesteps.
+        span = 1
+
+        guess_speed_pos_df = _calc_velocity_to_most_recent_point(
+            tracks_orig_cleaned, span=span
+        )
+        if is_3D:
+            speed_cols = ["vdim_spd_mean", "hdim_1_spd_mean", "hdim_2_spd_mean"]
+            pos_cols = ["z", "y", "x"]
+        else:
+            speed_cols = ["hdim_1_spd_mean", "hdim_2_spd_mean"]
+            pos_cols = ["y", "x"]
+        # I'm not sure our predictions here are working for position.
+        pred = tp.predict.NearestVelocityPredict(
+            initial_guess_positions=guess_speed_pos_df[pos_cols].values,
+            initial_guess_vels=guess_speed_pos_df[speed_cols].values,
+            pos_columns=pos_cols,
+            span=span,
+        )
         trajectories_unfiltered = pred.link_df_iter(
             comb_features_linking,
             search_range=search_range,
@@ -852,6 +869,7 @@ def append_tracks_trackpy(
     )
     # check to make sure that there are no double matches, which would be bad.
     pairs_array = np.array([[a, b] for a, b in cell_particle_pairs])
+    # TODO: This also isn't working.
     if len(np.unique(pairs_array[:, 0])) != len(np.unique(pairs_array[:, 1])):
         raise ValueError(
             "Error in appending tracks. Multiple pairs of cell:particle found. Please report this bug."
@@ -1129,6 +1147,48 @@ def _calc_search_range(
 
         return d_min / dxy
     raise ValueError("Invalid choice for _calculate_search_radius")
+
+
+def _calc_velocity_to_most_recent_point(
+    in_track: pd.DataFrame, span: int = 1
+) -> pd.DataFrame:
+    """ """
+    max_frame = in_track["frame"].max()
+    speed_tracks = in_track[in_track["frame"] >= max_frame - span]
+
+    if "vdim_adj" in speed_tracks:
+        # 3D case
+        pos_cols = ["y", "x", "z"]
+        spd_cols = ["hdim_1_spd", "hdim_2_spd", "vdim_spd"]
+
+        speed_rename = {
+            "y": "hdim_1_spd",
+            "x": "hdim_2_spd",
+            "z": "vdim_spd",
+        }
+    else:
+        # 2D case
+        pos_cols = ["y", "x"]
+        spd_cols = ["hdim_1_spd", "hdim_2_spd"]
+        speed_rename = {
+            "y": "hdim_1_spd",
+            "x": "hdim_2_spd",
+        }
+
+    all_speeds = speed_tracks[["feature", "frame", "idx", "cell"] + pos_cols].join(
+        speed_tracks.sort_values(["frame", "idx"])
+        .groupby("cell")[pos_cols]
+        .transform("diff")
+        .rename(speed_rename, axis="columns")
+    )
+    mean_speed_df = all_speeds[all_speeds["frame"] == all_speeds["frame"].max()].join(
+        all_speeds.groupby("cell")[["hdim_1_spd", "hdim_2_spd"]].mean(),
+        on="cell",
+        rsuffix="_mean",
+    )
+
+    mean_speed_df.drop(spd_cols, inplace=True, axis="columns")
+    return mean_speed_df
 
 
 def add_cell_time(t: pd.DataFrame, cell_number_unassigned: int):

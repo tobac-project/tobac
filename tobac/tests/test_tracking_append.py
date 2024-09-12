@@ -6,6 +6,40 @@ import tobac.testing
 import tobac.tracking
 import pytest
 from pandas.testing import assert_frame_equal
+import copy
+import pandas as pd
+import numpy as np
+
+
+def convert_cell_dtype_if_appropriate(output, expected_output):
+    """Helper function to convert datatype of output if
+    necessary. Fixes a bug in testing on some OS/Python versions that cause
+    default int types to be different
+
+    Parameters
+    ----------
+    output: pd.DataFrame
+        the pandas dataframe to base cell datatype off of
+    expected_output: pd.DataFrame
+        the pandas dataframe to change the cell datatype
+
+    Returns
+    -------
+    expected_output: pd.DataFrame
+        an adjusted dataframe with a matching int dtype
+    """
+
+    # if they are already the same datatype, can return.
+    if output["cell"].dtype == expected_output["cell"].dtype:
+        return expected_output
+
+    if output["cell"].dtype == np.int32:
+        expected_output["cell"] = expected_output["cell"].astype(np.int32)
+
+    if output["cell"].dtype == np.int64:
+        expected_output["cell"] = expected_output["cell"].astype(np.int64)
+
+    return expected_output
 
 
 @pytest.mark.parametrize(
@@ -127,3 +161,81 @@ def test_append_tracking_single_track(
             curr_tracking_append, curr_times_df, **tracking_params
         )
     assert_frame_equal(curr_tracking_append, orig_tracking)
+
+
+def test_trackpy_predict_append():
+    """Function to test if append_tracks_trackpy() with method='predict' correctly links two
+    features at constant speeds crossing each other.
+    """
+
+    cell_1 = tobac.testing.generate_single_feature(
+        1,
+        1,
+        min_h1=0,
+        max_h1=101,
+        min_h2=0,
+        max_h2=101,
+        frame_start=0,
+        num_frames=5,
+        spd_h1=20,
+        spd_h2=20,
+    )
+
+    cell_1_expected = copy.deepcopy(cell_1)
+    cell_1_expected["cell"] = 1
+
+    cell_2 = tobac.testing.generate_single_feature(
+        1,
+        100,
+        min_h1=0,
+        max_h1=101,
+        min_h2=0,
+        max_h2=101,
+        frame_start=0,
+        num_frames=5,
+        spd_h1=20,
+        spd_h2=-20,
+    )
+
+    cell_2_expected = copy.deepcopy(cell_2)
+    cell_2_expected["cell"] = np.int32(2)
+
+    features = pd.concat([cell_1, cell_2], ignore_index=True, verify_integrity=True)
+
+    tracking_params = {"dt": 1, "dxy": 1, "d_max": 100, "method_linking": "predict"}
+
+    output_correct = tobac.linking_trackpy(features, None, **tracking_params)
+
+    # let's extract the first two times
+    first_two_times_df = features[features["frame"] < 2]
+    initial_tracking_append = tobac.tracking.linking_trackpy(
+        first_two_times_df, None, **tracking_params
+    )
+
+    append_all_tracking = tobac.tracking.append_tracks_trackpy(
+        initial_tracking_append, features, **tracking_params
+    )
+
+    assert_frame_equal(output_correct, append_all_tracking)
+
+    # let's try to append one by one, with the full dataframe
+    curr_tracking_append = tobac.tracking.linking_trackpy(
+        first_two_times_df, None, **tracking_params
+    )
+    for i in range(3, max(features["frame"]) + 2):
+        curr_times_df = features[features["frame"] < i]
+        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+            curr_tracking_append, curr_times_df, **tracking_params
+        )
+    assert_frame_equal(curr_tracking_append, output_correct)
+
+    # let's try to append one by one, with only individual times
+    curr_tracking_append = tobac.tracking.linking_trackpy(
+        first_two_times_df, None, **tracking_params
+    )
+    for i in range(2, max(features["frame"]) + 1):
+        curr_times_df = features[features["frame"] == i]
+        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+            curr_tracking_append, curr_times_df, **tracking_params
+        )
+    assert_frame_equal(curr_tracking_append, output_correct)
