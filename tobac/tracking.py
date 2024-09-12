@@ -18,7 +18,7 @@ References
    diverse datasets. Geoscientific Model Development,
    12(11), 4551-4570.
 """
-
+import copy
 from typing import Optional, Literal
 
 import logging
@@ -33,6 +33,7 @@ from .utils import internal as internal_utils
 
 from packaging import version as pkgvsn
 import trackpy as tp
+import trackpy.linking
 from copy import deepcopy
 
 
@@ -250,7 +251,7 @@ def linking_trackpy(
     if PBC_flag in ["hdim_2", "both"] and (min_h2 is None or max_h2 is None):
         raise ValueError("For PBC tracking, must set min and max coordinates.")
 
-    # in case of adaptive search, check wether both parameters are specified
+    # in case of adaptive search, check whether both parameters are specified
     if adaptive_stop is not None:
         if adaptive_step is None:
             raise ValueError(
@@ -629,7 +630,342 @@ def append_tracks_trackpy(
     """
     if "cell" not in tracks_orig:
         raise ValueError("Need to have existing tracks.")
+
+    search_range = _calc_search_range(dt, dxy, v_max=v_max, d_max=d_max, d_min=d_min)
+
+    if ("vdim" in tracks_orig) is not ("vdim" in new_features):
+        raise ValueError(
+            "One track is 3D, new track is 2D. Need to both have the same dimensions."
+        )
+
+    if "vdim" in tracks_orig:
+        is_3D = True
+        if dz is not None and vertical_coord is not None:
+            raise ValueError(
+                "dz and vertical_coord both set, vertical"
+                " spacing is ambiguous. Set one to None."
+            )
+        if dz is None and vertical_coord is None:
+            raise ValueError(
+                "Neither dz nor vertical_coord are set. One" " must be set."
+            )
+        if vertical_coord is not None:
+            found_vertical_coord = internal_utils.find_dataframe_vertical_coord(
+                variable_dataframe=tracks_orig, vertical_coord=vertical_coord
+            )
+    else:
+        is_3D = False
+
+    # make sure that we have min and max for h1 and h2 if we are PBC
+    if PBC_flag in ["hdim_1", "both"] and (min_h1 is None or max_h1 is None):
+        raise ValueError("For PBC tracking, must set min and max coordinates.")
+
+    if PBC_flag in ["hdim_2", "both"] and (min_h2 is None or max_h2 is None):
+        raise ValueError("For PBC tracking, must set min and max coordinates.")
+
+    # in case of adaptive search, check whether both parameters are specified
+    if adaptive_stop is not None:
+        if adaptive_step is None:
+            raise ValueError(
+                "Adaptive search requires values for adaptive_step and adaptive_stop. Please specify adaptive_step."
+            )
+
+    if adaptive_step is not None:
+        if adaptive_stop is None:
+            raise ValueError(
+                "Adaptive search requires values for adaptive_step and adaptive_stop. Please specify adaptive_stop."
+            )
+
+    if time_cell_min:
+        stubs = np.floor(time_cell_min / dt) + 1
+
+    logging.debug("stubs: " + str(stubs))
+
+    logging.debug("start linking features into trajectories")
+
+    # If subnetwork size given, set maximum subnet size
+    if subnetwork_size is not None:
+        # Choose the right parameter depending on the use of adaptive search, save previously set values
+        if adaptive_step is None and adaptive_stop is None:
+            size_cache = tp.linking.Linker.MAX_SUB_NET_SIZE
+            tp.linking.Linker.MAX_SUB_NET_SIZE = subnetwork_size
+        else:
+            size_cache = tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE
+            tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE = subnetwork_size
+
+    tracks_orig_cleaned, tracks_cut, new_features_cleaned = _clean_track_dfs_for_append(
+        tracks_orig, new_features, memory, dt
+    )
+    # drop time_cell if it's there.
+
+    tracks_orig_cleaned.drop("time_cell", axis=1, inplace=True)
+    tracks_cut.drop("time_cell", axis=1, inplace=True)
+
+    # check if we are 3D or not
+    if is_3D:
+        # If we are 3D, we need to convert the vertical
+        # coordinates so that 1 unit is equal to dxy.
+
+        if dz is not None:
+            tracks_orig_cleaned["vdim_adj"] = tracks_orig_cleaned["vdim"] * dz / dxy
+            new_features_cleaned["vdim_adj"] = new_features_cleaned["vdim"] * dz / dxy
+
+        else:
+            tracks_orig_cleaned["vdim_adj"] = (
+                tracks_orig_cleaned[found_vertical_coord] / dxy
+            )
+            new_features_cleaned["vdim_adj"] = (
+                new_features_cleaned[found_vertical_coord] / dxy
+            )
+
+        pos_columns_tp = ["vdim_adj", "hdim_1", "hdim_2"]
+
+    else:
+        pos_columns_tp = ["hdim_1", "hdim_2"]
+
+    # Check if we have PBCs.
+    if PBC_flag in ["hdim_1", "hdim_2", "both"]:
+        # Per the trackpy docs, to specify a custom distance function
+        # which we need for PBCs, neighbor_strategy must be 'BTree'.
+        # I think this shouldn't change results, but it will degrade performance.
+        neighbor_strategy = "BTree"
+        dist_func = build_distance_function(min_h1, max_h1, min_h2, max_h2, PBC_flag)
+
+    else:
+        neighbor_strategy = "KDTree"
+        dist_func = None
+
+    if method_linking == "predict":
+        if is_3D and pkgvsn.parse(tp.__version__) < pkgvsn.parse("0.6.0"):
+            raise ValueError(
+                "3D Predictive Tracking Only Supported with trackpy versions newer than 0.6.0."
+            )
+        # avoid setting pos_columns by renaming to default values to avoid trackpy bug
+        tracks_orig_cleaned.rename(
+            columns={
+                "y": "__temp_y_coord",
+                "x": "__temp_x_coord",
+                "z": "__temp_z_coord",
+                "cell": "particle",
+            },
+            inplace=True,
+        )
+        new_features_cleaned.rename(
+            columns={
+                "y": "__temp_y_coord",
+                "x": "__temp_x_coord",
+                "z": "__temp_z_coord",
+                "cell": "particle",
+            },
+            inplace=True,
+        )
+
+        tracks_orig_cleaned.rename(
+            columns={"hdim_1": "y", "hdim_2": "x", "vdim_adj": "z"}, inplace=True
+        )
+        new_features_cleaned.rename(
+            columns={"hdim_1": "y", "hdim_2": "x", "vdim_adj": "z"}, inplace=True
+        )
+
+    # generate list of features as input for df_link_iter
+    features_linking_list_orig = [
+        frame for i, frame in tracks_orig_cleaned.groupby("frame", sort=True)
+    ]
+    # generate list of features as input for df_link_iter
+    features_linking_list_new = [
+        frame for i, frame in new_features_cleaned.groupby("frame", sort=True)
+    ]
+    comb_features_linking = features_linking_list_orig + features_linking_list_new
+
+    if method_linking == "random":
+        #     link features into trajectories:
+        trajectories_unfiltered = tp.link_df_iter(
+            comb_features_linking,
+            search_range=search_range,
+            memory=memory,
+            t_column="frame",
+            pos_columns=pos_columns_tp,
+            adaptive_step=adaptive_step,
+            adaptive_stop=adaptive_stop,
+            neighbor_strategy=neighbor_strategy,
+            link_strategy="auto",
+            dist_func=dist_func,
+        )
+        trajectories_unfiltered = pd.concat(trajectories_unfiltered)
+
+    elif method_linking == "predict":
+        pred = tp.predict.NearestVelocityPredict(span=1)
+        trajectories_unfiltered = pred.link_df_iter(
+            comb_features_linking,
+            search_range=search_range,
+            memory=memory,
+            # pos_columns=["hdim_1", "hdim_2"], # not working atm
+            t_column="frame",
+            neighbor_strategy=neighbor_strategy,
+            link_strategy="auto",
+            adaptive_step=adaptive_step,
+            adaptive_stop=adaptive_stop,
+            dist_func=dist_func,
+            #                                 copy_features=False, diagnostics=False,
+            #                                 hash_size=None, box_size=None, verify_integrity=True,
+            #                                 retain_index=False
+        )
+        # recreate a single dataframe from the list
+
+        trajectories_unfiltered = pd.concat(trajectories_unfiltered)
+
+        # change to column names back
+        trajectories_unfiltered.rename(
+            columns={"y": "hdim_1", "x": "hdim_2", "z": "vdim_adj"}, inplace=True
+        )
+        trajectories_unfiltered.rename(
+            columns={
+                "__temp_y_coord": "y",
+                "__temp_x_coord": "x",
+                "__temp_z_coord": "z",
+            },
+            inplace=True,
+        )
+
+    else:
+        raise ValueError("method_linking unknown")
+
+    # Reset trackpy parameters to previously set values
+    if subnetwork_size is not None:
+        if adaptive_step is None and adaptive_stop is None:
+            tp.linking.Linker.MAX_SUB_NET_SIZE = size_cache
+        else:
+            tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE = size_cache
+
+    # Filter trajectories to exclude short trajectories that are likely to be spurious
+    #    trajectories_filtered = filter_stubs(trajectories_unfiltered,threshold=stubs)
+    #    trajectories_filtered=trajectories_filtered.reset_index(drop=True)
+
+    # clean up our temporary filters
+    if is_3D:
+        trajectories_unfiltered = trajectories_unfiltered.drop("vdim_adj", axis=1)
+
+    tracks_cut.rename(columns={"cell": "particle"}, inplace=True)
+    trajectories_unfiltered = pd.concat([tracks_cut, trajectories_unfiltered])
+
+    # Reset particle numbers from the arbitrary numbers at the end of the feature detection and linking to consecutive cell numbers
+    # keep 'particle' for reference to the feature detection step.
+    trajectories_unfiltered["cell"] = None
+    particle_num_to_cell_num = dict()
+    for i_particle, particle in enumerate(
+        pd.Series.unique(trajectories_unfiltered["particle"])
+    ):
+        cell = int(i_particle + cell_number_start)
+        particle_num_to_cell_num[particle] = int(cell)
+    remap_particle_to_cell_vec = np.vectorize(remap_particle_to_cell_nv)
+    trajectories_unfiltered["cell"] = remap_particle_to_cell_vec(
+        particle_num_to_cell_num, trajectories_unfiltered["particle"]
+    )
+    trajectories_unfiltered["cell"] = trajectories_unfiltered["cell"].astype(int)
+    trajectories_unfiltered.drop(columns=["particle"], inplace=True)
+
+    trajectories_bycell = trajectories_unfiltered.groupby("cell")
+    stub_cell_nums = list()
+    for cell, trajectories_cell in trajectories_bycell:
+        # logging.debug("cell: "+str(cell))
+        # logging.debug("feature: "+str(trajectories_cell['feature'].values))
+        # logging.debug("trajectories_cell.shape[0]: "+ str(trajectories_cell.shape[0]))
+
+        if trajectories_cell.shape[0] < stubs:
+            logging.debug(
+                "cell"
+                + str(cell)
+                + "  is a stub ("
+                + str(trajectories_cell.shape[0])
+                + "), setting cell number to "
+                + str(cell_number_unassigned)
+            )
+            stub_cell_nums.append(cell)
+
+    trajectories_unfiltered.loc[
+        trajectories_unfiltered["cell"].isin(stub_cell_nums), "cell"
+    ] = cell_number_unassigned
+
+    trajectories_filtered = trajectories_unfiltered
+
+    # Interpolate to fill the gaps in the trajectories (left from allowing memory in the linking)
+    trajectories_filtered_unfilled = deepcopy(trajectories_filtered)
+
+    #    trajectories_filtered_filled=fill_gaps(trajectories_filtered_unfilled,order=order,
+    #                                extrapolate=extrapolate,frame_max=field_in.shape[0]-1,
+    #                                hdim_1_max=field_in.shape[1],hdim_2_max=field_in.shape[2])
+    #     add coorinates from input fields to output trajectories (time,dimensions)
+    #    logging.debug('start adding coordinates to trajectories')
+    #    trajectories_filtered_filled=add_coordinates(trajectories_filtered_filled,field_in)
+    #     add time coordinate relative to cell initiation:
+    #    logging.debug('start adding cell time to trajectories')
+    trajectories_filtered_filled = trajectories_filtered_unfilled
+    trajectories_final = add_cell_time(
+        trajectories_filtered_filled, cell_number_unassigned=cell_number_unassigned
+    )
+    # Add metadata
+    trajectories_final.attrs["cell_number_unassigned"] = cell_number_unassigned
+
+    # add coordinate to raw features identified:
+    logging.debug("start adding coordinates to detected features")
+    logging.debug("feature linking completed")
+
+    return trajectories_final
+
     pass
+
+
+def _clean_track_dfs_for_append(
+    tracks_orig: pd.DataFrame, new_features: pd.DataFrame, memory: int, dt: float
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Get two cleaned up
+
+    Parameters
+    ----------
+    tracks_orig
+    new_features
+    memory
+
+    Returns
+    -------
+
+    """
+
+    # need to cut down the existing track array to just the parts we are interested in
+    min_frame_of_interest = max(max(tracks_orig["frame"]) - memory - 1, 0)
+    max_frame_of_interest = max(tracks_orig["frame"])
+    frames_of_interest = np.arange(min_frame_of_interest, max_frame_of_interest + 1, 1)
+    tracks_orig_cut = copy.deepcopy(
+        tracks_orig[tracks_orig["frame"].isin(frames_of_interest)]
+    )
+    remainder_tracks = copy.deepcopy(
+        tracks_orig[~tracks_orig["frame"].isin(frames_of_interest)]
+    )
+
+    # now we need to get the parts of new_features that we need.
+    if min(new_features["frame"]) == max_frame_of_interest + 1:
+        # we have exactly the next dataframe we need. we are good to go.
+        new_feats_cut = copy.deepcopy(new_features)
+        return tracks_orig_cut, remainder_tracks, new_feats_cut
+    # we need to cut or otherwise combine the new features.
+    # check to see if the dataframes have been combined
+    # if we have the last frame of the old one, we will assume the features are just combined.
+    vars_of_interest = ["hdim_1", "hdim_2", "frame", "idx"]
+    if tracks_orig[tracks_orig["frame"] == max_frame_of_interest][
+        vars_of_interest
+    ].equals(
+        new_features[new_features["frame"] == max_frame_of_interest][vars_of_interest]
+    ):
+        new_feats_cut = copy.deepcopy(
+            new_features[new_features["frame"] > max_frame_of_interest]
+        )
+        return tracks_orig_cut, remainder_tracks, new_feats_cut
+
+    # now, let's assume that the new features are entirely separate, but start at the next timestep
+    new_feats_cut = copy.deepcopy(new_features)
+    # adjust frame number to be one larger than the tracks_orig max frame number
+    new_feats_cut["frame"] += max_frame_of_interest - min(new_feats_cut["frame"]) + 1
+    return tracks_orig_cut, remainder_tracks, new_feats_cut
 
 
 def fill_gaps(
