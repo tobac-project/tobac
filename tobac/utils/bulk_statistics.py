@@ -302,12 +302,9 @@ def get_statistics_from_mask(
             for field in fields
         )
         features_t = features.loc[features.time == tt].copy()
-
+        
         # make sure that the labels in the segmentation mask exist in feature dataframe
-        if (
-            np.intersect1d(np.unique(segmentation_mask_t), features_t[id_column]).size
-            > np.unique(segmentation_mask_t).size
-        ):
+        if not np.isin(features_t.feature, np.unique(segmentation_mask_t)).sum():
             raise ValueError(
                 "The labels of the segmentation mask and the feature dataframe do not seem to match. Please make sure you provide the correct input feature dataframe to calculate the bulk statistics. "
             )
