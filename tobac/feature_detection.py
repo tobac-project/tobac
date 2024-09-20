@@ -627,9 +627,9 @@ def feature_detection_threshold(
                         # find the updated label, and overwrite all of label_ind indices with
                         # updated label
                         labels_2_alt = labels_2[label_z, y_val_alt, x_val_alt]
-                        labels_2[
-                            label_locs_v, label_locs_h1, label_locs_h2
-                        ] = labels_2_alt
+                        labels_2[label_locs_v, label_locs_h1, label_locs_h2] = (
+                            labels_2_alt
+                        )
                         skip_list = np.append(skip_list, label_ind)
                         break
 
@@ -673,9 +673,9 @@ def feature_detection_threshold(
                         # find the updated label, and overwrite all of label_ind indices with
                         # updated label
                         labels_2_alt = labels_2[label_z, y_val_alt, label_x]
-                        labels_2[
-                            label_locs_v, label_locs_h1, label_locs_h2
-                        ] = labels_2_alt
+                        labels_2[label_locs_v, label_locs_h1, label_locs_h2] = (
+                            labels_2_alt
+                        )
                         new_label_ind = labels_2_alt
                         skip_list = np.append(skip_list, label_ind)
 
@@ -717,9 +717,9 @@ def feature_detection_threshold(
                         # find the updated label, and overwrite all of label_ind indices with
                         # updated label
                         labels_2_alt = labels_2[label_z, label_y, x_val_alt]
-                        labels_2[
-                            label_locs_v, label_locs_h1, label_locs_h2
-                        ] = labels_2_alt
+                        labels_2[label_locs_v, label_locs_h1, label_locs_h2] = (
+                            labels_2_alt
+                        )
                         new_label_ind = labels_2_alt
                         skip_list = np.append(skip_list, label_ind)
 
@@ -912,7 +912,7 @@ def feature_detection_multithreshold_timestep(
     wavelength_filtering: tuple[float] = None,
     strict_thresholding: bool = False,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
-    statistics_unsmoothed: bool = False,    
+    statistics_unsmoothed: bool = False,
 ) -> pd.DataFrame:
     """Find features in each timestep.
 
@@ -986,7 +986,7 @@ def feature_detection_multithreshold_timestep(
             Dictionary with callable function(s) to apply over the region of each detected feature and the name of the statistics to appear in the feature ou            tput dataframe. The functions should be the values and the names of the metric the keys (e.g. {'mean': np.mean})
 
     statistics_unsmoothed: bool, optional
-            Default is False. If True, calculate the statistics on the raw data instead of the smoothed input data. 
+            Default is False. If True, calculate the statistics on the raw data instead of the smoothed input data.
 
     Returns
     -------
@@ -1012,7 +1012,9 @@ def feature_detection_multithreshold_timestep(
     # keep a copy of the unsmoothed data (that can be used for calculating stats)
     if statistics_unsmoothed:
         if not statistic:
-            raise ValueError('Please provide the input parameter statistic to determine what statistics to calculate.')
+            raise ValueError(
+                "Please provide the input parameter statistic to determine what statistics to calculate."
+            )
         raw_data = data_i.core_data().copy()
 
     track_data = gaussian_filter(
@@ -1129,22 +1131,23 @@ def feature_detection_multithreshold_timestep(
                 # the feature dataframe is updated by appending a column for each metric
             if statistics_unsmoothed:
                 features_thresholds = get_statistics(
-                features_thresholds,
-                labels,
-                raw_data,
-                statistic=statistic,
-                index=np.unique(labels[labels > 0]),
-                id_column="idx", )
+                    features_thresholds,
+                    labels,
+                    raw_data,
+                    statistic=statistic,
+                    index=np.unique(labels[labels > 0]),
+                    id_column="idx",
+                )
             else:
                 features_thresholds = get_statistics(
-                features_thresholds,
-                labels,
-                track_data,
-                statistic=statistic,
-                index=np.unique(labels[labels > 0]),
-                id_column="idx",
-            )
-        
+                    features_thresholds,
+                    labels,
+                    track_data,
+                    statistic=statistic,
+                    index=np.unique(labels[labels > 0]),
+                    id_column="idx",
+                )
+
         logging.debug(
             "Finished feature detection for threshold "
             + str(i_threshold)
@@ -1177,7 +1180,7 @@ def feature_detection_multithreshold(
     dz: Union[float, None] = None,
     strict_thresholding: bool = False,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
-    statistics_unsmoothed: bool = False
+    statistics_unsmoothed: bool = False,
 ) -> pd.DataFrame:
     """Perform feature detection based on contiguous regions.
 
