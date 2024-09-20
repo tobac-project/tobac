@@ -912,6 +912,7 @@ def feature_detection_multithreshold_timestep(
     wavelength_filtering: tuple[float] = None,
     strict_thresholding: bool = False,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
+    statistics_unsmoothed: bool = False,    
 ) -> pd.DataFrame:
     """Find features in each timestep.
 
@@ -984,6 +985,9 @@ def feature_detection_multithreshold_timestep(
             Default is None. Optional parameter to calculate bulk statistics within feature detection.
             Dictionary with callable function(s) to apply over the region of each detected feature and the name of the statistics to appear in the feature ou            tput dataframe. The functions should be the values and the names of the metric the keys (e.g. {'mean': np.mean})
 
+    statistics_unsmoothed: bool, optional
+            Default is False. If True, calculate the statistics on the raw data instead of the smoothed input data. 
+
     Returns
     -------
     features_threshold : pandas DataFrame
@@ -1004,6 +1008,12 @@ def feature_detection_multithreshold_timestep(
 
     # get actual numpy array and make a copy so as not to change the data in the iris cube
     track_data = data_i.core_data().copy()
+
+    # keep a copy of the unsmoothed data (that can be used for calculating stats)
+    if statistics_unsmoothed:
+        if not statistic:
+            raise ValueError('Please provide the input parameter statistic to determine what statistics to calculate.')
+        raw_data = data_i.core_data().copy()
 
     track_data = gaussian_filter(
         track_data, sigma=sigma_threshold
@@ -1117,7 +1127,16 @@ def feature_detection_multithreshold_timestep(
                 labels.ravel()[regions_old[key]] = key
                 # apply function to get statistics based on labeled regions and functions provided by the user
                 # the feature dataframe is updated by appending a column for each metric
-            features_thresholds = get_statistics(
+            if statistics_unsmoothed:
+                features_thresholds = get_statistics(
+                features_thresholds,
+                labels,
+                raw_data,
+                statistic=statistic,
+                index=np.unique(labels[labels > 0]),
+                id_column="idx", )
+            else:
+                features_thresholds = get_statistics(
                 features_thresholds,
                 labels,
                 track_data,
@@ -1125,7 +1144,7 @@ def feature_detection_multithreshold_timestep(
                 index=np.unique(labels[labels > 0]),
                 id_column="idx",
             )
-
+        
         logging.debug(
             "Finished feature detection for threshold "
             + str(i_threshold)
@@ -1158,6 +1177,7 @@ def feature_detection_multithreshold(
     dz: Union[float, None] = None,
     strict_thresholding: bool = False,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
+    statistics_unsmoothed: bool = False
 ) -> pd.DataFrame:
     """Perform feature detection based on contiguous regions.
 
@@ -1370,6 +1390,7 @@ def feature_detection_multithreshold(
             wavelength_filtering=wavelength_filtering,
             strict_thresholding=strict_thresholding,
             statistic=statistic,
+            statistics_unsmoothed=statistics_unsmoothed,
         )
         # check if list of features is not empty, then merge features from different threshold
         # values into one DataFrame and append to list for individual timesteps:
