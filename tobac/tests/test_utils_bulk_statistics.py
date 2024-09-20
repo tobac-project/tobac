@@ -7,10 +7,8 @@ import tobac
 import tobac.utils as tb_utils
 import tobac.testing as tb_test
 
-
 @pytest.mark.parametrize(
-    "id_column, index", [("feature", [1]), ("feature_id", [1]), ("cell", [1])]
-)
+    "id_column, index", [("feature", [1]), ("feature_id", [1]), ("cell", [1]),])
 def test_bulk_statistics(id_column, index):
     """
     Test to assure that bulk statistics for identified features are computed as expected.
@@ -29,7 +27,6 @@ def test_bulk_statistics(id_column, index):
 
     # detect features
     threshold = 7
-    # test_data_iris = testing.make_dataset_from_arr(test_data, data_type="iris")
     fd_output = tobac.feature_detection.feature_detection_multithreshold(
         test_data_iris,
         dxy=1000,
@@ -50,6 +47,7 @@ def test_bulk_statistics(id_column, index):
 
     #### checks
     out_df = out_df.rename(columns={"feature": id_column})
+    
     #  assure that bulk statistics in postprocessing give same result
     out_segmentation = tb_utils.get_statistics_from_mask(
         out_df, out_seg_mask, test_data_iris, statistic=stats, id_column=id_column

@@ -291,9 +291,13 @@ def get_statistics_from_mask(
     else:
         collapse_axis = None
 
+    # check if any of the feature dataframe input values match with segmentaion mask IDs
+    if not np.any(np.isin(features[id_column], np.unique(segmentation_mask))):
+        raise ValueError("The labels of the segmentation mask and the feature dataframe do not seem to match. Please make sure you provide the correct input feature dataframe  to calculate the bulk statistics.")
+
     # get bulk statistics for each timestep
     step_statistics = []
-
+   
     for tt in pd.to_datetime(segmentation_mask.time):
         # select specific timestep
         segmentation_mask_t = segmentation_mask.sel(time=tt).data
@@ -301,13 +305,14 @@ def get_statistics_from_mask(
             field.sel(time=tt).values if "time" in field.coords else field.values
             for field in fields
         )
-        features_t = features.loc[features.time == tt].copy()
         
+        features_t = features.loc[features.time == tt].copy()
+            
         # make sure that the labels in the segmentation mask exist in feature dataframe
-        if not np.isin(features_t.feature, np.unique(segmentation_mask_t)).sum():
-            raise ValueError(
-                "The labels of the segmentation mask and the feature dataframe do not seem to match. Please make sure you provide the correct input feature dataframe to calculate the bulk statistics. "
-            )
+        # continue loop because not all timesteps might have matching IDs
+        if not np.any(np.isin(features_t[id_column], np.unique(segmentation_mask_t))):
+            warnings.warn('Not all timesteps have matching features', UserWarning)
+            continue
         else:
             # make sure that features are not double-defined
             step_statistics.append(
