@@ -8,8 +8,7 @@ import tobac.utils as tb_utils
 import tobac.testing as tb_test
 
 
-@pytest.mark.parametrize(
-    "statistics_unsmoothed", [(False), (True)])
+@pytest.mark.parametrize("statistics_unsmoothed", [(False), (True)])
 def test_bulk_statistics_fd(statistics_unsmoothed):
     """
     Assure that bulk statistics in feature detection work, both on smoothed and raw data
@@ -24,7 +23,7 @@ def test_bulk_statistics_fd(statistics_unsmoothed):
         time_dim_num=0, y_dim_num=1, x_dim_num=2, **common_dset_opts
     )
     stats = {"feature_max": np.max}
-    
+
     # detect features
     threshold = 7
     fd_output = tobac.feature_detection.feature_detection_multithreshold(
@@ -33,11 +32,13 @@ def test_bulk_statistics_fd(statistics_unsmoothed):
         threshold=[threshold],
         n_min_threshold=100,
         target="maximum",
-        statistic= stats,
-        statistics_unsmoothed= statistics_unsmoothed)
+        statistic=stats,
+        statistics_unsmoothed=statistics_unsmoothed,
+    )
 
-    assert 'feature_max' in fd_output.columns
-    
+    assert "feature_max" in fd_output.columns
+
+
 @pytest.mark.parametrize(
     "id_column, index", [("feature", [1]), ("feature_id", [1]), ("cell", [1])]
 )
