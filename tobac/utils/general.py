@@ -714,7 +714,7 @@ def transform_feature_points(
         the new grid, suitable for use in segmentation
 
     """
-    
+
     RADIUS_EARTH_M = 6371000
     is_3D = "vdim" in features
     if is_3D:
@@ -814,7 +814,8 @@ def transform_feature_points(
         removed_features = np.setdiff1d(features["feature"], ret_features["feature"])
         if len(removed_features):
             warnings.warn(
-                "Dropping feature numbers: " + str(removed_features.tolist()), UserWarning
+                "Dropping feature numbers: " + str(removed_features.tolist()),
+                UserWarning,
             )
 
     # make sure that feature points are converted back to int64
