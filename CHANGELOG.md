@@ -1,5 +1,61 @@
 ### Tobac Changelog
 
+_**Version 1.5.3:**_
+
+**Enhancements for Users**
+
+- Update `calculate_area` to allow the calculation of the projected 2D area of 3D objects, and enhance bulk statistics to allow calculation of statistics on the projected footprint on 2D fields [#378](https://github.com/tobac-project/tobac/pull/378)
+
+**Bug fixes**
+
+- Fix a bug in `get_spacing` that would return a negative value if one coordinate was in ascending order and the other in descending order, and fix other bugs where the wrong coordinate was referenced [#400](https://github.com/tobac-project/tobac/pull/400)
+
+**Documentation**
+
+- Re-integration of notebooks from the tobac-tutorials repo [#334](https://github.com/tobac-project/tobac/pull/334)
+- Add example gallery to readthedocs page [#411](https://github.com/tobac-project/tobac/pull/411)
+
+**Internal Enhancements**
+
+- Add ability to save whether iris to xarray conversion ocurred and update decorators to allow keyword parameters [#380](https://github.com/tobac-project/tobac/pull/380)
+- Reorganisation of analysis tools into analysis package [#378](https://github.com/tobac-project/tobac/pull/378)
+
+
+_**Version 1.5.2:**_
+
+**Enhancements for Users**
+
+- Let users optionally derive bulk statistics of the data points belonging to each feature. Bulk statistics can be calulcated during feature detection, segmentation or afterwards by applying one of more functions to each feature [#293](https://github.com/tobac-project/tobac/pull/293)
+- Wrapped functions now show the correct docstring [#359](https://github.com/tobac-project/tobac/pull/359)
+
+**Bug fixes**
+
+- Fixed an out-of-bounds error that could occur when performing segmentation with PBCs [#350](https://github.com/tobac-project/tobac/pull/350)
+- Path to data in example notebooks fixed after changes to zenodo [#357](https://github.com/tobac-project/tobac/pull/357)
+- Bulk statistics updated to use multiple fields correctly and perform numpy-style broadcasting [#368](https://github.com/tobac-project/tobac/pull/368)
+- PBCs now work when using predictive tracking [#376](https://github.com/tobac-project/tobac/pull/376)
+- Fixed error with PBC distance calculation using numba if all of `min_h1`, `max_h1`, `min_h2`, `max_h2` were not specified, even if not calculating PBCs over one of the dimensions [#384](https://github.com/tobac-project/tobac/pull/384)
+
+**Documentation**
+
+- Documentation on use of `time_cell_min` in tracking added [#361](https://github.com/tobac-project/tobac/pull/361)
+- Documentation on how thresholding is applied in segmentation update [#365](https://github.com/tobac-project/tobac/pull/365)
+- References to tobac papers updated [#365](https://github.com/tobac-project/tobac/pull/365)
+
+**Internal Enhancements**
+
+- Type hints added for feature detection [#337](https://github.com/tobac-project/tobac/pull/337)
+- Reorganisation and addition of type hints to interal utils [#241](https://github.com/tobac-project/tobac/pull/241)
+- Type hints added for segmentation [#351](https://github.com/tobac-project/tobac/pull/351)
+
+**Repository Enhancements**
+
+- Matrix CI testing added for multiple python versions on Linux, MacOS and Windows [#353](https://github.com/tobac-project/tobac/pull/353)
+- Issue templates with checklists added [#358](https://github.com/tobac-project/tobac/pull/358)
+- Black reformatting updated to say what is wrong [#362](https://github.com/tobac-project/tobac/pull/362)
+- Pylint CI workflow added to assess code quality and compare to base branch [#373](https://github.com/tobac-project/tobac/pull/373)
+
+
 _**Version 1.5.1:**_
 
 **Bug fixes**
@@ -73,7 +129,7 @@ _**Version 1.5.0:**_
 _**Version 1.4.2:**_
 
 
-**Bug fix**
+**Bug fixes**
 
 - Fixed a bug in the segmentation procedure that assigned the wrong grid cell areas to features in data frame  [#246](https://github.com/tobac-project/tobac/pull/246)
 
