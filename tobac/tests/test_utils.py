@@ -559,7 +559,7 @@ def test_transform_feature_points_3D():
         5, 105, 20, max_h1=1000, max_h2=1000
     )
 
-    orig_feat_df = tb_utils.combine_tobac_feats([orig_feat_df_1, orig_feat_df_2])
+    orig_feat_df = tb_utils.combine_feature_dataframes([orig_feat_df_1, orig_feat_df_2])
 
     orig_feat_df["latitude"] = orig_feat_df["hdim_1"]
     orig_feat_df["longitude"] = orig_feat_df["hdim_2"]
