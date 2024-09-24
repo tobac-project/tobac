@@ -8,6 +8,9 @@
 """
 
 import logging
+from re import I
+from typing import Optional
+from typing_extensions import Literal
 
 import numpy as np
 import pandas as pd
@@ -16,48 +19,59 @@ import scipy.sparse
 from sklearn.neighbors import BallTree
 
 from tobac.tracking import build_distance_function
+from tobac.utils import internal as internal_utils
 
 
 def merge_split_MEST(
     tracks: pd.DataFrame,
     dxy: float,
-    dz: float = None,
-    distance: float = None,
+    dz: Optional[float] = None,
+    distance: Optional[float] = None,
     frame_len: int = 5,
     cell_number_unassigned: int = -1,
-    PBC_flag: "str" = None,
-    min_h1: int = None,
-    max_h1: int = None,
-    min_h2: int = None,
-    max_h2: int = None,
+    vertical_coord: Optional[str] | None = None,
+    PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = None,
+    min_h1: Optional[int] = None,
+    max_h1: Optional[int] = None,
+    min_h2: Optional[int] = None,
+    max_h2: Optional[int] = None,
 ) -> xr.Dataset:
     """
-    function to  postprocess tobac track data for merge/split cells using a minimum euclidian spanning tree
-
+    Search for merging splitting cells  in tobac tracking data using a minimum
+    euclidian spanning tree, and combine the merged cells into unique tracks.
 
     Parameters
     ----------
-    TRACK : pandas.core.frame.DataFrame
+    tracks : pandas.core.frame.DataFrame
         Pandas dataframe of tobac Track information
 
-    dxy : float, mandatory
+    dxy : float
         The x/y grid spacing of the data.
         Should be in meters.
 
     dz : float, optional
-        Constant vertical grid spacing (m)
+        Constant vertical grid spacing (m), default None. If None, the vertical
+        coord will be inferred automatically or from a specified coord given by
+        the vertical_coord parameter. An exception is raised if both dz and
+        vertical_coord are provided.
 
     distance : float, optional
-        Distance threshold determining how close two features must be in order to consider merge/splitting.
-        Default is 25x the x/y grid spacing of the data, given in dxy.
-        The distance should be in units of meters.
+        Distance threshold determining how close two features must be in order
+        to consider merge/splitting. Default is 25x the x/y grid spacing of the
+        data, given in dxy. The distance should be in units of meters.
 
     frame_len : float, optional
-        Threshold for the maximum number of frames that can separate the end of cell and the start of a related cell.
-        Default is five (5) frames.
+        Threshold for the maximum number of frames that can separate the end of
+        cell and the start of a related cell, by default 5 frames.
 
     cell_number_unassigned: int, optional
-        Value given tp unassigned/non-tracked cells by tracking. Default is -1
+        Value given tp unassigned/non-tracked cells by tracking, by default -1.
+
+    vertical_coord: str, optional
+        Name of the vertical coordinate, default None. The vertical coordinate
+        used must have values in meters. If None, tries to auto-detect, or uses
+        constant vertical grid spacing if dz is specified. An exception is
+        raised if both dz and vertical_coord are provided.
 
     PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both'), optional
         Sets whether to use periodic boundaries, and if so in which directions.
@@ -70,14 +84,15 @@ def merge_split_MEST(
         Minimum real point in hdim_1, for use with periodic boundaries.
 
     max_h1: int, optional
-        Maximum point in hdim_1, exclusive. max_h1-min_h1 should be the size of hdim_1.
+        Maximum point in hdim_1, exclusive. max_h1-min_h1 should be the size of
+        hdim_1.
 
     min_h2: int, optional
         Minimum real point in hdim_2, for use with periodic boundaries.
 
     max_h2: int, optional
-        Maximum point in hdim_2, exclusive. max_h2-min_h2 should be the size of hdim_2.
-
+        Maximum point in hdim_2, exclusive. max_h2-min_h2 should be the size of
+        hdim_2.
 
     Returns
     -------
@@ -91,7 +106,6 @@ def merge_split_MEST(
         - feature_parent_track_id: The associated parent track id for each feature. This is not the same as the cell id number.
         - track_child_cell_count: The total number of features belonging to all child cells of a given track id.
         - cell_child_feature_count: The total number of features for each cell.
-
 
     Example usage:
         d = merge_split_MEST(Track)
@@ -110,14 +124,27 @@ def merge_split_MEST(
         distance = dxy * 25.0
 
     # As optional coordinate names are not yet implemented, set to defaults here:
-    z_coordinate_name = "vdim"
     y_coordinate_name = "hdim_1"
     x_coordinate_name = "hdim_2"
 
+    # Check if we are 3D.
     is_3D = "vdim" in tracks
-
-    if is_3D and dz is None:
-        raise ValueError("dz must be specified for 3D data")
+    if is_3D:
+        if dz is None:
+            # Find vertical coord name
+            z_coordinate_name = internal_utils.find_dataframe_vertical_coord(
+                variable_dataframe=tracks, vertical_coord=vertical_coord
+            )
+            dz = 1
+        else:
+            # Use dz, raise error if both are set
+            if vertical_coord is None:
+                z_coordinate_name = "vdim"
+            else:
+                raise ValueError(
+                    "dz and vertical_coord both set, vertical"
+                    " spacing is ambiguous. Set one to None."
+                )
 
     # Calculate feature locations in cartesian coordinates
     if is_3D:

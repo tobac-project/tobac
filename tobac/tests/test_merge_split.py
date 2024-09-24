@@ -234,6 +234,7 @@ def test_merge_split_MEST_3D():
             "hdim_2": [50, 50, 50, 50],
             "cell": [1, 2, 1, 2],
             "frame": [0, 0, 1, 1],
+            "altitude": [500, 750, 1500, 2000],
             "time": [
                 datetime.datetime(2000, 1, 1),
                 datetime.datetime(2000, 1, 1),
@@ -242,14 +243,6 @@ def test_merge_split_MEST_3D():
             ],
         }
     )
-
-    # Test that failing to provide dz causes an error
-    with pytest.raises(ValueError):
-        mergesplit.merge_split_MEST(
-            test_features,
-            dxy=1,
-            distance=20,
-        )
 
     # Test with dz=10, expect merge
     mergesplit_output_3d_merge = mergesplit.merge_split_MEST(
@@ -270,3 +263,80 @@ def test_merge_split_MEST_3D():
     )
 
     assert len(mergesplit_output_3d_nomerge["track"]) == 2
+
+    # Test providing vertical_coord
+    mergesplit_output_3d_coord_merge = mergesplit.merge_split_MEST(
+        test_features,
+        dxy=1,
+        vertical_coord="altitude",
+        distance=1100,
+    )
+    mergesplit_output_3d_coord_nomerge = mergesplit.merge_split_MEST(
+        test_features,
+        dxy=1,
+        vertical_coord="altitude",
+        distance=20,
+    )
+
+    assert len(mergesplit_output_3d_coord_merge["track"]) == 1
+    assert len(mergesplit_output_3d_coord_nomerge["track"]) == 2
+
+    # Test auto find vertical_coord
+    mergesplit_output_3d_coord_merge = mergesplit.merge_split_MEST(
+        test_features,
+        dxy=1,
+        distance=1100,
+    )
+    mergesplit_output_3d_coord_nomerge = mergesplit.merge_split_MEST(
+        test_features,
+        dxy=1,
+        distance=20,
+    )
+
+    assert len(mergesplit_output_3d_coord_merge["track"]) == 1
+    assert len(mergesplit_output_3d_coord_nomerge["track"]) == 2
+
+    # Test error if both dz and coord are provided
+    with pytest.raises(ValueError):
+        mergesplit.merge_split_MEST(
+            test_features,
+            dxy=1,
+            dz=1,
+            vertical_coord="auto",
+            distance=20,
+        )
+
+    # Test that wrong vertical coord name causes an error
+    with pytest.raises(ValueError):
+        mergesplit.merge_split_MEST(
+            test_features,
+            dxy=1,
+            vertical_coord="invalid_coord_name",
+            distance=20,
+        )
+
+    # Test that auto search fails if coordinate name is not in default list
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3, 4],
+            "vdim": [1, 2, 1, 2],
+            "hdim_1": [50, 40, 50, 40],
+            "hdim_2": [50, 50, 50, 50],
+            "cell": [1, 2, 1, 2],
+            "frame": [0, 0, 1, 1],
+            "invalid_coord_name": [500, 1500, 1000, 2000],
+            "time": [
+                datetime.datetime(2000, 1, 1),
+                datetime.datetime(2000, 1, 1),
+                datetime.datetime(2000, 1, 1, 0, 5),
+                datetime.datetime(2000, 1, 1, 0, 5),
+            ],
+        }
+    )
+
+    with pytest.raises(ValueError):
+        mergesplit.merge_split_MEST(
+            test_features,
+            dxy=1,
+            distance=20,
+        )
