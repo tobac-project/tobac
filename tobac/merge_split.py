@@ -17,7 +17,7 @@ import xarray as xr
 import scipy.sparse
 from sklearn.neighbors import BallTree
 
-from tobac.tracking import build_distance_function
+from tobac.utils.periodic_boundaries import build_distance_function
 from tobac.utils import internal as internal_utils
 
 
@@ -184,7 +184,7 @@ def merge_split_MEST(
     if PBC_flag in ["hdim_1", "hdim_2", "both"]:
         # Note that we multiply by dxy to get the distances in spatial coordinates
         dist_func = build_distance_function(
-            min_h1 * dxy, max_h1 * dxy, min_h2 * dxy, max_h2 * dxy, PBC_flag
+            min_h1 * dxy, max_h1 * dxy, min_h2 * dxy, max_h2 * dxy, PBC_flag, is_3D
         )
         cell_start_tree = BallTree(
             cell_start_locations, metric="pyfunc", func=dist_func
