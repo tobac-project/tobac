@@ -8,7 +8,6 @@
 """
 
 import logging
-from re import I
 from typing import Optional
 from typing_extensions import Literal
 
