@@ -627,9 +627,9 @@ def feature_detection_threshold(
                         # find the updated label, and overwrite all of label_ind indices with
                         # updated label
                         labels_2_alt = labels_2[label_z, y_val_alt, x_val_alt]
-                        labels_2[
-                            label_locs_v, label_locs_h1, label_locs_h2
-                        ] = labels_2_alt
+                        labels_2[label_locs_v, label_locs_h1, label_locs_h2] = (
+                            labels_2_alt
+                        )
                         skip_list = np.append(skip_list, label_ind)
                         break
 
@@ -673,9 +673,9 @@ def feature_detection_threshold(
                         # find the updated label, and overwrite all of label_ind indices with
                         # updated label
                         labels_2_alt = labels_2[label_z, y_val_alt, label_x]
-                        labels_2[
-                            label_locs_v, label_locs_h1, label_locs_h2
-                        ] = labels_2_alt
+                        labels_2[label_locs_v, label_locs_h1, label_locs_h2] = (
+                            labels_2_alt
+                        )
                         new_label_ind = labels_2_alt
                         skip_list = np.append(skip_list, label_ind)
 
@@ -717,9 +717,9 @@ def feature_detection_threshold(
                         # find the updated label, and overwrite all of label_ind indices with
                         # updated label
                         labels_2_alt = labels_2[label_z, label_y, x_val_alt]
-                        labels_2[
-                            label_locs_v, label_locs_h1, label_locs_h2
-                        ] = labels_2_alt
+                        labels_2[label_locs_v, label_locs_h1, label_locs_h2] = (
+                            labels_2_alt
+                        )
                         new_label_ind = labels_2_alt
                         skip_list = np.append(skip_list, label_ind)
 
@@ -1115,7 +1115,7 @@ def feature_detection_multithreshold_timestep(
             + " : "
             + str(threshold_i)
         )
-    
+
     if statistic:
         # reconstruct the labeled regions based on the regions dict
         labels = np.zeros(track_data.shape)
@@ -1132,7 +1132,7 @@ def feature_detection_multithreshold_timestep(
             index=np.unique(labels[labels > 0]),
             id_column="idx",
         )
-    
+
     return features_thresholds
 
 
@@ -1276,7 +1276,7 @@ def feature_detection_multithreshold(
 
     # Remember if dz is set and not vertical coord for min distance filtering
     use_dz_for_filtering = dz is not None
-        
+
     if is_3D:
         # We need to determine the time axis so that we can determine the
         # vertical axis in each timestep if vertical_axis is not none.
@@ -1375,7 +1375,7 @@ def feature_detection_multithreshold(
             strict_thresholding=strict_thresholding,
             statistic=statistic,
         )
-        
+
         list_features_timesteps.append(features_thresholds)
 
         logging.debug(
@@ -1397,7 +1397,7 @@ def feature_detection_multithreshold(
             )
         else:
             features = add_coordinates(features, field_in)
-        
+
         # Loop over DataFrame to remove features that are closer than distance_min to each
         # other:
         filtered_features = []
@@ -1412,10 +1412,12 @@ def feature_detection_multithreshold(
                 filtered_features.append(
                     filter_min_distance(
                         features_frame,
-                        dxy = dxy,
-                        dz = dz if use_dz_for_filtering else None,
-                        min_distance = min_distance,
-                        z_coordinate_name = None if use_dz_for_filtering else vertical_coord,
+                        dxy=dxy,
+                        dz=dz if use_dz_for_filtering else None,
+                        min_distance=min_distance,
+                        z_coordinate_name=(
+                            None if use_dz_for_filtering else vertical_coord
+                        ),
                         target=target,
                         PBC_flag=PBC_flag,
                         min_h1=0,
@@ -1505,9 +1507,7 @@ def filter_min_distance(
 
     # Check if both dxy and their coordinate names are specified.
     # If they are, warn that we will use dxy.
-    elif (
-        x_coordinate_name in features and y_coordinate_name in features
-    ):
+    elif x_coordinate_name in features and y_coordinate_name in features:
         warnings.warn(
             "Both " + x_coordinate_name + "/" + y_coordinate_name + " and dxy "
             "set. Using constant dxy. Set dxy to None if you want to use the "
@@ -1538,11 +1538,11 @@ def filter_min_distance(
                     + z_coordinate_name
                     + " and dz available to filter_min_distance; using constant dz. "
                     "Set dz to none if you want to use altitude or set `z_coordinate_name` to None to use "
-                    "constant dz.", 
-                    UserWarning, 
+                    "constant dz.",
+                    UserWarning,
                 )
             z_coordinate_name = "vdim"
-    
+
     if target not in ["minimum", "maximum"]:
         raise ValueError(
             "target parameter must be set to either 'minimum' or 'maximum'"
