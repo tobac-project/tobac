@@ -1109,29 +1109,30 @@ def feature_detection_multithreshold_timestep(
         elif i_threshold == 0:
             regions_old = regions_i
 
-        if statistic:
-            # reconstruct the labeled regions based on the regions dict
-            labels = np.zeros(track_data.shape)
-            labels = labels.astype(int)
-            for key in regions_old.keys():
-                labels.ravel()[regions_old[key]] = key
-                # apply function to get statistics based on labeled regions and functions provided by the user
-                # the feature dataframe is updated by appending a column for each metric
-            features_thresholds = get_statistics(
-                features_thresholds,
-                labels,
-                track_data,
-                statistic=statistic,
-                index=np.unique(labels[labels > 0]),
-                id_column="idx",
-            )
-
         logging.debug(
             "Finished feature detection for threshold "
             + str(i_threshold)
             + " : "
             + str(threshold_i)
         )
+    
+    if statistic:
+        # reconstruct the labeled regions based on the regions dict
+        labels = np.zeros(track_data.shape)
+        labels = labels.astype(int)
+        for key in regions_old.keys():
+            labels.ravel()[regions_old[key]] = key
+            # apply function to get statistics based on labeled regions and functions provided by the user
+            # the feature dataframe is updated by appending a column for each metric
+        features_thresholds = get_statistics(
+            features_thresholds,
+            labels,
+            track_data,
+            statistic=statistic,
+            index=np.unique(labels[labels > 0]),
+            id_column="idx",
+        )
+    
     return features_thresholds
 
 
