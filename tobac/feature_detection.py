@@ -1274,6 +1274,9 @@ def feature_detection_multithreshold(
     if detect_subset is not None and ndim_time in detect_subset:
         raise NotImplementedError("Cannot subset on time")
 
+    # Remember if dz is set and not vertical coord for min distance filtering
+    use_dz_for_filtering = dz is not None
+        
     if is_3D:
         # We need to determine the time axis so that we can determine the
         # vertical axis in each timestep if vertical_axis is not none.
@@ -1409,10 +1412,10 @@ def feature_detection_multithreshold(
                 filtered_features.append(
                     filter_min_distance(
                         features_frame,
-                        dxy=dxy,
-                        dz=dz,
-                        min_distance=min_distance,
-                        z_coordinate_name=vertical_coord,
+                        dxy = dxy,
+                        dz = dz if use_dz_for_filtering else None,
+                        min_distance = min_distance,
+                        z_coordinate_name = None if use_dz_for_filtering else vertical_coord,
                         target=target,
                         PBC_flag=PBC_flag,
                         min_h1=0,
@@ -1422,7 +1425,7 @@ def feature_detection_multithreshold(
                     )
                 )
             features = pd.concat(filtered_features, ignore_index=True)
-    
+
     else:
         features = None
         logging.debug("No features detected")
@@ -1496,24 +1499,13 @@ def filter_min_distance(
     pandas DataFrame
         features after filtering
     """
+    # Optional coordinate names are not yet implemented, set to defaults here:
     if dxy is None:
         raise NotImplementedError("dxy currently must be set.")
 
-    # if PBC_flag != "none":
-    #    raise NotImplementedError("We haven't yet implemented PBCs into this.")
-
-    # if we are 3D, the vertical dimension is in features. if we are 2D, there
-    # is no vertical dimension in features.
-    is_3D = "vdim" in features
-
-    if is_3D and dz is None:
-        z_coordinate_name = internal_utils.find_dataframe_vertical_coord(
-            features, z_coordinate_name
-        )
-
     # Check if both dxy and their coordinate names are specified.
     # If they are, warn that we will use dxy.
-    if dxy is not None and (
+    elif (
         x_coordinate_name in features and y_coordinate_name in features
     ):
         warnings.warn(
@@ -1522,22 +1514,35 @@ def filter_min_distance(
             "interpolated coordinates, or set `x_coordinate_name` and "
             "`y_coordinate_name` to None to use a constant dxy."
         )
+        y_coordinate_name = "hdim_1"
+        x_coordinate_name = "hdim_2"
+    # If dxy only, use hdim_1, hdim_1 as default horizontal dimensions
+    else:
+        y_coordinate_name = "hdim_1"
+        x_coordinate_name = "hdim_2"
 
-    # Check and if both dz is specified and altitude is available, warn that we will use dz.
-    if is_3D and (dz is not None and z_coordinate_name in features):
-        warnings.warn(
-            "Both "
-            + z_coordinate_name
-            + " and dz available to filter_min_distance; using constant dz. "
-            "Set dz to none if you want to use altitude or set `z_coordinate_name` to None to use "
-            "constant dz."
-        )
-
-    # As optional coordinate names are not yet implemented, set to defaults here:
-    z_coordinate_name = "vdim"
-    y_coordinate_name = "hdim_1"
-    x_coordinate_name = "hdim_2"
-
+    # if we are 3D, the vertical dimension is in features
+    is_3D = "vdim" in features
+    if is_3D:
+        if dz is None:
+            # Find vertical coord name and set dz to 1
+            z_coordinate_name = internal_utils.find_dataframe_vertical_coord(
+                variable_dataframe=tracks, vertical_coord=z_coordinate_name
+            )
+            dz = 1
+        else:
+            # Use dz, warn if both are set
+            if z_coordinate_name is not None:
+                warnings.warn(
+                    "Both "
+                    + z_coordinate_name
+                    + " and dz available to filter_min_distance; using constant dz. "
+                    "Set dz to none if you want to use altitude or set `z_coordinate_name` to None to use "
+                    "constant dz.", 
+                    UserWarning, 
+                )
+            z_coordinate_name = "vdim"
+    
     if target not in ["minimum", "maximum"]:
         raise ValueError(
             "target parameter must be set to either 'minimum' or 'maximum'"
