@@ -1372,30 +1372,7 @@ def feature_detection_multithreshold(
             strict_thresholding=strict_thresholding,
             statistic=statistic,
         )
-        # check if list of features is not empty, then merge features from different threshold
-        # values into one DataFrame and append to list for individual timesteps:
-        if not features_thresholds.empty:
-            hdim1_ax, hdim2_ax = internal_utils.find_hdim_axes_3D(
-                field_in, vertical_coord=vertical_coord
-            )
-            hdim1_max = field_in.shape[hdim1_ax] - 1
-            hdim2_max = field_in.shape[hdim2_ax] - 1
-            # Loop over DataFrame to remove features that are closer than distance_min to each
-            # other:
-            if min_distance > 0:
-                features_thresholds = filter_min_distance(
-                    features_thresholds,
-                    dxy=dxy,
-                    dz=dz,
-                    min_distance=min_distance,
-                    z_coordinate_name=vertical_coord,
-                    target=target,
-                    PBC_flag=PBC_flag,
-                    min_h1=0,
-                    max_h1=hdim1_max,
-                    min_h2=0,
-                    max_h2=hdim2_max,
-                )
+        
         list_features_timesteps.append(features_thresholds)
 
         logging.debug(
@@ -1417,9 +1394,39 @@ def feature_detection_multithreshold(
             )
         else:
             features = add_coordinates(features, field_in)
+        
+        # Loop over DataFrame to remove features that are closer than distance_min to each
+        # other:
+        filtered_features = []
+        if min_distance > 0:
+            hdim1_ax, hdim2_ax = internal_utils.find_hdim_axes_3D(
+                field_in, vertical_coord=vertical_coord
+            )
+            hdim1_max = field_in.shape[hdim1_ax] - 1
+            hdim2_max = field_in.shape[hdim2_ax] - 1
+
+            for _, features_frame in features.groupby("frame"):
+                filtered_features.append(
+                    filter_min_distance(
+                        features_frame,
+                        dxy=dxy,
+                        dz=dz,
+                        min_distance=min_distance,
+                        z_coordinate_name=vertical_coord,
+                        target=target,
+                        PBC_flag=PBC_flag,
+                        min_h1=0,
+                        max_h1=hdim1_max,
+                        min_h2=0,
+                        max_h2=hdim2_max,
+                    )
+                )
+            features = pd.concat(filtered_features, ignore_index=True)
+    
     else:
         features = None
         logging.debug("No features detected")
+
     logging.debug("feature detection completed")
     return features
 
