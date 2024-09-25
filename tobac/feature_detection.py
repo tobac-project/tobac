@@ -1527,7 +1527,7 @@ def filter_min_distance(
         if dz is None:
             # Find vertical coord name and set dz to 1
             z_coordinate_name = internal_utils.find_dataframe_vertical_coord(
-                variable_dataframe=tracks, vertical_coord=z_coordinate_name
+                variable_dataframe=features, vertical_coord=z_coordinate_name
             )
             dz = 1
         else:
