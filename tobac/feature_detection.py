@@ -627,9 +627,9 @@ def feature_detection_threshold(
                         # find the updated label, and overwrite all of label_ind indices with
                         # updated label
                         labels_2_alt = labels_2[label_z, y_val_alt, x_val_alt]
-                        labels_2[label_locs_v, label_locs_h1, label_locs_h2] = (
-                            labels_2_alt
-                        )
+                        labels_2[
+                            label_locs_v, label_locs_h1, label_locs_h2
+                        ] = labels_2_alt
                         skip_list = np.append(skip_list, label_ind)
                         break
 
@@ -673,9 +673,9 @@ def feature_detection_threshold(
                         # find the updated label, and overwrite all of label_ind indices with
                         # updated label
                         labels_2_alt = labels_2[label_z, y_val_alt, label_x]
-                        labels_2[label_locs_v, label_locs_h1, label_locs_h2] = (
-                            labels_2_alt
-                        )
+                        labels_2[
+                            label_locs_v, label_locs_h1, label_locs_h2
+                        ] = labels_2_alt
                         new_label_ind = labels_2_alt
                         skip_list = np.append(skip_list, label_ind)
 
@@ -717,9 +717,9 @@ def feature_detection_threshold(
                         # find the updated label, and overwrite all of label_ind indices with
                         # updated label
                         labels_2_alt = labels_2[label_z, label_y, x_val_alt]
-                        labels_2[label_locs_v, label_locs_h1, label_locs_h2] = (
-                            labels_2_alt
-                        )
+                        labels_2[
+                            label_locs_v, label_locs_h1, label_locs_h2
+                        ] = labels_2_alt
                         new_label_ind = labels_2_alt
                         skip_list = np.append(skip_list, label_ind)
 
