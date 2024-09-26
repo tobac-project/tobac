@@ -1015,7 +1015,7 @@ def feature_detection_multithreshold_timestep(
             raise ValueError(
                 "Please provide the input parameter statistic to determine what statistics to calculate."
             )
-        raw_data = data_i.core_data().copy()
+    
 
     track_data = gaussian_filter(
         track_data, sigma=sigma_threshold
@@ -1133,7 +1133,7 @@ def feature_detection_multithreshold_timestep(
                 features_thresholds = get_statistics(
                     features_thresholds,
                     labels,
-                    raw_data,
+                    data_i.core_data(),
                     statistic=statistic,
                     index=np.unique(labels[labels > 0]),
                     id_column="idx",
