@@ -714,7 +714,6 @@ def transform_feature_points(
         the new grid, suitable for use in segmentation
 
     """
-    from .. import analysis as tb_analysis
 
     RADIUS_EARTH_M = 6371000
     is_3D = "vdim" in features
@@ -812,14 +811,12 @@ def transform_feature_points(
         )
 
     if warn_dropped_features:
-        returned_features = ret_features["feature"]
-        all_features = features["feature"]
-        removed_features = np.delete(
-            all_features, np.where(np.any(all_features == returned_features))
-        )
-        warnings.warn(
-            "Dropping feature numbers: " + str(removed_features.values), UserWarning
-        )
+        removed_features = np.setdiff1d(features["feature"], ret_features["feature"])
+        if len(removed_features):
+            warnings.warn(
+                "Dropping feature numbers: " + str(removed_features.tolist()),
+                UserWarning,
+            )
 
     # make sure that feature points are converted back to int64
     ret_features["feature"] = ret_features.feature.astype(int)
