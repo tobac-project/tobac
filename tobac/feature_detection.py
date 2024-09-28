@@ -1468,7 +1468,7 @@ def filter_min_distance(
     target: {'maximum', 'minimum'}, optional
         Flag to determine if tracking is targeting minima or maxima in
         the data. Default is 'maximum'.
-    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both'), optional
         Sets whether to use periodic boundaries, and if so in which directions.
         'none' means that we do not have periodic boundaries
         'hdim_1' means that we are periodic along hdim1
@@ -1540,8 +1540,8 @@ def filter_min_distance(
         feature_locations = features[
             [z_coordinate_name, y_coordinate_name, x_coordinate_name]
         ].to_numpy()
-        feature_locations[0] *= dz
-        feature_locations[1:] *= dxy
+        feature_locations[:, 0] *= dz
+        feature_locations[:, 1:] *= dxy
     else:
         feature_locations = (
             features[[y_coordinate_name, x_coordinate_name]].to_numpy() * dxy
