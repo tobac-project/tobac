@@ -462,7 +462,6 @@ def linking_trackpy(
     # add coordinate to raw features identified:
     logging.debug("start adding coordinates to detected features")
     logging.debug("feature linking completed")
-
     return trajectories_final
 
 
@@ -630,6 +629,9 @@ def append_tracks_trackpy(
     """
     if "cell" not in tracks_orig:
         raise ValueError("Need to have existing tracks.")
+
+    if memory > 0:
+        raise NotImplementedError("Append tracks with memory not yet implemented.")
 
     search_range = _calc_search_range(dt, dxy, v_max=v_max, d_max=d_max, d_min=d_min)
 
@@ -868,9 +870,23 @@ def append_tracks_trackpy(
         .index
     )
     # check to make sure that there are no double matches, which would be bad.
-    pairs_array = np.array([[a, b] for a, b in cell_particle_pairs])
-    # TODO: This also isn't working.
-    if len(np.unique(pairs_array[:, 0])) != len(np.unique(pairs_array[:, 1])):
+    # checking for 1:1 matches.
+    cell_matches = (
+        trajectories_unfiltered[["cell", "particle", "hdim_1"]]
+        .drop_duplicates(["cell", "particle"])
+        .groupby("cell")["particle"]
+        .count()
+        .max()
+    )
+    particle_matches = (
+        trajectories_unfiltered[["cell", "particle", "hdim_1"]]
+        .drop_duplicates(["cell", "particle"])
+        .groupby("particle")["cell"]
+        .count()
+        .max()
+    )
+
+    if cell_matches + particle_matches != 2:
         raise ValueError(
             "Error in appending tracks. Multiple pairs of cell:particle found. Please report this bug."
         )
@@ -937,10 +953,9 @@ def append_tracks_trackpy(
     # add coordinate to raw features identified:
     logging.debug("start adding coordinates to detected features")
     logging.debug("feature linking completed")
+    # trajectories_final.reset_index(inplace=True, drop=True)
 
     return trajectories_final
-
-    pass
 
 
 def _clean_track_dfs_for_append(
@@ -1153,6 +1168,7 @@ def _calc_velocity_to_most_recent_point(
     in_track: pd.DataFrame, span: int = 1
 ) -> pd.DataFrame:
     """ """
+    in_track = in_track.reset_index()
     max_frame = in_track["frame"].max()
     speed_tracks = in_track[in_track["frame"] >= max_frame - span]
 
@@ -1174,14 +1190,16 @@ def _calc_velocity_to_most_recent_point(
             "y": "hdim_1_spd",
             "x": "hdim_2_spd",
         }
-
-    all_speeds = speed_tracks[["feature", "frame", "idx", "cell"] + pos_cols].join(
+    calculated_speeds = (
         speed_tracks.sort_values(["frame", "idx"])
         .groupby("cell")[pos_cols]
         .transform("diff")
         .rename(speed_rename, axis="columns")
     )
-    mean_speed_df = all_speeds[all_speeds["frame"] == all_speeds["frame"].max()].join(
+    all_speeds = speed_tracks[["feature", "frame", "idx", "cell"] + pos_cols].join(
+        calculated_speeds,
+    )
+    mean_speed_df = all_speeds[all_speeds["frame"] == all_speeds["frame"].min()].join(
         all_speeds.groupby("cell")[["hdim_1_spd", "hdim_2_spd"]].mean(),
         on="cell",
         rsuffix="_mean",
