@@ -92,7 +92,7 @@ def test_append_tracking_single_track(
 
     """
 
-    all_features = list()
+    all_features = []
     for feature_point_values in features_points:
         v_points = None
         if len(feature_point_values) > 2:
@@ -256,7 +256,6 @@ def test_append_tracking_single_track_predict(
             curr_tracking_append, curr_times_df, **tracking_params
         )
     assert_frame_equal(curr_tracking_append, orig_tracking)
-    """
     # let's try to append one by one, with only individual times
     curr_tracking_append = tobac.tracking.linking_trackpy(
         first_two_times_df, None, **tracking_params
@@ -267,7 +266,6 @@ def test_append_tracking_single_track_predict(
             curr_tracking_append, curr_times_df, **tracking_params
         )
     assert_frame_equal(curr_tracking_append, orig_tracking)
-    """
 
     # let's try to append one by one, with only individual times
     curr_tracking_append = tobac.tracking.linking_trackpy(
