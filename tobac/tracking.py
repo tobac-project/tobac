@@ -631,7 +631,8 @@ def append_tracks_trackpy(
         raise ValueError("Need to have existing tracks.")
 
     if memory > 0:
-        raise NotImplementedError("Append tracks with memory not yet implemented.")
+        pass
+        # raise NotImplementedError("Append tracks with memory not yet implemented.")
 
     search_range = _calc_search_range(dt, dxy, v_max=v_max, d_max=d_max, d_min=d_min)
 
@@ -813,8 +814,9 @@ def append_tracks_trackpy(
             pos_columns=pos_cols,
             span=span,
         )
-        trajectories_unfiltered = pred.link_df_iter(
-            comb_features_linking,
+        concat_df_linking = pd.concat(comb_features_linking)
+        trajectories_unfiltered = pred.link_df(
+            concat_df_linking,
             search_range=search_range,
             memory=memory,
             # pos_columns=["hdim_1", "hdim_2"], # not working atm
@@ -830,7 +832,7 @@ def append_tracks_trackpy(
         )
         # recreate a single dataframe from the list
 
-        trajectories_unfiltered = pd.concat(trajectories_unfiltered)
+        # trajectories_unfiltered = pd.concat(trajectories_unfiltered)
 
         # change to column names back
         trajectories_unfiltered.rename(
@@ -1169,8 +1171,8 @@ def _calc_velocity_to_most_recent_point(
 ) -> pd.DataFrame:
     """ """
     in_track = in_track.reset_index()
-    max_frame = in_track["frame"].max()
-    speed_tracks = in_track[in_track["frame"] >= max_frame - span]
+    min_frame = in_track["frame"].min()
+    speed_tracks = in_track[in_track["frame"] <= min_frame + span]
 
     if "vdim_adj" in speed_tracks:
         # 3D case
@@ -1206,6 +1208,7 @@ def _calc_velocity_to_most_recent_point(
     )
 
     mean_speed_df.drop(spd_cols, inplace=True, axis="columns")
+    mean_speed_df.dropna(inplace=True, axis=0)
     return mean_speed_df
 
 

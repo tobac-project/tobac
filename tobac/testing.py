@@ -957,6 +957,13 @@ def generate_single_feature(
     out_list_of_dicts = []
     curr_dt = start_date
     for i in range(len(h1_list)):
+        if h1_list[i] < 0 or h2_list[i] < 0:
+            curr_dt += dt
+            continue
+        if len(v_list) > 0:
+            if v_list[i] < 0:
+                curr_dt += dt
+                continue
         curr_dict = dict()
         curr_dict["hdim_1"] = h1_list[i]
         curr_dict["hdim_2"] = h2_list[i]
