@@ -405,18 +405,8 @@ def linking_trackpy(
 
     trajectories_filtered = trajectories_unfiltered
 
-    # Interpolate to fill the gaps in the trajectories (left from allowing memory in the linking)
-    trajectories_filtered_unfilled = deepcopy(trajectories_filtered)
+    trajectories_filtered_filled = deepcopy(trajectories_filtered)
 
-    #    trajectories_filtered_filled=fill_gaps(trajectories_filtered_unfilled,order=order,
-    #                                extrapolate=extrapolate,frame_max=field_in.shape[0]-1,
-    #                                hdim_1_max=field_in.shape[1],hdim_2_max=field_in.shape[2])
-    #     add coorinates from input fields to output trajectories (time,dimensions)
-    #    logging.debug('start adding coordinates to trajectories')
-    #    trajectories_filtered_filled=add_coordinates(trajectories_filtered_filled,field_in)
-    #     add time coordinate relative to cell initiation:
-    #    logging.debug('start adding cell time to trajectories')
-    trajectories_filtered_filled = trajectories_filtered_unfilled
     trajectories_final = add_cell_time(
         trajectories_filtered_filled, cell_number_unassigned=cell_number_unassigned
     )
@@ -815,6 +805,9 @@ def append_tracks_trackpy(
     if cell_matches + particle_matches != 2:
         raise ValueError(
             "Error in appending tracks. Multiple pairs of cell:particle found. Please report this bug."
+            " Number of cell matches: {0}, Number of particle matches: {1}".format(
+                cell_matches, particle_matches
+            )
         )
     # dictionary of particle:cell pairs
     particle_num_to_cell_num = {b: a for a, b in cell_particle_pairs}
