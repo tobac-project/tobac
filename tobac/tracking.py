@@ -19,7 +19,7 @@ References
    12(11), 4551-4570.
 """
 import copy
-from typing import Optional, Literal
+from typing import Optional, Literal, Union
 
 import logging
 from operator import is_
@@ -63,6 +63,7 @@ def linking_trackpy(
     min_h2: Optional[int] = None,
     max_h2: Optional[int] = None,
     PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
+    features_append: Union[None, pd.DataFrame] = None,
 ) -> pd.DataFrame:
     """Perform Linking of features in trajectories.
 
@@ -88,8 +89,12 @@ def linking_trackpy(
     features : pandas.DataFrame
         Detected features to be linked.
 
-    field_in : None
-        Input field. Not currently used; can be set to `None`.
+    features_append : pandas.DataFrame
+        New features to be tracked. This dataframe can overlap with the features dataframe
+        features, but only times where there is no cell information (either `cell` column for that
+        time are all equal to cell_number_unassigned or there is no cell column) for the
+        *whole time* are considered.
+        If this is not None, features must have a cell column.
 
     dt : float
         Time resolution of tracked features in seconds.
@@ -199,6 +204,8 @@ def linking_trackpy(
         'hdim_1' means that we are periodic along hdim1
         'hdim_2' means that we are periodic along hdim2
         'both' means that we are periodic along both horizontal dimensions
+    field_in : None
+        Input field. Not currently used; can be set to `None`.
 
     Returns
     -------
@@ -219,67 +226,24 @@ def linking_trackpy(
             "Extrapolation is not yet implemented. Set this parameter to 0 to continue."
         )
 
-    #    from trackpy import link_df
-    #    from trackpy import link_df
-
-    #    from trackpy import filter_stubs
-    #    from .utils import add_coordinates
     search_range = _calc_search_range(dt, dxy, v_max=v_max, d_max=d_max, d_min=d_min)
     # Check if we are 3D.
-    if "vdim" in features:
-        is_3D = True
-        if dz is not None and vertical_coord is not None:
-            raise ValueError(
-                "dz and vertical_coord both set, vertical"
-                " spacing is ambiguous. Set one to None."
-            )
-        if dz is None and vertical_coord is None:
-            raise ValueError(
-                "Neither dz nor vertical_coord are set. One" " must be set."
-            )
-        if vertical_coord is not None:
-            found_vertical_coord = internal_utils.find_dataframe_vertical_coord(
-                variable_dataframe=features, vertical_coord=vertical_coord
-            )
-    else:
-        is_3D = False
+    is_3D, found_vertical_coord = _get_vertical_coord(
+        features, dz=dz, vertical_coord=vertical_coord
+    )
 
-    # make sure that we have min and max for h1 and h2 if we are PBC
-    if PBC_flag in ["hdim_1", "both"] and (min_h1 is None or max_h1 is None):
-        raise ValueError("For PBC tracking, must set min and max coordinates.")
+    _ = _check_pbc_coords(PBC_flag, min_h1, max_h1, min_h2, max_h2)
+    size_cache = _check_set_adaptive_params(
+        adaptive_stop=adaptive_stop,
+        adaptive_step=adaptive_step,
+        subnetwork_size=subnetwork_size,
+    )
 
-    if PBC_flag in ["hdim_2", "both"] and (min_h2 is None or max_h2 is None):
-        raise ValueError("For PBC tracking, must set min and max coordinates.")
-
-    # in case of adaptive search, check whether both parameters are specified
-    if adaptive_stop is not None:
-        if adaptive_step is None:
-            raise ValueError(
-                "Adaptive search requires values for adaptive_step and adaptive_stop. Please specify adaptive_step."
-            )
-
-    if adaptive_step is not None:
-        if adaptive_stop is None:
-            raise ValueError(
-                "Adaptive search requires values for adaptive_step and adaptive_stop. Please specify adaptive_stop."
-            )
-
-    if time_cell_min:
-        stubs = np.floor(time_cell_min / dt) + 1
+    stubs = _calc_frames_for_stubs(dt, stubs=stubs, time_cell_min=time_cell_min)
 
     logging.debug("stubs: " + str(stubs))
 
     logging.debug("start linking features into trajectories")
-
-    # If subnetwork size given, set maximum subnet size
-    if subnetwork_size is not None:
-        # Choose the right parameter depending on the use of adaptive search, save previously set values
-        if adaptive_step is None and adaptive_stop is None:
-            size_cache = tp.linking.Linker.MAX_SUB_NET_SIZE
-            tp.linking.Linker.MAX_SUB_NET_SIZE = subnetwork_size
-        else:
-            size_cache = tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE
-            tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE = subnetwork_size
 
     # deep copy to preserve features field:
     features_linking = deepcopy(features)
@@ -641,60 +605,21 @@ def append_tracks_trackpy(
             "One track is 3D, new track is 2D. Need to both have the same dimensions."
         )
 
-    if "vdim" in tracks_orig:
-        is_3D = True
-        if dz is not None and vertical_coord is not None:
-            raise ValueError(
-                "dz and vertical_coord both set, vertical"
-                " spacing is ambiguous. Set one to None."
-            )
-        if dz is None and vertical_coord is None:
-            raise ValueError(
-                "Neither dz nor vertical_coord are set. One" " must be set."
-            )
-        if vertical_coord is not None:
-            found_vertical_coord = internal_utils.find_dataframe_vertical_coord(
-                variable_dataframe=tracks_orig, vertical_coord=vertical_coord
-            )
-    else:
-        is_3D = False
+    is_3D, found_vertical_coord = _get_vertical_coord(
+        tracks_orig, dz=dz, vertical_coord=vertical_coord
+    )
 
-    # make sure that we have min and max for h1 and h2 if we are PBC
-    if PBC_flag in ["hdim_1", "both"] and (min_h1 is None or max_h1 is None):
-        raise ValueError("For PBC tracking, must set min and max coordinates.")
-
-    if PBC_flag in ["hdim_2", "both"] and (min_h2 is None or max_h2 is None):
-        raise ValueError("For PBC tracking, must set min and max coordinates.")
-
-    # in case of adaptive search, check whether both parameters are specified
-    if adaptive_stop is not None:
-        if adaptive_step is None:
-            raise ValueError(
-                "Adaptive search requires values for adaptive_step and adaptive_stop. Please specify adaptive_step."
-            )
-
-    if adaptive_step is not None:
-        if adaptive_stop is None:
-            raise ValueError(
-                "Adaptive search requires values for adaptive_step and adaptive_stop. Please specify adaptive_stop."
-            )
-
-    if time_cell_min:
-        stubs = np.floor(time_cell_min / dt) + 1
+    _ = _check_pbc_coords(PBC_flag, min_h1, max_h1, min_h2, max_h2)
+    size_cache = _check_set_adaptive_params(
+        adaptive_stop=adaptive_stop,
+        adaptive_step=adaptive_step,
+        subnetwork_size=subnetwork_size,
+    )
+    stubs = _calc_frames_for_stubs(dt, stubs=stubs, time_cell_min=time_cell_min)
 
     logging.debug("stubs: " + str(stubs))
 
     logging.debug("start linking features into trajectories")
-
-    # If subnetwork size given, set maximum subnet size
-    if subnetwork_size is not None:
-        # Choose the right parameter depending on the use of adaptive search, save previously set values
-        if adaptive_step is None and adaptive_stop is None:
-            size_cache = tp.linking.Linker.MAX_SUB_NET_SIZE
-            tp.linking.Linker.MAX_SUB_NET_SIZE = subnetwork_size
-        else:
-            size_cache = tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE
-            tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE = subnetwork_size
 
     tracks_orig_cleaned, tracks_cut, new_features_cleaned = _clean_track_dfs_for_append(
         tracks_orig, new_features, memory, dt
@@ -703,6 +628,10 @@ def append_tracks_trackpy(
 
     tracks_orig_cleaned.drop("time_cell", axis=1, inplace=True)
     tracks_cut.drop("time_cell", axis=1, inplace=True)
+    if is_3D:
+        pos_columns_tp = ["vdim_adj", "hdim_1", "hdim_2"]
+    else:
+        pos_columns_tp = ["hdim_1", "hdim_2"]
 
     # check if we are 3D or not
     if is_3D:
@@ -720,11 +649,6 @@ def append_tracks_trackpy(
             new_features_cleaned["vdim_adj"] = (
                 new_features_cleaned[found_vertical_coord] / dxy
             )
-
-        pos_columns_tp = ["vdim_adj", "hdim_1", "hdim_2"]
-
-    else:
-        pos_columns_tp = ["hdim_1", "hdim_2"]
 
     # Check if we have PBCs.
     if PBC_flag in ["hdim_1", "hdim_2", "both"]:
@@ -1290,3 +1214,186 @@ def build_distance_function(min_h1, max_h1, min_h2, max_h2, PBC_flag):
         max_h2=max_h2 if max_h2 is not None else 0,
         PBC_flag=PBC_flag,
     )
+
+
+def _get_vertical_coord(
+    tracks: pd.DataFrame,
+    dz: Optional[float] = None,
+    vertical_coord: Optional[str] = None,
+) -> tuple[bool, str]:
+    """Internal function to get the name of the vertical coordinate if 3D and
+    return false if the tracks are not 3D.
+
+    Parameters
+    ----------
+    tracks: pd.DataFrame
+        Input feature dataframe (could include tracking information or not).
+    dz: float, optional
+        Constant vertical grid spacing (meters), optional. If not specified
+        and the input is 3D, this function requires that `vertical_coord` is available
+        in the `features` input. If you specify a value here, this function assumes
+        that it is the constant z spacing between points, even if ```vertical_coord```
+        is specified.
+
+    vertical_coord: str
+        Name of the vertical coordinate. The vertical coordinate used
+        must be meters. If None, tries to auto-detect.
+        It looks for the coordinate or the dimension name corresponding
+        to the string. To use `dz`, set this to `None`.
+
+    Returns
+    -------
+    is_3d, vertical_coord: bool, str
+        True if input is 3D, False otherwise. vertical_coord is the column name of the
+        vertical coordinate to use in the feature dataframe.
+
+    """
+    found_vertical_coord = ""
+    if "vdim" in tracks:
+        is_3d = True
+        if dz is not None and vertical_coord is not None:
+            raise ValueError(
+                "dz and vertical_coord both set, vertical"
+                " spacing is ambiguous. Set one to None."
+            )
+        if dz is None and vertical_coord is None:
+            raise ValueError(
+                "Neither dz nor vertical_coord are set. One" " must be set."
+            )
+        if vertical_coord is not None:
+            found_vertical_coord = internal_utils.find_dataframe_vertical_coord(
+                variable_dataframe=tracks, vertical_coord=vertical_coord
+            )
+    else:
+        is_3d = False
+
+    return is_3d, found_vertical_coord
+
+
+def _check_pbc_coords(
+    pbc_flag: Literal["none", "hdim_1", "hdim_2", "both"],
+    min_h1: Optional[int] = None,
+    max_h1: Optional[int] = None,
+    min_h2: Optional[int] = None,
+    max_h2: Optional[int] = None,
+) -> bool:
+    """check that we have min/max h1 and h2 coords if we are on PBCs.
+
+    Parameters
+    ----------
+    pbc_flag: str
+        Input PBC flag
+    min_h1: int or None
+        minimum hdim_1 point
+    max_h1: int or None
+        maximum hdim_1 point
+    min_h2: int or None
+        minimum hdim_2 point
+    max_h2: int or None
+        maximum hdim_2 point
+
+    Returns
+    -------
+    True if all parameters are OK
+
+    Raises
+    ------
+    ValueError if min/max h1/h2 are not set when they should be
+    """
+
+    if pbc_flag in ["hdim_1", "both"] and (min_h1 is None or max_h1 is None):
+        raise ValueError(
+            "For PBCs, must set min (min_h1) and max (max_h1) coordinates."
+        )
+
+    if pbc_flag in ["hdim_2", "both"] and (min_h2 is None or max_h2 is None):
+        raise ValueError(
+            "For PBC tracking, must set min (min_h2) and max (max_h2) coordinates."
+        )
+
+    return True
+
+
+def _check_set_adaptive_params(
+    adaptive_stop: float, adaptive_step: float, subnetwork_size: Optional[int]
+) -> int:
+    """Internal function to check that all trackpy parameters relevant to adaptive search are OK,
+    and sets the subnetwork_size internal to trackpy.
+
+    Parameters
+    ----------
+    adaptive_stop: float
+        adaptive_stop value for trackpy
+    adaptive_step: float
+        adaptive_step value for trackpy
+    subnetwork_size: int
+
+    Returns
+    -------
+    int
+        returns the original trackpy subnetwork size.
+
+    Raises
+    ------
+    ValueError if values are not set or acceptable.
+
+    """
+
+    if adaptive_stop is not None:
+        if adaptive_step is None:
+            raise ValueError(
+                "Adaptive search requires values for adaptive_step and adaptive_stop. Please specify adaptive_step."
+            )
+
+    if adaptive_step is not None:
+        if adaptive_stop is None:
+            raise ValueError(
+                "Adaptive search requires values for adaptive_step and adaptive_stop. Please specify adaptive_stop."
+            )
+    # If subnetwork size given, set maximum subnet size
+    if subnetwork_size is not None:
+        # Choose the right parameter depending on the use of adaptive search, save previously set values
+        if adaptive_step is None and adaptive_stop is None:
+            size_cache = tp.linking.Linker.MAX_SUB_NET_SIZE
+            tp.linking.Linker.MAX_SUB_NET_SIZE = subnetwork_size
+        else:
+            size_cache = tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE
+            tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE = subnetwork_size
+
+        return size_cache
+    else:
+        return 0
+
+
+def _calc_frames_for_stubs(
+    dt: float, stubs: Optional[int] = None, time_cell_min: Optional[float] = None
+) -> int:
+    """Internal function to calculate the number of frames to track our minimum cells through.
+
+    Parameters
+    ----------
+
+    stubs: int
+        depreciated parameter setting number of frames that cells have to last for to be considered
+        a contiguous cell
+    time_cell_min: float
+        minimum time for a cell to last (in the same units as dt)
+
+    Returns
+    -------
+    number of frames that a cell has to exist for to be considered a full cell
+
+    Raises
+    ------
+    raises a ValueError if stubs and time_cell_min are both not set.
+
+    """
+    if time_cell_min is None and stubs is None:
+        raise ValueError(
+            "time_cell_min and stubs both not set. One or the other must be set."
+        )
+
+    if time_cell_min is None:
+        return stubs
+    else:
+        return np.floor(time_cell_min / dt) + 1
