@@ -18,14 +18,13 @@ except ModuleNotFoundError:
     from numpy.core import multiarray as mu
 import pandas as pd
 import xarray as xr
-
 from tobac.utils import decorators
 
 
 def get_statistics(
     features: pd.DataFrame,
     labels: np.ndarray[int],
-    *fields: tuple[np.ndarray],
+    *fields: tuple[xr.DataArray],
     statistic: dict[str, Union[Callable, tuple[Callable, dict]]] = {
         "ncells": np.count_nonzero
     },
@@ -54,7 +53,7 @@ def get_statistics(
         Mask with labels of each regions to apply function to (e.g. output of
         segmentation for a specific timestep)
 
-    *fields : tuple[np.ndarray]
+    *fields : tuple[xr.DataArray]
         Fields to give as arguments to each function call. If the shape does not
         match that of labels, numpy-style broadcasting will be applied.
 
@@ -215,7 +214,7 @@ def get_statistics(
 def get_statistics_from_mask(
     features: pd.DataFrame,
     segmentation_mask: xr.DataArray,
-    *fields: xr.DataArray,
+    *fields: tuple[xr.DataArray],
     statistic: dict[str, tuple[Callable]] = {"Mean": np.mean},
     index: Union[None, list[int]] = None,
     default: Union[None, float] = None,
@@ -236,7 +235,7 @@ def get_statistics_from_mask(
     segmentation_mask : xr.DataArray
         Segmentation mask output
 
-    *fields : xr.DataArray[np.ndarray]
+    *fields : tuple[xr.DataArray]
         Field(s) with input data. If field does not have a time dimension it
         will be considered time invariant, and the entire field will be passed
         for each time step in segmentation_mask. If the shape does not match
