@@ -627,9 +627,9 @@ def feature_detection_threshold(
                         # find the updated label, and overwrite all of label_ind indices with
                         # updated label
                         labels_2_alt = labels_2[label_z, y_val_alt, x_val_alt]
-                        labels_2[
-                            label_locs_v, label_locs_h1, label_locs_h2
-                        ] = labels_2_alt
+                        labels_2[label_locs_v, label_locs_h1, label_locs_h2] = (
+                            labels_2_alt
+                        )
                         skip_list = np.append(skip_list, label_ind)
                         break
 
@@ -673,9 +673,9 @@ def feature_detection_threshold(
                         # find the updated label, and overwrite all of label_ind indices with
                         # updated label
                         labels_2_alt = labels_2[label_z, y_val_alt, label_x]
-                        labels_2[
-                            label_locs_v, label_locs_h1, label_locs_h2
-                        ] = labels_2_alt
+                        labels_2[label_locs_v, label_locs_h1, label_locs_h2] = (
+                            labels_2_alt
+                        )
                         new_label_ind = labels_2_alt
                         skip_list = np.append(skip_list, label_ind)
 
@@ -717,9 +717,9 @@ def feature_detection_threshold(
                         # find the updated label, and overwrite all of label_ind indices with
                         # updated label
                         labels_2_alt = labels_2[label_z, label_y, x_val_alt]
-                        labels_2[
-                            label_locs_v, label_locs_h1, label_locs_h2
-                        ] = labels_2_alt
+                        labels_2[label_locs_v, label_locs_h1, label_locs_h2] = (
+                            labels_2_alt
+                        )
                         new_label_ind = labels_2_alt
                         skip_list = np.append(skip_list, label_ind)
 
@@ -912,6 +912,7 @@ def feature_detection_multithreshold_timestep(
     wavelength_filtering: tuple[float] = None,
     strict_thresholding: bool = False,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
+    statistics_unsmoothed: bool = False,
 ) -> pd.DataFrame:
     """Find features in each timestep.
 
@@ -984,6 +985,9 @@ def feature_detection_multithreshold_timestep(
             Default is None. Optional parameter to calculate bulk statistics within feature detection.
             Dictionary with callable function(s) to apply over the region of each detected feature and the name of the statistics to appear in the feature ou            tput dataframe. The functions should be the values and the names of the metric the keys (e.g. {'mean': np.mean})
 
+    statistics_unsmoothed: bool, optional
+            Default is False. If True, calculate the statistics on the raw data instead of the smoothed input data.
+
     Returns
     -------
     features_threshold : pandas DataFrame
@@ -1004,6 +1008,14 @@ def feature_detection_multithreshold_timestep(
 
     # get actual numpy array and make a copy so as not to change the data in the iris cube
     track_data = data_i.core_data().copy()
+
+    # keep a copy of the unsmoothed data (that can be used for calculating stats)
+    if statistics_unsmoothed:
+        if not statistic:
+            raise ValueError(
+                "Please provide the input parameter statistic to determine what statistics to calculate."
+            )
+    
 
     track_data = gaussian_filter(
         track_data, sigma=sigma_threshold
@@ -1159,6 +1171,7 @@ def feature_detection_multithreshold(
     dz: Union[float, None] = None,
     strict_thresholding: bool = False,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
+    statistics_unsmoothed: bool = False,
 ) -> pd.DataFrame:
     """Perform feature detection based on contiguous regions.
 
@@ -1374,6 +1387,7 @@ def feature_detection_multithreshold(
             wavelength_filtering=wavelength_filtering,
             strict_thresholding=strict_thresholding,
             statistic=statistic,
+            statistics_unsmoothed=statistics_unsmoothed,
         )
 
         list_features_timesteps.append(features_thresholds)
@@ -1481,7 +1495,7 @@ def filter_min_distance(
     target: {'maximum', 'minimum'}, optional
         Flag to determine if tracking is targeting minima or maxima in
         the data. Default is 'maximum'.
-    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both'), optional
         Sets whether to use periodic boundaries, and if so in which directions.
         'none' means that we do not have periodic boundaries
         'hdim_1' means that we are periodic along hdim1
@@ -1553,8 +1567,8 @@ def filter_min_distance(
         feature_locations = features[
             [z_coordinate_name, y_coordinate_name, x_coordinate_name]
         ].to_numpy()
-        feature_locations[0] *= dz
-        feature_locations[1:] *= dxy
+        feature_locations[:, 0] *= dz
+        feature_locations[:, 1:] *= dxy
     else:
         feature_locations = (
             features[[y_coordinate_name, x_coordinate_name]].to_numpy() * dxy

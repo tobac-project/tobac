@@ -8,6 +8,37 @@ import tobac.utils as tb_utils
 import tobac.testing as tb_test
 
 
+@pytest.mark.parametrize("statistics_unsmoothed", [(False), (True)])
+def test_bulk_statistics_fd(statistics_unsmoothed):
+    """
+    Assure that bulk statistics in feature detection work, both on smoothed and raw data
+    """
+    ### Test 2D data with time dimension
+    test_data = tb_test.make_simple_sample_data_2D().core_data()
+    common_dset_opts = {
+        "in_arr": test_data,
+        "data_type": "iris",
+    }
+    test_data_iris = tb_test.make_dataset_from_arr(
+        time_dim_num=0, y_dim_num=1, x_dim_num=2, **common_dset_opts
+    )
+    stats = {"feature_max": np.max}
+
+    # detect features
+    threshold = 7
+    fd_output = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_iris,
+        dxy=1000,
+        threshold=[threshold],
+        n_min_threshold=100,
+        target="maximum",
+        statistic=stats,
+        statistics_unsmoothed=statistics_unsmoothed,
+    )
+
+    assert "feature_max" in fd_output.columns
+
+
 @pytest.mark.parametrize(
     "id_column, index", [("feature", [1]), ("feature_id", [1]), ("cell", [1])]
 )

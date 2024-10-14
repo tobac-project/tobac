@@ -75,9 +75,7 @@ def _conv_kwargs_irispandas_to_xarray(conv_kwargs: dict):
         key: (
             convert_cube_to_dataarray(arg)
             if isinstance(arg, iris.cube.Cube)
-            else arg.to_xarray()
-            if isinstance(arg, pd.DataFrame)
-            else arg
+            else arg.to_xarray() if isinstance(arg, pd.DataFrame) else arg
         )
         for key, arg in zip(conv_kwargs.keys(), conv_kwargs.values())
     }
@@ -123,9 +121,7 @@ def _conv_kwargs_xarray_to_irispandas(conv_kwargs: dict):
         key: (
             xr.DataArray.to_iris(arg)
             if isinstance(arg, xr.DataArray)
-            else arg.to_dataframe()
-            if isinstance(arg, xr.Dataset)
-            else arg
+            else arg.to_dataframe() if isinstance(arg, xr.Dataset) else arg
         )
         for key, arg in zip(conv_kwargs.keys(), conv_kwargs.values())
     }
@@ -340,9 +336,7 @@ def irispandas_to_xarray(save_iris_info: bool = False):
                         (
                             convert_cube_to_dataarray(arg)
                             if type(arg) == iris.cube.Cube
-                            else arg.to_xarray()
-                            if type(arg) == pd.DataFrame
-                            else arg
+                            else arg.to_xarray() if type(arg) == pd.DataFrame else arg
                         )
                         for arg in args
                     ]
