@@ -18,7 +18,7 @@ References
 """
 
 from __future__ import annotations
-from typing import Union, Callable
+from typing import Optional, Union, Callable
 import warnings
 import logging
 
@@ -31,7 +31,6 @@ from sklearn.neighbors import BallTree
 import iris
 import xarray as xr
 
-from tobac.tracking import build_distance_function
 from tobac.utils import internal as internal_utils
 from tobac.utils import decorators
 
@@ -200,8 +199,8 @@ def feature_position(
 
     elif position_threshold == "weighted_diff":
         # get position as centre of identified region, weighted by difference from the threshold:
-        weights = abs(track_data_region[region_small] - threshold_i)
-        if sum(weights) == 0:
+        weights = np.abs(track_data_region[region_small] - threshold_i)
+        if np.sum(weights) == 0:
             weights = None
         hdim1_weights = weights
         hdim2_weights = weights
@@ -212,8 +211,8 @@ def feature_position(
 
     elif position_threshold == "weighted_abs":
         # get position as centre of identified region, weighted by absolute values if the field:
-        weights = abs(track_data_region[region_small])
-        if sum(weights) == 0:
+        weights = np.abs(track_data_region[region_small])
+        if np.sum(weights) == 0:
             weights = None
         hdim1_weights = weights
         hdim2_weights = weights
@@ -231,14 +230,18 @@ def feature_position(
             hdim1_index = pbc_utils.weighted_circmean(
                 hdim1_indices, weights=hdim1_weights, high=hdim1_max + 1, low=hdim1_min
             )
+            hdim1_index = np.clip(hdim1_index, 0, hdim1_max + 1)
         else:
             hdim1_index = np.average(hdim1_indices, weights=hdim1_weights)
+            hdim1_index = np.clip(hdim1_index, 0, hdim1_max)
         if PBC_flag in ("hdim_2", "both"):
             hdim2_index = pbc_utils.weighted_circmean(
                 hdim2_indices, weights=hdim2_weights, high=hdim2_max + 1, low=hdim2_min
             )
+            hdim2_index = np.clip(hdim2_index, 0, hdim2_max + 1)
         else:
             hdim2_index = np.average(hdim2_indices, weights=hdim2_weights)
+            hdim2_index = np.clip(hdim2_index, 0, hdim2_max)
         if is_3D:
             vdim_index = np.average(vdim_indices, weights=vdim_weights)
 
@@ -391,7 +394,7 @@ def feature_detection_threshold(
     ] = "center",
     sigma_threshold: float = 0.5,
     n_erosion_threshold: int = 0,
-    n_min_threshold: int = 0,
+    n_min_threshold: Union[int, dict[float, int], list[int]] = 0,
     min_distance: float = 0,
     idx_start: int = 0,
     PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
@@ -429,8 +432,10 @@ def feature_detection_threshold(
         Number of pixels by which to erode the identified features.
         Default is 0.
 
-    n_min_threshold : int, optional
+    n_min_threshold : int, dict of float to int, or list of int, optional
         Minimum number of identified contiguous pixels for a feature to be detected. Default is 0.
+        If given as a list, the number of elements must match number of thresholds.
+        If given as a dict, the keys need to match the thresholds and the values are the minimum number of identified contiguous pixels for a feature using that specific threshold.
 
     min_distance : float, optional
         Minimum distance between detected features (in meters). Default is 0.
@@ -622,9 +627,9 @@ def feature_detection_threshold(
                         # find the updated label, and overwrite all of label_ind indices with
                         # updated label
                         labels_2_alt = labels_2[label_z, y_val_alt, x_val_alt]
-                        labels_2[
-                            label_locs_v, label_locs_h1, label_locs_h2
-                        ] = labels_2_alt
+                        labels_2[label_locs_v, label_locs_h1, label_locs_h2] = (
+                            labels_2_alt
+                        )
                         skip_list = np.append(skip_list, label_ind)
                         break
 
@@ -668,9 +673,9 @@ def feature_detection_threshold(
                         # find the updated label, and overwrite all of label_ind indices with
                         # updated label
                         labels_2_alt = labels_2[label_z, y_val_alt, label_x]
-                        labels_2[
-                            label_locs_v, label_locs_h1, label_locs_h2
-                        ] = labels_2_alt
+                        labels_2[label_locs_v, label_locs_h1, label_locs_h2] = (
+                            labels_2_alt
+                        )
                         new_label_ind = labels_2_alt
                         skip_list = np.append(skip_list, label_ind)
 
@@ -712,9 +717,9 @@ def feature_detection_threshold(
                         # find the updated label, and overwrite all of label_ind indices with
                         # updated label
                         labels_2_alt = labels_2[label_z, label_y, x_val_alt]
-                        labels_2[
-                            label_locs_v, label_locs_h1, label_locs_h2
-                        ] = labels_2_alt
+                        labels_2[label_locs_v, label_locs_h1, label_locs_h2] = (
+                            labels_2_alt
+                        )
                         new_label_ind = labels_2_alt
                         skip_list = np.append(skip_list, label_ind)
 
@@ -898,7 +903,7 @@ def feature_detection_multithreshold_timestep(
     ] = "center",
     sigma_threshold: float = 0.5,
     n_erosion_threshold: int = 0,
-    n_min_threshold: int = 0,
+    n_min_threshold: Union[int, dict[float, int], list[int]] = 0,
     min_distance: float = 0,
     feature_number_start: int = 1,
     PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
@@ -907,6 +912,7 @@ def feature_detection_multithreshold_timestep(
     wavelength_filtering: tuple[float] = None,
     strict_thresholding: bool = False,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
+    statistics_unsmoothed: bool = False,
 ) -> pd.DataFrame:
     """Find features in each timestep.
 
@@ -945,8 +951,10 @@ def feature_detection_multithreshold_timestep(
         Number of pixels by which to erode the identified features.
         Default is 0.
 
-    n_min_threshold : int, optional
+    n_min_threshold :  int, dict of float to int, or list of int, optional
         Minimum number of identified contiguous pixels for a feature to be detected. Default is 0.
+        If given as a list, the number of elements must match number of thresholds.
+        If given as a dict, the keys need to match the thresholds and the values are the minimum number of identified contiguous pixels for a feature using that specific threshold.
 
     min_distance : float, optional
         Minimum distance between detected features (in meters). Default is 0.
@@ -977,6 +985,9 @@ def feature_detection_multithreshold_timestep(
             Default is None. Optional parameter to calculate bulk statistics within feature detection.
             Dictionary with callable function(s) to apply over the region of each detected feature and the name of the statistics to appear in the feature ou            tput dataframe. The functions should be the values and the names of the metric the keys (e.g. {'mean': np.mean})
 
+    statistics_unsmoothed: bool, optional
+            Default is False. If True, calculate the statistics on the raw data instead of the smoothed input data.
+
     Returns
     -------
     features_threshold : pandas DataFrame
@@ -997,6 +1008,14 @@ def feature_detection_multithreshold_timestep(
 
     # get actual numpy array and make a copy so as not to change the data in the iris cube
     track_data = data_i.core_data().copy()
+
+    # keep a copy of the unsmoothed data (that can be used for calculating stats)
+    if statistics_unsmoothed:
+        if not statistic:
+            raise ValueError(
+                "Please provide the input parameter statistic to determine what statistics to calculate."
+            )
+    
 
     track_data = gaussian_filter(
         track_data, sigma=sigma_threshold
@@ -1027,7 +1046,7 @@ def feature_detection_multithreshold_timestep(
             ):
                 raise ValueError(
                     "Ambiguous input for threshold values. If n_min_threshold is given as a dict,"
-                    " the keys not to correspond to the values in threshold."
+                    " the keys must correspond to the values in threshold."
                 )
             # sort dictionary by keys (threshold values) so that they match sorted thresholds and
             # get values for n_min_threshold
@@ -1110,14 +1129,24 @@ def feature_detection_multithreshold_timestep(
                 labels.ravel()[regions_old[key]] = key
                 # apply function to get statistics based on labeled regions and functions provided by the user
                 # the feature dataframe is updated by appending a column for each metric
-            features_thresholds = get_statistics(
-                features_thresholds,
-                labels,
-                track_data,
-                statistic=statistic,
-                index=np.unique(labels[labels > 0]),
-                id_column="idx",
-            )
+            if statistics_unsmoothed:
+                features_thresholds = get_statistics(
+                    features_thresholds,
+                    labels,
+                    data_i.core_data(),
+                    statistic=statistic,
+                    index=np.unique(labels[labels > 0]),
+                    id_column="idx",
+                )
+            else:
+                features_thresholds = get_statistics(
+                    features_thresholds,
+                    labels,
+                    track_data,
+                    statistic=statistic,
+                    index=np.unique(labels[labels > 0]),
+                    id_column="idx",
+                )
 
         logging.debug(
             "Finished feature detection for threshold "
@@ -1140,17 +1169,18 @@ def feature_detection_multithreshold(
     ] = "center",
     sigma_threshold: float = 0.5,
     n_erosion_threshold: int = 0,
-    n_min_threshold: int = 0,
+    n_min_threshold: Union[int, dict[float, int], list[int]] = 0,
     min_distance: float = 0,
     feature_number_start: int = 1,
     PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
-    vertical_coord: str = None,
-    vertical_axis: int = None,
-    detect_subset: dict = None,
-    wavelength_filtering: tuple = None,
+    vertical_coord: Optional[str] = None,
+    vertical_axis: Optional[int] = None,
+    detect_subset: Optional[dict] = None,
+    wavelength_filtering: Optional[tuple] = None,
     dz: Union[float, None] = None,
     strict_thresholding: bool = False,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
+    statistics_unsmoothed: bool = False,
 ) -> pd.DataFrame:
     """Perform feature detection based on contiguous regions.
 
@@ -1185,8 +1215,10 @@ def feature_detection_multithreshold(
         Number of pixels by which to erode the identified features.
         Default is 0.
 
-    n_min_threshold : int, optional
+    n_min_threshold :  int, dict of float to int, or list of int, optional
         Minimum number of identified contiguous pixels for a feature to be detected. Default is 0.
+        If given as a list, the number of elements must match number of thresholds.
+        If given as a dict, the keys need to match the thresholds and the values are the minimum number of identified contiguous pixels for a feature using that specific threshold.
 
     min_distance : float, optional
         Minimum distance between detected features (in meters). Default is 0.
@@ -1361,6 +1393,7 @@ def feature_detection_multithreshold(
             wavelength_filtering=wavelength_filtering,
             strict_thresholding=strict_thresholding,
             statistic=statistic,
+            statistics_unsmoothed=statistics_unsmoothed,
         )
         # check if list of features is not empty, then merge features from different threshold
         # values into one DataFrame and append to list for individual timesteps:
@@ -1459,7 +1492,7 @@ def filter_min_distance(
     target: {'maximum', 'minimum'}, optional
         Flag to determine if tracking is targeting minima or maxima in
         the data. Default is 'maximum'.
-    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both'), optional
         Sets whether to use periodic boundaries, and if so in which directions.
         'none' means that we do not have periodic boundaries
         'hdim_1' means that we are periodic along hdim1
@@ -1531,8 +1564,8 @@ def filter_min_distance(
         feature_locations = features[
             [z_coordinate_name, y_coordinate_name, x_coordinate_name]
         ].to_numpy()
-        feature_locations[0] *= dz
-        feature_locations[1:] *= dxy
+        feature_locations[:, 0] *= dz
+        feature_locations[:, 1:] *= dxy
     else:
         feature_locations = (
             features[[y_coordinate_name, x_coordinate_name]].to_numpy() * dxy
@@ -1545,8 +1578,8 @@ def filter_min_distance(
     # Check if we have PBCs.
     if PBC_flag in ["hdim_1", "hdim_2", "both"]:
         # Note that we multiply by dxy to get the distances in spatial coordinates
-        dist_func = build_distance_function(
-            min_h1 * dxy, max_h1 * dxy, min_h2 * dxy, max_h2 * dxy, PBC_flag
+        dist_func = pbc_utils.build_distance_function(
+            min_h1 * dxy, max_h1 * dxy, min_h2 * dxy, max_h2 * dxy, PBC_flag, is_3D
         )
         features_tree = BallTree(feature_locations, metric="pyfunc", func=dist_func)
         neighbours = features_tree.query_radius(feature_locations, r=min_distance)
