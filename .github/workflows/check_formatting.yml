@@ -4,12 +4,12 @@ jobs:
   formatting_job:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up conda
         uses: mamba-org/setup-micromamba@v1
 
       - name: Install dependencies and check formatting
-        shell: bash -el {0}
+        shell: micromamba-shell {0}
         run:
           mamba install --quiet --yes --file requirements.txt black &&
           black --version &&
