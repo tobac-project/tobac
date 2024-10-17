@@ -1,4 +1,4 @@
-name: check_formatting
+name: Check Python File Formatting with Black
 on: [push, pull_request]
 jobs:
   formatting_job:
@@ -9,7 +9,7 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-version: latest
-          miniforge-variant: mambaforge
+          miniforge-variant: miniforge
           channel-priority: strict
           channels: conda-forge
           show-channel-urls: true
