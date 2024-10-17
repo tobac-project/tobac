@@ -8,12 +8,12 @@ jobs:
       - name: Set up conda
         uses: conda-incubator/setup-miniconda@v3
         with:
-          miniforge-version: latest
-          miniforge-variant: miniforge
+          activate-environment: tobac_black_formatting
           channel-priority: strict
           channels: conda-forge
           show-channel-urls: true
           use-only-tar-bz2: true
+          python-version: 3.12
 
       - name: Install dependencies and check formatting
         shell: bash -l {0}
