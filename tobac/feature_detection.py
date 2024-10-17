@@ -1135,14 +1135,14 @@ def feature_detection_multithreshold_timestep(
             labels.ravel()[regions_old[key]] = key
             # apply function to get statistics based on labeled regions and functions provided by the user
             # the feature dataframe is updated by appending a column for each metric
-        
+
         # select which data to use according to statistics_unsmoothed option
         stats_data = data_i.core_data() if statistics_unsmoothed else track_data
-        
+
         features_thresholds = get_statistics(
             features_thresholds,
             labels,
-            stats_data, 
+            stats_data,
             statistic=statistic,
             index=np.unique(labels[labels > 0]),
             id_column="idx",
