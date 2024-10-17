@@ -14,3 +14,4 @@ dependencies:
   - trackpy
   - pytest
   - typing_extensions
+  - black
