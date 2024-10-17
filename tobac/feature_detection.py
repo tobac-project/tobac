@@ -1015,7 +1015,6 @@ def feature_detection_multithreshold_timestep(
             raise ValueError(
                 "Please provide the input parameter statistic to determine what statistics to calculate."
             )
-    
 
     track_data = gaussian_filter(
         track_data, sigma=sigma_threshold

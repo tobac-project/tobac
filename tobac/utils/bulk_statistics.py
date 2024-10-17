@@ -301,9 +301,15 @@ def get_statistics_from_mask(
 
     for tt in pd.to_datetime(segmentation_mask.time):
         # select specific timestep
-        segmentation_mask_t = segmentation_mask.sel(time=tt, method = 'nearest').data
+        segmentation_mask_t = segmentation_mask.sel(time=tt, method="nearest").data
         fields_t = (
-            field.sel(time=tt, method = 'nearest', tolerance = np.timedelta64(1000, 'us')).values if "time" in field.coords else field.values
+            (
+                field.sel(
+                    time=tt, method="nearest", tolerance=np.timedelta64(1000, "us")
+                ).values
+                if "time" in field.coords
+                else field.values
+            )
             for field in fields
         )
 

@@ -1,4 +1,4 @@
-name: pyart-dev
+name: tobac-dev
 channels:
   - conda-forge
 dependencies:
