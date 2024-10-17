@@ -13,7 +13,6 @@ jobs:
           channels: conda-forge
           show-channel-urls: true
           use-only-tar-bz2: true
-          python-version: 3.12
 
       - name: Install dependencies and check formatting
         shell: bash -l {0}
