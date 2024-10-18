@@ -153,51 +153,51 @@ def test_bulk_statistics_missing_segments():
     ### Test 2D data with time dimension
     test_data = tb_test.make_simple_sample_data_2D().core_data()
     common_dset_opts = {
-    "in_arr": test_data,
-    "data_type": "iris",}
-    
+        "in_arr": test_data,
+        "data_type": "iris",
+    }
+
     test_data_iris = tb_test.make_dataset_from_arr(
-    time_dim_num=0, y_dim_num=1, x_dim_num=2, **common_dset_opts)
+        time_dim_num=0, y_dim_num=1, x_dim_num=2, **common_dset_opts
+    )
 
     # detect features
     threshold = 7
     # test_data_iris = testing.make_dataset_from_arr(test_data, data_type="iris")
     fd_output = tobac.feature_detection.feature_detection_multithreshold(
-    test_data_iris,
-    dxy=1000,
-    threshold=[threshold],
-    n_min_threshold=100,
-    target="maximum",)
+        test_data_iris,
+        dxy=1000,
+        threshold=[threshold],
+        n_min_threshold=100,
+        target="maximum",
+    )
 
     # perform segmentation with bulk statistics
     stats = {
-    "segment_max": np.max,
-    "segment_min": min,
-    "percentiles": (np.percentile, {"q": 95}),}
+        "segment_max": np.max,
+        "segment_min": min,
+        "percentiles": (np.percentile, {"q": 95}),
+    }
 
     out_seg_mask, out_df = tobac.segmentation.segmentation_2D(
-    fd_output, test_data_iris, dxy=1000, threshold=threshold)
+        fd_output, test_data_iris, dxy=1000, threshold=threshold
+    )
 
-    # specify some timesteps we set to zero 
+    # specify some timesteps we set to zero
     timesteps_to_zero = [1, 3, 10]  # 0-based indexing
-    modified_data = out_seg_mask.data.copy() 
+    modified_data = out_seg_mask.data.copy()
     # Set values to zero for the specified timesteps
     for timestep in timesteps_to_zero:
         modified_data[timestep, :, :] = 0  # Set all values for this timestep to zero
 
     #  assure that bulk statistics in postprocessing give same result
     out_segmentation = tb_utils.get_statistics_from_mask(
-    out_df, out_seg_mask, test_data_iris, statistic=stats)
+        out_df, out_seg_mask, test_data_iris, statistic=stats
+    )
 
     assert out_df.time.unique().size == out_segmentation.time.unique().size
 
 
-
-
-    
-
-
-        
 def test_bulk_statistics_multiple_fields():
     """
     Test that multiple field input to bulk_statistics works as intended
