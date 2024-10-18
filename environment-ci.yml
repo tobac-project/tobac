@@ -1,4 +1,4 @@
-name: pyart-dev
+name: tobac-dev
 channels:
   - conda-forge
 dependencies:
@@ -14,3 +14,4 @@ dependencies:
   - trackpy
   - pytest
   - typing_extensions
+  - black

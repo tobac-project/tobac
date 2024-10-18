@@ -20,6 +20,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "nbsphinx",
     "sphinx_gallery.load_style",
+    "sphinx_toolbox.code",
 ]
 
 
@@ -62,6 +63,8 @@ autodoc_mock_imports = [
 ]
 
 sys.path.insert(0, os.path.abspath("../"))
+
+pygments_style = "sphinx"
 
 # Napoleon settings for configuring the Napoleon extension
 # See documentation here:
