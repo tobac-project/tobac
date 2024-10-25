@@ -1015,7 +1015,6 @@ def feature_detection_multithreshold_timestep(
             raise ValueError(
                 "Please provide the input parameter statistic to determine what statistics to calculate."
             )
-    
 
     track_data = gaussian_filter(
         track_data, sigma=sigma_threshold
@@ -1121,39 +1120,34 @@ def feature_detection_multithreshold_timestep(
         elif i_threshold == 0:
             regions_old = regions_i
 
-        if statistic:
-            # reconstruct the labeled regions based on the regions dict
-            labels = np.zeros(track_data.shape)
-            labels = labels.astype(int)
-            for key in regions_old.keys():
-                labels.ravel()[regions_old[key]] = key
-                # apply function to get statistics based on labeled regions and functions provided by the user
-                # the feature dataframe is updated by appending a column for each metric
-            if statistics_unsmoothed:
-                features_thresholds = get_statistics(
-                    features_thresholds,
-                    labels,
-                    data_i.core_data(),
-                    statistic=statistic,
-                    index=np.unique(labels[labels > 0]),
-                    id_column="idx",
-                )
-            else:
-                features_thresholds = get_statistics(
-                    features_thresholds,
-                    labels,
-                    track_data,
-                    statistic=statistic,
-                    index=np.unique(labels[labels > 0]),
-                    id_column="idx",
-                )
-
         logging.debug(
             "Finished feature detection for threshold "
             + str(i_threshold)
             + " : "
             + str(threshold_i)
         )
+
+    if statistic:
+        # reconstruct the labeled regions based on the regions dict
+        labels = np.zeros(track_data.shape)
+        labels = labels.astype(int)
+        for key in regions_old.keys():
+            labels.ravel()[regions_old[key]] = key
+            # apply function to get statistics based on labeled regions and functions provided by the user
+            # the feature dataframe is updated by appending a column for each metric
+
+        # select which data to use according to statistics_unsmoothed option
+        stats_data = data_i.core_data() if statistics_unsmoothed else track_data
+
+        features_thresholds = get_statistics(
+            features_thresholds,
+            labels,
+            stats_data,
+            statistic=statistic,
+            index=np.unique(labels[labels > 0]),
+            id_column="idx",
+        )
+
     return features_thresholds
 
 
@@ -1296,6 +1290,9 @@ def feature_detection_multithreshold(
     if detect_subset is not None and ndim_time in detect_subset:
         raise NotImplementedError("Cannot subset on time")
 
+    # Remember if dz is set and not vertical coord for min distance filtering
+    use_dz_for_filtering = dz is not None
+
     if is_3D:
         # We need to determine the time axis so that we can determine the
         # vertical axis in each timestep if vertical_axis is not none.
@@ -1395,30 +1392,7 @@ def feature_detection_multithreshold(
             statistic=statistic,
             statistics_unsmoothed=statistics_unsmoothed,
         )
-        # check if list of features is not empty, then merge features from different threshold
-        # values into one DataFrame and append to list for individual timesteps:
-        if not features_thresholds.empty:
-            hdim1_ax, hdim2_ax = internal_utils.find_hdim_axes_3D(
-                field_in, vertical_coord=vertical_coord
-            )
-            hdim1_max = field_in.shape[hdim1_ax] - 1
-            hdim2_max = field_in.shape[hdim2_ax] - 1
-            # Loop over DataFrame to remove features that are closer than distance_min to each
-            # other:
-            if min_distance > 0:
-                features_thresholds = filter_min_distance(
-                    features_thresholds,
-                    dxy=dxy,
-                    dz=dz,
-                    min_distance=min_distance,
-                    z_coordinate_name=vertical_coord,
-                    target=target,
-                    PBC_flag=PBC_flag,
-                    min_h1=0,
-                    max_h1=hdim1_max,
-                    min_h2=0,
-                    max_h2=hdim2_max,
-                )
+
         list_features_timesteps.append(features_thresholds)
 
         logging.debug(
@@ -1440,9 +1414,41 @@ def feature_detection_multithreshold(
             )
         else:
             features = add_coordinates(features, field_in)
+
+        # Loop over DataFrame to remove features that are closer than distance_min to each
+        # other:
+        filtered_features = []
+        if min_distance > 0:
+            hdim1_ax, hdim2_ax = internal_utils.find_hdim_axes_3D(
+                field_in, vertical_coord=vertical_coord
+            )
+            hdim1_max = field_in.shape[hdim1_ax] - 1
+            hdim2_max = field_in.shape[hdim2_ax] - 1
+
+            for _, features_frame in features.groupby("frame"):
+                filtered_features.append(
+                    filter_min_distance(
+                        features_frame,
+                        dxy=dxy,
+                        dz=dz if use_dz_for_filtering else None,
+                        min_distance=min_distance,
+                        z_coordinate_name=(
+                            None if use_dz_for_filtering else vertical_coord
+                        ),
+                        target=target,
+                        PBC_flag=PBC_flag,
+                        min_h1=0,
+                        max_h1=hdim1_max,
+                        min_h2=0,
+                        max_h2=hdim2_max,
+                    )
+                )
+            features = pd.concat(filtered_features, ignore_index=True)
+
     else:
         features = None
         logging.debug("No features detected")
+
     logging.debug("feature detection completed")
     return features
 
@@ -1512,47 +1518,47 @@ def filter_min_distance(
     pandas DataFrame
         features after filtering
     """
+    # Optional coordinate names are not yet implemented, set to defaults here:
     if dxy is None:
         raise NotImplementedError("dxy currently must be set.")
 
-    # if PBC_flag != "none":
-    #    raise NotImplementedError("We haven't yet implemented PBCs into this.")
-
-    # if we are 3D, the vertical dimension is in features. if we are 2D, there
-    # is no vertical dimension in features.
-    is_3D = "vdim" in features
-
-    if is_3D and dz is None:
-        z_coordinate_name = internal_utils.find_dataframe_vertical_coord(
-            features, z_coordinate_name
-        )
-
     # Check if both dxy and their coordinate names are specified.
     # If they are, warn that we will use dxy.
-    if dxy is not None and (
-        x_coordinate_name in features and y_coordinate_name in features
-    ):
+    elif x_coordinate_name in features and y_coordinate_name in features:
         warnings.warn(
             "Both " + x_coordinate_name + "/" + y_coordinate_name + " and dxy "
             "set. Using constant dxy. Set dxy to None if you want to use the "
             "interpolated coordinates, or set `x_coordinate_name` and "
             "`y_coordinate_name` to None to use a constant dxy."
         )
+        y_coordinate_name = "hdim_1"
+        x_coordinate_name = "hdim_2"
+    # If dxy only, use hdim_1, hdim_1 as default horizontal dimensions
+    else:
+        y_coordinate_name = "hdim_1"
+        x_coordinate_name = "hdim_2"
 
-    # Check and if both dz is specified and altitude is available, warn that we will use dz.
-    if is_3D and (dz is not None and z_coordinate_name in features):
-        warnings.warn(
-            "Both "
-            + z_coordinate_name
-            + " and dz available to filter_min_distance; using constant dz. "
-            "Set dz to none if you want to use altitude or set `z_coordinate_name` to None to use "
-            "constant dz."
-        )
-
-    # As optional coordinate names are not yet implemented, set to defaults here:
-    z_coordinate_name = "vdim"
-    y_coordinate_name = "hdim_1"
-    x_coordinate_name = "hdim_2"
+    # if we are 3D, the vertical dimension is in features
+    is_3D = "vdim" in features
+    if is_3D:
+        if dz is None:
+            # Find vertical coord name and set dz to 1
+            z_coordinate_name = internal_utils.find_dataframe_vertical_coord(
+                variable_dataframe=features, vertical_coord=z_coordinate_name
+            )
+            dz = 1
+        else:
+            # Use dz, warn if both are set
+            if z_coordinate_name is not None:
+                warnings.warn(
+                    "Both "
+                    + z_coordinate_name
+                    + " and dz available to filter_min_distance; using constant dz. "
+                    "Set dz to none if you want to use altitude or set `z_coordinate_name` to None to use "
+                    "constant dz.",
+                    UserWarning,
+                )
+            z_coordinate_name = "vdim"
 
     if target not in ["minimum", "maximum"]:
         raise ValueError(
