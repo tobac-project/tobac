@@ -372,7 +372,7 @@ def test_trackpy_predict_append():
             60,
             1000,
             30,
-            1,
+            0,
             0,
         ),
         (
@@ -385,7 +385,7 @@ def test_trackpy_predict_append():
             60,
             1000,
             30,
-            1,
+            0,
             60,
         ),
     ],

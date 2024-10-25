@@ -584,6 +584,8 @@ def append_tracks_trackpy(
         If method_linking is neither 'random' nor 'predict'.
 
     """
+
+    span: int = 1
     if "cell" not in tracks_orig:
         raise ValueError("Need to have existing tracks.")
 
@@ -614,13 +616,16 @@ def append_tracks_trackpy(
 
     logging.debug("start linking features into trajectories")
 
-    tracks_orig_cleaned, tracks_cut, new_features_cleaned = _clean_track_dfs_for_append(
-        tracks_orig, new_features, memory, dt
+    tracks_cut, old_tracks_retrack, tracks_vel, new_features_cleaned = (
+        _clean_track_dfs_for_append(
+            tracks_orig, new_features, memory, span, cell_number_unassigned
+        )
     )
     # drop time_cell if it's there.
-
-    tracks_orig_cleaned.drop("time_cell", axis=1, inplace=True)
+    # TODO: do we really need to drop time_cell? can we recalculate?
+    tracks_vel.drop("time_cell", axis=1, inplace=True)
     tracks_cut.drop("time_cell", axis=1, inplace=True)
+    old_tracks_retrack.drop("time_cell", axis=1, inplace=True)
     if is_3D:
         pos_columns_tp = ["vdim_adj", "hdim_1", "hdim_2"]
     else:
@@ -632,15 +637,17 @@ def append_tracks_trackpy(
         # coordinates so that 1 unit is equal to dxy.
 
         if dz is not None:
-            tracks_orig_cleaned["vdim_adj"] = tracks_orig_cleaned["vdim"] * dz / dxy
+            tracks_vel["vdim_adj"] = tracks_vel["vdim"] * dz / dxy
             new_features_cleaned["vdim_adj"] = new_features_cleaned["vdim"] * dz / dxy
+            old_tracks_retrack["vdim_adj"] = old_tracks_retrack["vdim"] * dz / dxy
 
         else:
-            tracks_orig_cleaned["vdim_adj"] = (
-                tracks_orig_cleaned[found_vertical_coord] / dxy
-            )
+            tracks_vel["vdim_adj"] = tracks_vel[found_vertical_coord] / dxy
             new_features_cleaned["vdim_adj"] = (
                 new_features_cleaned[found_vertical_coord] / dxy
+            )
+            old_tracks_retrack["vdim_adj"] = (
+                old_tracks_retrack[found_vertical_coord] / dxy
             )
 
     # Check if we have PBCs.
@@ -649,7 +656,9 @@ def append_tracks_trackpy(
         # which we need for PBCs, neighbor_strategy must be 'BTree'.
         # I think this shouldn't change results, but it will degrade performance.
         neighbor_strategy = "BTree"
-        dist_func = build_distance_function(min_h1, max_h1, min_h2, max_h2, PBC_flag)
+        dist_func = pbc_utils.build_distance_function(
+            min_h1, max_h1, min_h2, max_h2, PBC_flag, is_3D
+        )
 
     else:
         neighbor_strategy = "KDTree"
@@ -661,7 +670,7 @@ def append_tracks_trackpy(
                 "3D Predictive Tracking Only Supported with trackpy versions newer than 0.6.0."
             )
         # avoid setting pos_columns by renaming to default values to avoid trackpy bug
-        tracks_orig_cleaned.rename(
+        tracks_vel.rename(
             columns={
                 "y": "__temp_y_coord",
                 "x": "__temp_x_coord",
@@ -669,6 +678,15 @@ def append_tracks_trackpy(
             },
             inplace=True,
         )
+        old_tracks_retrack.rename(
+            columns={
+                "y": "__temp_y_coord",
+                "x": "__temp_x_coord",
+                "z": "__temp_z_coord",
+            },
+            inplace=True,
+        )
+
         new_features_cleaned.rename(
             columns={
                 "y": "__temp_y_coord",
@@ -678,16 +696,20 @@ def append_tracks_trackpy(
             inplace=True,
         )
 
-        tracks_orig_cleaned.rename(
+        tracks_vel.rename(
             columns={"hdim_1": "y", "hdim_2": "x", "vdim_adj": "z"}, inplace=True
         )
+        old_tracks_retrack.rename(
+            columns={"hdim_1": "y", "hdim_2": "x", "vdim_adj": "z"}, inplace=True
+        )
+
         new_features_cleaned.rename(
             columns={"hdim_1": "y", "hdim_2": "x", "vdim_adj": "z"}, inplace=True
         )
 
     # generate list of features as input for df_link_iter
     features_linking_list_orig = [
-        frame for i, frame in tracks_orig_cleaned.groupby("frame", sort=True)
+        frame for i, frame in old_tracks_retrack.groupby("frame", sort=True)
     ]
     # generate list of features as input for df_link_iter
     features_linking_list_new = [
@@ -714,10 +736,9 @@ def append_tracks_trackpy(
     elif method_linking == "predict":
         # if span is updated, need to make sure we have enough timesteps.
         span = 1
+        concat_df_linking = pd.concat(comb_features_linking)
 
-        guess_speed_pos_df = _calc_velocity_to_most_recent_point(
-            tracks_orig_cleaned, span=span
-        )
+        guess_speed_pos_df = _calc_velocity_to_most_recent_point(tracks_vel, span=span)
         if is_3D:
             speed_cols = ["vdim_spd_mean", "hdim_1_spd_mean", "hdim_2_spd_mean"]
             pos_cols = ["z", "y", "x"]
@@ -725,13 +746,19 @@ def append_tracks_trackpy(
             speed_cols = ["hdim_1_spd_mean", "hdim_2_spd_mean"]
             pos_cols = ["y", "x"]
         # I'm not sure our predictions here are working for position.
-        pred = tp.predict.NearestVelocityPredict(
-            initial_guess_positions=guess_speed_pos_df[pos_cols].values,
-            initial_guess_vels=guess_speed_pos_df[speed_cols].values,
-            pos_columns=pos_cols,
-            span=span,
-        )
-        concat_df_linking = pd.concat(comb_features_linking)
+        if len(guess_speed_pos_df) != 0:
+            pred = tp.predict.NearestVelocityPredict(
+                initial_guess_positions=guess_speed_pos_df[pos_cols].values,
+                initial_guess_vels=guess_speed_pos_df[speed_cols].values,
+                pos_columns=pos_cols,
+                span=span,
+            )
+        else:
+            pred = tp.predict.NearestVelocityPredict(
+                pos_columns=pos_cols,
+                span=span,
+            )
+
         trajectories_unfiltered = pred.link_df(
             concat_df_linking,
             search_range=search_range,
@@ -881,56 +908,87 @@ def append_tracks_trackpy(
 
 
 def _clean_track_dfs_for_append(
-    tracks_orig: pd.DataFrame, new_features: pd.DataFrame, memory: int, dt: float
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Get two cleaned up
+    tracks_orig: pd.DataFrame,
+    new_features: pd.DataFrame,
+    memory: int,
+    span: int,
+    cell_number_unassigned: int,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Split up the input tracks and new features into three dataframes:
+    tracks_orig_cut, the input tracks up to (exclusive) of the new dataframe to be tracked,
+    tracks_orig_retrack, the original input tracks needed to retrack with tracks_new
+    tracks_vel_calc, the input tracks needed to calculate cell velocity, and
+    tracks_new, the input tracks that will be tracked by the append function.
 
     Parameters
     ----------
-    tracks_orig
-    new_features
-    memory
+    tracks_orig: pd.DataFrame
+        Original input tracks
+    new_features: pd.DataFrame
+        New features to track
+    memory: int
+        Memory parameter for trackpy
+    span: int
+        Span parameter for trackpy
+    cell_number_unassigned: int
+        Unassigned cell number
 
     Returns
     -------
+    tracks_orig_cut, tracks_vel_calc, tracks_new (all pd.DataFrame)
+        tracks_orig_cut, the input tracks up to (exclusive) of the new dataframe to be tracked,
+        tracks_orig_retrack, the original input tracks needed to retrack with tracks_new
+        tracks_vel_calc, the input tracks needed to calculate cell velocity, and
+        tracks_new, the input tracks that will be tracked by the append function.
+
 
     """
 
     # need to cut down the existing track array to just the parts we are interested in
-    min_frame_of_interest = max(max(tracks_orig["frame"]) - memory - 1, 0)
-    max_frame_of_interest = max(tracks_orig["frame"])
-    frames_of_interest = np.arange(min_frame_of_interest, max_frame_of_interest + 1, 1)
+    # for preserving
+    min_frame_orig_needed = max(max(tracks_orig["frame"]) - memory - 1, 0)
+    max_frame_orig_needed = max(tracks_orig["frame"])
+    frames_orig_cut = np.arange(min_frame_orig_needed, max_frame_orig_needed + 1, 1)
+
     tracks_orig_cut = copy.deepcopy(
-        tracks_orig[tracks_orig["frame"].isin(frames_of_interest)]
+        tracks_orig[~tracks_orig["frame"].isin(frames_orig_cut)]
     )
-    remainder_tracks = copy.deepcopy(
-        tracks_orig[~tracks_orig["frame"].isin(frames_of_interest)]
+    tracks_orig_retrack = copy.deepcopy(
+        tracks_orig[tracks_orig["frame"].isin(frames_orig_cut)]
     )
+    tracks_orig_retrack["cell"].replace(cell_number_unassigned, np.nan, inplace=True)
+
+    # Now, let's figure out what frames we need to calculate velocity
+    max_frame_vel_needed = max(max(tracks_orig["frame"]) - memory - 1, 0)
+    min_frame_vel_needed = max_frame_vel_needed - span
+    frames_vel = np.arange(min_frame_vel_needed, max_frame_vel_needed + 1, 1)
+
+    tracks_vel_calc = copy.deepcopy(tracks_orig[tracks_orig["frame"].isin(frames_vel)])
 
     # now we need to get the parts of new_features that we need.
-    if min(new_features["frame"]) == max_frame_of_interest + 1:
+    if min(new_features["frame"]) == max_frame_orig_needed + 1:
         # we have exactly the next dataframe we need. we are good to go.
         new_feats_cut = copy.deepcopy(new_features)
-        return tracks_orig_cut, remainder_tracks, new_feats_cut
+        return tracks_orig_cut, tracks_orig_retrack, tracks_vel_calc, new_feats_cut
     # we need to cut or otherwise combine the new features.
     # check to see if the dataframes have been combined
     # if we have the last frame of the old one, we will assume the features are just combined.
     vars_of_interest = ["hdim_1", "hdim_2", "frame", "idx"]
-    if tracks_orig[tracks_orig["frame"] == max_frame_of_interest][
+    if tracks_orig[tracks_orig["frame"] == max_frame_orig_needed][
         vars_of_interest
     ].equals(
-        new_features[new_features["frame"] == max_frame_of_interest][vars_of_interest]
+        new_features[new_features["frame"] == max_frame_orig_needed][vars_of_interest]
     ):
         new_feats_cut = copy.deepcopy(
-            new_features[new_features["frame"] > max_frame_of_interest]
+            new_features[new_features["frame"] > max_frame_orig_needed]
         )
-        return tracks_orig_cut, remainder_tracks, new_feats_cut
+        return tracks_orig_cut, tracks_orig_retrack, tracks_vel_calc, new_feats_cut
 
     # now, let's assume that the new features are entirely separate, but start at the next timestep
     new_feats_cut = copy.deepcopy(new_features)
     # adjust frame number to be one larger than the tracks_orig max frame number
-    new_feats_cut["frame"] += max_frame_of_interest - min(new_feats_cut["frame"]) + 1
-    return tracks_orig_cut, remainder_tracks, new_feats_cut
+    new_feats_cut["frame"] += max_frame_orig_needed - min(new_feats_cut["frame"]) + 1
+    return tracks_orig_cut, tracks_orig_retrack, tracks_vel_calc, new_feats_cut
 
 
 def fill_gaps(
@@ -1091,8 +1149,8 @@ def _calc_velocity_to_most_recent_point(
 ) -> pd.DataFrame:
     """ """
     in_track = in_track.reset_index()
-    min_frame = in_track["frame"].min()
-    speed_tracks = in_track[in_track["frame"] <= min_frame + span]
+    max_frame = in_track["frame"].max()
+    speed_tracks = in_track[in_track["frame"] >= max_frame - span]
 
     if "vdim_adj" in speed_tracks:
         # 3D case
@@ -1121,7 +1179,7 @@ def _calc_velocity_to_most_recent_point(
     all_speeds = speed_tracks[["feature", "frame", "idx", "cell"] + pos_cols].join(
         calculated_speeds,
     )
-    mean_speed_df = all_speeds[all_speeds["frame"] == all_speeds["frame"].min()].join(
+    mean_speed_df = all_speeds[all_speeds["frame"] == all_speeds["frame"].max()].join(
         all_speeds.groupby("cell")[["hdim_1_spd", "hdim_2_spd"]].mean(),
         on="cell",
         rsuffix="_mean",
@@ -1353,3 +1411,20 @@ def _calc_frames_for_stubs(
         return stubs
     else:
         return np.floor(time_cell_min / dt) + 1
+
+
+def _prep_tracking_df(input_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Function to prepare an input dataframe for tracking
+    Parameters
+    ----------
+    input_df: pd.DataFrame
+        input dataframe to prepare
+
+    Returns
+    -------
+    pd.DataFrame
+        prepared da
+
+    """
+    pass
