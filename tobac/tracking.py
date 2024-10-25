@@ -746,15 +746,22 @@ def append_tracks_trackpy(
             pos_cols = ["y", "x"]
         # I'm not sure our predictions here are working for position.
         if len(guess_speed_pos_df) != 0:
-            pred = tp.predict.NearestVelocityPredict(
-                initial_guess_positions=guess_speed_pos_df[pos_cols].values,
-                initial_guess_vels=guess_speed_pos_df[speed_cols].values,
-                pos_columns=pos_cols,
-                span=span,
-            )
+            try:
+                pred = tp.predict.NearestVelocityPredict(
+                    initial_guess_positions=guess_speed_pos_df[pos_cols].values,
+                    initial_guess_vels=guess_speed_pos_df[speed_cols].values,
+                    pos_columns=pos_cols,
+                    span=span,
+                )
+            except TypeError:
+                pred = tp.predict.NearestVelocityPredict(
+                    initial_guess_positions=guess_speed_pos_df[pos_cols].values,
+                    initial_guess_vels=guess_speed_pos_df[speed_cols].values,
+                    span=span,
+                )
+
         else:
             pred = tp.predict.NearestVelocityPredict(
-                pos_columns=pos_cols,
                 span=span,
             )
 
