@@ -452,7 +452,6 @@ def test_append_tracking_single_track_predict_memory(
     # tracking with appends
     # let's extract the first two times
     first_two_times_df = all_feats[all_feats["frame"] < 2]
-    """
     initial_tracking_append = tobac.tracking.linking_trackpy(
         first_two_times_df, None, **tracking_params
     )
@@ -460,10 +459,8 @@ def test_append_tracking_single_track_predict_memory(
     append_all_tracking = tobac.tracking.append_tracks_trackpy(
         initial_tracking_append, all_feats, **tracking_params
     )
-    
 
     assert_frame_equal(orig_tracking, append_all_tracking)
-    """
     # let's try to append one by one, with the full dataframe
     curr_tracking_append = tobac.tracking.linking_trackpy(
         first_two_times_df, None, **tracking_params

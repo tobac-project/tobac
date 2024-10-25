@@ -590,8 +590,7 @@ def append_tracks_trackpy(
         raise ValueError("Need to have existing tracks.")
 
     if memory > 0:
-        pass
-        # raise NotImplementedError("Append tracks with memory not yet implemented.")
+        raise NotImplementedError("Append tracks with memory not yet implemented.")
 
     search_range = _calc_search_range(dt, dxy, v_max=v_max, d_max=d_max, d_min=d_min)
 
@@ -763,20 +762,13 @@ def append_tracks_trackpy(
             concat_df_linking,
             search_range=search_range,
             memory=memory,
-            # pos_columns=["hdim_1", "hdim_2"], # not working atm
             t_column="frame",
             neighbor_strategy=neighbor_strategy,
             link_strategy="auto",
             adaptive_step=adaptive_step,
             adaptive_stop=adaptive_stop,
             dist_func=dist_func,
-            #                                 copy_features=False, diagnostics=False,
-            #                                 hash_size=None, box_size=None, verify_integrity=True,
-            #                                 retain_index=False
         )
-        # recreate a single dataframe from the list
-
-        # trajectories_unfiltered = pd.concat(trajectories_unfiltered)
 
         # change to column names back
         trajectories_unfiltered.rename(
@@ -800,10 +792,6 @@ def append_tracks_trackpy(
             tp.linking.Linker.MAX_SUB_NET_SIZE = size_cache
         else:
             tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE = size_cache
-
-    # Filter trajectories to exclude short trajectories that are likely to be spurious
-    #    trajectories_filtered = filter_stubs(trajectories_unfiltered,threshold=stubs)
-    #    trajectories_filtered=trajectories_filtered.reset_index(drop=True)
 
     # clean up our temporary filters
     if is_3D:
@@ -884,14 +872,6 @@ def append_tracks_trackpy(
     # Interpolate to fill the gaps in the trajectories (left from allowing memory in the linking)
     trajectories_filtered_unfilled = deepcopy(trajectories_filtered)
 
-    #    trajectories_filtered_filled=fill_gaps(trajectories_filtered_unfilled,order=order,
-    #                                extrapolate=extrapolate,frame_max=field_in.shape[0]-1,
-    #                                hdim_1_max=field_in.shape[1],hdim_2_max=field_in.shape[2])
-    #     add coorinates from input fields to output trajectories (time,dimensions)
-    #    logging.debug('start adding coordinates to trajectories')
-    #    trajectories_filtered_filled=add_coordinates(trajectories_filtered_filled,field_in)
-    #     add time coordinate relative to cell initiation:
-    #    logging.debug('start adding cell time to trajectories')
     trajectories_filtered_filled = trajectories_filtered_unfilled
     trajectories_final = add_cell_time(
         trajectories_filtered_filled, cell_number_unassigned=cell_number_unassigned
@@ -1147,7 +1127,24 @@ def _calc_search_range(
 def _calc_velocity_to_most_recent_point(
     in_track: pd.DataFrame, span: int = 1
 ) -> pd.DataFrame:
-    """ """
+    """
+    Function to calculate velocity of the tracks to the most recent point passed in.
+    Calculates over the last `span` frames.
+
+    Parameters
+    ----------
+    in_track: pd.DataFrame
+        input track (with `cell` column) to calculate velocities from.
+
+    span: int
+        span over which to calculate velocities
+
+    Returns
+    -------
+    pd.DataFrame
+        dataframe containing positions and velocities.
+
+    """
     in_track = in_track.reset_index()
     max_frame = in_track["frame"].max()
     speed_tracks = in_track[in_track["frame"] >= max_frame - span]
