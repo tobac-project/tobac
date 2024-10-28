@@ -5,6 +5,8 @@
 import copy
 import logging
 from typing import Callable, Union
+from typing_extensions import Literal
+import iris
 import pandas as pd
 import iris.cube
 
@@ -19,7 +21,7 @@ import warnings
 
 
 def add_coordinates(
-    t: pd.DataFrame,
+    features: pd.DataFrame,
     variable_cube: Union[xr.DataArray, iris.cube.Cube],
     preserve_iris_datetime_types: bool = True,
 ) -> pd.DataFrame:
@@ -28,7 +30,7 @@ def add_coordinates(
 
     Parameters
     ----------
-    t : pandas.DataFrame
+    features : pandas.DataFrame
         Trajectories/features from feature detection or linking step.
 
     variable_cube : iris.cube.Cube
@@ -42,19 +44,131 @@ def add_coordinates(
 
     Returns
     -------
-    t : pandas.DataFrame
+    pandas.DataFrame
         Trajectories with added coordinates.
 
     """
-    if isinstance(variable_cube, iris.cube.Cube):
-        return internal_utils.iris_utils.add_coordinates(t, variable_cube)
-    if isinstance(variable_cube, xr.DataArray):
-        return internal_utils.xr_utils.add_coordinates_to_features(
-            t, variable_cube, preserve_iris_datetime_types=preserve_iris_datetime_types
-        )
-    raise ValueError(
-        "add_coordinates only supports xarray.DataArray and iris.cube.Cube"
-    )
+
+    from scipy.interpolate import interp1d, interpn
+
+    logging.debug("start adding coordinates from cube")
+
+    # pull time as datetime object and timestr from input data and add it to DataFrame:
+    features["time"] = None
+    features["timestr"] = None
+
+    logging.debug("adding time coordinate")
+
+    time_in = variable_cube.coord("time")
+    time_in_datetime = time_in.units.num2date(time_in.points)
+
+    features["time"] = time_in_datetime[features["frame"]]
+    features["timestr"] = [
+        x.strftime("%Y-%m-%d %H:%M:%S") for x in time_in_datetime[features["frame"]]
+    ]
+
+    # Get list of all coordinates in input cube except for time (already treated):
+    coord_names = [coord.name() for coord in variable_cube.coords()]
+    coord_names.remove("time")
+
+    logging.debug("time coordinate added")
+
+    # chose right dimension for horizontal axis based on time dimension:
+    ndim_time = variable_cube.coord_dims("time")[0]
+    if ndim_time == 0:
+        hdim_1 = 1
+        hdim_2 = 2
+    elif ndim_time == 1:
+        hdim_1 = 0
+        hdim_2 = 2
+    elif ndim_time == 2:
+        hdim_1 = 0
+        hdim_2 = 1
+
+    # create vectors to use to interpolate from pixels to coordinates
+    dimvec_1 = np.arange(variable_cube.shape[hdim_1])
+    dimvec_2 = np.arange(variable_cube.shape[hdim_2])
+
+    # loop over coordinates in input data:
+    for coord in coord_names:
+        logging.debug("adding coord: " + coord)
+        # interpolate 2D coordinates:
+        if variable_cube.coord(coord).ndim == 1:
+            if variable_cube.coord_dims(coord) == (hdim_1,):
+                f = interp1d(
+                    dimvec_1,
+                    variable_cube.coord(coord).points,
+                    fill_value="extrapolate",
+                )
+                coordinate_points = f(features["hdim_1"])
+
+            if variable_cube.coord_dims(coord) == (hdim_2,):
+                f = interp1d(
+                    dimvec_2,
+                    variable_cube.coord(coord).points,
+                    fill_value="extrapolate",
+                )
+                coordinate_points = f(features["hdim_2"])
+
+        # interpolate 2D coordinates:
+        elif variable_cube.coord(coord).ndim == 2:
+            if variable_cube.coord_dims(coord) == (hdim_1, hdim_2):
+                points = (dimvec_1, dimvec_2)
+                values = variable_cube.coord(coord).points
+                xi = np.column_stack((features["hdim_1"], features["hdim_2"]))
+                coordinate_points = interpn(points, values, xi, bounds_error=False)
+
+            if variable_cube.coord_dims(coord) == (hdim_2, hdim_1):
+                points = (dimvec_2, dimvec_1)
+                values = variable_cube.coord(coord).points
+                xi = np.column_stack((features["hdim_2"], features["hdim_1"]))
+                coordinate_points = interpn(points, values, xi, bounds_error=False)
+
+        # interpolate 3D coordinates:
+        # mainly workaround for wrf latitude and longitude (to be fixed in future)
+
+        elif variable_cube.coord(coord).ndim == 3:
+            if variable_cube.coord_dims(coord) == (ndim_time, hdim_1, hdim_2):
+                points = (dimvec_1, dimvec_2)
+                values = variable_cube[0, :, :].coord(coord).points
+                xi = np.column_stack((features["hdim_1"], features["hdim_2"]))
+                coordinate_points = interpn(points, values, xi, bounds_error=False)
+
+            if variable_cube.coord_dims(coord) == (ndim_time, hdim_2, hdim_1):
+                points = (dimvec_2, dimvec_1)
+                values = variable_cube[0, :, :].coord(coord).points
+                xi = np.column_stack((features["hdim_2"], features["hdim_1"]))
+                coordinate_points = interpn(points, values, xi, bounds_error=False)
+
+            if variable_cube.coord_dims(coord) == (hdim_1, ndim_time, hdim_2):
+                points = (dimvec_1, dimvec_2)
+                values = variable_cube[:, 0, :].coord(coord).points
+                xi = np.column_stack((features["hdim_1"], features["hdim_2"]))
+                coordinate_points = interpn(points, values, xi, bounds_error=False)
+
+            if variable_cube.coord_dims(coord) == (hdim_1, hdim_2, ndim_time):
+                points = (dimvec_1, dimvec_2)
+                values = variable_cube[:, :, 0].coord(coord).points
+                xi = np.column_stack((features["hdim_1"], features["hdim_2"]))
+                coordinate_points = interpn(points, values, xi, bounds_error=False)
+
+            if variable_cube.coord_dims(coord) == (hdim_2, ndim_time, hdim_1):
+                points = (dimvec_2, dimvec_1)
+                values = variable_cube[:, 0, :].coord(coord).points
+                xi = np.column_stack((features["hdim_2"], features["hdim_1"]))
+                coordinate_points = interpn(points, values, xi, bounds_error=False)
+
+            if variable_cube.coord_dims(coord) == (hdim_2, hdim_1, ndim_time):
+                points = (dimvec_2, dimvec_1)
+                values = variable_cube[:, :, 0].coord(coord).points
+                xi = np.column_stack((features["hdim_2"], features["hdim_1"]))
+                coordinate_points = interpn(points, values, xi, bounds_error=False)
+
+        # write resulting array or list into DataFrame:
+        features[coord] = coordinate_points
+
+        logging.debug("added coord: " + coord)
+    return features
 
 
 def add_coordinates_3D(
@@ -505,7 +619,6 @@ def transform_feature_points(
         the new grid, suitable for use in segmentation
 
     """
-    from .. import analysis as tb_analysis
 
     RADIUS_EARTH_M = 6371000
     is_3D = "vdim" in features
@@ -601,14 +714,12 @@ def transform_feature_points(
         )
 
     if warn_dropped_features:
-        returned_features = ret_features["feature"]
-        all_features = features["feature"]
-        removed_features = np.delete(
-            all_features, np.where(np.any(all_features == returned_features))
-        )
-        warnings.warn(
-            "Dropping feature numbers: " + str(removed_features.values), UserWarning
-        )
+        removed_features = np.setdiff1d(features["feature"], ret_features["feature"])
+        if len(removed_features):
+            warnings.warn(
+                "Dropping feature numbers: " + str(removed_features.tolist()),
+                UserWarning,
+            )
 
     # make sure that feature points are converted back to int64
     ret_features["feature"] = ret_features.feature.astype(int)
