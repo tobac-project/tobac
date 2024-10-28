@@ -39,7 +39,7 @@ import xarray as xr
 import numpy as np
 import pandas as pd
 from typing_extensions import Literal
-from typing import Union, Callable
+from typing import Union, Callable, Optional
 
 import skimage
 import numpy as np
@@ -417,12 +417,11 @@ def segmentation_timestep(
     statistics: boolean, optional
         Default is None. If True, bulk statistics for the data points assigned to each feature are saved in output.
 
-
     Returns
     -------
-    segmentation_out : iris.cube.Cube
+    segmentation_out : xarray.DataArray
         Mask, 0 outside and integer numbers according to track
-        inside the ojects.
+        inside the objects.
 
     features_out : pandas.DataFrame
         Feature dataframe including the number of cells (2D or 3D) in
@@ -1135,6 +1134,7 @@ def segmentation(
     segment_number_below_threshold: int = 0,
     segment_number_unassigned: int = 0,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
+    time_padding: Optional[datetime.timedelta] = datetime.timedelta(seconds=0.5),
 ) -> tuple[xr.Dataset, pd.DataFrame]:
     """Use watershedding to determine region above a threshold
     value around initial seeding position for all time steps of
@@ -1207,6 +1207,11 @@ def segmentation(
     statistic : dict, optional
         Default is None. Optional parameter to calculate bulk statistics within feature detection.
         Dictionary with callable function(s) to apply over the region of each detected feature and the name of the statistics to appear in the feature output dataframe. The functions should be the values and the names of the metric the keys (e.g. {'mean': np.mean})
+    time_padding: timedelta, optional
+        If set, allows for segmentation to be associated with a feature input
+        timestep that is time_padding off of the feature. Extremely useful when
+        converting between micro- and nanoseconds, as is common when using Pandas
+        dataframes.
 
     Returns
     -------
@@ -1225,7 +1230,6 @@ def segmentation(
         in coords.
     """
     import pandas as pd
-    from iris.cube import CubeList
 
     time_var_name: str = "time"
     seg_out_type: str = "int64"
@@ -1264,8 +1268,13 @@ def segmentation(
 
     for i_time, time_i in enumerate(field.coords[time_var_name]):
         field_at_time = field.isel({time_var_name: i_time})
-        # TODO: allow more variability in time than exactly equal.
-        features_i = features.loc[all_times == time_i.values]
+        if time_padding is not None:
+            padded_conv = pd.Timedelta(time_padding).to_timedelta64()
+            min_time = time_i.values - padded_conv
+            max_time = time_i.values + padded_conv
+            features_i = features.loc[all_times.between(min_time, max_time)]
+        else:
+            features_i = features.loc[all_times == time_i.values]
         segmentation_out_i, features_out_i = segmentation_timestep(
             field_at_time,
             features_i,
