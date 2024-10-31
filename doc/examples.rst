@@ -32,4 +32,19 @@ tobac is provided with a set of Jupyter notebooks that show examples of the appl
    WRF Updrafts <examples/Example_Updraft_Tracking/Example_Updraft_Tracking>
    WRF Mesoscale Vorticity <examples/Example_vorticity_tracking_model/Example_vorticity_tracking_model>
 
+
+.. nbgallery::
+   :caption: Calculating Bulk Statistics
+
+   Calculating Bulk Statistics during Feature Detection <bulk_statistics/notebooks/compute_statistics_during_feature_detection>
+   Calculating Bulk Statistics during Segmentation <bulk_statistics/notebooks/compute_statistics_during_segmentation>
+   Calculating Bulk Statistics as a Postprocessing Step <bulk_statistics/notebooks/compute_statistics_postprocessing_example>
+
+
+.. nbgallery::
+   :caption: Examples of Using *tobac* with Large Datasets and in Parallel
+
+   Simple Dask Parallel Tutorial <big_datasets_examples/notebooks/parallel_processing_tobac>
+
+
 The notebooks can be found in the **examples** folder as part of the python package. The necessary input data for these examples is avaliable on zenodo and can be downloaded automatically by the Jupyter notebooks.

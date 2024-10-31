@@ -319,6 +319,34 @@ def test_feature_detection_position(position_threshold):
             True,
             False,
         ),
+        (  # Test using z coord name
+            (0, 0, 0, 4, 1),
+            (1, 1, 1, 4, 1),
+            1000,
+            None,
+            1,
+            "maximum",
+            False,
+            False,
+            True,
+            "none",
+            True,
+            True,
+        ),
+        (  # Test using z coord name
+            (0, 0, 0, 5, 1),
+            (1, 1, 1, 4, 1),
+            1,
+            None,
+            101,
+            "maximum",
+            False,
+            False,
+            True,
+            "none",
+            True,
+            False,
+        ),
     ],
 )
 def test_filter_min_distance(
@@ -415,18 +443,6 @@ def test_filter_min_distance(
 
     feat_combined = pd.concat([feat_1_interp, feat_2_interp], ignore_index=True)
 
-    filter_dist_opts = dict()
-
-    if add_x_coords:
-        feat_combined[x_coord_name] = feat_combined["hdim_2"] * assumed_dxy
-        filter_dist_opts["x_coordinate_name"] = x_coord_name
-    if add_y_coords:
-        feat_combined[y_coord_name] = feat_combined["hdim_1"] * assumed_dxy
-        filter_dist_opts["y_coordinate_name"] = y_coord_name
-    if add_z_coords and is_3D:
-        feat_combined[z_coord_name] = feat_combined["vdim"] * assumed_dz
-        filter_dist_opts["z_coordinate_name"] = z_coord_name
-
     filter_dist_opts = {
         "features": feat_combined,
         "dxy": dxy,
@@ -439,6 +455,16 @@ def test_filter_min_distance(
         "min_h2": 0,
         "max_h2": 100,
     }
+    if add_x_coords:
+        feat_combined[x_coord_name] = feat_combined["hdim_2"] * assumed_dxy
+        filter_dist_opts["x_coordinate_name"] = x_coord_name
+    if add_y_coords:
+        feat_combined[y_coord_name] = feat_combined["hdim_1"] * assumed_dxy
+        filter_dist_opts["y_coordinate_name"] = y_coord_name
+    if add_z_coords and is_3D:
+        feat_combined[z_coord_name] = feat_combined["vdim"] * assumed_dz
+        filter_dist_opts["z_coordinate_name"] = z_coord_name
+
     if target not in ["maximum", "minimum"]:
         with pytest.raises(ValueError):
             out_feats = feat_detect.filter_min_distance(**filter_dist_opts)
