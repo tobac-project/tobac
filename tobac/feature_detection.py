@@ -1142,7 +1142,7 @@ def feature_detection_multithreshold_timestep(
             # the feature dataframe is updated by appending a column for each metric
 
         # select which data to use according to statistics_unsmoothed option
-        stats_data = data_i.core_data() if statistics_unsmoothed else track_data
+        stats_data = data_i.values if statistics_unsmoothed else track_data
 
         features_thresholds = get_statistics(
             features_thresholds,
