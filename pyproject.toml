@@ -4,6 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tobac"
+version = "1.5.4"
 authors = [
       { name="Max Heikenfeld", email="max.heikenfeld@physics.ox.ac.uk" },
       { name="William Jones", email="william.jones@physics.ox.ac.uk" },
