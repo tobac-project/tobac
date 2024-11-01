@@ -26,3 +26,4 @@ dependencies:
   - rioxarray
   - numba
   - dask
+  - ffmpeg
