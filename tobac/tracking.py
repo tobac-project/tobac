@@ -584,6 +584,10 @@ def append_tracks_trackpy(
         If method_linking is neither 'random' nor 'predict'.
 
     """
+    if pkgvsn.parse(tp.__version__) < pkgvsn.parse("0.6.0"):
+        raise ValueError(
+            "Append Tracking Only Supported with trackpy versions newer than 0.6.0."
+        )
 
     span: int = 1
     if "cell" not in tracks_orig:

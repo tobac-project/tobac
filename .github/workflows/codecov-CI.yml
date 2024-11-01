@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v2
       # Similar to MetPy install-conda action
       - name: Set up conda
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-version: latest
           miniforge-variant: mambaforge
