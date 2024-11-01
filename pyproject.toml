@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tobac"
+authors = [
+      { name="Max Heikenfeld", email="max.heikenfeld@physics.ox.ac.uk" },
+      { name="William Jones", email="william.jones@physics.ox.ac.uk" },
+      { name="Fabian Senf", email="senf@tropos.de" },
+      { name="Sean Freeman", email="sean.freeman@uah.edu" },
+      { name="Julia Kukulies", email="kukulies@ucar.edu" },
+      { name="Kelcy Brunner", email="Kelcy.Brunner@ttu.edu" },
+]
+description = "A package for identifying and tracking atmospheric phenomena"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Atmospheric Science",
+]
+
+[project.urls]
+Homepage = "http://github.com/tobac-project/tobac"
+Documentation = "http://tobac.io"
+Issues = "http://github.com/tobac-project/tobac/issues"
