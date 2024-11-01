@@ -8,5 +8,5 @@ matplotlib
 iris
 xarray
 cartopy
-trackpy
+trackpy>=0.6.1
 typing_extensions
