@@ -9,7 +9,7 @@ dependencies:
   - pandas
   - matplotlib
   - iris
-  - xarray
+  - xarray<2024.10.0
   - cartopy
   - trackpy>=0.6.1
   - pytest
