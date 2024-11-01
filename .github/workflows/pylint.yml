@@ -14,7 +14,7 @@ jobs:
         shell: bash -l {0}
     steps:
       - name: Check out Git repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up mamba
         uses: mamba-org/setup-micromamba@v1
@@ -34,7 +34,7 @@ jobs:
         id: git
 
       - name: Checkout RC branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.base_ref }}
           
@@ -44,7 +44,7 @@ jobs:
         id: main_score
 
       - name: Checkout PR branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: "${{ steps.git.outputs.SHA }}"  
 
