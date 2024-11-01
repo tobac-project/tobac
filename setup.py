@@ -72,12 +72,6 @@ CLASSIFIERS = [
 
 
 setup(
-    name=PACKAGE_NAME,
-    version=get_version(PACKAGE_NAME),
-    description="Tracking and object-based analysis of clouds",
-    url="http://github.com/tobac-project/tobac",
-    classifiers=CLASSIFIERS,
-    license="BSD-3-Clause License",
     packages=get_packages(PACKAGE_NAME),
     install_requires=get_requirements("requirements.txt"),
     test_requires=["pytest"],
