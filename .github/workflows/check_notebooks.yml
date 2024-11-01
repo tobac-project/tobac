@@ -10,21 +10,12 @@ jobs:
       - name: check out repository code
         uses: actions/checkout@v3
       - name: set up conda environment
-        uses: conda-incubator/setup-miniconda@v2
+        uses: mamba-org/setup-micromamba@v1
         with:
-          miniforge-version: latest
-          miniforge-variant: mambaforge
-          channel-priority: strict
-          channels: conda-forge
-          show-channel-urls: true
-          use-only-tar-bz2: true
-          auto-update-conda: true
-          auto-activate-base: false
-          activate-environment: notebook-env
-      - name: Install tobac dependencies
-        run: |
-          mamba install -c conda-forge --yes ffmpeg gcc jupyter pytables
-          mamba install -c conda-forge --yes --file example_requirements.txt
+          environment-file: environment-examples.yml
+          generate-run-shell: true
+          cache-environment: true
+          cache-downloads: true
       - name: Install tobac
         run: |
           pip install .
