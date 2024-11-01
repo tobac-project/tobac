@@ -16,19 +16,16 @@ jobs:
       - name: Check out Git repository
         uses: actions/checkout@v3
 
-      - name: Set up conda
-        uses: conda-incubator/setup-miniconda@v2
+      - name: Set up mamba
+        uses: mamba-org/setup-micromamba@v1
         with:
-          miniforge-version: latest
-          miniforge-variant: mambaforge
-          channel-priority: strict
-          channels: conda-forge
-          show-channel-urls: true
-          use-only-tar-bz2: true
+          environment-file: environment-ci.yml
+          generate-run-shell: true
+          cache-environment: true
+          cache-downloads: true
 
-      - name: Install tobac and pylint
+      - name: Install tobac
         run: |
-          mamba install --yes pylint
           pip install .
 
       - name: Store the PR branch
