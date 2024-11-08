@@ -7,32 +7,27 @@ permissions:
   pull-requests: write
 
 jobs:
-  build:
+  lint-workflow:
     runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash -l {0}
     steps:
       - name: Check out Git repository
-        uses: actions/checkout@v3
-
-      - name: Set up conda
-        uses: conda-incubator/setup-miniconda@v2
+        uses: actions/checkout@v4
+      - name: Set up mamba environment
+        uses: mamba-org/setup-micromamba@v1
         with:
-          miniforge-version: latest
-          miniforge-variant: mambaforge
-          channel-priority: strict
-          channels: conda-forge
-          show-channel-urls: true
-          use-only-tar-bz2: true
-
-      - name: Install tobac and pylint
-        run: |
-          mamba install --yes pylint
+          environment-file: environment-ci.yml
+          generate-run-shell: true
+          cache-environment: true
+          cache-downloads: true
+      - name: Install tobac
+        run:
           pip install .
 
       - name: Store the PR branch
-        run: |
+        run:
           echo "SHA=$(git rev-parse "$GITHUB_SHA")" >> $GITHUB_OUTPUT
         id: git
 
@@ -42,7 +37,7 @@ jobs:
           ref: ${{ github.base_ref }}
           
       - name: Get pylint score of RC branch
-        run: |
+        run:
           pylint tobac --disable=C --exit-zero
         id: main_score
 
@@ -52,7 +47,7 @@ jobs:
           ref: "${{ steps.git.outputs.SHA }}"  
 
       - name: Get pylint score of PR branch
-        run: |
+        run:
           # use shell script to save only tail of output  
           OUTPUT_PART=$(pylint tobac --disable=C --exit-zero | tail -n 2)
           # but post entire output in the action details 
