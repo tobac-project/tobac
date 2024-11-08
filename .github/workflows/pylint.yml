@@ -44,10 +44,10 @@ jobs:
       - name: Checkout PR branch
         uses: actions/checkout@v3
         with:
-          ref: "${{ steps.git.outputs.SHA }}"  
+          ref: ${{ steps.git.outputs.SHA }}
 
       - name: Get pylint score of PR branch
-        run:
+        run: |
           # use shell script to save only tail of output  
           OUTPUT_PART=$(pylint tobac --disable=C --exit-zero | tail -n 2)
           # but post entire output in the action details 
