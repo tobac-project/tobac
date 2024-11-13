@@ -1,6 +1,7 @@
 """Decorators for use with other tobac functions
 """
 
+from __future__ import annotations
 import functools
 import warnings
 
