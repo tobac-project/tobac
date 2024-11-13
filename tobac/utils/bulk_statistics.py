@@ -4,6 +4,7 @@ or within feature detection or segmentation.
 
 """
 
+from __future__ import annotations
 import logging
 import warnings
 from functools import partial

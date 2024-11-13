@@ -14,6 +14,7 @@ References
    12(11), 4551-4570.
 """
 
+from __future__ import annotations
 import warnings
 import logging
 

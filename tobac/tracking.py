@@ -19,6 +19,7 @@ References
    12(11), 4551-4570.
 """
 
+from __future__ import annotations
 import logging
 from operator import is_
 import numpy as np
