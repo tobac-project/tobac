@@ -1249,7 +1249,7 @@ def segmentation(
 
     # create our output dataarray
     segmentation_out_data = (
-        field.astype("int64", casting="unsafe")
+        xr.zeros_like(field, dtype=int)
         .rename("segmentation_mask")
         .assign_attrs(threshold=threshold)
     )
