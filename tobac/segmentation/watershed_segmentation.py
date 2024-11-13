@@ -36,8 +36,6 @@ import datetime
 
 import iris.cube
 import xarray as xr
-import numpy as np
-import pandas as pd
 from typing_extensions import Literal
 from typing import Union, Callable, Optional
 
@@ -45,7 +43,6 @@ import skimage
 import numpy as np
 import pandas as pd
 
-from tobac import utils as tb_utils
 from tobac.utils import periodic_boundaries as pbc_utils
 from tobac.utils import internal as internal_utils
 from tobac.utils import get_statistics
@@ -486,7 +483,7 @@ def segmentation_timestep(
     # copy feature dataframe for output
     features_out = deepcopy(features_in)
     # Create cube of the same dimensions and coordinates as input data to store mask:
-    segmentation_out = field_in.copy(deep=True)
+    segmentation_out = xr.zeros_like(field_in, dtype=int)
     segmentation_out = segmentation_out.rename("segmentation_mask")
 
     # Get raw array from input data:
@@ -824,15 +821,15 @@ def segmentation_timestep(
                 )
 
                 # edit value in buddy_features dataframe
-                buddy_features.hdim_1.values[
-                    buddy_looper
-                ] = pbc_utils.transfm_pbc_point(
-                    float(buddy_feat.hdim_1), hdim1_min, hdim1_max
+                buddy_features.hdim_1.values[buddy_looper] = (
+                    pbc_utils.transfm_pbc_point(
+                        float(buddy_feat.hdim_1), hdim1_min, hdim1_max
+                    )
                 )
-                buddy_features.hdim_2.values[
-                    buddy_looper
-                ] = pbc_utils.transfm_pbc_point(
-                    float(buddy_feat.hdim_2), hdim2_min, hdim2_max
+                buddy_features.hdim_2.values[buddy_looper] = (
+                    pbc_utils.transfm_pbc_point(
+                        float(buddy_feat.hdim_2), hdim2_min, hdim2_max
+                    )
                 )
 
                 buddy_looper = buddy_looper + 1
@@ -1010,9 +1007,9 @@ def segmentation_timestep(
                                 segmentation_mask_3[z_val_o, y_val_o, x_val_o]
                                 != segmentation_mask_4.data[z_seg, y_seg, x_seg]
                             ):
-                                segmentation_mask_3[
-                                    z_val_o, y_val_o, x_val_o
-                                ] = segmentation_mask_4.data[z_seg, y_seg, x_seg]
+                                segmentation_mask_3[z_val_o, y_val_o, x_val_o] = (
+                                    segmentation_mask_4.data[z_seg, y_seg, x_seg]
+                                )
         if not is_3D_seg:
             segmentation_mask_3 = segmentation_mask_3[0]
 
@@ -1266,15 +1263,17 @@ def segmentation(
     else:
         all_times = features["time"].map(np.datetime64)
 
-    for i_time, time_i in enumerate(field.coords[time_var_name]):
-        field_at_time = field.isel({time_var_name: i_time})
+    for time_iteration_number, time_iteration_value in enumerate(
+        field.coords[time_var_name]
+    ):
+        field_at_time = field.isel({time_var_name: time_iteration_number})
         if time_padding is not None:
             padded_conv = pd.Timedelta(time_padding).to_timedelta64()
-            min_time = time_i.values - padded_conv
-            max_time = time_i.values + padded_conv
+            min_time = time_iteration_value.values - padded_conv
+            max_time = time_iteration_value.values + padded_conv
             features_i = features.loc[all_times.between(min_time, max_time)]
         else:
-            features_i = features.loc[all_times == time_i.values]
+            features_i = features.loc[all_times == time_iteration_value.values]
         segmentation_out_i, features_out_i = segmentation_timestep(
             field_at_time,
             features_i,
@@ -1292,16 +1291,17 @@ def segmentation(
             segment_number_below_threshold=segment_number_below_threshold,
             statistic=statistic,
         )
-        segmentation_out_data.loc[{time_var_name: time_i}] = segmentation_out_i
+        segmentation_out_data.loc[{time_var_name: time_iteration_value}] = (
+            segmentation_out_i
+        )
         features_out_list.append(features_out_i)
         logging.debug(
             "Finished segmentation for "
-            + pd.to_datetime(time_i.values).strftime("%Y-%m-%d %H:%M:%S")
+            + pd.to_datetime(time_iteration_value.values).strftime("%Y-%m-%d %H:%M:%S")
         )
 
     # Merge output from individual timesteps:
     features_out = pd.concat(features_out_list)
-    # segmentation_out = segmentation_out_data.to_dataset()
     logging.debug("Finished segmentation")
     return segmentation_out_data, features_out
 
