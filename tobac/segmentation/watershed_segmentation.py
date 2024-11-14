@@ -1132,7 +1132,7 @@ def segmentation(
     segment_number_unassigned: int = 0,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
     time_padding: Optional[datetime.timedelta] = datetime.timedelta(seconds=0.5),
-) -> tuple[xr.Dataset, pd.DataFrame]:
+) -> tuple[xr.DataArray, pd.DataFrame]:
     """Use watershedding to determine region above a threshold
     value around initial seeding position for all time steps of
     the input data. Works both in 2D (based on single seeding
