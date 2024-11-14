@@ -179,14 +179,14 @@ def iris_to_xarray(save_iris_info: bool = False):
                 if type(output) == tuple:
                     output = tuple(
                         [
-                            xarray.DataArray.to_iris(output_item)
+                            output_item.to_iris().copy(output_item.data)
                             if type(output_item) == xarray.DataArray
                             else output_item
                             for output_item in output
                         ]
                     )
                 elif type(output) == xarray.DataArray:
-                    output = xarray.DataArray.to_iris(output)
+                    output = output.to_iris().copy(output.data)
                 # if output is neither tuple nor an xr.DataArray
 
             else:
@@ -241,7 +241,7 @@ def xarray_to_iris():
                 # print("converting xarray to iris and back")
                 args = tuple(
                     [
-                        xarray.DataArray.to_iris(arg)
+                        arg.to_iris().copy(arg.data)
                         if type(arg) == xarray.DataArray
                         else arg
                         for arg in args
@@ -339,7 +339,7 @@ def irispandas_to_xarray(save_iris_info: bool = False):
                 if type(output) == tuple:
                     output = tuple(
                         [
-                            xarray.DataArray.to_iris(output_item)
+                            output_item.to_iris().copy(output_item.data)
                             if type(output_item) == xarray.DataArray
                             else output_item.to_dataframe()
                             if type(output_item) == xarray.Dataset
@@ -349,7 +349,7 @@ def irispandas_to_xarray(save_iris_info: bool = False):
                     )
                 else:
                     if type(output) == xarray.DataArray:
-                        output = xarray.DataArray.to_iris(output)
+                        output = output.to_iris().copy(output.data)
                     elif type(output) == xarray.Dataset:
                         output = output.to_dataframe()
 
