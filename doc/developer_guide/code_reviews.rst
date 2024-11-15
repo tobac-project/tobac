@@ -1,3 +1,5 @@
+.. _code-reviews:
+
 Code reviews
 ------------------
 
