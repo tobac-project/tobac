@@ -1,3 +1,5 @@
+.. _features-without-segmented-area:
+
 Features without segmented areas
 --------------------------------------
 
@@ -16,7 +18,7 @@ If the segmentation threshold is lower (assuming `target='minimum'`) than the hi
 
 Consider for example the following data with 5 being the highest threshold specified for the Feature Detection (see :doc:`feature_detection_overview`):  
 
-	.. image:: images/features_without_segment.png
+	.. image:: ./images/features_without_segment.png
             :width: 500 px
 
 If the segmentation threshold is larger than 5 (e.g.  `threshold = 6`), the segmented area contains all values <= 5 (still assuming `target='minimum'`), no matter if the detected feature has a threshold lower than 5 (upper panels) or if it is exactly equal to 5 and does not contain any features with lower thresholds inside (lower panels).
@@ -32,7 +34,7 @@ Case 2: Feature position
 
 Another reason for features that do not have a segmented area associated with them is the rare but possible case when the feature position is located outside of the threshold area: 
 
-	.. image:: images/feature_outside_of_threshold_area.png
+	.. image:: ./images/feature_outside_of_threshold_area.png
             :width: 500 px
 
               

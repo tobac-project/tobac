@@ -1,4 +1,4 @@
-tobac package
+API Documentation
 =============
 
 Submodules

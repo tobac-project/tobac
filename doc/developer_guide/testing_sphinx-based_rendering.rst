@@ -1,3 +1,5 @@
+.. _testing-sphinx-rendering:
+
 How to check the Sphinx-based rendering
 ---------------------------------------
 

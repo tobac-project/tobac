@@ -3,7 +3,7 @@ The documentation on setting this up is here: https://www.sphinx-doc.org/en/mast
 """
 
 # This is the standard readthedocs theme.
-import sphinx_rtd_theme
+import pydata_sphinx_theme
 import sys, os
 
 sys.path.insert(0, os.path.abspath("extensions"))
@@ -23,10 +23,29 @@ extensions = [
 ]
 
 
-html_theme = "sphinx_rtd_theme"
+html_theme = "pydata_sphinx_theme"
 
 html_static_path = ["_static"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+
+
+html_theme_options = {
+    "logo": {
+        "image_light": "images/tobac-logo-colors.png",
+        "image_dark": "images/tobac-logo-colors.png",
+    },
+    # https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/header-links.html#fontawesome-icons
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/tobac-project/tobac",
+            "icon": "fa-brands fa-github",
+        },
+    ],
+    "navbar_start": ["navbar-logo"],
+    "navbar_align": "content",
+    "header_links_before_dropdown": 5,
+}
 
 
 project = "tobac"

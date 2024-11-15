@@ -1,6 +1,4 @@
-..
-    Description of the input data required.
-
+.. _data_input:
 
 Data Input
 ==========

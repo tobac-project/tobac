@@ -1,3 +1,5 @@
+.. _segmentation-output:
+
 Segmentation Output
 -------------------------
 
