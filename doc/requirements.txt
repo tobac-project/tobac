@@ -3,3 +3,4 @@ nbsphinx
 numpy
 sphinx_rtd_theme
 sphinx-gallery
+pydata_sphinx_theme
