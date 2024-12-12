@@ -8,7 +8,7 @@ tobac.analysis module
 ---------------------
 
 tobac.analysis.cell_analysis module
----------------------
+-----------------------------------
 
 .. automodule:: tobac.analysis.cell_analysis
    :members:
@@ -16,7 +16,7 @@ tobac.analysis.cell_analysis module
    :show-inheritance:
 
 tobac.analysis.feature_analysis module
----------------------
+--------------------------------------
 
 .. automodule:: tobac.analysis.feature_analysis
    :members:
@@ -24,7 +24,7 @@ tobac.analysis.feature_analysis module
    :show-inheritance:
 
 tobac.analysis.spatial module
----------------------
+-----------------------------
 
 .. automodule:: tobac.analysis.spatial
    :members:
@@ -48,7 +48,7 @@ tobac.feature\_detection module
    :show-inheritance:
 
 tobac.merge_split module
----------------------
+------------------------
 
 .. automodule:: tobac.merge_split
    :members:
@@ -91,7 +91,7 @@ tobac.utils modules
 ------------------
 
 tobac.utils.bulk_statistics module
-------------------
+----------------------------------
 
 .. automodule:: tobac.utils.bulk_statistics
    :members:
@@ -99,7 +99,7 @@ tobac.utils.bulk_statistics module
    :show-inheritance:
 
 tobac.utils.decorators module
-------------------
+-----------------------------
 
 .. automodule:: tobac.utils.decorators
    :members:
@@ -107,7 +107,7 @@ tobac.utils.decorators module
    :show-inheritance:
 
 tobac.utils.general module
-------------------
+--------------------------
 
 .. automodule:: tobac.utils.general
    :members:
@@ -115,7 +115,7 @@ tobac.utils.general module
    :show-inheritance:
 
 tobac.utils.mask module
-------------------
+-----------------------
 
 .. automodule:: tobac.utils.mask
    :members:
@@ -123,7 +123,7 @@ tobac.utils.mask module
    :show-inheritance:
 
 tobac.utils.periodic_boundaries module
-------------------
+--------------------------------------
 
 .. automodule:: tobac.utils.periodic_boundaries
    :members:
