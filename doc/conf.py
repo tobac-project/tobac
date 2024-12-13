@@ -20,13 +20,19 @@ extensions = [
     "sphinx.ext.napoleon",
     "nbsphinx",
     "sphinx_gallery.load_style",
+    "myst_parser",
+    "sphinx_design",
 ]
 
 
 html_theme = "pydata_sphinx_theme"
 
 html_static_path = ["_static"]
+html_css_files = ["custom.css", "theme_overrides.css"]
+
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+source_suffix = {".rst": "restructuredtext", ".md": "restructuredtext"}
+myst_enable_extensions = ["colon_fence"]
 
 
 html_theme_options = {
@@ -59,6 +65,7 @@ collapse_navigation = False
 # Include our custom CSS (currently for special table config)
 def setup(app):
     app.add_css_file("theme_overrides.css")
+    app.add_css_file("custom.css")
 
 
 # This should include all modules used in tobac. These are dummy imports,
