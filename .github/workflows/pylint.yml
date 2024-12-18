@@ -32,7 +32,7 @@ jobs:
         id: git
 
       - name: Checkout RC branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.base_ref }}
           
@@ -42,12 +42,12 @@ jobs:
         id: main_score
 
       - name: Checkout PR branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          ref: "${{ steps.git.outputs.SHA }}"  
+          ref: ${{ steps.git.outputs.SHA }}
 
       - name: Get pylint score of PR branch
-        run:
+        run: |
           # use shell script to save only tail of output  
           OUTPUT_PART=$(pylint tobac --disable=C --exit-zero | tail -n 2)
           # but post entire output in the action details 
