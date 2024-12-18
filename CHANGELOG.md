@@ -1,6 +1,6 @@
 ### Tobac Changelog
 
-_**Version 1.5.4:**_
+_**Version 1.5.5:**_
 
 **Bug fixes**
 
