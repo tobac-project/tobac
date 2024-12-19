@@ -1,4 +1,4 @@
-.. _Refereed Publications:
+.. _Refereed-Publications:
 
 Refereed Publications
 =====================

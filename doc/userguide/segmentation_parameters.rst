@@ -1,3 +1,5 @@
+.. _segmentation-parameters:
+
 Watershedding Segmentation Parameters
 -------------------------------------
 
@@ -8,7 +10,7 @@ A full list of parameters and descriptions can be found in the API Reference: :p
 =========================
 Basic Operating Procedure
 =========================
-The *tobac* watershedding segmentation algorithm selects regions of the data :code:`field` with values greater than :code:`threshold` and associates those regions with the features :code:`features` detected by feature detection (see :doc:`feature_detection_overview`). This algorithm uses a *watershedding* approach, which sets the individual features as initial seed points, and then has identified regions grow from those original seed points. For further information on watershedding segmentation, see `the scikit-image documentation <https://scikit-image.org/docs/stable/auto_examples/segmentation/plot_watershed.html>`_.
+The *tobac* watershedding segmentation algorithm selects regions of the data :code:`field` with values greater than :code:`threshold` and associates those regions with the features :code:`features` detected by feature detection (see :doc:`../getting_started/feature_detection_overview`). This algorithm uses a *watershedding* approach, which sets the individual features as initial seed points, and then has identified regions grow from those original seed points. For further information on watershedding segmentation, see `the scikit-image documentation <https://scikit-image.org/docs/stable/auto_examples/segmentation/plot_watershed.html>`_.
 
 Note that you can run the watershedding segmentation algorithm on any variable that shares a grid with the variable detected in the feature detection step. It is not required that the variable used in feature detection be the same as the one in segmentation (e.g., you can detect updraft features and then run segmentation on total condensate). 
 
@@ -58,7 +60,7 @@ When running feature detection on a 3D dataset and then using these detected fea
 
 **Box** seeding (:code:`seed_3D_flag='box'`) sets a cube or rectangular seed markers around the detected feature in 3D space. The marker size is user defined (in array coordinates) by :code:`seed_3D_size` as either an integer (for a cube) or a tuple of :code:`(int, int, int)`, ordered :code:`(vertical, hdim_1, hdim_2)`. Note that :code:`seed_3D_size` must be an odd number to avoid the box becoming biased to one side. If two seed boxes overlap, the seeded area is marked with the closest feature centroid.
 
-.. figure:: images/box_vs_column_seeding.png
+.. figure:: ./images/box_vs_column_seeding.png
    :scale: 50 %
    :alt: an example 3D plot showing column seeding linking features that should not be linked
 

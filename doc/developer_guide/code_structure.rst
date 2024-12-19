@@ -1,4 +1,6 @@
-Code structure and key design concepts 
+.. _code_structure:
+
+Code structure and key design concepts
 --------------------------------------
 
 ==================================
