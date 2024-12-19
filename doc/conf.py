@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.abspath("extensions"))
 # What Sphinx extensions do we need
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
     "sphinx.ext.doctest",
     "sphinx.ext.todo",
     "sphinx.ext.coverage",
@@ -33,6 +34,20 @@ html_css_files = ["custom.css", "theme_overrides.css"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 source_suffix = {".rst": "restructuredtext", ".md": "restructuredtext"}
 myst_enable_extensions = ["colon_fence"]
+
+html_context = {
+    "api_dir": "api/generated",
+}
+
+
+# Generate the api documentation when building
+autoclass_content = "both"
+
+autosummary_generate = True
+autosummary_imported_members = True
+autodoc_typehints = "description"
+
+templates_path = ["_templates"]
 
 
 html_theme_options = {
