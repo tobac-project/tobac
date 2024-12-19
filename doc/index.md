@@ -2,7 +2,7 @@
 html_theme.sidebar_secondary.remove:
 sd_hide_title: true
 ---
-
+<!-- sphinx-autobuild ./doc/ /Users/seanfreeman/Documents/Research/tobac_dev/tobac_docs_refresh/dev_docs/ -->
 <!-- CSS overrides on the homepage only -->
 <style>
 .bd-main .bd-content .bd-article-container {
@@ -243,5 +243,5 @@ Getting Started<getting_started/index>
 Example Gallery<examples/index>
 User Guide<userguide/index>
 Developer Guide<developer_guide/index>
-API <tobac>
+API <api/index>
 :::
