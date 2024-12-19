@@ -1,4 +1,4 @@
-.. _feature-detection-overview:
+.. _feature_detection_overview:
 
 Feature Detection Basics
 ------------------------
@@ -11,7 +11,7 @@ The feature detection is the first step in using **tobac**.
 
 	Features are identified as regions above or below a sequence of subsequent thresholds (if searching for eather maxima or minima in the data). Subsequently more restrictive threshold values are used to further refine the resulting features and allow for separation of features that are connected through a continuous region of less restrictive threshold values.
 
-	.. image:: images/detection_multiplethresholds.png
+	.. image:: ./images/detection_multiplethresholds.png
             :width: 500 px
 
 **Current development:**
