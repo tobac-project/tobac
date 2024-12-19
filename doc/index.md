@@ -53,12 +53,12 @@ h3:not(#hero h3) {
 :gutter: 3
 
 :::::{grid-item-card}
-:link: /examples/Example_OLR_Tracking_satellite/Example_OLR_Tracking_satellite.html
+:link: examples/Basics/Idealized-Case-1_Tracking-of-a-Test-Blob-in-2D.html
 :shadow: none
 :class-card: example-gallery
 
 :::{div} example-img-plot-overlay
-Track precipitating clouds with radar reflectivity
+Tracking a Simple Blob
 :::
 
 :::{image} ./images/Figure_linking.png
@@ -66,41 +66,41 @@ Track precipitating clouds with radar reflectivity
 :::::
 
 :::::{grid-item-card}
-:link: /examples/Example_OLR_Tracking_satellite
+:link: examples/Example_OLR_Tracking_satellite/Example_OLR_Tracking_satellite.html
 :shadow: none
 :class-card: example-gallery
 
 :::{div} example-img-plot-overlay
-Forest Plot with ESS using `plot_forest`
+Tracking OLR from Satellite
 :::
 
-:::{image} ./images/Figure_linking.png
+:::{image} _static/thumbnails/Example_OLR_Tracking_satellite_Thumbnail.png
 :::
 :::::
 
 :::::{grid-item-card}
-:link: /examples/Example_OLR_Tracking_satellite
+:link: examples/Example_Track_on_Radar_Segment_on_Satellite/Example_Track_on_Radar_Segment_on_Satellite.html
 :shadow: none
 :class-card: example-gallery
 
 :::{div} example-img-plot-overlay
-Dist Plot using `plot_dist`
+Track on Radar and Combine with Satellite
 :::
 
-:::{image} ./images/Figure_linking.png
+:::{image} _static/thumbnails/Example_Track_on_Radar_Segment_on_Satellite_Thumbnail.png
 :::
 :::::
 
 :::::{grid-item-card}
-:link: /examples/Example_OLR_Tracking_satellite
+:link: examples/Example_Updraft_Tracking/Example_Updraft_Tracking.html
 :shadow: none
 :class-card: example-gallery
 
 :::{div} example-img-plot-overlay
-Density Plot (Comparison) using `plot_density`
+Updraft Tracking
 :::
 
-:::{image} ./images/Figure_linking.png
+:::{image} _static/thumbnails/Example_Updraft_Tracking_Thumbnail.png
 :::
 :::::
 
