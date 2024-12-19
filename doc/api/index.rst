@@ -23,3 +23,6 @@ Documentation is broken down by directory and module.
    utils.bulk_statistics
    utils.general
    plotting
+   analysis.cell_analysis
+   analysis.feature_analysis
+   analysis.spatial
