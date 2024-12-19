@@ -1,5 +1,8 @@
+.. _installguide:
+
 Installation
 ------------
+
 tobac works with Python 3 installations.
 
 The easiest way is to install the most recent version of tobac via conda or mamba and the conda-forge channel:
