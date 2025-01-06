@@ -13,3 +13,4 @@ pre-commit
 black
 pytest
 typing_extensions
+nbconvert

@@ -4,6 +4,7 @@ or within feature detection or segmentation.
 
 """
 
+from __future__ import annotations
 import logging
 import warnings
 from functools import partial
@@ -301,7 +302,7 @@ def get_statistics_from_mask(
 
     for tt in pd.to_datetime(segmentation_mask.time):
         # select specific timestep
-        segmentation_mask_t = segmentation_mask.sel(time=tt, method="nearest").data
+        segmentation_mask_t = segmentation_mask.sel(time=tt, method="nearest").values
         fields_t = (
             (
                 field.sel(
