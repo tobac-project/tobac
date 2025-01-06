@@ -4,6 +4,7 @@ or within feature detection or segmentation.
 
 """
 
+from __future__ import annotations
 import logging
 import warnings
 from functools import partial
@@ -18,14 +19,13 @@ except ModuleNotFoundError:
     from numpy.core import multiarray as mu
 import pandas as pd
 import xarray as xr
-
 from tobac.utils import decorators
 
 
 def get_statistics(
     features: pd.DataFrame,
     labels: np.ndarray[int],
-    *fields: tuple[np.ndarray],
+    *fields: tuple[xr.DataArray],
     statistic: dict[str, Union[Callable, tuple[Callable, dict]]] = {
         "ncells": np.count_nonzero
     },
@@ -54,7 +54,7 @@ def get_statistics(
         Mask with labels of each regions to apply function to (e.g. output of
         segmentation for a specific timestep)
 
-    *fields : tuple[np.ndarray]
+    *fields : tuple[xr.DataArray]
         Fields to give as arguments to each function call. If the shape does not
         match that of labels, numpy-style broadcasting will be applied.
 
@@ -122,7 +122,7 @@ def get_statistics(
     # mask must contain positive values to calculate statistics
     if np.any(labels > 0):
         if index is None:
-            index = features.feature.to_numpy()
+            index = features[id_column].to_numpy().astype(int)
         else:
             # get the statistics only for specified feature objects
             if np.max(index) > np.max(labels):
@@ -215,7 +215,7 @@ def get_statistics(
 def get_statistics_from_mask(
     features: pd.DataFrame,
     segmentation_mask: xr.DataArray,
-    *fields: xr.DataArray,
+    *fields: tuple[xr.DataArray],
     statistic: dict[str, tuple[Callable]] = {"Mean": np.mean},
     index: Union[None, list[int]] = None,
     default: Union[None, float] = None,
@@ -236,7 +236,7 @@ def get_statistics_from_mask(
     segmentation_mask : xr.DataArray
         Segmentation mask output
 
-    *fields : xr.DataArray[np.ndarray]
+    *fields : tuple[xr.DataArray]
         Field(s) with input data. If field does not have a time dimension it
         will be considered time invariant, and the entire field will be passed
         for each time step in segmentation_mask. If the shape does not match
@@ -266,9 +266,15 @@ def get_statistics_from_mask(
          Updated feature dataframe with bulk statistics for each feature saved in a new column
     """
     # warning when feature labels are not unique in dataframe
-    if not features.feature.is_unique:
-        raise logging.warning(
+    if not features[id_column].is_unique:
+        logging.warning(
             "Feature labels are not unique which may cause unexpected results for the computation of bulk statistics."
+        )
+    # extra warning when feature labels are not unique in timestep
+    uniques = features.groupby("time")[id_column].value_counts().values
+    if not uniques[uniques > 1].size == 0:
+        logging.warning(
+            "Note that non-unique feature labels occur also in the same timestep. This likely causes unexpected results for the computation of bulk statistics."
         )
 
     if collapse_dim is not None:
@@ -285,26 +291,36 @@ def get_statistics_from_mask(
     else:
         collapse_axis = None
 
+    # check if any of the feature dataframe input values match with segmentaion mask IDs
+    if not np.any(np.isin(features[id_column], np.unique(segmentation_mask))):
+        raise ValueError(
+            "The labels of the segmentation mask and the feature dataframe do not seem to match. Please make sure you provide the correct input feature dataframe  to calculate the bulk statistics."
+        )
+
     # get bulk statistics for each timestep
     step_statistics = []
 
     for tt in pd.to_datetime(segmentation_mask.time):
         # select specific timestep
-        segmentation_mask_t = segmentation_mask.sel(time=tt).data
+        segmentation_mask_t = segmentation_mask.sel(time=tt, method="nearest").values
         fields_t = (
-            field.sel(time=tt).values if "time" in field.coords else field.values
+            (
+                field.sel(
+                    time=tt, method="nearest", tolerance=np.timedelta64(1000, "us")
+                ).values
+                if "time" in field.coords
+                else field.values
+            )
             for field in fields
         )
-        features_t = features.loc[features.time == tt].copy()
 
+        features_t = features.loc[features.time == tt].copy()
         # make sure that the labels in the segmentation mask exist in feature dataframe
-        if (
-            np.intersect1d(np.unique(segmentation_mask_t), features_t.feature).size
-            > np.unique(segmentation_mask_t).size
-        ):
-            raise ValueError(
-                "The labels of the segmentation mask and the feature dataframe do not seem to match. Please make sure you provide the correct input feature dataframe to calculate the bulk statistics. "
-            )
+        # continue loop because not all timesteps might have matching IDs
+        if not np.any(np.isin(features_t[id_column], np.unique(segmentation_mask_t))):
+            warnings.warn("Not all timesteps have matching features", UserWarning)
+            step_statistics.append(features_t)
+            continue
         else:
             # make sure that features are not double-defined
             step_statistics.append(

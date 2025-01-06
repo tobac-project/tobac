@@ -1,6 +1,8 @@
 """Tests for tobac.utils.internal_utils.xarray_utils
 """
 
+from __future__ import annotations
+
 from typing import Union
 
 import pytest
