@@ -3,9 +3,6 @@
 API Reference
 =============
 
-:Release: |version|
-:Date: |today|
-
 This guide provides documentation for all modules, function, methods,
 and classes within *tobac* for those in the public API.
 

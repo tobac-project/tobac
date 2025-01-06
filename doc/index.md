@@ -31,10 +31,11 @@ h3:not(#hero h3) {
 
 <div id="hero">
 
-<div id="hero-left">  <!-- Start Hero Left -->
+<div id="hero-left">  <!-- Left side of the hero section -->
   <h2 style="font-size: 60px; font-weight: bold; margin: 2rem auto 0;"><em>tobac</em></h2>
   <h3 style="font-weight: bold; margin-top: 0;">Tracking atmospheric phenomena with <em>your data</em></h3>
-  <p><em>tobac</em> is a package that identifies, tracks, and can be used for object-based analysis of atmospheric phenomena in model, observational, and remote sensing datasets.</p>
+  <p><em>tobac</em> (Tracking and Object-Based Analysis of Clouds) is a package that identifies and tracks 
+atmospheric phenomena, enabling object-based analysis in model, observational, and remote sensing datasets.</p>
 
 <div class="homepage-button-container">
   <div class="homepage-button-container-row">

@@ -1,6 +1,6 @@
-"""Provide feature detection.
+"""First step toward working with *tobac*. Detects features from input 2D or 3D data.
 
-This module can work with any two-dimensional field.
+This module can work with any two-dimensional or three-dimensional field.
 To identify the features, contiguous regions above or 
 below a threshold are determined and labelled individually.
 To describe the specific location of the feature at a 
@@ -625,9 +625,9 @@ def feature_detection_threshold(
                         # find the updated label, and overwrite all of label_ind indices with
                         # updated label
                         labels_2_alt = labels_2[label_z, y_val_alt, x_val_alt]
-                        labels_2[
-                            label_locs_v, label_locs_h1, label_locs_h2
-                        ] = labels_2_alt
+                        labels_2[label_locs_v, label_locs_h1, label_locs_h2] = (
+                            labels_2_alt
+                        )
                         skip_list = np.append(skip_list, label_ind)
                         break
 
@@ -671,9 +671,9 @@ def feature_detection_threshold(
                         # find the updated label, and overwrite all of label_ind indices with
                         # updated label
                         labels_2_alt = labels_2[label_z, y_val_alt, label_x]
-                        labels_2[
-                            label_locs_v, label_locs_h1, label_locs_h2
-                        ] = labels_2_alt
+                        labels_2[label_locs_v, label_locs_h1, label_locs_h2] = (
+                            labels_2_alt
+                        )
                         new_label_ind = labels_2_alt
                         skip_list = np.append(skip_list, label_ind)
 
@@ -715,9 +715,9 @@ def feature_detection_threshold(
                         # find the updated label, and overwrite all of label_ind indices with
                         # updated label
                         labels_2_alt = labels_2[label_z, label_y, x_val_alt]
-                        labels_2[
-                            label_locs_v, label_locs_h1, label_locs_h2
-                        ] = labels_2_alt
+                        labels_2[label_locs_v, label_locs_h1, label_locs_h2] = (
+                            labels_2_alt
+                        )
                         new_label_ind = labels_2_alt
                         skip_list = np.append(skip_list, label_ind)
 
