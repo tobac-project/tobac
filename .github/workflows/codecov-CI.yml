@@ -7,24 +7,20 @@ jobs:
     runs-on: ubuntu-latest
     env:
       OS: ubuntu-latest
-      PYTHON: "3.11"
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       # Similar to MetPy install-conda action
       - name: Set up conda
-        uses: conda-incubator/setup-miniconda@v2
+        uses: mamba-org/setup-micromamba@v1
         with:
-          miniforge-version: latest
-          miniforge-variant: mambaforge
-          channel-priority: strict
-          channels: conda-forge
-          show-channel-urls: true
-          use-only-tar-bz2: true
+          environment-file: environment-ci.yml
+          generate-run-shell: true
+          cache-environment: true
+          cache-downloads: true
 
-      - name: Install dependencies and generate report
-        shell: bash -l {0}
+      - name: Generate report
+        shell: micromamba-shell {0}
         run:
-          mamba install --quiet --yes --file requirements.txt coverage pytest-cov &&
           python -m coverage run -m pytest --cov=./ --cov-report=xml
       - name: Upload Coverage to Codecov
         uses: codecov/codecov-action@v4

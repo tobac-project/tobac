@@ -1,14 +1,56 @@
 from datetime import datetime
+
 import numpy as np
+import dask.array as da
 import pandas as pd
-import pytest
 import xarray as xr
+import pytest
+
 import tobac
 import tobac.utils as tb_utils
 import tobac.testing as tb_test
 
 
-def test_bulk_statistics():
+@pytest.mark.parametrize("statistics_unsmoothed", [(False), (True)])
+def test_bulk_statistics_fd(statistics_unsmoothed):
+    """
+    Assure that bulk statistics in feature detection work, both on smoothed and raw data
+    """
+    ### Test 2D data with time dimension
+    test_data = tb_test.make_simple_sample_data_2D().core_data()
+    common_dset_opts = {
+        "in_arr": test_data,
+        "data_type": "iris",
+    }
+    test_data_iris = tb_test.make_dataset_from_arr(
+        time_dim_num=0, y_dim_num=1, x_dim_num=2, **common_dset_opts
+    )
+    stats = {"feature_max": np.max}
+
+    # detect features
+    threshold = 7
+    fd_output = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_iris,
+        dxy=1000,
+        threshold=[threshold],
+        n_min_threshold=100,
+        target="maximum",
+        statistic=stats,
+        statistics_unsmoothed=statistics_unsmoothed,
+    )
+
+    assert "feature_max" in fd_output.columns
+
+
+@pytest.mark.parametrize(
+    "id_column, index",
+    [
+        ("feature", [1]),
+        ("feature_id", [1]),
+        ("cell", [1]),
+    ],
+)
+def test_bulk_statistics(id_column, index):
     """
     Test to assure that bulk statistics for identified features are computed as expected.
 
@@ -26,7 +68,6 @@ def test_bulk_statistics():
 
     # detect features
     threshold = 7
-    # test_data_iris = testing.make_dataset_from_arr(test_data, data_type="iris")
     fd_output = tobac.feature_detection.feature_detection_multithreshold(
         test_data_iris,
         dxy=1000,
@@ -46,10 +87,11 @@ def test_bulk_statistics():
     )
 
     #### checks
+    out_df = out_df.rename(columns={"feature": id_column})
 
     #  assure that bulk statistics in postprocessing give same result
     out_segmentation = tb_utils.get_statistics_from_mask(
-        out_df, out_seg_mask, test_data_iris, statistic=stats
+        out_df, out_seg_mask, test_data_iris, statistic=stats, id_column=id_column
     )
     assert out_segmentation.equals(out_df)
 
@@ -86,11 +128,12 @@ def test_bulk_statistics():
     )
 
     ##### checks #####
-
+    out_df = out_df.rename(columns={"feature": id_column})
     #  assure that bulk statistics in postprocessing give same result
     out_segmentation = tb_utils.get_statistics_from_mask(
-        out_df, out_seg_mask, test_data_iris, statistic=stats
+        out_df, out_seg_mask, test_data_iris, statistic=stats, id_column=id_column
     )
+
     assert out_segmentation.equals(out_df)
 
     # assure that column names in new dataframe correspond to keys in statistics dictionary
@@ -102,6 +145,60 @@ def test_bulk_statistics():
         assert out_df[out_df.frame == frame].segment_max.values[0] == np.max(
             test_data_iris.data[frame]
         )
+
+
+def test_bulk_statistics_missing_segments():
+    """
+    Test that output feature dataframe contains all the same time steps even though for some timesteps,
+    the statistics have not been calculated (in the case of unmatching labels or no segment labels for a given feature)
+    """
+
+    ### Test 2D data with time dimension
+    test_data = tb_test.make_simple_sample_data_2D().core_data()
+    common_dset_opts = {
+        "in_arr": test_data,
+        "data_type": "iris",
+    }
+
+    test_data_iris = tb_test.make_dataset_from_arr(
+        time_dim_num=0, y_dim_num=1, x_dim_num=2, **common_dset_opts
+    )
+
+    # detect features
+    threshold = 7
+    # test_data_iris = testing.make_dataset_from_arr(test_data, data_type="iris")
+    fd_output = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_iris,
+        dxy=1000,
+        threshold=[threshold],
+        n_min_threshold=100,
+        target="maximum",
+    )
+
+    # perform segmentation with bulk statistics
+    stats = {
+        "segment_max": np.max,
+        "segment_min": min,
+        "percentiles": (np.percentile, {"q": 95}),
+    }
+
+    out_seg_mask, out_df = tobac.segmentation.segmentation_2D(
+        fd_output, test_data_iris, dxy=1000, threshold=threshold
+    )
+
+    # specify some timesteps we set to zero
+    timesteps_to_zero = [1, 3, 10]  # 0-based indexing
+    modified_data = out_seg_mask.data.copy()
+    # Set values to zero for the specified timesteps
+    for timestep in timesteps_to_zero:
+        modified_data[timestep, :, :] = 0  # Set all values for this timestep to zero
+
+    #  assure that bulk statistics in postprocessing give same result
+    out_segmentation = tb_utils.get_statistics_from_mask(
+        out_df, out_seg_mask, test_data_iris, statistic=stats
+    )
+
+    assert out_df.time.unique().size == out_segmentation.time.unique().size
 
 
 def test_bulk_statistics_multiple_fields():
@@ -608,3 +705,85 @@ def test_get_statistics_from_mask_collapse_dim():
             statistic=statistics_sum,
             collapse_dim="not_a_dim",
         )
+
+
+def test_bulk_statistics_dask():
+    """
+    Test dask input for labels and fields is handled correctly
+    """
+
+    test_labels = da.array(
+        [
+            [
+                [0, 0, 0, 0, 0],
+                [0, 1, 0, 2, 0],
+                [0, 1, 0, 2, 0],
+                [0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+            ],
+            [
+                [0, 0, 0, 0, 0],
+                [0, 3, 0, 0, 0],
+                [0, 3, 0, 4, 0],
+                [0, 3, 0, 4, 0],
+                [0, 0, 0, 0, 0],
+            ],
+        ],
+        dtype=int,
+    )
+
+    test_labels = xr.DataArray(
+        test_labels,
+        dims=("time", "y", "x"),
+        coords={
+            "time": [datetime(2000, 1, 1), datetime(2000, 1, 1, 0, 5)],
+            "y": np.arange(5),
+            "x": np.arange(5),
+        },
+    )
+
+    test_values = da.array(
+        [
+            [
+                [0, 0, 0, 0, 0],
+                [0, 1, 0, 2, 0],
+                [0, 2, 0, 2, 0],
+                [0, 3, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+            ],
+            [
+                [0, 0, 0, 0, 0],
+                [0, 2, 0, 0, 0],
+                [0, 3, 0, 3, 0],
+                [0, 4, 0, 2, 0],
+                [0, 0, 0, 0, 0],
+            ],
+        ]
+    )
+
+    test_values = xr.DataArray(
+        test_values, dims=test_labels.dims, coords=test_labels.coords
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3, 4],
+            "frame": [0, 0, 1, 1],
+            "time": [
+                datetime(2000, 1, 1),
+                datetime(2000, 1, 1),
+                datetime(2000, 1, 1, 0, 5),
+                datetime(2000, 1, 1, 0, 5),
+            ],
+        }
+    )
+
+    statistics_size = {"size": np.size}
+
+    expected_size_result = np.array([3, 2, 3, 2])
+
+    bulk_statistics_output = tb_utils.get_statistics_from_mask(
+        test_features, test_labels, test_values, statistic=statistics_size
+    )
+
+    assert np.all(bulk_statistics_output["size"] == expected_size_result)

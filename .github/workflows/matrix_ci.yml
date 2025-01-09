@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
         os: [macos, ubuntu, windows]
 
     steps:
@@ -35,7 +35,7 @@ jobs:
           cache-downloads: true
           channels: conda-forge
           channel-priority: strict
-          python-version: ${{ matrix.python-version }}
+          create-args: python=${{ matrix.python-version }}
 
       - name: Fetch all history for all tags and branches
         run: |

@@ -629,8 +629,8 @@ def test_segmentation_multiple_features():
     out_seg_mask_arr = out_seg_mask.core_data()
 
     # assure that the number of grid cells belonging to each feature (ncells) are consistent with segmentation mask
-    assert int(out_df[out_df.feature == 1].ncells.values) == size_feature1
-    assert int(out_df[out_df.feature == 2].ncells.values) == size_feature2
+    assert int(out_df[out_df.feature == 1].ncells.values[0]) == size_feature1
+    assert int(out_df[out_df.feature == 2].ncells.values[0]) == size_feature2
     # assure that bulk statistic columns are created in output (one column added after segmentation)
     assert out_df.columns.size - fd_output.columns.size > 1
     # assure that statistics are calculated everywhere where an area for ncells is found
