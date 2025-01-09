@@ -1,5 +1,6 @@
-"""Internal tobac utilities
+"""Internal tobac utilities 
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -136,9 +137,11 @@ def iris_to_xarray(func: Callable) -> Callable:
             # print("converting iris to xarray and back")
             args = tuple(
                 [
-                    xarray.DataArray.from_iris(arg)
-                    if type(arg) == iris.cube.Cube
-                    else arg
+                    (
+                        xarray.DataArray.from_iris(arg)
+                        if type(arg) == iris.cube.Cube
+                        else arg
+                    )
                     for arg in args
                 ]
             )
@@ -146,9 +149,11 @@ def iris_to_xarray(func: Callable) -> Callable:
                 zip(
                     kwargs.keys(),
                     [
-                        xarray.DataArray.from_iris(arg)
-                        if type(arg) == iris.cube.Cube
-                        else arg
+                        (
+                            xarray.DataArray.from_iris(arg)
+                            if type(arg) == iris.cube.Cube
+                            else arg
+                        )
                         for arg in kwargs.values()
                     ],
                 )
@@ -159,9 +164,11 @@ def iris_to_xarray(func: Callable) -> Callable:
             if type(output) == tuple:
                 output = tuple(
                     [
-                        xarray.DataArray.to_iris(output_item)
-                        if type(output_item) == xarray.DataArray
-                        else output_item
+                        (
+                            xarray.DataArray.to_iris(output_item)
+                            if type(output_item) == xarray.DataArray
+                            else output_item
+                        )
                         for output_item in output
                     ]
                 )
@@ -215,9 +222,11 @@ def xarray_to_iris(func: Callable) -> Callable:
             # print("converting xarray to iris and back")
             args = tuple(
                 [
-                    xarray.DataArray.to_iris(arg)
-                    if type(arg) == xarray.DataArray
-                    else arg
+                    (
+                        xarray.DataArray.to_iris(arg)
+                        if type(arg) == xarray.DataArray
+                        else arg
+                    )
                     for arg in args
                 ]
             )
@@ -226,9 +235,11 @@ def xarray_to_iris(func: Callable) -> Callable:
                     zip(
                         kwargs.keys(),
                         [
-                            xarray.DataArray.to_iris(arg)
-                            if type(arg) == xarray.DataArray
-                            else arg
+                            (
+                                xarray.DataArray.to_iris(arg)
+                                if type(arg) == xarray.DataArray
+                                else arg
+                            )
                             for arg in kwargs.values()
                         ],
                     )
@@ -241,9 +252,11 @@ def xarray_to_iris(func: Callable) -> Callable:
             if type(output) == tuple:
                 output = tuple(
                     [
-                        xarray.DataArray.from_iris(output_item)
-                        if type(output_item) == iris.cube.Cube
-                        else output_item
+                        (
+                            xarray.DataArray.from_iris(output_item)
+                            if type(output_item) == iris.cube.Cube
+                            else output_item
+                        )
                         for output_item in output
                     ]
                 )
@@ -292,11 +305,11 @@ def irispandas_to_xarray(func: Callable) -> Callable:
             # print("converting iris to xarray and back")
             args = tuple(
                 [
-                    xarray.DataArray.from_iris(arg)
-                    if type(arg) == iris.cube.Cube
-                    else arg.to_xarray()
-                    if type(arg) == pd.DataFrame
-                    else arg
+                    (
+                        xarray.DataArray.from_iris(arg)
+                        if type(arg) == iris.cube.Cube
+                        else arg.to_xarray() if type(arg) == pd.DataFrame else arg
+                    )
                     for arg in args
                 ]
             )
@@ -304,11 +317,11 @@ def irispandas_to_xarray(func: Callable) -> Callable:
                 zip(
                     kwargs.keys(),
                     [
-                        xarray.DataArray.from_iris(arg)
-                        if type(arg) == iris.cube.Cube
-                        else arg.to_xarray()
-                        if type(arg) == pd.DataFrame
-                        else arg
+                        (
+                            xarray.DataArray.from_iris(arg)
+                            if type(arg) == iris.cube.Cube
+                            else arg.to_xarray() if type(arg) == pd.DataFrame else arg
+                        )
                         for arg in kwargs.values()
                     ],
                 )
@@ -318,11 +331,15 @@ def irispandas_to_xarray(func: Callable) -> Callable:
             if type(output) == tuple:
                 output = tuple(
                     [
-                        xarray.DataArray.to_iris(output_item)
-                        if type(output_item) == xarray.DataArray
-                        else output_item.to_dataframe()
-                        if type(output_item) == xarray.Dataset
-                        else output_item
+                        (
+                            xarray.DataArray.to_iris(output_item)
+                            if type(output_item) == xarray.DataArray
+                            else (
+                                output_item.to_dataframe()
+                                if type(output_item) == xarray.Dataset
+                                else output_item
+                            )
+                        )
                         for output_item in output
                     ]
                 )
@@ -390,11 +407,11 @@ def xarray_to_irispandas(func: Callable) -> Callable:
             # print("converting xarray to iris and back")
             args = tuple(
                 [
-                    xarray.DataArray.to_iris(arg)
-                    if type(arg) == xarray.DataArray
-                    else arg.to_dataframe()
-                    if type(arg) == xarray.Dataset
-                    else arg
+                    (
+                        xarray.DataArray.to_iris(arg)
+                        if type(arg) == xarray.DataArray
+                        else arg.to_dataframe() if type(arg) == xarray.Dataset else arg
+                    )
                     for arg in args
                 ]
             )
@@ -403,11 +420,15 @@ def xarray_to_irispandas(func: Callable) -> Callable:
                     zip(
                         kwargs.keys(),
                         [
-                            xarray.DataArray.to_iris(arg)
-                            if type(arg) == xarray.DataArray
-                            else arg.to_dataframe()
-                            if type(arg) == xarray.Dataset
-                            else arg
+                            (
+                                xarray.DataArray.to_iris(arg)
+                                if type(arg) == xarray.DataArray
+                                else (
+                                    arg.to_dataframe()
+                                    if type(arg) == xarray.Dataset
+                                    else arg
+                                )
+                            )
                             for arg in kwargs.values()
                         ],
                     )
@@ -420,11 +441,15 @@ def xarray_to_irispandas(func: Callable) -> Callable:
             if type(output) == tuple:
                 output = tuple(
                     [
-                        xarray.DataArray.from_iris(output_item)
-                        if type(output_item) == iris.cube.Cube
-                        else output_item.to_xarray()
-                        if type(output_item) == pd.DataFrame
-                        else output_item
+                        (
+                            xarray.DataArray.from_iris(output_item)
+                            if type(output_item) == iris.cube.Cube
+                            else (
+                                output_item.to_xarray()
+                                if type(output_item) == pd.DataFrame
+                                else output_item
+                            )
+                        )
                         for output_item in output
                     ]
                 )

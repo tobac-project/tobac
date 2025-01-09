@@ -1,5 +1,6 @@
 """Tests for time padding of segmentation
 """
+
 import datetime
 import pytest
 from typing import Optional
