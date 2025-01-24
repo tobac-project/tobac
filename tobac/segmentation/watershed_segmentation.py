@@ -34,6 +34,7 @@ from __future__ import annotations
 import copy
 import logging
 import datetime
+import warnings
 
 import iris.cube
 import xarray as xr
@@ -353,7 +354,7 @@ def segmentation_timestep(
 
     Parameters
     ----------
-    field_in : iris.cube.Cube
+    field_in : xr.DataArray
         Input field to perform the watershedding on (2D or 3D for one
         specific point in time).
 
@@ -1263,6 +1264,13 @@ def segmentation(
         all_times = features["time"]
     else:
         all_times = features["time"].map(np.datetime64)
+
+    if len(field.coords[time_var_name]) == 1:
+        warnings.warn(
+            "As of v1.6.0, segmentation with time length 1 will return time as a coordinate"
+            " instead of dropping it (i.e., output will now be 1xMxN instead of MxN). ",
+            UserWarning,
+        )
 
     for time_iteration_number, time_iteration_value in enumerate(
         field.coords[time_var_name]
