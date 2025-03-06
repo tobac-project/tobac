@@ -27,3 +27,4 @@ dependencies:
   - numba
   - dask
   - ffmpeg
+  - pyvista
