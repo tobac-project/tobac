@@ -1,23 +1,19 @@
-name: check_formatting
+name: Check Python File Formatting with Black
 on: [push, pull_request]
 jobs:
   formatting_job:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up conda
-        uses: conda-incubator/setup-miniconda@v2
+        uses: mamba-org/setup-micromamba@v1
         with:
-          miniforge-version: latest
-          miniforge-variant: mambaforge
-          channel-priority: strict
-          channels: conda-forge
-          show-channel-urls: true
-          use-only-tar-bz2: true
-
-      - name: Install dependencies and check formatting
-        shell: bash -l {0}
+          environment-file: environment-ci.yml
+          generate-run-shell: true
+          cache-environment: true
+          cache-downloads: true
+      - name: Check formatting
+        shell: micromamba-shell {0}
         run:
-          mamba install --quiet --yes --file requirements.txt black &&
           black --version &&
           black tobac --check --diff 

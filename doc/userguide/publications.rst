@@ -11,6 +11,10 @@ Refereed Publications
       :widths: 30
       :class: wy-table-responsive
 
+      * - Sokolowsky, G. A., Freeman, S. W., Jones, W. K., Kukulies, J., Senf, F., Marinescu, P. J., Heikenfeld, M., Brunner, K. N., Bruning, E. C., Collis, S. M., Jackson, R. C., Leung, G. R., Pfeifer, N., Raut, B. A., Saleeby, S. M., Stier, P., and van den Heever, S. C.: tobac v1.5 (2024). Introducing Fast 3D Tracking, Splits and Mergers, and Other Enhancements for Identifying and Analysing Meteorological Phenomena. Geoscientific Model Development, 17(13), 5309-5330. https://doi.org/10.5194/gmd-17-5309-2024. 
+
+      * - Heikenfeld, M., Marinescu, P. J., Christensen, M., Watson-Parris, D., Senf, F., van den Heever, S. C., and Stier, P. (2019). tobac 1.2: towards a flexible framework for tracking and analysis of clouds in diverse datasets, Geosci. Model Dev., 12, 4551–4570, https://doi.org/10.5194/gmd-12-4551-2019
+	      
       * - Bukowski, J., & van den Heever, S. C. (2021). Direct radiative effects in haboobs. *Journal of Geophysical Research: Atmospheres*, 126(21), e2021JD034814, doi:10.1029/2021JD034814.
 
       * - Bukowski, J. (2021). Mineral Dust Lofting and Interactions with Cold Pools (Doctoral dissertation, Colorado State University).

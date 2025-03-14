@@ -2,9 +2,12 @@
 
 """
 
+from __future__ import annotations
 import copy
 import logging
 from typing import Callable, Union
+from typing_extensions import Literal
+import iris
 import pandas as pd
 import iris.cube
 
@@ -19,7 +22,7 @@ import warnings
 
 
 def add_coordinates(
-    t: pd.DataFrame,
+    features: pd.DataFrame,
     variable_cube: Union[xr.DataArray, iris.cube.Cube],
     preserve_iris_datetime_types: bool = True,
 ) -> pd.DataFrame:
@@ -30,7 +33,7 @@ def add_coordinates(
 
     Parameters
     ----------
-    t : pandas.DataFrame
+    features : pandas.DataFrame
         Trajectories/features from feature detection or linking step.
 
     variable_cube : iris.cube.Cube
@@ -44,15 +47,18 @@ def add_coordinates(
 
     Returns
     -------
-    t : pandas.DataFrame
+    pandas.DataFrame
         Trajectories with added coordinates.
 
     """
+
     if isinstance(variable_cube, iris.cube.Cube):
-        return internal_utils.iris_utils.add_coordinates(t, variable_cube)
+        return internal_utils.iris_utils.add_coordinates(features, variable_cube)
     if isinstance(variable_cube, xr.DataArray):
         return internal_utils.xr_utils.add_coordinates_to_features(
-            t, variable_cube, preserve_iris_datetime_types=preserve_iris_datetime_types
+            features,
+            variable_cube,
+            preserve_iris_datetime_types=preserve_iris_datetime_types,
         )
     raise ValueError(
         "add_coordinates only supports xarray.DataArray and iris.cube.Cube"
@@ -514,7 +520,6 @@ def transform_feature_points(
         the new grid, suitable for use in segmentation
 
     """
-    from .. import analysis as tb_analysis
 
     RADIUS_EARTH_M = 6371000
     is_3D = "vdim" in features
@@ -610,14 +615,12 @@ def transform_feature_points(
         )
 
     if warn_dropped_features:
-        returned_features = ret_features["feature"]
-        all_features = features["feature"]
-        removed_features = np.delete(
-            all_features, np.where(np.any(all_features == returned_features))
-        )
-        warnings.warn(
-            "Dropping feature numbers: " + str(removed_features.values), UserWarning
-        )
+        removed_features = np.setdiff1d(features["feature"], ret_features["feature"])
+        if len(removed_features):
+            warnings.warn(
+                "Dropping feature numbers: " + str(removed_features.tolist()),
+                UserWarning,
+            )
 
     # make sure that feature points are converted back to int64
     ret_features["feature"] = ret_features.feature.astype(int)
