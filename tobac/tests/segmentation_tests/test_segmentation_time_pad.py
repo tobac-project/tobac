@@ -1,5 +1,4 @@
-"""Tests for time padding of segmentation
-"""
+"""Tests for time padding of segmentation"""
 
 import datetime
 import pytest

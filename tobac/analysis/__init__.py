@@ -1,4 +1,4 @@
-"""Provide tools to analyse and visualize the tracked objects.          
+"""Provide tools to analyse and visualize the tracked objects.
 This module provides a set of routines that enables performing analyses
 and deriving statistics for individual tracks, such as the time series
 of integrated properties and vertical profiles. It also provides
@@ -17,11 +17,11 @@ References
 ----------
 .. Heikenfeld, M., Marinescu, P. J., Christensen, M.,
    Watson-Parris, D., Senf, F., van den Heever, S. C.
-   & Stier, P. (2019). tobac 1.2: towards a flexible 
-   framework for tracking and analysis of clouds in 
+   & Stier, P. (2019). tobac 1.2: towards a flexible
+   framework for tracking and analysis of clouds in
    diverse datasets. Geoscientific Model Development,
    12(11), 4551-4570.
-   
+
 Notes
 -----
 """

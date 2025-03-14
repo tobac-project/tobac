@@ -1,5 +1,4 @@
-"""Module to test tobac.merge_split
-"""
+"""Module to test tobac.merge_split"""
 
 import pandas as pd
 import numpy as np

@@ -1,5 +1,4 @@
-"""Internal tobac utilities
-"""
+"""Internal tobac utilities"""
 
 from __future__ import annotations
 import numpy as np

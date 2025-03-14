@@ -1,6 +1,4 @@
-"""Provide essential methods for masking
-
-"""
+"""Provide essential methods for masking"""
 
 
 def column_mask_from2D(mask_2D, cube, z_coord="model_level_number"):

@@ -14,18 +14,18 @@ the threshold condition are set to the respective marker. The algorithm
 then fills the area (2D) or volume (3D) based on the input field
 starting from these markers until reaching the threshold. If two or more
 features are directly connected, the border runs along the
-watershed line between the two regions. This procedure creates a mask 
-that has the same form as the input data, with the corresponding integer 
-number at all grid points that belong to a feature, else with zero. This 
+watershed line between the two regions. This procedure creates a mask
+that has the same form as the input data, with the corresponding integer
+number at all grid points that belong to a feature, else with zero. This
 mask can be conveniently and efficiently used to select the volume of each
-feature at a specific time step for further analysis or visialization. 
+feature at a specific time step for further analysis or visialization.
 
 References
 ----------
 .. Heikenfeld, M., Marinescu, P. J., Christensen, M.,
    Watson-Parris, D., Senf, F., van den Heever, S. C.
-   & Stier, P. (2019). tobac 1.2: towards a flexible 
-   framework for tracking and analysis of clouds in 
+   & Stier, P. (2019). tobac 1.2: towards a flexible
+   framework for tracking and analysis of clouds in
    diverse datasets. Geoscientific Model Development,
    12(11), 4551-4570.
 """

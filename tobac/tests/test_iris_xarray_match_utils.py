@@ -1,5 +1,5 @@
 """Tests to confirm that xarray and iris pathways work the same and produce the same data
- for the same input datasets.
+for the same input datasets.
 """
 
 from __future__ import annotations

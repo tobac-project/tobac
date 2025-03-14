@@ -1,6 +1,4 @@
-"""Containing methods to make simple sample data for testing.
-
-"""
+"""Containing methods to make simple sample data for testing."""
 
 import datetime
 import numpy as np
