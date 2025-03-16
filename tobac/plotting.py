@@ -26,6 +26,7 @@ from tobac.analysis.cell_analysis import (
     histogram_cellwise,
 )
 from tobac.analysis.feature_analysis import histogram_featurewise
+from tobac.utils import decorators
 
 
 def plot_tracks_mask_field_loop(
@@ -473,7 +474,7 @@ def plot_tracks_mask_field(
     axes.set_extent(axis_extent)
     return axes
 
-
+@decorators.xarray_to_iris()
 def animation_mask_field(
     track, features, field, mask, interval=500, figsize=(10, 10), **kwargs
 ):
