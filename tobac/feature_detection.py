@@ -924,7 +924,7 @@ def feature_detection_multithreshold_timestep(
     statistics_unsmoothed: bool = False,
     return_regions: bool = False,
     return_labels: bool = False,
-    **kwargs: dict[str, Any]
+    **kwargs: dict[str, Any],
 ) -> pd.DataFrame:
     """Find features in each timestep.
 
@@ -1217,7 +1217,7 @@ def feature_detection_multithreshold(
     return_regions: bool = False,
     return_labels: bool = False,
     preserve_iris_datetime_types: bool = True,
-    **kwargs: dict[str, Any]
+    **kwargs: dict[str, Any],
 ) -> pd.DataFrame:
     """Perform feature detection based on contiguous regions.
 
@@ -1302,9 +1302,9 @@ def feature_detection_multithreshold(
 
     statistic : dict, optional
         Default is None. Optional parameter to calculate bulk statistics within feature detection.
-        Dictionary with callable function(s) to apply over the region of each detected feature and 
-        the name of the statistics to appear in the feature output dataframe. 
-        The functions should be the values and the names of the metric the keys (e.g. {'mean': np.mean})            
+        Dictionary with callable function(s) to apply over the region of each detected feature and
+        the name of the statistics to appear in the feature output dataframe.
+        The functions should be the values and the names of the metric the keys (e.g. {'mean': np.mean})
 
     statistics_unsmoothed: bool, optional
         Default is False. If True, calculate the statistics on the raw data instead of the smoothed input data.
@@ -1313,7 +1313,7 @@ def feature_detection_multithreshold(
         Default is False. If True, return the regions for each feature.
 
     return_labels: bool, optional
-        Default is False. If True, return the label fields. 
+        Default is False. If True, return the label fields.
         Overwrites return_regions if both are set to True.
 
     preserve_iris_datetime_types: bool, optional, default: True
@@ -1337,7 +1337,7 @@ def feature_detection_multithreshold(
     labels : np.array, optional
         Label fields for the respective thresholds. Only returned if
         return_labels is True.
-           
+
     """
     from .utils import add_coordinates, add_coordinates_3D
 
@@ -1404,7 +1404,6 @@ def feature_detection_multithreshold(
         labels_list = []
     elif return_regions:
         regions_list = []
-    
 
     # if single threshold is put in as a single value, turn it into a list
     if type(threshold) in [int, float]:
@@ -1473,7 +1472,7 @@ def feature_detection_multithreshold(
         if return_labels:
             features_thresholds, labels = args
         elif return_regions:
-            features_thresholds, regions = args        
+            features_thresholds, regions = args
         else:
             features_thresholds = args
 
@@ -1485,7 +1484,6 @@ def feature_detection_multithreshold(
             regions_list.append(regions)
 
         logging.debug("Finished feature detection for %s", time_i)
-
 
     logging.debug("feature detection: merging DataFrames")
     # Check if features are detected and then concatenate features from different timesteps into
@@ -1536,14 +1534,14 @@ def feature_detection_multithreshold(
                     )
                 )
             features = pd.concat(filtered_features, ignore_index=True)
-            
+
             features = add_coordinates(
                 features,
                 field_in,
                 preserve_iris_datetime_types=kwargs["converted_from_iris"]
                 & preserve_iris_datetime_types,
             )
-            
+
         # regions and label fields are not filtered currently
         if return_regions or return_labels:
             warnings.warn(
