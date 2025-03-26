@@ -707,18 +707,37 @@ def test_feature_detection_coords():
         h2_size=test_hdim_2_sz,
         amplitude=test_amp,
     )
-    test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type="iris")
-    fd_output_first = feat_detect.feature_detection_multithreshold_timestep(
-        test_data_iris,
-        0,
+    test_data_xr = xr.DataArray(
+        test_data[np.newaxis,...],
+        dims=("time", "y", "x"), 
+        coords={
+            "time":[np.datetime64("2000-01-01T00:00:00")],
+            "y":np.arange(test_data.shape[0]),
+            "x":np.arange(test_data.shape[1])
+        }
+    )
+
+    fd_output = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_xr,
         threshold=[1, 2, 3],
         n_min_threshold=test_min_num,
         dxy=1,
         target="maximum",
     )
 
-    for coord in test_data_iris.coords():
-        assert coord.name() in fd_output_first
+    assert all([coord in fd_output for coord in test_data_xr.coords])
+
+    test_data_iris = test_data_xr.to_iris()
+
+    fd_output_iris = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_iris,
+        threshold=[1, 2, 3],
+        n_min_threshold=test_min_num,
+        dxy=1,
+        target="maximum",
+    )
+
+    assert all([coord.name() in fd_output_iris for coord in test_data_iris.coords()])
 
 
 def test_strict_thresholding():
