@@ -97,7 +97,7 @@ def _conv_kwargs_xarray_to_iris(conv_kwargs: dict):
         iris cubes
     """
     return {
-        key: xr.DataArray.to_iris(arg) if isinstance(arg, xr.DataArray) else arg
+        key: xr.DataArray.to_iris(arg).copy(arg.data) if isinstance(arg, xr.DataArray) else arg
         for key, arg in zip(conv_kwargs.keys(), conv_kwargs.values())
     }
 
@@ -119,7 +119,7 @@ def _conv_kwargs_xarray_to_irispandas(conv_kwargs: dict):
     """
     return {
         key: (
-            xr.DataArray.to_iris(arg)
+            xr.DataArray.to_iris(arg).copy(arg.data)
             if isinstance(arg, xr.DataArray)
             else arg.to_dataframe() if isinstance(arg, xr.Dataset) else arg
         )
@@ -428,7 +428,7 @@ def xarray_to_irispandas():
                 args = tuple(
                     [
                         (
-                            xarray.DataArray.to_iris(arg)
+                            xarray.DataArray.to_iris(arg).copy(arg.data)
                             if type(arg) == xarray.DataArray
                             else (
                                 arg.to_dataframe()
