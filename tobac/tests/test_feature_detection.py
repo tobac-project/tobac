@@ -715,9 +715,7 @@ def test_feature_detection_coords():
             "time": [np.datetime64("2000-01-01T00:00:00")],
             "y": np.arange(test_data.shape[0]),
             "x": np.arange(test_data.shape[1]),
-            "2d_dimension": xr.DataArray(
-                np.random.rand(*test_data.shape), dims=("y", "x")
-            ),
+            "2d_coord": xr.DataArray(np.random.rand(*test_data.shape), dims=("y", "x")),
         },
     )
 
