@@ -1420,7 +1420,12 @@ def feature_detection_multithreshold(
                 & preserve_iris_datetime_types,
             )
         else:
-            features = add_coordinates(features, field_in)
+            features = add_coordinates(
+                features,
+                field_in,
+                preserve_iris_datetime_types=kwargs["converted_from_iris"]
+                & preserve_iris_datetime_types,
+            )
 
         # Loop over DataFrame to remove features that are closer than distance_min to each
         # other:
@@ -1452,12 +1457,6 @@ def feature_detection_multithreshold(
                 )
             features = pd.concat(filtered_features, ignore_index=True)
 
-            features = add_coordinates(
-                features,
-                field_in,
-                preserve_iris_datetime_types=kwargs["converted_from_iris"]
-                & preserve_iris_datetime_types,
-            )
     else:
         features = None
         logging.debug("No features detected")

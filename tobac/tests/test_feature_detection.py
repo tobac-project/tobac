@@ -1,3 +1,4 @@
+import cftime
 import tobac
 import tobac.testing as tbtest
 import tobac.feature_detection as feat_detect
@@ -713,7 +714,10 @@ def test_feature_detection_coords():
         coords={
             "time":[np.datetime64("2000-01-01T00:00:00")],
             "y":np.arange(test_data.shape[0]),
-            "x":np.arange(test_data.shape[1])
+            "x":np.arange(test_data.shape[1]),
+            "2d_dimension":xr.DataArray(
+                np.random.rand(*test_data.shape), dims=("y", "x")
+            )
         }
     )
 
@@ -738,6 +742,67 @@ def test_feature_detection_coords():
     )
 
     assert all([coord.name() in fd_output_iris for coord in test_data_iris.coords()])
+
+def test_feature_detection_preserve_datetime():
+    """Tests that datetime output is of the correct type when converting to and from iris cubes"""
+    test_dset_size = (50, 50)
+    test_hdim_1_pt = 20.0
+    test_hdim_2_pt = 20.0
+    test_hdim_1_sz = 5
+    test_hdim_2_sz = 5
+    test_amp = 2
+    test_min_num = 2
+
+    test_data = np.zeros(test_dset_size)
+    test_data = tbtest.make_feature_blob(
+        test_data,
+        test_hdim_1_pt,
+        test_hdim_2_pt,
+        h1_size=test_hdim_1_sz,
+        h2_size=test_hdim_2_sz,
+        amplitude=test_amp,
+    )
+    test_data_xr = xr.DataArray(
+        test_data[np.newaxis,...],
+        dims=("time", "y", "x"), 
+        coords={
+            "time":[np.datetime64("2000-01-01T00:00:00")],
+        }
+    )
+
+    fd_output = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_xr,
+        threshold=[1, 2, 3],
+        n_min_threshold=test_min_num,
+        dxy=1,
+        target="maximum",
+    )
+
+    assert isinstance(fd_output.time.to_numpy()[0], np.datetime64)
+
+    test_data_iris = test_data_xr.to_iris()
+
+    fd_output_iris_dt64 = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_iris,
+        threshold=[1, 2, 3],
+        n_min_threshold=test_min_num,
+        dxy=1,
+        target="maximum",
+        preserve_iris_datetime_types=False,
+    )
+
+    assert isinstance(fd_output_iris_dt64.time.to_numpy()[0], np.datetime64)
+
+    fd_output_iris_cft = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_iris,
+        threshold=[1, 2, 3],
+        n_min_threshold=test_min_num,
+        dxy=1,
+        target="maximum",
+        preserve_iris_datetime_types=True,
+    )
+
+    assert isinstance(fd_output_iris_cft.time.to_numpy()[0], cftime.DatetimeGregorian)
 
 
 def test_strict_thresholding():
