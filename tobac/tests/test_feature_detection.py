@@ -709,16 +709,16 @@ def test_feature_detection_coords():
         amplitude=test_amp,
     )
     test_data_xr = xr.DataArray(
-        test_data[np.newaxis,...],
-        dims=("time", "y", "x"), 
+        test_data[np.newaxis, ...],
+        dims=("time", "y", "x"),
         coords={
-            "time":[np.datetime64("2000-01-01T00:00:00")],
-            "y":np.arange(test_data.shape[0]),
-            "x":np.arange(test_data.shape[1]),
-            "2d_dimension":xr.DataArray(
+            "time": [np.datetime64("2000-01-01T00:00:00")],
+            "y": np.arange(test_data.shape[0]),
+            "x": np.arange(test_data.shape[1]),
+            "2d_dimension": xr.DataArray(
                 np.random.rand(*test_data.shape), dims=("y", "x")
-            )
-        }
+            ),
+        },
     )
 
     fd_output = tobac.feature_detection.feature_detection_multithreshold(
@@ -743,6 +743,7 @@ def test_feature_detection_coords():
 
     assert all([coord.name() in fd_output_iris for coord in test_data_iris.coords()])
 
+
 def test_feature_detection_preserve_datetime():
     """Tests that datetime output is of the correct type when converting to and from iris cubes"""
     test_dset_size = (50, 50)
@@ -763,11 +764,11 @@ def test_feature_detection_preserve_datetime():
         amplitude=test_amp,
     )
     test_data_xr = xr.DataArray(
-        test_data[np.newaxis,...],
-        dims=("time", "y", "x"), 
+        test_data[np.newaxis, ...],
+        dims=("time", "y", "x"),
         coords={
-            "time":[np.datetime64("2000-01-01T00:00:00")],
-        }
+            "time": [np.datetime64("2000-01-01T00:00:00")],
+        },
     )
 
     fd_output = tobac.feature_detection.feature_detection_multithreshold(
@@ -803,6 +804,7 @@ def test_feature_detection_preserve_datetime():
     )
 
     assert isinstance(fd_output_iris_cft.time.to_numpy()[0], cftime.DatetimeGregorian)
+
 
 def test_feature_detection_preserve_datetime_3d():
     """Tests that datetime output is of the correct type when converting to and from iris cubes with 3d data"""
@@ -820,18 +822,18 @@ def test_feature_detection_preserve_datetime_3d():
         test_data,
         test_hdim_1_pt,
         test_hdim_2_pt,
-        test_vdim_pt, 
+        test_vdim_pt,
         h1_size=test_hdim_1_sz,
         h2_size=test_hdim_2_sz,
         amplitude=test_amp,
     )
     test_data_xr = xr.DataArray(
-        test_data[np.newaxis,...],
-        dims=("time", "z", "y", "x"), 
+        test_data[np.newaxis, ...],
+        dims=("time", "z", "y", "x"),
         coords={
-            "time":[np.datetime64("2000-01-01T00:00:00")],
-            "z":np.arange(test_data.shape[0])
-        }
+            "time": [np.datetime64("2000-01-01T00:00:00")],
+            "z": np.arange(test_data.shape[0]),
+        },
     )
 
     fd_output = tobac.feature_detection.feature_detection_multithreshold(
@@ -867,6 +869,7 @@ def test_feature_detection_preserve_datetime_3d():
     )
 
     assert isinstance(fd_output_iris_cft.time.to_numpy()[0], cftime.DatetimeGregorian)
+
 
 def test_feature_detection_360_day_calendar():
     test_dset_size = (50, 50)
@@ -887,11 +890,11 @@ def test_feature_detection_360_day_calendar():
         amplitude=test_amp,
     )
     test_data_xr = xr.DataArray(
-        test_data[np.newaxis,...],
-        dims=("time", "y", "x"), 
+        test_data[np.newaxis, ...],
+        dims=("time", "y", "x"),
         coords={
-            "time":[cftime.Datetime360Day(2000, 1, 1)],
-        }
+            "time": [cftime.Datetime360Day(2000, 1, 1)],
+        },
     )
 
     fd_output = tobac.feature_detection.feature_detection_multithreshold(
