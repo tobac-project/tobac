@@ -1,7 +1,7 @@
 """Custom generators used for iterators required by tobac"""
 
 import datetime
-from typing import Generator, Optional, Union
+from typing import Generator, Optional, Tuple, Union
 
 import cftime
 import numpy as np
@@ -17,7 +17,7 @@ def field_and_features_over_time(
     time_var_name: str = "time",
     time_padding: Optional[datetime.timedelta] = None,
 ) -> Generator[
-    tuple[
+    Tuple[
         int,
         Union[datetime.datetime, np.datetime64, cftime.datetime],
         xr.DataArray,
