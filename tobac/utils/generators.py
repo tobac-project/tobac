@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+import tobac.utils.datetime as datetime_utils
 
 def field_and_features_over_time(
         field: xr.DataArray, 
@@ -45,7 +46,9 @@ def field_and_features_over_time(
     if time_var_name not in features.columns:
         raise ValueError(f'{time_var_name} not present in input feature columns')
     
-    all_times = features[time_var_name]
+    all_times = pd.Series(
+        datetime_utils.match_datetime_format(features[time_var_name], field.coords[time_var_name])
+    )
     for time_iteration_number, time_iteration_value in enumerate(
         field.coords[time_var_name]
     ):

@@ -53,6 +53,8 @@ def to_datestr(dates: Union[str, datetime.datetime, np.datetime64, pd.Timestamp,
 def match_datetime_format(dates: Union[str, datetime.datetime, np.datetime64, pd.Timestamp, cftime.datetime], target: Union[str, datetime.datetime, np.datetime64, pd.Timestamp, cftime.datetime]):
     if isinstance(target, str):
         return to_datestr(dates)
+    if isinstance(target, xr.DataArray):
+        target = target.values
     if hasattr(target, "__iter__"):
         target = target[0]
     if isinstance(target, cftime.datetime):
