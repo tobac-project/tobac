@@ -65,7 +65,7 @@ def _conv_kwargs_iris_to_xarray(conv_kwargs: dict, preserve_iris_datetime_types:
     }
 
 
-def _conv_kwargs_irispandas_to_xarray(conv_kwargs: dict):
+def _conv_kwargs_irispandas_to_xarray(conv_kwargs: dict, preserve_iris_datetime_types: bool = True) -> dict:
     """
     Internal function to convert iris cube and pandas dataframe kwargs to xarray dataarrays
 
@@ -82,7 +82,7 @@ def _conv_kwargs_irispandas_to_xarray(conv_kwargs: dict):
     """
     return {
         key: (
-            convert_cube_to_dataarray(arg)
+            convert_cube_to_dataarray(arg, preserve_iris_datetime_types=preserve_iris_datetime_types)
             if isinstance(arg, iris.cube.Cube)
             else arg.to_xarray() if isinstance(arg, pd.DataFrame) else arg
         )
@@ -158,7 +158,7 @@ def iris_to_xarray(save_iris_info: bool = False):
         import xarray
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, preserve_iris_datetime_types: bool = True, **kwargs):
             # print(kwargs)
 
             if save_iris_info:
@@ -176,14 +176,14 @@ def iris_to_xarray(save_iris_info: bool = False):
                 args = tuple(
                     [
                         (
-                            convert_cube_to_dataarray(arg)
+                            convert_cube_to_dataarray(arg, preserve_iris_datetime_types=preserve_iris_datetime_types)
                             if type(arg) == iris.cube.Cube
                             else arg
                         )
                         for arg in args
                     ]
                 )
-                kwargs_new = _conv_kwargs_iris_to_xarray(kwargs)
+                kwargs_new = _conv_kwargs_iris_to_xarray(kwargs, preserve_iris_datetime_types=preserve_iris_datetime_types)
                 # print(args)
                 # print(kwargs)
                 output = func(*args, **kwargs_new)
@@ -317,7 +317,7 @@ def irispandas_to_xarray(save_iris_info: bool = False):
         import pandas as pd
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, preserve_iris_datetime_types: bool = True, **kwargs):
             # pass if we did an iris conversion.
             if save_iris_info:
                 if any([(type(arg) == iris.cube.Cube) for arg in args]) or any(
@@ -343,14 +343,14 @@ def irispandas_to_xarray(save_iris_info: bool = False):
                 args = tuple(
                     [
                         (
-                            convert_cube_to_dataarray(arg)
+                            convert_cube_to_dataarray(arg, preserve_iris_datetime_types=preserve_iris_datetime_types)
                             if type(arg) == iris.cube.Cube
                             else arg.to_xarray() if type(arg) == pd.DataFrame else arg
                         )
                         for arg in args
                     ]
                 )
-                kwargs = _conv_kwargs_irispandas_to_xarray(kwargs)
+                kwargs = _conv_kwargs_irispandas_to_xarray(kwargs, preserve_iris_datetime_types=preserve_iris_datetime_types)
 
                 output = func(*args, **kwargs)
                 if type(output) == tuple:

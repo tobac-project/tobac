@@ -55,8 +55,12 @@ def match_datetime_format(dates: Union[str, datetime.datetime, np.datetime64, pd
         return to_datestr(dates)
     if isinstance(target, xr.DataArray):
         target = target.values
+    if isinstance(target, pd.Series):
+        target = target.to_numpy()
     if hasattr(target, "__iter__"):
         target = target[0]
+    if isinstance(target, str):
+        return to_datestr(dates)
     if isinstance(target, cftime.datetime):
         return to_cftime(dates, target.calendar)
     if isinstance(target, pd.Timestamp):

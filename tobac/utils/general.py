@@ -22,7 +22,6 @@ import warnings
 def add_coordinates(
     features: pd.DataFrame,
     variable_cube: Union[xr.DataArray, iris.cube.Cube],
-    preserve_iris_datetime_types: bool = True,
 ) -> pd.DataFrame:
     """Add coordinates from the input cube of the feature detection
     to the trajectories/features.
@@ -36,11 +35,7 @@ def add_coordinates(
         Input data used for the tracking with coordinate information
         to transfer to the resulting DataFrame. Needs to contain the
         coordinate 'time'.
-    preserve_iris_datetime_types: bool
-        If True, uses the same datetime types as iris (cftime)
-        If False, converts datetime output to pandas standard
-        Used for xarray inputs only
-
+    
     Returns
     -------
     pandas.DataFrame
@@ -54,7 +49,6 @@ def add_coordinates(
         return internal_utils.xr_utils.add_coordinates_to_features(
             features,
             variable_cube,
-            preserve_iris_datetime_types=preserve_iris_datetime_types,
         )
     raise ValueError(
         "add_coordinates only supports xarray.DataArray and iris.cube.Cube"
@@ -67,7 +61,6 @@ def add_coordinates_3D(
     vertical_coord: Union[str, int] = None,
     vertical_axis: Union[int, None] = None,
     assume_coords_fixed_in_time: bool = True,
-    preserve_iris_datetime_types: bool = True,
 ):
     """Function adding coordinates from the tracking cube to the trajectories
         for the 3D case: time, longitude&latitude, x&y dimensions, and altitude
@@ -94,10 +87,6 @@ def add_coordinates_3D(
         coordinates say they vary in time. This is, by default, True, to preserve
         legacy functionality. If False, it assumes that if a coordinate says
         it varies in time, it takes the coordinate at its word.
-    preserve_iris_datetime_types: bool
-        If True, uses the same datetime types as iris (cftime)
-        If False, converts datetime output to pandas standard
-        Used for xarray inputs only
 
     Returns
     -------
@@ -114,7 +103,6 @@ def add_coordinates_3D(
             variable_cube,
             vertical_coord=vertical_coord,
             vertical_axis=vertical_axis,
-            preserve_iris_datetime_types=preserve_iris_datetime_types,
         )
     raise ValueError(
         "add_coordinates_3D only supports xarray.DataArray and iris.cube.Cube"

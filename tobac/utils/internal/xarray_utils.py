@@ -269,7 +269,6 @@ def add_coordinates_to_features(
     vertical_axis: Union[int, None] = None,
     use_standard_names: bool = True,
     interp_dims_without_coords: bool = False,
-    preserve_iris_datetime_types: bool = True,
 ) -> pd.DataFrame:
     """Function to populate the interpolated coordinates to feature
 
@@ -297,9 +296,7 @@ def add_coordinates_to_features(
     interp_dims_without_coords: bool
         If True, interpolates dimensions without coordinates
         If False, skips dimensions without coordinates
-    preserve_iris_datetime_types: bool
-        If True, uses the same datetime types as iris (cftime)
-        If False, converts datetime output to pandas standard
+    
     Returns
     -------
     Dataframe with coordinates added
@@ -420,15 +417,4 @@ def add_coordinates_to_features(
                 pass
 
         return_feat_df[interp_coord_name] = interpolated_df[interp_coord].values
-    if preserve_iris_datetime_types:
-        # We should only need to switch from datetime to DatetimeGregorian.
-        # if the datetime type is anything else, it stays as the original type.
-        if "datetime64" in str(variable_da[time_dim_name].dtype):
-            import cftime
-
-            return_feat_df[time_dim_name] = return_feat_df[time_dim_name].apply(
-                lambda x: cftime.DatetimeGregorian(
-                    x.year, x.month, x.day, x.hour, x.minute, x.second, x.microsecond
-                )
-            )
     return return_feat_df
