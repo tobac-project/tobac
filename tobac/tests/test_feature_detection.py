@@ -801,7 +801,9 @@ def test_feature_detection_preserve_datetime():
         preserve_iris_datetime_types=True,
     )
 
-    assert isinstance(fd_output_iris_cft.time.to_numpy()[0], cftime.DatetimeProlepticGregorian)
+    assert isinstance(
+        fd_output_iris_cft.time.to_numpy()[0], cftime.DatetimeProlepticGregorian
+    )
 
 
 def test_feature_detection_preserve_datetime_3d():
@@ -866,7 +868,9 @@ def test_feature_detection_preserve_datetime_3d():
         preserve_iris_datetime_types=True,
     )
 
-    assert isinstance(fd_output_iris_cft.time.to_numpy()[0], cftime.DatetimeProlepticGregorian)
+    assert isinstance(
+        fd_output_iris_cft.time.to_numpy()[0], cftime.DatetimeProlepticGregorian
+    )
 
 
 def test_feature_detection_360_day_calendar():

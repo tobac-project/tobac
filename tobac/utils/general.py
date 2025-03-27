@@ -35,7 +35,7 @@ def add_coordinates(
         Input data used for the tracking with coordinate information
         to transfer to the resulting DataFrame. Needs to contain the
         coordinate 'time'.
-    
+
     Returns
     -------
     pandas.DataFrame

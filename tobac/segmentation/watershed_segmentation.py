@@ -1257,7 +1257,7 @@ def segmentation(
         .assign_attrs(threshold=threshold)
     )
     features_out_list = []
-    
+
     if len(field.coords[time_var_name]) == 1:
         warnings.warn(
             "As of v1.6.0, segmentation with time length 1 will return time as a coordinate"
@@ -1265,7 +1265,14 @@ def segmentation(
             UserWarning,
         )
 
-    for time_iteration_number, time_iteration_value, field_at_time, features_i in field_and_features_over_time(field, features, time_var_name=time_var_name, time_padding=time_padding):
+    for (
+        time_iteration_number,
+        time_iteration_value,
+        field_at_time,
+        features_i,
+    ) in field_and_features_over_time(
+        field, features, time_var_name=time_var_name, time_padding=time_padding
+    ):
         segmentation_out_i, features_out_i = segmentation_timestep(
             field_at_time,
             features_i,
@@ -1287,7 +1294,7 @@ def segmentation(
             segmentation_out_i
         )
         features_out_list.append(features_out_i)
-        logging.debug(f'Finished segmentation for {time_iteration_value.values}')
+        logging.debug(f"Finished segmentation for {time_iteration_value.values}")
 
     # Merge output from individual timesteps:
     features_out = pd.concat(features_out_list)

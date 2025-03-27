@@ -11,7 +11,9 @@ import xarray as xr
 import iris.cube
 
 
-def convert_cube_to_dataarray(cube: iris.cube.Cube, preserve_iris_datetime_types: bool = True) -> xr.DataArray:
+def convert_cube_to_dataarray(
+    cube: iris.cube.Cube, preserve_iris_datetime_types: bool = True
+) -> xr.DataArray:
     """
     Convert an iris cube to an xarray dataarray, averting error for integer dtype cubes in xarray<v2023.06
 
@@ -37,7 +39,8 @@ def convert_cube_to_dataarray(cube: iris.cube.Cube, preserve_iris_datetime_types
         da = xr.DataArray.from_iris(
             cube.copy(cube.core_data().filled(np.iinfo(cube.core_data().dtype).min))
         )
-    else: da = xr.DataArray.from_iris(cube)
+    else:
+        da = xr.DataArray.from_iris(cube)
 
     if preserve_iris_datetime_types & ("time" in da.coords):
         da = da.convert_calendar(cube.coord("time").units.calendar, use_cftime=True)
@@ -45,7 +48,9 @@ def convert_cube_to_dataarray(cube: iris.cube.Cube, preserve_iris_datetime_types
     return da
 
 
-def _conv_kwargs_iris_to_xarray(conv_kwargs: dict, preserve_iris_datetime_types: bool = True) -> dict:
+def _conv_kwargs_iris_to_xarray(
+    conv_kwargs: dict, preserve_iris_datetime_types: bool = True
+) -> dict:
     """
     Internal function to convert iris cube kwargs to xarray dataarrays
 
@@ -60,12 +65,20 @@ def _conv_kwargs_iris_to_xarray(conv_kwargs: dict, preserve_iris_datetime_types:
         Output keyword arguments without any Iris Cubes
     """
     return {
-        key: convert_cube_to_dataarray(arg, preserve_iris_datetime_types=preserve_iris_datetime_types) if isinstance(arg, iris.cube.Cube) else arg
+        key: (
+            convert_cube_to_dataarray(
+                arg, preserve_iris_datetime_types=preserve_iris_datetime_types
+            )
+            if isinstance(arg, iris.cube.Cube)
+            else arg
+        )
         for key, arg in zip(conv_kwargs.keys(), conv_kwargs.values())
     }
 
 
-def _conv_kwargs_irispandas_to_xarray(conv_kwargs: dict, preserve_iris_datetime_types: bool = True) -> dict:
+def _conv_kwargs_irispandas_to_xarray(
+    conv_kwargs: dict, preserve_iris_datetime_types: bool = True
+) -> dict:
     """
     Internal function to convert iris cube and pandas dataframe kwargs to xarray dataarrays
 
@@ -82,7 +95,9 @@ def _conv_kwargs_irispandas_to_xarray(conv_kwargs: dict, preserve_iris_datetime_
     """
     return {
         key: (
-            convert_cube_to_dataarray(arg, preserve_iris_datetime_types=preserve_iris_datetime_types)
+            convert_cube_to_dataarray(
+                arg, preserve_iris_datetime_types=preserve_iris_datetime_types
+            )
             if isinstance(arg, iris.cube.Cube)
             else arg.to_xarray() if isinstance(arg, pd.DataFrame) else arg
         )
@@ -176,14 +191,19 @@ def iris_to_xarray(save_iris_info: bool = False):
                 args = tuple(
                     [
                         (
-                            convert_cube_to_dataarray(arg, preserve_iris_datetime_types=preserve_iris_datetime_types)
+                            convert_cube_to_dataarray(
+                                arg,
+                                preserve_iris_datetime_types=preserve_iris_datetime_types,
+                            )
                             if type(arg) == iris.cube.Cube
                             else arg
                         )
                         for arg in args
                     ]
                 )
-                kwargs_new = _conv_kwargs_iris_to_xarray(kwargs, preserve_iris_datetime_types=preserve_iris_datetime_types)
+                kwargs_new = _conv_kwargs_iris_to_xarray(
+                    kwargs, preserve_iris_datetime_types=preserve_iris_datetime_types
+                )
                 # print(args)
                 # print(kwargs)
                 output = func(*args, **kwargs_new)
@@ -343,14 +363,19 @@ def irispandas_to_xarray(save_iris_info: bool = False):
                 args = tuple(
                     [
                         (
-                            convert_cube_to_dataarray(arg, preserve_iris_datetime_types=preserve_iris_datetime_types)
+                            convert_cube_to_dataarray(
+                                arg,
+                                preserve_iris_datetime_types=preserve_iris_datetime_types,
+                            )
                             if type(arg) == iris.cube.Cube
                             else arg.to_xarray() if type(arg) == pd.DataFrame else arg
                         )
                         for arg in args
                     ]
                 )
-                kwargs = _conv_kwargs_irispandas_to_xarray(kwargs, preserve_iris_datetime_types=preserve_iris_datetime_types)
+                kwargs = _conv_kwargs_irispandas_to_xarray(
+                    kwargs, preserve_iris_datetime_types=preserve_iris_datetime_types
+                )
 
                 output = func(*args, **kwargs)
                 if type(output) == tuple:

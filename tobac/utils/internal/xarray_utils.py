@@ -296,7 +296,7 @@ def add_coordinates_to_features(
     interp_dims_without_coords: bool
         If True, interpolates dimensions without coordinates
         If False, skips dimensions without coordinates
-    
+
     Returns
     -------
     Dataframe with coordinates added

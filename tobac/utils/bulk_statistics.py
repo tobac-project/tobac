@@ -223,8 +223,8 @@ def get_statistics_from_mask(
     index: Union[None, list[int]] = None,
     default: Union[None, float] = None,
     id_column: str = "feature",
-    collapse_dim: Union[None, str, list[str]] = None, 
-    time_var_name: str = "time", 
+    collapse_dim: Union[None, str, list[str]] = None,
+    time_var_name: str = "time",
     time_padding: Optional[timedelta] = None,
 ) -> pd.DataFrame:
     """Derives bulk statistics for each object in the segmentation mask, and
@@ -261,13 +261,13 @@ def get_statistics_from_mask(
 
     id_column: str, optional (default: "feature")
         Name of the column in feature dataframe that contains IDs that match with the labels in mask. The default is the column "feature".
-    
+
     collapse_dim: None | str | list[str], optional (default: None)
         Dimension names of labels to collapse, allowing, e.g. calulcation of statistics on 2D
         fields for the footprint of 3D objects
 
     time_var_name : str, optional (default: "time")
-        The name of the time dimension in the input fields and the time column 
+        The name of the time dimension in the input fields and the time column
         in features, by default "time"
 
     time_padding: timedelta, optional (default: None)
@@ -317,12 +317,17 @@ def get_statistics_from_mask(
     step_statistics = []
 
     # for tt in pd.to_datetime(segmentation_mask.time):
-    for _, tt, segmentation_mask_t, features_t in field_and_features_over_time(segmentation_mask, features, time_var_name=time_var_name, time_padding=time_padding):
+    for _, tt, segmentation_mask_t, features_t in field_and_features_over_time(
+        segmentation_mask,
+        features,
+        time_var_name=time_var_name,
+        time_padding=time_padding,
+    ):
         # select specific timestep
         fields_t = (
             (
                 field.sel(
-                    {time_var_name:tt}, method="nearest", tolerance=time_padding
+                    {time_var_name: tt}, method="nearest", tolerance=time_padding
                 ).values
                 if time_var_name in field.coords
                 else field.values
