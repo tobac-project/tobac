@@ -124,3 +124,28 @@ def test_field_and_features_over_time_cftime():
 
     with pytest.raises(StopIteration):
         next(iterator)
+
+
+def test_field_and_features_over_time_time_var_name():
+    test_data = xr.DataArray(
+        np.zeros([2,10,10]),
+        dims=("time_testing","y","x"), 
+        coords={"time_testing":[datetime(2000,1,1), datetime(2000,1,1,1)]}
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3],
+            "frame": [0, 0, 1],
+            "time_testing": [
+                datetime(2000, 1, 1),
+                datetime(2000, 1, 1),
+                datetime(2000, 1, 1, 1),
+            ],
+        }
+    )
+
+    with pytest.raises(ValueError):
+        next(generators.field_and_features_over_time(test_data, test_features))
+
+    _ = next(generators.field_and_features_over_time(test_data, test_features, time_var_name="time_testing"))

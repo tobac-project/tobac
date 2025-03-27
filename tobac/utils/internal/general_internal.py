@@ -1,6 +1,7 @@
 """Internal tobac utilities"""
 
 from __future__ import annotations
+from typing import Union, Callable
 
 import numpy as np
 import skimage.measure
@@ -11,7 +12,6 @@ import pandas as pd
 import warnings
 from . import iris_utils
 from . import xarray_utils as xr_utils
-from typing import Union, Callable
 
 # list of common vertical coordinates to search for in various functions
 COMMON_VERT_COORDS: list[str] = [
