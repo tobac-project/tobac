@@ -1180,7 +1180,7 @@ def feature_detection_multithreshold(
     strict_thresholding: bool = False,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
     statistics_unsmoothed: bool = False,
-    use_standard_names: Optional[bool] = None, 
+    use_standard_names: Optional[bool] = None,
     converted_from_iris: bool = False,
     **kwargs,
 ) -> pd.DataFrame:
@@ -1424,13 +1424,13 @@ def feature_detection_multithreshold(
                 features,
                 field_in,
                 vertical_coord=vertical_coord,
-                use_standard_names=use_standard_names, 
+                use_standard_names=use_standard_names,
             )
         else:
             features = add_coordinates(
                 features,
                 field_in,
-                use_standard_names=use_standard_names, 
+                use_standard_names=use_standard_names,
             )
 
         # Loop over DataFrame to remove features that are closer than distance_min to each

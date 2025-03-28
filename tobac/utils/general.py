@@ -36,7 +36,7 @@ def add_coordinates(
         Input data used for the tracking with coordinate information
         to transfer to the resulting DataFrame. Needs to contain the
         coordinate 'time'.
-    
+
     use_standard_names: bool
         If true, when interpolating a coordinate, it looks for a standard_name
         and uses that to name the output coordinate, to mimic iris functionality.
@@ -55,7 +55,7 @@ def add_coordinates(
         return internal_utils.xr_utils.add_coordinates_to_features(
             features,
             variable_cube,
-            use_standard_names=use_standard_names, 
+            use_standard_names=use_standard_names,
         )
     raise ValueError(
         "add_coordinates only supports xarray.DataArray and iris.cube.Cube"
@@ -115,7 +115,7 @@ def add_coordinates_3D(
             variable_cube,
             vertical_coord=vertical_coord,
             vertical_axis=vertical_axis,
-            use_standard_names=use_standard_names, 
+            use_standard_names=use_standard_names,
         )
     raise ValueError(
         "add_coordinates_3D only supports xarray.DataArray and iris.cube.Cube"
