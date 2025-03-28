@@ -16,13 +16,13 @@ def to_cftime(
     dates_arr = np.atleast_1d(dates)
     if isinstance(dates_arr[0], cftime.datetime):
         cftime_dates = (
-            xr.DataArray(dates_arr, xr.Coordinates({"time": dates_arr}))
+            xr.DataArray(dates_arr, {"time": dates_arr})
             .convert_calendar(calendar, use_cftime=True, align_on=align_on)
             .time.values
         )
     else:
         cftime_dates = (
-            xr.DataArray(dates_arr, xr.Coordinates({"time": pd.to_datetime(dates_arr)}))
+            xr.DataArray(dates_arr, {"time": pd.to_datetime(dates_arr)})
             .convert_calendar(calendar, use_cftime=True, align_on=align_on)
             .time.values
         )
