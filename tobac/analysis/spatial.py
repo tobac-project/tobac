@@ -12,11 +12,11 @@ import xarray as xr
 from iris.analysis.cartography import area_weights
 
 from tobac.utils.bulk_statistics import get_statistics_from_mask
-from tobac.utils.internal.basic import find_vertical_coord_name
 from tobac.utils import decorators
-from tobac.utils.internal.general_internal import (
+from tobac.utils.internal.coordinates import (
     COMMON_LON_COORDS,
     find_dataframe_horizontal_coords,
+    find_vertical_coord_name
 )
 
 __all__ = (

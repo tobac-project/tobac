@@ -8,9 +8,7 @@ from typing import Union
 import numpy as np
 import pandas as pd
 import xarray as xr
-from . import basic as tb_utils_gi
-import random
-import string
+from . import coordinates as tb_utils_gi
 
 
 def find_axis_from_dim_coord(

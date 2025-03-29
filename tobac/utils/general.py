@@ -461,7 +461,7 @@ def combine_feature_dataframes(
     return combined_sorted
 
 
-@internal_utils.irispandas_to_xarray()
+@decorators.irispandas_to_xarray()
 def transform_feature_points(
     features,
     new_dataset,
