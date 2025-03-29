@@ -153,6 +153,7 @@ def test_field_and_features_over_time_cftime():
 
 
 def test_field_and_features_over_time_time_var_name():
+    # Test non-standard time coord name:
     test_data = xr.DataArray(
         np.zeros([2, 10, 10]),
         dims=("time_testing", "y", "x"),
@@ -171,11 +172,54 @@ def test_field_and_features_over_time_time_var_name():
         }
     )
 
-    with pytest.raises(ValueError):
-        next(generators.field_and_features_over_time(test_data, test_features))
-
     _ = next(
         generators.field_and_features_over_time(
             test_data, test_features, time_var_name="time_testing"
         )
     )
+
+def test_field_and_features_over_time_time_var_name_error():
+    # Test if time_var_name not in dataarray:
+    test_data = xr.DataArray(
+        np.zeros([2, 10, 10]),
+        dims=("time_testing", "y", "x"),
+        coords={"time_testing": [datetime(2000, 1, 1), datetime(2000, 1, 1, 1)]},
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3],
+            "frame": [0, 0, 1],
+            "time": [
+                datetime(2000, 1, 1),
+                datetime(2000, 1, 1),
+                datetime(2000, 1, 1, 1),
+            ],
+        }
+    )
+
+    with pytest.raises(ValueError):
+        next(generators.field_and_features_over_time(test_data, test_features))
+
+    # Test if time var name not in dataframe:
+    test_data = xr.DataArray(
+        np.zeros([2, 10, 10]),
+        dims=("time", "y", "x"),
+        coords={"time": [datetime(2000, 1, 1), datetime(2000, 1, 1, 1)]},
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3],
+            "frame": [0, 0, 1],
+            "time_testing": [
+                datetime(2000, 1, 1),
+                datetime(2000, 1, 1),
+                datetime(2000, 1, 1, 1),
+            ],
+        }
+    )
+
+    with pytest.raises(ValueError):
+        next(generators.field_and_features_over_time(test_data, test_features))
+
