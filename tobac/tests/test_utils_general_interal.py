@@ -5,7 +5,7 @@ import pandas as pd
 
 import tobac.utils.internal.general_internal as gi_utils
 
-def test_find_coord_in_dataframe():
+def test_find_coord_in_dataframe_errors():
     defaults = ["x", "projection_x_coordinate", "__other_name"]
 
     # Test no options raises ValueError:
@@ -32,6 +32,15 @@ def test_find_coord_in_dataframe():
             pd.DataFrame(columns=["time", "x", "projection_x_coordinate"]), defaults=defaults
         )
 
+    # Test that giving an object that is not a dataframe or series returns an error
+    with pytest.raises(ValueError):
+        gi_utils.find_coord_in_dataframe(
+            "test_str", defaults=defaults
+        )
+    
+def test_find_coord_in_dataframe():
+    defaults = ["x", "projection_x_coordinate", "__other_name"]
+
     # Now test correct returns:
     assert gi_utils.find_coord_in_dataframe(
         pd.DataFrame(columns=["time", "x", "projection_x_coordinate"]), coord="x"
@@ -51,6 +60,11 @@ def test_find_coord_in_dataframe():
 
     assert gi_utils.find_coord_in_dataframe(
         pd.DataFrame(columns=["time", "x", "projection_x_coordinate"]), coord="x", defaults=defaults
+    ) == "x"
+
+    # Test pd.Series input:
+    assert gi_utils.find_coord_in_dataframe(
+        pd.Series(index=["time", "x", "projection_x_coordinate"]), coord="x"
     ) == "x"
 
 def test_find_dataframe_vertical_coord_warning():

@@ -169,7 +169,7 @@ def find_vertical_axis_from_coord(
 
 
 def find_coord_in_dataframe(
-    variable_dataframe: pd.DataFrame, coord: Optional[str] = None, defaults: Optional[List[str]] = None, 
+    variable_dataframe: Union[pd.DataFrame, pd.Series], coord: Optional[str] = None, defaults: Optional[List[str]] = None, 
 ) -> str:
     """Find a coord in the columns of a dataframe matching either a specific coordinate name or a list 
     of default values
@@ -200,16 +200,23 @@ def find_coord_in_dataframe(
     ValueError
         If neither the coord or defaults parameters are set
     """
+    if isinstance(variable_dataframe, pd.DataFrame):
+        columns = variable_dataframe.columns
+    elif isinstance(variable_dataframe, pd.Series):
+        columns = variable_dataframe.index
+    else:
+        raise ValueError("Input variable_dataframe is neither a dataframe or a series")
+
     if coord is not None:
-        if coord in variable_dataframe.columns:
+        if coord in columns:
             return coord
         else:
             raise ValueError(f'Coordinate {coord} is note present in the dataframe')
     
     if defaults is not None:
-        intersect_id = np.intersect1d(variable_dataframe.columns.str.lower(), defaults, return_indices=True)[1]
+        intersect_id = np.intersect1d(columns.str.lower(), defaults, return_indices=True)[1]
         if len(intersect_id) == 1:
-            return variable_dataframe.columns[intersect_id[0]]
+            return columns[intersect_id[0]]
         elif len(intersect_id) > 1:
             raise ValueError("Multiple matching coord names found, please specify coordinate using coord parameter")
         raise ValueError(f'No coordinate found matching defaults {defaults}, please specify coordinate using coord parameter')
