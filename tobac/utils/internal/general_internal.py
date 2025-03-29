@@ -44,6 +44,7 @@ COMMON_LON_COORDS: list[str] = [
     "long",
 ]
 
+
 def _warn_auto_coordinate():
     """
     Internal function to warn on the use of `auto` as a default coordinate.
@@ -169,9 +170,11 @@ def find_vertical_axis_from_coord(
 
 
 def find_coord_in_dataframe(
-    variable_dataframe: Union[pd.DataFrame, pd.Series], coord: Optional[str] = None, defaults: Optional[List[str]] = None, 
+    variable_dataframe: Union[pd.DataFrame, pd.Series],
+    coord: Optional[str] = None,
+    defaults: Optional[List[str]] = None,
 ) -> str:
-    """Find a coord in the columns of a dataframe matching either a specific coordinate name or a list 
+    """Find a coord in the columns of a dataframe matching either a specific coordinate name or a list
     of default values
 
     Parameters
@@ -181,7 +184,7 @@ def find_coord_in_dataframe(
     coord : Optional[str], optional
         Coordinate name to search for, by default None
     defaults : Optional[List[str]], optional
-        Default list of coordinates to search for if no coordinate name is provided by the coord 
+        Default list of coordinates to search for if no coordinate name is provided by the coord
         parameter, by default None
 
     Returns
@@ -211,16 +214,22 @@ def find_coord_in_dataframe(
         if coord in columns:
             return coord
         else:
-            raise ValueError(f'Coordinate {coord} is note present in the dataframe')
-    
+            raise ValueError(f"Coordinate {coord} is note present in the dataframe")
+
     if defaults is not None:
-        intersect_id = np.intersect1d(columns.str.lower(), defaults, return_indices=True)[1]
+        intersect_id = np.intersect1d(
+            columns.str.lower(), defaults, return_indices=True
+        )[1]
         if len(intersect_id) == 1:
             return columns[intersect_id[0]]
         elif len(intersect_id) > 1:
-            raise ValueError("Multiple matching coord names found, please specify coordinate using coord parameter")
-        raise ValueError(f'No coordinate found matching defaults {defaults}, please specify coordinate using coord parameter')
-    
+            raise ValueError(
+                "Multiple matching coord names found, please specify coordinate using coord parameter"
+            )
+        raise ValueError(
+            f"No coordinate found matching defaults {defaults}, please specify coordinate using coord parameter"
+        )
+
     raise ValueError("One of coord or defaults parameter must be set")
 
 
@@ -251,14 +260,19 @@ def find_dataframe_vertical_coord(
         _warn_auto_coordinate()
         vertical_coord = None
 
-    return find_coord_in_dataframe(variable_dataframe, coord=vertical_coord, defaults=COMMON_VERT_COORDS)
+    return find_coord_in_dataframe(
+        variable_dataframe, coord=vertical_coord, defaults=COMMON_VERT_COORDS
+    )
 
 
 def find_dataframe_horizontal_coords(
-    variable_dataframe: pd.DataFrame, hdim1_coord: Optional[str] = None, hdim2_coord: Optional[str] = None, coord_type: Optional[Literal["xy", "latlon"]] = None, 
+    variable_dataframe: pd.DataFrame,
+    hdim1_coord: Optional[str] = None,
+    hdim2_coord: Optional[str] = None,
+    coord_type: Optional[Literal["xy", "latlon"]] = None,
 ) -> Tuple[str, str, str]:
     """Function to find the coordinates for the horizontal dimensions in a dataframe,
-    either in Cartesian (xy) or Lat/Lon space. If both Cartesian and lat/lon coordinates 
+    either in Cartesian (xy) or Lat/Lon space. If both Cartesian and lat/lon coordinates
     exist, the cartesian coords will take priority
 
     Parameters
@@ -270,7 +284,7 @@ def find_dataframe_horizontal_coords(
     hdim2_coord : Optional[str], optional
         Second horizontal coordinate name, by default None
     coord_type : Optional[Literal[xy, latlon]], optional
-        The coordinate type to search for, either 'xy' or 'latlon', must be set if 
+        The coordinate type to search for, either 'xy' or 'latlon', must be set if
         providing either hdim1_coord or hdim2_coord parameters, by default None
 
     Returns
@@ -287,53 +301,65 @@ def find_dataframe_horizontal_coords(
     """
     hdim_1_auto = hdim1_coord is None
     hdim_2_auto = hdim2_coord is None
-    
+
     if coord_type is None and (not hdim_1_auto or not hdim_2_auto):
-        raise ValueError("Coord type parameter must be set if either hdim1_coord or hdim2_coord parameters are specified")
-    
+        raise ValueError(
+            "Coord type parameter must be set if either hdim1_coord or hdim2_coord parameters are specified"
+        )
+
     if coord_type in ["xy", None]:
         try:
-            hdim1_coord_out = find_coord_in_dataframe(variable_dataframe, coord=hdim1_coord, defaults=COMMON_Y_COORDS)
+            hdim1_coord_out = find_coord_in_dataframe(
+                variable_dataframe, coord=hdim1_coord, defaults=COMMON_Y_COORDS
+            )
         except ValueError as e:
             if not hdim_1_auto:
                 raise e
             hdim1_coord_out = None
-            
+
         try:
-            hdim2_coord_out = find_coord_in_dataframe(variable_dataframe, coord=hdim2_coord, defaults=COMMON_X_COORDS)
+            hdim2_coord_out = find_coord_in_dataframe(
+                variable_dataframe, coord=hdim2_coord, defaults=COMMON_X_COORDS
+            )
         except ValueError as e:
             if not hdim_2_auto:
                 raise e
             hdim2_coord_out = None
-            
+
         if hdim1_coord_out is not None and hdim2_coord_out is not None:
             return hdim1_coord_out, hdim2_coord_out, "xy"
         else:
             # Reset output coords to None to ensure we don't match an xy coord in one dimension with latlon in another
             hdim1_coord_out = None
             hdim2_coord_out = None
-        
+
     if coord_type in ["latlon", None]:
         try:
-            hdim1_coord_out = find_coord_in_dataframe(variable_dataframe, coord=hdim1_coord, defaults=COMMON_LAT_COORDS)
+            hdim1_coord_out = find_coord_in_dataframe(
+                variable_dataframe, coord=hdim1_coord, defaults=COMMON_LAT_COORDS
+            )
             coord_type = "latlon"
         except ValueError as e:
             if not hdim_1_auto:
                 raise e
             hdim1_coord_out = None
-            
+
         try:
-            hdim2_coord_out = find_coord_in_dataframe(variable_dataframe, coord=hdim2_coord, defaults=COMMON_LON_COORDS)
+            hdim2_coord_out = find_coord_in_dataframe(
+                variable_dataframe, coord=hdim2_coord, defaults=COMMON_LON_COORDS
+            )
             coord_type = "latlon"
         except ValueError as e:
             if not hdim_2_auto:
                 raise e
             hdim2_coord_out = None
-            
+
         if hdim1_coord_out is not None and hdim2_coord_out is not None:
             return hdim1_coord_out, hdim2_coord_out, "latlon"
-        
-    raise ValueError("No coordinates found matching defaults, please specify coordinate using hdim1_coord and hdim2_coord parameters")
+
+    raise ValueError(
+        "No coordinates found matching defaults, please specify coordinate using hdim1_coord and hdim2_coord parameters"
+    )
 
 
 @njit_if_available

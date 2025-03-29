@@ -112,9 +112,9 @@ def test_calculate_velocity_individual_xy():
         == 10
     )
 
+
 @pytest.mark.parametrize(
-        "time_format", 
-        ("datetime", "datetime64", "proleptic_gregorian", "360_day")
+    "time_format", ("datetime", "datetime64", "proleptic_gregorian", "360_day")
 )
 def test_calculate_velocity(time_format):
     test_features = pd.DataFrame(
@@ -123,7 +123,7 @@ def test_calculate_velocity(time_format):
             "frame": [0, 0, 1, 1],
             "time": [
                 datetime(2000, 1, 1, 0, 0),
-                datetime(2000, 1, 1, 0, 0), 
+                datetime(2000, 1, 1, 0, 0),
                 datetime(2000, 1, 1, 0, 10),
                 datetime(2000, 1, 1, 0, 10),
             ],
@@ -133,9 +133,9 @@ def test_calculate_velocity(time_format):
         }
     )
 
-    if time_format=="datetime":
+    if time_format == "datetime":
         pass
-    elif time_format=="datetime64":
+    elif time_format == "datetime64":
         test_features["time"] = to_datetime64(test_features.time)
     else:
         test_features["time"] = to_cftime(test_features.time, calendar=time_format)
