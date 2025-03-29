@@ -147,7 +147,9 @@ def test_find_dataframe_vertical_coord():
 def test_find_dataframe_horizontal_coords_error():
     # Test no matching coords
     with pytest.raises(ValueError):
-        coord_utils.find_dataframe_horizontal_coords(pd.DataFrame(columns=["time", "z"]))
+        coord_utils.find_dataframe_horizontal_coords(
+            pd.DataFrame(columns=["time", "z"])
+        )
 
     # Test hdim_1_coord or hdim_2_coord set but not coord_type
     with pytest.raises(ValueError):
@@ -162,10 +164,14 @@ def test_find_dataframe_horizontal_coords_error():
 
     # Test one exists but not both:
     with pytest.raises(ValueError):
-        coord_utils.find_dataframe_horizontal_coords(pd.DataFrame(columns=["time", "x"]))
+        coord_utils.find_dataframe_horizontal_coords(
+            pd.DataFrame(columns=["time", "x"])
+        )
 
     with pytest.raises(ValueError):
-        coord_utils.find_dataframe_horizontal_coords(pd.DataFrame(columns=["time", "y"]))
+        coord_utils.find_dataframe_horizontal_coords(
+            pd.DataFrame(columns=["time", "y"])
+        )
 
     # Test one of each exists
     with pytest.raises(ValueError):

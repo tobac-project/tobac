@@ -4,6 +4,7 @@ from __future__ import annotations
 import numpy as np
 import skimage.measure
 
+
 def get_label_props_in_dict(labels: np.array) -> dict:
     """Function to get the label properties into a dictionary format.
 

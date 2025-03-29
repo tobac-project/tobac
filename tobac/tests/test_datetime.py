@@ -111,6 +111,7 @@ def test_to_datestr():
             or datetime_utils.to_datestr(date) == "2000-01-01T00:00:00"
         )
 
+
 def test_to_datestr_array():
     test_dates = [
         "2000-01-01",
@@ -125,10 +126,10 @@ def test_to_datestr_array():
         cftime.DatetimeNoLeap(2000, 1, 1),
     ]
     for date in test_dates:
-        assert (
-            datetime_utils.to_datestr([date]) == ["2000-01-01T00:00:00.000000000"]
-            or datetime_utils.to_datestr([date]) == ["2000-01-01T00:00:00"]
-        )
+        assert datetime_utils.to_datestr([date]) == [
+            "2000-01-01T00:00:00.000000000"
+        ] or datetime_utils.to_datestr([date]) == ["2000-01-01T00:00:00"]
+
 
 def test_match_datetime_format():
     test_dates = [
@@ -146,6 +147,7 @@ def test_match_datetime_format():
         for date in test_dates:
             assert datetime_utils.match_datetime_format(date, target) == target
 
+
 def test_match_datetime_format_array():
     test_dates = [
         "2000-01-01T00:00:00.000000000",
@@ -160,7 +162,9 @@ def test_match_datetime_format_array():
 
     for target in test_dates:
         for date in test_dates:
-            assert datetime_utils.match_datetime_format([date], [target]) == np.array([target])
+            assert datetime_utils.match_datetime_format([date], [target]) == np.array(
+                [target]
+            )
 
 
 def test_match_datetime_format_error():

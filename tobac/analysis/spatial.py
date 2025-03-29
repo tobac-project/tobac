@@ -16,7 +16,7 @@ from tobac.utils import decorators
 from tobac.utils.internal.coordinates import (
     COMMON_LON_COORDS,
     find_dataframe_horizontal_coords,
-    find_vertical_coord_name
+    find_vertical_coord_name,
 )
 
 __all__ = (
@@ -106,7 +106,9 @@ def calculate_distance(
     """
 
     if method_distance is None and (hdim1_coord is not None or hdim2_coord is not None):
-        raise ValueError("method_distance parameter must be provided if eithe hdim1_coord or hdim2_coord are specified")
+        raise ValueError(
+            "method_distance parameter must be provided if eithe hdim1_coord or hdim2_coord are specified"
+        )
 
     feature_1_coord = find_dataframe_horizontal_coords(
         feature_1,

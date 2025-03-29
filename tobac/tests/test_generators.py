@@ -178,6 +178,7 @@ def test_field_and_features_over_time_time_var_name():
         )
     )
 
+
 def test_field_and_features_over_time_time_var_name_error():
     # Test if time_var_name not in dataarray:
     test_data = xr.DataArray(
@@ -222,4 +223,3 @@ def test_field_and_features_over_time_time_var_name_error():
 
     with pytest.raises(ValueError):
         next(generators.field_and_features_over_time(test_data, test_features))
-
