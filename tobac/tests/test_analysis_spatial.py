@@ -81,24 +81,24 @@ def test_calculate_distance_errors():
         calculate_distance(test_features.iloc[0], test_features.iloc[1])
 
     # Test dataframes with mismatching coordinates:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Discovered coordinates*"):
         calculate_distance(
             pd.DataFrame(
                 {
-                    "feature": 1,
-                    "frame": 0,
-                    "time": datetime(2000, 1, 1),
-                    "projection_x_coordinate": 0,
-                    "projection_y_coordinate": 0,
+                    "feature": [1],
+                    "frame": [0],
+                    "time": [datetime(2000, 1, 1)],
+                    "projection_x_coordinate": [0],
+                    "projection_y_coordinate": [0],
                 }
             ),
             pd.DataFrame(
                 {
-                    "feature": 1,
-                    "frame": 0,
-                    "time": datetime(2000, 1, 1),
-                    "longitude": 0,
-                    "latitude": 0,
+                    "feature": [1],
+                    "frame": [0],
+                    "time": [datetime(2000, 1, 1)],
+                    "longitude": [0],
+                    "latitude": [0],
                 }
             ),
         )
