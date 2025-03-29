@@ -17,6 +17,7 @@ from tobac.analysis.spatial import (
     calculate_area,
     calculate_areas_2Dlatlon,
 )
+from tobac.utils.datetime import to_cftime, to_datetime64
 
 
 def test_calculate_distance():
@@ -74,7 +75,7 @@ def test_calculate_distance():
         )
 
 
-def test_calculate_velocity_individual():
+def test_calculate_velocity_individual_xy():
     test_features = pd.DataFrame(
         {
             "feature": [1, 2],
@@ -93,8 +94,6 @@ def test_calculate_velocity_individual():
         == 10
     )
 
-
-def test_calculate_velocity():
     test_features = pd.DataFrame(
         {
             "feature": [1, 2],
@@ -103,13 +102,46 @@ def test_calculate_velocity():
                 datetime(2000, 1, 1, 0, 0),
                 datetime(2000, 1, 1, 0, 10),
             ],
-            "projection_x_coordinate": [0, 6000],
-            "projection_y_coordinate": [0, 0],
-            "cell": [1, 1],
+            "x": [0, 6000],
+            "y": [0, 0],
         }
     )
 
+    assert (
+        calculate_velocity_individual(test_features.iloc[0], test_features.iloc[1])
+        == 10
+    )
+
+@pytest.mark.parametrize(
+        "time_format", 
+        ("datetime", "datetime64", "proleptic_gregorian", "360_day")
+)
+def test_calculate_velocity(time_format):
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3, 4],
+            "frame": [0, 0, 1, 1],
+            "time": [
+                datetime(2000, 1, 1, 0, 0),
+                datetime(2000, 1, 1, 0, 0), 
+                datetime(2000, 1, 1, 0, 10),
+                datetime(2000, 1, 1, 0, 10),
+            ],
+            "x": [0, 0, 6000, 0],
+            "y": [0, 0, 0, 9000],
+            "cell": [1, 2, 1, 2],
+        }
+    )
+
+    if time_format=="datetime":
+        pass
+    elif time_format=="datetime64":
+        test_features["time"] = to_datetime64(test_features.time)
+    else:
+        test_features["time"] = to_cftime(test_features.time, calendar=time_format)
+
     assert calculate_velocity(test_features).at[0, "v"] == 10
+    assert calculate_velocity(test_features).at[1, "v"] == 15
 
 
 def test_calculate_nearestneighbordistance():

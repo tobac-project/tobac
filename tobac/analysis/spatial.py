@@ -4,6 +4,7 @@ Calculate spatial properties (distances, velocities, areas, volumes) of tracked 
 
 import logging
 from itertools import combinations
+from typing import Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -13,6 +14,7 @@ from iris.analysis.cartography import area_weights
 from tobac.utils.bulk_statistics import get_statistics_from_mask
 from tobac.utils.internal.basic import find_vertical_coord_name
 from tobac.utils import decorators
+from tobac.utils.internal.general_internal import COMMON_LON_COORDS, find_dataframe_horizontal_coords
 
 __all__ = (
     "haversine",
@@ -61,7 +63,9 @@ def haversine(lat1, lon1, lat2, lon2):
     return arclen * RADIUS_EARTH
 
 
-def calculate_distance(feature_1, feature_2, method_distance=None):
+def calculate_distance(
+    feature_1: pd.DataFrame, feature_2: pd.DataFrame, method_distance: Optional[Literal["xy", "latlon"]] = None, hdim1_coord: Optional[str] = None, hdim2_coord: Optional[str] = None
+) -> Union[float, pd.Series]:
     """Compute the distance between two features. It is based on
     either lat/lon coordinates or x/y coordinates.
 
@@ -79,6 +83,11 @@ def calculate_distance(feature_1, feature_2, method_distance=None):
         distance. None checks wether the required coordinates are
         present and starts with 'xy'. Default is None.
 
+    hdim1_coord, hdim2_coord : str, optional (default: None)
+        The names of the coordinates for the two horizontal dimensions to use. 
+        If None, tobac.utils.internal.general_internal.find_dataframe_horizontal_coords 
+        will be used to search for coordinate names present in both dataframes
+
     Returns
     -------
     distance : float or pandas.Series
@@ -88,45 +97,44 @@ def calculate_distance(feature_1, feature_2, method_distance=None):
         multiple features.
 
     """
-    if method_distance is None:
-        if (
-            ("projection_x_coordinate" in feature_1)
-            and ("projection_y_coordinate" in feature_1)
-            and ("projection_x_coordinate" in feature_2)
-            and ("projection_y_coordinate" in feature_2)
-        ):
-            method_distance = "xy"
-        elif (
-            ("latitude" in feature_1)
-            and ("longitude" in feature_1)
-            and ("latitude" in feature_2)
-            and ("longitude" in feature_2)
-        ):
-            method_distance = "latlon"
-        else:
-            raise ValueError(
-                "either latitude/longitude or projection_x_coordinate/projection_y_coordinate have to be present to calculate distances"
-            )
+    
+    feature_1_coord = find_dataframe_horizontal_coords(
+        feature_1, hdim1_coord=hdim1_coord, hdim2_coord=hdim2_coord, coord_type=method_distance
+    )
+    feature_2_coord = find_dataframe_horizontal_coords(
+        feature_2, hdim1_coord=hdim1_coord, hdim2_coord=hdim2_coord, coord_type=method_distance
+    )
 
+    if feature_1_coord != feature_2_coord:
+        raise ValueError("Discovered coordinates in feature_1 and feature_2 do not match, please specify coordinates using hdim1_coord and hdim2_coord parameters")
+
+    hdim1_coord = feature_1_coord[0]
+    hdim2_coord = feature_1_coord[1]
+    method_distance = feature_1_coord[2]
+    
     if method_distance == "xy":
         distance = np.sqrt(
             (
-                feature_1["projection_x_coordinate"]
-                - feature_2["projection_x_coordinate"]
+                feature_1[hdim1_coord]
+                - feature_2[hdim1_coord]
             )
             ** 2
             + (
-                feature_1["projection_y_coordinate"]
-                - feature_2["projection_y_coordinate"]
+                feature_1[hdim2_coord]
+                - feature_2[hdim2_coord]
             )
             ** 2
         )
     elif method_distance == "latlon":
+        # Check if order of coords is correct, and swap if mismatched:
+        if hdim1_coord.lower() in COMMON_LON_COORDS:
+            hdim1_coord, hdim2_coord = hdim2_coord, hdim1_coord
+        
         distance = 1000 * haversine(
-            feature_1["latitude"],
-            feature_1["longitude"],
-            feature_2["latitude"],
-            feature_2["longitude"],
+            feature_1[hdim1_coord],
+            feature_1[hdim2_coord],
+            feature_2[hdim1_coord],
+            feature_2[hdim2_coord],
         )
     else:
         raise ValueError("method undefined")
