@@ -179,6 +179,31 @@ def test_find_dataframe_horizontal_coords_error():
             pd.DataFrame(columns=["time", "x", "lat"])
         )
 
+    # Test failure to detect coords when hdim1_coord or hdim2_coord is specified:
+    with pytest.raises(ValueError):
+        coord_utils.find_dataframe_horizontal_coords(
+            pd.DataFrame(columns=["time", "x", "lat"]), hdim1_coord="y", coord_type="xy"
+        )
+
+    with pytest.raises(ValueError):
+        coord_utils.find_dataframe_horizontal_coords(
+            pd.DataFrame(columns=["time", "y", "lon"]), hdim2_coord="x", coord_type="xy"
+        )
+
+    with pytest.raises(ValueError):
+        coord_utils.find_dataframe_horizontal_coords(
+            pd.DataFrame(columns=["time", "x", "lon"]),
+            hdim1_coord="lat",
+            coord_type="latlon",
+        )
+
+    with pytest.raises(ValueError):
+        coord_utils.find_dataframe_horizontal_coords(
+            pd.DataFrame(columns=["time", "x", "lat"]),
+            hdim1_coord="lon",
+            coord_type="latlon",
+        )
+
 
 def test_find_dataframe_horizontal_coords_error_coord_type():
     # Check that if coord_type is specified that an error is raised even if the other type of coords are present
