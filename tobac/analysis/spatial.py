@@ -105,6 +105,9 @@ def calculate_distance(
 
     """
 
+    if method_distance is None and (hdim1_coord is not None or hdim2_coord is not None):
+        raise ValueError("method_distance parameter must be provided if eithe hdim1_coord or hdim2_coord are specified")
+
     feature_1_coord = find_dataframe_horizontal_coords(
         feature_1,
         hdim1_coord=hdim1_coord,

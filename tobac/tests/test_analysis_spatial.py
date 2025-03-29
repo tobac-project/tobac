@@ -29,20 +29,6 @@ def test_calculate_distance():
                 datetime(2000, 1, 1),
                 datetime(2000, 1, 1),
             ],
-        }
-    )
-
-    with pytest.raises(ValueError):
-        calculate_distance(test_features.iloc[0], test_features.iloc[1])
-
-    test_features = pd.DataFrame(
-        {
-            "feature": [1, 2],
-            "frame": [0, 0],
-            "time": [
-                datetime(2000, 1, 1),
-                datetime(2000, 1, 1),
-            ],
             "projection_x_coordinate": [0, 1000],
             "projection_y_coordinate": [0, 0],
         }
@@ -67,12 +53,63 @@ def test_calculate_distance():
         test_features.iloc[0], test_features.iloc[1]
     ) == pytest.approx(1.11e5, rel=1e4)
 
+
+    # Test that if latitude and longitude coord names are given in the wrong order, then they are swapped:
+    # (expectation is hdim1=y=latitude, hdim2=x=longitude, doesn't matter for x/y but does matter for lat/lon)
+    assert calculate_distance(
+        test_features.iloc[0], test_features.iloc[1], hdim1_coord="longitude", hdim2_coord="latitude", method_distance="latlon"
+    ) == pytest.approx(1.11e5, rel=1e4)
+    
+
+def test_calculate_distance_errors():
+    # Test no horizontal coordinates"
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2],
+            "frame": [0, 0],
+            "time": [
+                datetime(2000, 1, 1),
+                datetime(2000, 1, 1),
+            ],
+        }
+    )
+
+    with pytest.raises(ValueError):
+        calculate_distance(test_features.iloc[0], test_features.iloc[1])
+
+    # Test dataframes with mismatching coordinates:
+    with pytest.raises(ValueError):
+        calculate_distance(
+            pd.DataFrame({"feature": 1, "frame": 0, "time": datetime(2000, 1, 1), "projection_x_coordinate": 0, "projection_y_coordinate": 0}),
+            pd.DataFrame({"feature": 1, "frame": 0, "time": datetime(2000, 1, 1), "longitude": 0, "latitude": 0}),
+        )
+
+    # Test invalid method:
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2],
+            "frame": [0, 0],
+            "time": [
+                datetime(2000, 1, 1),
+                datetime(2000, 1, 1),
+            ],
+            "projection_x_coordinate": [0, 1000],
+            "projection_y_coordinate": [0, 0],
+        }
+    )
     with pytest.raises(ValueError):
         calculate_distance(
             test_features.iloc[0],
             test_features.iloc[1],
             method_distance="invalid_method",
         )
+
+    # Test hdim1_coord/hdim2_coord specified but no method_distance
+    with pytest.raises(ValueError):
+        calculate_distance(test_features.iloc[0], test_features.iloc[1], hdim1_coord="projection_y_coordinate")
+    
+    with pytest.raises(ValueError):
+        calculate_distance(test_features.iloc[0], test_features.iloc[1], hdim2_coord="projection_x_coordinate")
 
 
 def test_calculate_velocity_individual_xy():
