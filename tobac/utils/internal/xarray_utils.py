@@ -132,9 +132,7 @@ def find_axis_from_coord(in_da: xr.DataArray, coord_name: str) -> tuple[int]:
                 if find_axis_from_dim(in_da, x) is not None
             )
         )
-
-    if len(all_matching_coords) > 1:
-        raise ValueError("Too many matching coords")
+    
     raise ValueError("No matching coords")
 
 
