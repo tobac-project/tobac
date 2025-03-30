@@ -27,6 +27,7 @@ from tobac.analysis.cell_analysis import (
 )
 from tobac.analysis.feature_analysis import histogram_featurewise
 from tobac.utils import decorators
+from tobac.utils.internal.coordinates import find_dataframe_horizontal_coords
 
 
 def plot_tracks_mask_field_loop(
@@ -403,22 +404,26 @@ def plot_tracks_mask_field(
         makersize_feature = markersize_track
 
     # Plot the identified features by looping over rows of DataFrame:
+    features_lat_dim, features_lon_dim, _ = find_dataframe_horizontal_coords(features, coord_type="latlon")
+
     if plot_features:
-        for i_row, row in features.iterrows():
+        for _, row in features.iterrows():
             axes.plot(
-                row["longitude"],
-                row["latitude"],
+                row[features_lon_dim],
+                row[features_lat_dim],
                 color="grey",
                 marker=maker_feature,
                 markersize=makersize_feature,
             )
 
     # restrict features to featues inside axis extent
+    track_lat_dim, track_lon_dim, _ = find_dataframe_horizontal_coords(features, coord_type="latlon")
+
     track = track.loc[
-        (track["longitude"] > axis_extent[0])
-        & (track["longitude"] < axis_extent[1])
-        & (track["latitude"] > axis_extent[2])
-        & (track["latitude"] < axis_extent[3])
+        (track[track_lon_dim] > axis_extent[0])
+        & (track[track_lon_dim] < axis_extent[1])
+        & (track[track_lat_dim] > axis_extent[2])
+        & (track[track_lat_dim] < axis_extent[3])
     ]
 
     # Plot tracked features by looping over rows of Dataframe
@@ -431,8 +436,8 @@ def plot_tracks_mask_field(
             if plot_number:
                 cell_string = "  " + str(int(row["cell"]))
                 axes.text(
-                    row["longitude"],
-                    row["latitude"],
+                    row[features_lon_dim],
+                    row[features_lat_dim],
                     cell_string,
                     color=color,
                     fontsize=6,
@@ -465,8 +470,8 @@ def plot_tracks_mask_field(
 
         if plot_marker:
             axes.plot(
-                row["longitude"],
-                row["latitude"],
+                row[features_lon_dim],
+                row[features_lat_dim],
                 color=color,
                 marker=marker_track,
                 markersize=markersize_track,
@@ -2056,11 +2061,14 @@ def map_tracks(
         raise ValueError(
             "axes needed to plot tracks onto. Pass in an axis to axes to resolve this error."
         )
+    
+    lat_dim, lon_dim, _ = find_dataframe_horizontal_coords(track, coord_type="latlon")
+
     for cell in track["cell"].dropna().unique():
         if cell == untracked_cell_value:
             continue
         track_i = track[track["cell"] == cell]
-        axes.plot(track_i["longitude"], track_i["latitude"], "-")
+        axes.plot(track_i[lon_dim], track_i[lat_dim], "-")
         if axis_extent:
             axes.set_extent(axis_extent)
         axes = make_map(axes)
