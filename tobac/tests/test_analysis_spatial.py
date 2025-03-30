@@ -67,7 +67,9 @@ def test_calculate_distance():
 def test_calculate_distance_errors():
     # Test invalid method_distance
     with pytest.raises(ValueError, match="method_distance invalid*"):
-        calculate_distance(pd.DataFrame(), pd.DataFrame(), method_distance="invalid_method_distance")
+        calculate_distance(
+            pd.DataFrame(), pd.DataFrame(), method_distance="invalid_method_distance"
+        )
 
     # Test no horizontal coordinates"
     test_features = pd.DataFrame(
