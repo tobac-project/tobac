@@ -474,7 +474,11 @@ def plot_tracks_mask_field(
     axes.set_extent(axis_extent)
     return axes
 
+<<<<<<< HEAD
 @decorators.iris_to_xarray()
+=======
+@decorators.xarray_to_iris()
+>>>>>>> 63822df (Update model OLR notebook to load/save using xarray and add more visualisations)
 def animation_mask_field(
     track, features, field, mask, interval=500, figsize=(10, 10), **kwargs
 ):
