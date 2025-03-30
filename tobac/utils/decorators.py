@@ -121,7 +121,11 @@ def _conv_kwargs_xarray_to_iris(conv_kwargs: dict):
         iris cubes
     """
     return {
-        key: xr.DataArray.to_iris(arg).copy(arg.data) if isinstance(arg, xr.DataArray) else arg
+        key: (
+            xr.DataArray.to_iris(arg).copy(arg.data)
+            if isinstance(arg, xr.DataArray)
+            else arg
+        )
         for key, arg in zip(conv_kwargs.keys(), conv_kwargs.values())
     }
 

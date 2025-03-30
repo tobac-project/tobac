@@ -154,6 +154,7 @@ def plot_tracks_mask_field_loop(
 
         plt.close()
 
+
 @decorators.xarray_to_iris()
 def plot_tracks_mask_field(
     track,
@@ -474,6 +475,7 @@ def plot_tracks_mask_field(
     axes.set_extent(axis_extent)
     return axes
 
+
 @decorators.iris_to_xarray()
 def animation_mask_field(
     track, features, field, mask, interval=500, figsize=(10, 10), **kwargs
@@ -545,7 +547,12 @@ def animation_mask_field(
         ax.set_title("{}".format(time_in))
 
     animation = matplotlib.animation.FuncAnimation(
-        fig, update, init_func=None, frames=field.time.values, interval=interval, blit=False
+        fig,
+        update,
+        init_func=None,
+        frames=field.time.values,
+        interval=interval,
+        blit=False,
     )
     return animation
 
