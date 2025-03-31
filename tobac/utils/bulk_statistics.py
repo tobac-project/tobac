@@ -1,6 +1,6 @@
 """
 Support functions to compute bulk statistics of features, either as a postprocessing step
-or within feature detection or segmentation. 
+or within feature detection or segmentation.
 
 """
 

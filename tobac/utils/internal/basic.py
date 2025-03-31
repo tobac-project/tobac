@@ -1,5 +1,4 @@
-"""Internal tobac utilities
-"""
+"""Internal tobac utilities"""
 
 from __future__ import annotations
 import numpy as np
@@ -221,7 +220,7 @@ def find_hdim_axes_3D(
     field_in: Union[iris.cube.Cube, xr.DataArray],
     vertical_coord: Union[str, None] = None,
     vertical_axis: Union[int, None] = None,
-) -> tuple[int]:
+) -> tuple[int, int]:
     """Finds what the hdim axes are given a 3D (including z) or
     4D (including z and time) dataset.
 
@@ -250,9 +249,9 @@ def find_hdim_axes_3D(
         if vertical_coord != "auto":
             raise ValueError("Cannot set both vertical_coord and vertical_axis.")
 
-    if type(field_in) is iris.cube.Cube:
+    if isinstance(field_in, iris.cube.Cube):
         return iris_utils.find_hdim_axes_3d(field_in, vertical_coord, vertical_axis)
-    elif type(field_in) is xr.DataArray:
+    elif isinstance(field_in, xr.DataArray):
         return xr_utils.find_hdim_axes_3d(field_in, vertical_coord, vertical_axis)
     else:
         raise ValueError("Unknown data type: " + type(field_in).__name__)

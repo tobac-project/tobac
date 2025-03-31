@@ -1,10 +1,10 @@
 """
-    Tobac merge and split
-    This submodule is a post processing step to address tracked cells which merge/split. 
-    The first iteration of this module is to combine the cells which are merging but have received
-    a new cell id (and are considered a new cell) once merged. In general this submodule will label merged/split cells
-    with a TRACK number in addition to its CELL number.
-    
+Tobac merge and split
+This submodule is a post processing step to address tracked cells which merge/split.
+The first iteration of this module is to combine the cells which are merging but have received
+a new cell id (and are considered a new cell) once merged. In general this submodule will label merged/split cells
+with a TRACK number in addition to its CELL number.
+
 """
 
 from __future__ import annotations
