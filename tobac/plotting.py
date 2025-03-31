@@ -404,7 +404,9 @@ def plot_tracks_mask_field(
         makersize_feature = markersize_track
 
     # Plot the identified features by looping over rows of DataFrame:
-    features_lat_dim, features_lon_dim, _ = find_dataframe_horizontal_coords(features, coord_type="latlon")
+    features_lat_dim, features_lon_dim, _ = find_dataframe_horizontal_coords(
+        features, coord_type="latlon"
+    )
 
     if plot_features:
         for _, row in features.iterrows():
@@ -417,7 +419,9 @@ def plot_tracks_mask_field(
             )
 
     # restrict features to featues inside axis extent
-    track_lat_dim, track_lon_dim, _ = find_dataframe_horizontal_coords(features, coord_type="latlon")
+    track_lat_dim, track_lon_dim, _ = find_dataframe_horizontal_coords(
+        features, coord_type="latlon"
+    )
 
     track = track.loc[
         (track[track_lon_dim] > axis_extent[0])
@@ -2061,7 +2065,7 @@ def map_tracks(
         raise ValueError(
             "axes needed to plot tracks onto. Pass in an axis to axes to resolve this error."
         )
-    
+
     lat_dim, lon_dim, _ = find_dataframe_horizontal_coords(track, coord_type="latlon")
 
     for cell in track["cell"].dropna().unique():
