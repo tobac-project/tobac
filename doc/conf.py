@@ -96,5 +96,6 @@ nbsphinx_thumbnails = {
     "examples/Example_Precip_Tracking/Example_Precip_Tracking": "_static/thumbnails/Example_Precip_Tracking_Thumbnail.png",
     "examples/Example_Track_on_Radar_Segment_on_Satellite/Example_Track_on_Radar_Segment_on_Satellite": "_static/thumbnails/Example_Track_on_Radar_Segment_on_Satellite_Thumbnail.png",
     "examples/Example_Updraft_Tracking/Example_Updraft_Tracking": "_static/thumbnails/Example_Updraft_Tracking_Thumbnail.png",
-    "examples/Example_vorticity_tracking_model/Example_vorticity_tracking_model": "_static/thumbnails/Example_vorticity_tracking_model_Thumbnail.png",
+    "examples/Example_vorticity_tracking_model/Example_vorticity_tracking_model": "_static/thumbnails/Example_vorticity_tracking_model_Thumbnail.png", 
+    "examples/Example_low_cloud_tracking_eurec4a/Example_low_cloud_tracking_eurec4a": "_static/thumbnails/Example_low_cloud_tracking_eurec4a_Thumbnail.png", 
 }
