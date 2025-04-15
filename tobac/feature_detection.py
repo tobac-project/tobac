@@ -1038,6 +1038,10 @@ def feature_detection_multithreshold_timestep(
             FutureWarning,
         )
 
+    # Check for conflicting flags
+    if return_labels and return_regions:
+        raise ValueError("Cannot return both labels and regions. Please choose one.")
+
     # get actual numpy array and make a copy so as not to change the data in the iris cube
     track_data = data_i.values.copy()
 
@@ -1339,6 +1343,10 @@ def feature_detection_multithreshold(
         return_labels is True.
 
     """
+    # Check for conflicting flags
+    if return_labels and return_regions:
+        raise ValueError("Cannot return both labels and regions. Please choose one.")
+
     from .utils import add_coordinates, add_coordinates_3D
 
     time_var_name: str = "time"
@@ -1397,13 +1405,10 @@ def feature_detection_multithreshold(
 
             vertical_axis = vertical_axis - 1
 
-    # create empty list to store features for all timesteps
+    # Initialize lists for holding results
     list_features_timesteps = []
-
-    if return_labels:
-        labels_list = []
-    elif return_regions:
-        regions_list = []
+    labels_list = [] if return_labels else None
+    regions_list = [] if return_regions else None
 
     # if single threshold is put in as a single value, turn it into a list
     if type(threshold) in [int, float]:
@@ -1468,20 +1473,17 @@ def feature_detection_multithreshold(
             return_regions=return_regions,
             return_labels=return_labels,
         )
-
+        # Process the returned data depending on the flags
         if return_labels:
             features_thresholds, labels = args
+            labels_list.append(labels)
         elif return_regions:
             features_thresholds, regions = args
+            regions_list.append(regions)
         else:
             features_thresholds = args
 
         list_features_timesteps.append(features_thresholds)
-
-        if return_labels:
-            labels_list.append(labels)
-        elif return_regions:
-            regions_list.append(regions)
 
         logging.debug("Finished feature detection for %s", time_i)
 
@@ -1556,6 +1558,7 @@ def feature_detection_multithreshold(
 
     logging.debug("feature detection completed")
 
+    # Create the final output
     if return_labels:
         labels = np.stack(labels_list, axis=0)
         return features, labels

@@ -51,12 +51,72 @@ def test_feature_detection_multithreshold_timestep(
         dxy=dxy,
         wavelength_filtering=wavelength_filtering,
     )
-
     # Make sure we have only one feature
-    assert len(fd_output.index) == 1
+    assert (
+        len(fd_output.index) == 1
+    ), f"Expected 1 feature, but got {len(fd_output.index)}"
     # Make sure that the location of the feature is correct
-    assert fd_output.iloc[0]["hdim_1"] == pytest.approx(test_hdim_1_pt)
-    assert fd_output.iloc[0]["hdim_2"] == pytest.approx(test_hdim_2_pt)
+    assert fd_output.iloc[0]["hdim_1"] == pytest.approx(
+        test_hdim_1_pt
+    ), f"Expected hdim_1 to be {test_hdim_1_pt}, but got {fd_output.iloc[0]['hdim_1']}"
+    assert fd_output.iloc[0]["hdim_2"] == pytest.approx(
+        test_hdim_2_pt
+    ), f"Expected hdim_2 to be {test_hdim_2_pt}, but got {fd_output.iloc[0]['hdim_2']}"
+
+    features, labels = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        threshold=test_threshs,
+        n_min_threshold=n_min_threshold,
+        dxy=dxy,
+        wavelength_filtering=wavelength_filtering,
+        return_labels=True,
+        return_regions=False,
+    )
+    # Make sure we have only one feature
+    assert (
+        len(features.index) == 1
+    ), f"Expected 1 feature, but got {len(features.index)}"
+    # Check if labels are returned
+    assert isinstance(labels, np.ndarray), "Expected labels to be a numpy array"
+    assert labels.ndim == 2, "Expected labels to be a 2D array (shape: (y, x))"
+    assert hasattr(labels, "shape")
+    assert labels.shape == (
+        test_data_iris.shape[0],
+        test_data_iris.shape[1],
+    ), f"Expected labels shape to be {test_data_iris.shape}, but got {labels.shape}"
+    assert (labels > 0).any(), "No labeled features found in the label array"
+
+    features, regions = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        threshold=test_threshs,
+        n_min_threshold=n_min_threshold,
+        dxy=dxy,
+        wavelength_filtering=wavelength_filtering,
+        return_labels=False,
+        return_regions=True,
+    )
+    # Make sure we have only one feature
+    assert (
+        len(features.index) == 1
+    ), f"Expected 1 feature, but got {len(features.index)}"
+    # Check if regions are returned
+    assert isinstance(regions, dict), "Expected regions to be a dictionary"
+    assert len(regions) > 0, "Expected regions dictionary to have at least one entry"
+
+    # Test if ValueError is raised
+    with pytest.raises(ValueError):
+        features, labels = feat_detect.feature_detection_multithreshold_timestep(
+            test_data_iris,
+            0,
+            threshold=test_threshs,
+            n_min_threshold=n_min_threshold,
+            dxy=dxy,
+            wavelength_filtering=wavelength_filtering,
+            return_labels=True,
+            return_regions=True,
+        )
 
 
 @pytest.mark.parametrize(
@@ -591,6 +651,61 @@ def test_feature_detection_setting_multiple():
             vertical_coord="altitude",
             vertical_axis=1,
         )
+
+
+def test_feature_detection_multithreshold_returns():
+    """Tests regarding return_labels and return_regions."""
+    test_data = np.zeros((1, 5, 5, 5))
+    test_data[0, 0:5, 0:5, 0:5] = 3
+    common_dset_opts = {
+        "in_arr": test_data,
+        "data_type": "iris",
+        "z_dim_name": "altitude",
+    }
+    test_data_iris = tbtest.make_dataset_from_arr(
+        time_dim_num=0, z_dim_num=1, y_dim_num=2, x_dim_num=3, **common_dset_opts
+    )
+
+    # Test if ValueError is raised
+    with pytest.raises(ValueError):
+        features, labels = feat_detect.feature_detection_multithreshold(
+            field_in=test_data_iris,
+            dxy=10000,
+            threshold=[
+                1.5,
+            ],
+            return_labels=True,
+            return_regions=True,
+        )
+
+    # Test when return_labels is True
+    features, labels = feat_detect.feature_detection_multithreshold(
+        field_in=test_data_iris,
+        dxy=10000,
+        threshold=[
+            1.5,
+        ],
+        return_labels=True,
+        return_regions=False,
+    )
+    assert labels is not None, "Expected labels to be returned"
+    assert isinstance(labels, np.ndarray), "Expected labels to be a numpy array"
+    assert (labels > 0).any(), "Expected at least one labeled feature"
+
+    # Test when return_regions is True
+    features, regions = feat_detect.feature_detection_multithreshold(
+        field_in=test_data_iris,
+        dxy=10000,
+        threshold=[
+            1.5,
+        ],
+        return_labels=False,
+        return_regions=True,
+    )
+    assert regions is not None, "Expected regions to be returned"
+    assert isinstance(regions, list), "Expected regions to be a list"
+    assert len(regions) > 0, "Expected non-empty list of regions"
+    assert isinstance(regions[0], dict), "Each region entry should be a dictionary"
 
 
 @pytest.mark.parametrize(
