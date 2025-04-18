@@ -13,6 +13,8 @@ from tobac.utils import generators
 
 
 def test_field_and_features_over_time():
+    """Test iterating over field_and_features_over_time generator
+    """
     test_data = xr.DataArray(
         np.zeros([2, 10, 10]),
         dims=("time", "y", "x"),
@@ -56,6 +58,9 @@ def test_field_and_features_over_time():
 
 
 def test_field_and_features_over_time_time_padding():
+    """Test the time_padding functionality of field_and_features_over_time 
+    generator
+    """
     test_data = xr.DataArray(
         np.zeros([1, 10, 10]),
         dims=("time", "y", "x"),
@@ -104,6 +109,8 @@ def test_field_and_features_over_time_time_padding():
 
 
 def test_field_and_features_over_time_cftime():
+    """Test field_and_features_over_time when given cftime datetime formats
+    """
     test_data = xr.DataArray(
         np.zeros([2, 10, 10]),
         dims=("time", "y", "x"),
@@ -153,6 +160,9 @@ def test_field_and_features_over_time_cftime():
 
 
 def test_field_and_features_over_time_time_var_name():
+    """Test field_and_features_over_time generator works correctly with a time 
+    coordinate name other than "time"
+    """
     # Test non-standard time coord name:
     test_data = xr.DataArray(
         np.zeros([2, 10, 10]),
@@ -180,6 +190,10 @@ def test_field_and_features_over_time_time_var_name():
 
 
 def test_field_and_features_over_time_time_var_name_error():
+    """Test that field_and_features_over_time generator raises the correct 
+    error when the name of the time coordinates do not match between the given 
+    data and dataframe
+    """
     # Test if time_var_name not in dataarray:
     test_data = xr.DataArray(
         np.zeros([2, 10, 10]),
@@ -199,7 +213,7 @@ def test_field_and_features_over_time_time_var_name_error():
         }
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="time not present in input field*"):
         next(generators.field_and_features_over_time(test_data, test_features))
 
     # Test if time var name not in dataframe:
@@ -221,5 +235,5 @@ def test_field_and_features_over_time_time_var_name_error():
         }
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="time not present in input feature*"):
         next(generators.field_and_features_over_time(test_data, test_features))
