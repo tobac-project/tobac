@@ -39,12 +39,13 @@ def test_calculate_distance_xy():
 
     assert calculate_distance(test_features.iloc[0], test_features.iloc[1]) == 1000
 
+
 def test_calculate_distance_latlon():
     """
-    Test for tobac.analysis.spatial.calculate_distance with latitude/longitude 
+    Test for tobac.analysis.spatial.calculate_distance with latitude/longitude
     coordinates
     """
-    
+
     test_features = pd.DataFrame(
         {
             "feature": [1, 2],
@@ -62,14 +63,15 @@ def test_calculate_distance_latlon():
         test_features.iloc[0], test_features.iloc[1]
     ) == pytest.approx(1.11e5, rel=1e4)
 
+
 def test_calculate_distance_latlon_wrong_order():
     """
-    Test for tobac.analysis.spatial.calculate_distance with latitude/longitude 
-    coordinates provided in the wrong order. When lat/lon are provided with 
-    standard naming the function should detect this and switch their order to 
+    Test for tobac.analysis.spatial.calculate_distance with latitude/longitude
+    coordinates provided in the wrong order. When lat/lon are provided with
+    standard naming the function should detect this and switch their order to
     ensure that haversine distances are calculated correctly.
     """
-    
+
     test_features = pd.DataFrame(
         {
             "feature": [1, 2],
@@ -94,16 +96,15 @@ def test_calculate_distance_latlon_wrong_order():
 
 
 def test_calculate_distance_error_invalid_method():
-    """Test invalid method_distance
-    """
+    """Test invalid method_distance"""
     with pytest.raises(ValueError, match="method_distance invalid*"):
         calculate_distance(
             pd.DataFrame(), pd.DataFrame(), method_distance="invalid_method_distance"
         )
 
+
 def test_calculate_distance_error_no_coords():
-    """ Test no horizontal coordinates in input dataframe
-    """
+    """Test no horizontal coordinates in input dataframe"""
     test_features = pd.DataFrame(
         {
             "feature": [1, 2],
@@ -118,9 +119,9 @@ def test_calculate_distance_error_no_coords():
     with pytest.raises(ValueError):
         calculate_distance(test_features.iloc[0], test_features.iloc[1])
 
+
 def test_calculate_distance_error_mismatched_coords():
-    """ Test dataframes with mismatching coordinates
-    """
+    """Test dataframes with mismatching coordinates"""
     with pytest.raises(ValueError, match="Discovered coordinates*"):
         calculate_distance(
             pd.DataFrame(
@@ -143,9 +144,9 @@ def test_calculate_distance_error_mismatched_coords():
             ),
         )
 
+
 def test_calculate_distance_error_no_method():
-    """ Test hdim1_coord/hdim2_coord specified but no method_distance
-    """
+    """Test hdim1_coord/hdim2_coord specified but no method_distance"""
     test_features = pd.DataFrame(
         {
             "feature": [1, 2],
@@ -159,7 +160,6 @@ def test_calculate_distance_error_no_method():
         }
     )
 
-    
     with pytest.raises(ValueError, match="method_distance parameter must*"):
         calculate_distance(
             test_features.iloc[0],
@@ -176,7 +176,8 @@ def test_calculate_distance_error_no_method():
 
 
 @pytest.mark.parametrize(
-    "x_coord, y_coord", [("x", "y"), ("projection_x_coordinate", "projection_y_coordinate")]
+    "x_coord, y_coord",
+    [("x", "y"), ("projection_x_coordinate", "projection_y_coordinate")],
 )
 def test_calculate_velocity_individual_xy(x_coord, y_coord):
     """
@@ -200,6 +201,7 @@ def test_calculate_velocity_individual_xy(x_coord, y_coord):
         calculate_velocity_individual(test_features.iloc[0], test_features.iloc[1])
         == 10
     )
+
 
 @pytest.mark.parametrize(
     "lat_coord, lon_coord", [("lat", "lon"), ("latitude", "longitude")]

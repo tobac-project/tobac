@@ -13,7 +13,7 @@ def to_cftime(
     calendar: str,
     align_on: str = "date",
 ) -> cftime.datetime:
-    """Converts a provided datetime-like object to a cftime datetime with the 
+    """Converts a provided datetime-like object to a cftime datetime with the
     given calendar
 
     Parameters
@@ -23,7 +23,7 @@ def to_cftime(
     calendar : str
         The requested cftime calender
     align_on : str, optional
-        The 'align-on' parameter required for 360-day, 365-day and 366-day 
+        The 'align-on' parameter required for 360-day, 365-day and 366-day
         cftime dates, by default "date"
 
     Returns
@@ -140,7 +140,7 @@ def match_datetime_format(
     dates: Union[str, datetime.datetime, np.datetime64, pd.Timestamp, cftime.datetime],
     target: Union[str, datetime.datetime, np.datetime64, pd.Timestamp, cftime.datetime],
 ) -> Union[str, datetime.datetime, np.datetime64, pd.Timestamp, cftime.datetime]:
-    """Converts the provided datetime-like objects to the same datetime format 
+    """Converts the provided datetime-like objects to the same datetime format
     as the provided target
 
     Parameters
@@ -154,13 +154,13 @@ def match_datetime_format(
     Returns
     -------
     Union[str, datetime.datetime, np.datetime64, pd.Timestamp, cftime.datetime]
-        The datetime-like values of the date parameter, converted to a format 
+        The datetime-like values of the date parameter, converted to a format
         which matches that of the target input
 
     Raises
     ------
     ValueError
-        If the target parameter provided is not a datetime-time object or array 
+        If the target parameter provided is not a datetime-time object or array
         of datetime-like objects
     """
     if isinstance(target, str):
