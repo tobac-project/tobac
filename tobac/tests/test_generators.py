@@ -13,8 +13,7 @@ from tobac.utils import generators
 
 
 def test_field_and_features_over_time():
-    """Test iterating over field_and_features_over_time generator
-    """
+    """Test iterating over field_and_features_over_time generator"""
     test_data = xr.DataArray(
         np.zeros([2, 10, 10]),
         dims=("time", "y", "x"),
@@ -58,7 +57,7 @@ def test_field_and_features_over_time():
 
 
 def test_field_and_features_over_time_time_padding():
-    """Test the time_padding functionality of field_and_features_over_time 
+    """Test the time_padding functionality of field_and_features_over_time
     generator
     """
     test_data = xr.DataArray(
@@ -109,8 +108,7 @@ def test_field_and_features_over_time_time_padding():
 
 
 def test_field_and_features_over_time_cftime():
-    """Test field_and_features_over_time when given cftime datetime formats
-    """
+    """Test field_and_features_over_time when given cftime datetime formats"""
     test_data = xr.DataArray(
         np.zeros([2, 10, 10]),
         dims=("time", "y", "x"),
@@ -160,7 +158,7 @@ def test_field_and_features_over_time_cftime():
 
 
 def test_field_and_features_over_time_time_var_name():
-    """Test field_and_features_over_time generator works correctly with a time 
+    """Test field_and_features_over_time generator works correctly with a time
     coordinate name other than "time"
     """
     # Test non-standard time coord name:
@@ -190,8 +188,8 @@ def test_field_and_features_over_time_time_var_name():
 
 
 def test_field_and_features_over_time_time_var_name_error():
-    """Test that field_and_features_over_time generator raises the correct 
-    error when the name of the time coordinates do not match between the given 
+    """Test that field_and_features_over_time generator raises the correct
+    error when the name of the time coordinates do not match between the given
     data and dataframe
     """
     # Test if time_var_name not in dataarray:
