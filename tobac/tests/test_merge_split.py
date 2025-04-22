@@ -130,8 +130,6 @@ def test_merge_split_MEST_PBC():
         PBC_flag="hdim_1",
         min_h1=0,
         max_h1=100,
-        min_h2=0,
-        max_h2=100,
     )
 
     assert len(mergesplit_output_hdim_1_pbc["track"]) == 1
@@ -142,13 +140,25 @@ def test_merge_split_MEST_PBC():
         dxy=1,
         distance=25,
         PBC_flag="hdim_2",
+        min_h2=0,
+        max_h2=100,
+    )
+
+    assert len(mergesplit_output_hdim_2_pbc["track"]) == 2
+
+    # Test with PBC in both dimensions, cells should merge
+    mergesplit_output_both_pbc = mergesplit.merge_split_MEST(
+        test_features,
+        dxy=1,
+        distance=25,
+        PBC_flag="both",
         min_h1=0,
         max_h1=100,
         min_h2=0,
         max_h2=100,
     )
 
-    assert len(mergesplit_output_hdim_2_pbc["track"]) == 2
+    assert len(mergesplit_output_both_pbc["track"]) == 1
 
 
 def test_merge_split_MEST_frame_len():

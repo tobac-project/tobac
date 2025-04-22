@@ -17,6 +17,8 @@ import pytest
 import tobac.testing as tbtest
 import tobac.utils.internal.iris_utils as iris_utils
 import tobac.utils.internal.xarray_utils as xr_utils
+import tobac.utils.datetime as datetime_utils
+from tobac.utils.decorators import convert_cube_to_dataarray
 
 
 @pytest.mark.parametrize(
@@ -143,6 +145,11 @@ def test_add_coordinates_xarray_base(
         # assert (iris_coord_interp[val_name] == expected_val[val_name]).all()
         # assert (xr_coord_interp[val_name] == expected_val[val_name]).all()
 
+    # Convert datetimes to ensure that they are the same type:
+    xr_coord_interp["time"] = datetime_utils.match_datetime_format(
+        xr_coord_interp.time, iris_coord_interp.time
+    )
+
     pd.testing.assert_frame_equal(iris_coord_interp, xr_coord_interp)
 
 
@@ -194,6 +201,9 @@ def test_add_coordinates_xarray_std_names(
     xr_coord_interp = xr_utils.add_coordinates_to_features(
         copy.deepcopy(all_feats), da_with_coords
     )
+    xr_coord_interp["time"] = datetime_utils.match_datetime_format(
+        xr_coord_interp.time, iris_coord_interp.time
+    )
     pd.testing.assert_frame_equal(iris_coord_interp, xr_coord_interp)
 
 
@@ -213,7 +223,8 @@ def test_preserve_iris_datetime_types():
     var_array: iris.cube.Cube = tbtest.make_simple_sample_data_2D(data_type="iris")
 
     xarray_output = xr_utils.add_coordinates_to_features(
-        all_feats, xr.DataArray.from_iris(var_array), preserve_iris_datetime_types=True
+        all_feats,
+        convert_cube_to_dataarray(var_array, preserve_iris_datetime_types=True),
     )
     iris_output = iris_utils.add_coordinates(all_feats, var_array)
 
@@ -224,7 +235,8 @@ def test_preserve_iris_datetime_types():
     )
 
     xarray_output_datetime_preserve_off = xr_utils.add_coordinates_to_features(
-        all_feats, xr.DataArray.from_iris(var_array), preserve_iris_datetime_types=False
+        all_feats,
+        convert_cube_to_dataarray(var_array, preserve_iris_datetime_types=False),
     )
 
     assert isinstance(
