@@ -20,7 +20,10 @@ from tobac.analysis.spatial import (
 from tobac.utils.datetime import to_cftime, to_datetime64
 
 
-def test_calculate_distance():
+def test_calculate_distance_xy():
+    """
+    Test for tobac.analysis.spatial.calculate_distance with cartesian coordinates
+    """
     test_features = pd.DataFrame(
         {
             "feature": [1, 2],
@@ -35,6 +38,13 @@ def test_calculate_distance():
     )
 
     assert calculate_distance(test_features.iloc[0], test_features.iloc[1]) == 1000
+
+
+def test_calculate_distance_latlon():
+    """
+    Test for tobac.analysis.spatial.calculate_distance with latitude/longitude
+    coordinates
+    """
 
     test_features = pd.DataFrame(
         {
@@ -53,6 +63,27 @@ def test_calculate_distance():
         test_features.iloc[0], test_features.iloc[1]
     ) == pytest.approx(1.11e5, rel=1e4)
 
+
+def test_calculate_distance_latlon_wrong_order():
+    """
+    Test for tobac.analysis.spatial.calculate_distance with latitude/longitude
+    coordinates provided in the wrong order. When lat/lon are provided with
+    standard naming the function should detect this and switch their order to
+    ensure that haversine distances are calculated correctly.
+    """
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2],
+            "frame": [0, 0],
+            "time": [
+                datetime(2000, 1, 1),
+                datetime(2000, 1, 1),
+            ],
+            "longitude": [0, 1],
+            "latitude": [0, 0],
+        }
+    )
     # Test that if latitude and longitude coord names are given in the wrong order, then they are swapped:
     # (expectation is hdim1=y=latitude, hdim2=x=longitude, doesn't matter for x/y but does matter for lat/lon)
     assert calculate_distance(
@@ -64,14 +95,16 @@ def test_calculate_distance():
     ) == pytest.approx(1.11e5, rel=1e4)
 
 
-def test_calculate_distance_errors():
-    # Test invalid method_distance
+def test_calculate_distance_error_invalid_method():
+    """Test invalid method_distance"""
     with pytest.raises(ValueError, match="method_distance invalid*"):
         calculate_distance(
             pd.DataFrame(), pd.DataFrame(), method_distance="invalid_method_distance"
         )
 
-    # Test no horizontal coordinates"
+
+def test_calculate_distance_error_no_coords():
+    """Test no horizontal coordinates in input dataframe"""
     test_features = pd.DataFrame(
         {
             "feature": [1, 2],
@@ -86,7 +119,9 @@ def test_calculate_distance_errors():
     with pytest.raises(ValueError):
         calculate_distance(test_features.iloc[0], test_features.iloc[1])
 
-    # Test dataframes with mismatching coordinates:
+
+def test_calculate_distance_error_mismatched_coords():
+    """Test dataframes with mismatching coordinates"""
     with pytest.raises(ValueError, match="Discovered coordinates*"):
         calculate_distance(
             pd.DataFrame(
@@ -109,7 +144,9 @@ def test_calculate_distance_errors():
             ),
         )
 
-    # Test invalid method:
+
+def test_calculate_distance_error_no_method():
+    """Test hdim1_coord/hdim2_coord specified but no method_distance"""
     test_features = pd.DataFrame(
         {
             "feature": [1, 2],
@@ -122,22 +159,15 @@ def test_calculate_distance_errors():
             "projection_y_coordinate": [0, 0],
         }
     )
-    with pytest.raises(ValueError):
-        calculate_distance(
-            test_features.iloc[0],
-            test_features.iloc[1],
-            method_distance="invalid_method",
-        )
 
-    # Test hdim1_coord/hdim2_coord specified but no method_distance
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="method_distance parameter must*"):
         calculate_distance(
             test_features.iloc[0],
             test_features.iloc[1],
             hdim1_coord="projection_y_coordinate",
         )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="method_distance parameter must*"):
         calculate_distance(
             test_features.iloc[0],
             test_features.iloc[1],
@@ -145,7 +175,15 @@ def test_calculate_distance_errors():
         )
 
 
-def test_calculate_velocity_individual_xy():
+@pytest.mark.parametrize(
+    "x_coord, y_coord",
+    [("x", "y"), ("projection_x_coordinate", "projection_y_coordinate")],
+)
+def test_calculate_velocity_individual_xy(x_coord, y_coord):
+    """
+    Test calculate_velocity_individual gives the correct result for a single
+    track woth different x/y coordinate names
+    """
     test_features = pd.DataFrame(
         {
             "feature": [1, 2],
@@ -154,26 +192,8 @@ def test_calculate_velocity_individual_xy():
                 datetime(2000, 1, 1, 0, 0),
                 datetime(2000, 1, 1, 0, 10),
             ],
-            "projection_x_coordinate": [0, 6000],
-            "projection_y_coordinate": [0, 0],
-        }
-    )
-
-    assert (
-        calculate_velocity_individual(test_features.iloc[0], test_features.iloc[1])
-        == 10
-    )
-
-    test_features = pd.DataFrame(
-        {
-            "feature": [1, 2],
-            "frame": [0, 1],
-            "time": [
-                datetime(2000, 1, 1, 0, 0),
-                datetime(2000, 1, 1, 0, 10),
-            ],
-            "x": [0, 6000],
-            "y": [0, 0],
+            x_coord: [0, 6000],
+            y_coord: [0, 0],
         }
     )
 
@@ -184,9 +204,38 @@ def test_calculate_velocity_individual_xy():
 
 
 @pytest.mark.parametrize(
+    "lat_coord, lon_coord", [("lat", "lon"), ("latitude", "longitude")]
+)
+def test_calculate_velocity_individual_latlon(lat_coord, lon_coord):
+    """
+    Test calculate_velocity_individual gives the correct result for a single
+    track woth different lat/lon coordinate names
+    """
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2],
+            "frame": [0, 0],
+            "time": [
+                datetime(2000, 1, 1, 0, 0),
+                datetime(2000, 1, 1, 0, 10),
+            ],
+            lon_coord: [0, 1],
+            lat_coord: [0, 0],
+        }
+    )
+
+    assert calculate_velocity_individual(
+        test_features.iloc[0], test_features.iloc[1]
+    ) == pytest.approx(1.11e5 / 600, rel=1e2)
+
+
+@pytest.mark.parametrize(
     "time_format", ("datetime", "datetime64", "proleptic_gregorian", "360_day")
 )
 def test_calculate_velocity(time_format):
+    """
+    Test velocity calculation using different time formats
+    """
     test_features = pd.DataFrame(
         {
             "feature": [1, 2, 3, 4],

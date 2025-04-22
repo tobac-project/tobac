@@ -396,10 +396,6 @@ def add_coordinates_to_features(
     # you can only rename dims alone when operating on datasets, so add our dataarray to a
     # dataset
     renamed_dim_da = variable_da.swap_dims(dim_new_names)
-    # interpolated_df = renamed_dim_da.interp(coords=dim_interp_coords)
-    # interpolated_df = interpolated_df.drop_vars(
-    #     [hdim1_name_new, hdim2_name_new, vdim_name_new], errors="ignore"
-    # )
     return_feat_df[time_dim_name] = variable_da[time_dim_name].values[
         return_feat_df["frame"]
     ]

@@ -874,6 +874,9 @@ def test_feature_detection_preserve_datetime_3d():
 
 
 def test_feature_detection_360_day_calendar():
+    """Tests that datetime format and feature detection work correctly with
+    cftime 360-day calendars
+    """
     test_dset_size = (50, 50)
     test_hdim_1_pt = 20.0
     test_hdim_2_pt = 20.0

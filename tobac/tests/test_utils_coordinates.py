@@ -7,37 +7,41 @@ import tobac.utils.internal.coordinates as coord_utils
 
 
 def test_find_coord_in_dataframe_errors():
+    """Test that find_coord_in_dataframe raises errors correctly"""
     defaults = ["x", "projection_x_coordinate", "__other_name"]
 
     # Test no options raises ValueError:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="One of coord or defaults parameter*"):
         coord_utils.find_coord_in_dataframe(pd.DataFrame(columns=["time", "x"]))
 
     # Test coordinate specified not in dataframe raise ValueError:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Coordinate*"):
         coord_utils.find_coord_in_dataframe(
             pd.DataFrame(columns=["time", "x"]), coord="projection_x_coordinate"
         )
 
     # Test no coordinates matching defaults:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="No coordinate found matching defaults*"):
         coord_utils.find_coord_in_dataframe(
             pd.DataFrame(columns=["time", "y"]), defaults=defaults
         )
 
     # Test multiple matches with defaults:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Multiple matching*"):
         coord_utils.find_coord_in_dataframe(
             pd.DataFrame(columns=["time", "x", "projection_x_coordinate"]),
             defaults=defaults,
         )
 
     # Test that giving an object that is not a dataframe or series returns an error
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Input variable_dataframe is neither*"):
         coord_utils.find_coord_in_dataframe("test_str", defaults=defaults)
 
 
 def test_find_coord_in_dataframe():
+    """Test that find_coord_in_dataframe returns correct results for both
+    default and specific coordinates
+    """
     defaults = ["x", "projection_x_coordinate", "__other_name"]
 
     # Now test correct returns:
@@ -92,7 +96,7 @@ def test_find_coord_in_dataframe():
 
 
 def test_find_dataframe_vertical_coord_warning():
-    # Test the warning for coord="auto":
+    """Test the warning for coord="auto" in find_dataframe_vertical_coord"""
     with pytest.warns(DeprecationWarning):
         coord_utils.find_dataframe_vertical_coord(
             pd.DataFrame(columns=["z"]), vertical_coord="auto"
@@ -100,6 +104,7 @@ def test_find_dataframe_vertical_coord_warning():
 
 
 def test_find_dataframe_vertical_coord_error():
+    """Test find_dataframe_vertical_coord raises errors correctly"""
     # Test the error for invalid coord input:
     with pytest.raises(ValueError):
         coord_utils.find_dataframe_vertical_coord(
@@ -118,6 +123,7 @@ def test_find_dataframe_vertical_coord_error():
 
 
 def test_find_dataframe_vertical_coord():
+    """Test find_dataframe_vertical_coord provides correct results"""
     # Test default coords
     assert coord_utils.find_dataframe_vertical_coord(pd.DataFrame(columns=["z"])) == "z"
     assert (
@@ -145,6 +151,7 @@ def test_find_dataframe_vertical_coord():
 
 
 def test_find_dataframe_horizontal_coords_error():
+    """Test find_dataframe_horizontal_coords raises errors correctly"""
     # Test no matching coords
     with pytest.raises(ValueError):
         coord_utils.find_dataframe_horizontal_coords(
@@ -206,6 +213,9 @@ def test_find_dataframe_horizontal_coords_error():
 
 
 def test_find_dataframe_horizontal_coords_error_coord_type():
+    """Test that find_dataframe_horizontal_coords raises errors correctly when
+    the specified coord_type does not match the coords present
+    """
     # Check that if coord_type is specified that an error is raised even if the other type of coords are present
     with pytest.raises(ValueError):
         coord_utils.find_dataframe_horizontal_coords(
@@ -219,6 +229,7 @@ def test_find_dataframe_horizontal_coords_error_coord_type():
 
 
 def test_find_dataframe_horizontal_coords_defaults_xy():
+    """Test find_dataframe_horizontal_coords for xy coords"""
     # Test defaults xy:
     assert coord_utils.find_dataframe_horizontal_coords(
         pd.DataFrame(columns=["time", "x", "y"])
@@ -237,6 +248,7 @@ def test_find_dataframe_horizontal_coords_defaults_xy():
 
 
 def test_find_dataframe_horizontal_coords_defaults_latlon():
+    """Test find_dataframe_horizontal_coords for lat/lon coords"""
     # Test defaults latlon
     assert coord_utils.find_dataframe_horizontal_coords(
         pd.DataFrame(columns=["time", "lon", "lat"])
@@ -258,6 +270,9 @@ def test_find_dataframe_horizontal_coords_defaults_latlon():
 
 
 def test_find_dataframe_horizontal_coords_specific():
+    """Test find_dataframe_horizontal_coords when the coordinate name is
+    specified
+    """
     assert coord_utils.find_dataframe_horizontal_coords(
         pd.DataFrame(
             columns=[

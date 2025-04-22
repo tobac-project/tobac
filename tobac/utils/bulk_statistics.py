@@ -316,7 +316,6 @@ def get_statistics_from_mask(
     # get bulk statistics for each timestep
     step_statistics = []
 
-    # for tt in pd.to_datetime(segmentation_mask.time):
     for _, tt, segmentation_mask_t, features_t in field_and_features_over_time(
         segmentation_mask,
         features,
