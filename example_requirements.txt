@@ -20,4 +20,8 @@ typing_extensions
 rioxarray
 numba
 dask
-
+pyvista
+ipywidgets
+trame
+trame-vtk 
+trame-vuetify
