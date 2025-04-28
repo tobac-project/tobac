@@ -1,3 +1,5 @@
+.. _bulk-statistics:
+
 ##########################
   Compute bulk statistics
 ##########################

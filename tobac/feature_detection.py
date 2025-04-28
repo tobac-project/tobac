@@ -1,7 +1,7 @@
-"""Provide feature detection.
+"""First step toward working with *tobac*. Detects features from input 2D or 3D data.
 
-This module can work with any two-dimensional field.
-To identify the features, contiguous regions above or
+This module can work with any two-dimensional or three-dimensional field.
+To identify the features, contiguous regions above or 
 below a threshold are determined and labelled individually.
 To describe the specific location of the feature at a
 specific point in time, different spatial properties
