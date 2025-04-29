@@ -1251,14 +1251,13 @@ def segmentation(
         ) from exc
 
     # create our output dataarray
-    segmentation_out_data = (
-        xr.zeros_like(field, dtype=int)
-        .drop_attrs(
-            deep=False
-        )  # Drop variable attrs (e.g. units, standard name) but not coordinate attrs
-        .rename("segmentation_mask")
-        .assign_attrs(threshold=threshold)
-    )
+    segmentation_out_data = xr.DataArray(
+        np.zeros(field.shape, dtype=int),
+        coords=field.coords,
+        dims=field.dims,
+        name="segmentation_mask",
+    ).assign_attrs(threshold=threshold)
+
     features_out_list = []
 
     if len(field.coords[time_var_name]) == 1:
