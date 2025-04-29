@@ -1253,7 +1253,9 @@ def segmentation(
     # create our output dataarray
     segmentation_out_data = (
         xr.zeros_like(field, dtype=int)
-        .drop_attrs(deep=False) # Drop variable attrs (e.g. units, standard name) but not coordinate attrs
+        .drop_attrs(
+            deep=False
+        )  # Drop variable attrs (e.g. units, standard name) but not coordinate attrs
         .rename("segmentation_mask")
         .assign_attrs(threshold=threshold)
     )
