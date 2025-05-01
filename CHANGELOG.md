@@ -17,7 +17,7 @@ _**Version 1.6.0:**_
 
 **Internal Enhancements**
 
-- `tobac.utils.internal.basic` was resturctured into `coordinates` and `label_props` utils, and new `datetime` and `generators` utils were added [#489](https://github.com/tobac-project/tobac/pull/489)
+- `tobac.utils.internal.basic` was restructured into `coordinates` and `label_props` utils, and new `datetime` and `generators` utils were added [#489](https://github.com/tobac-project/tobac/pull/489)
 
 _**Version 1.5.5:**_
 
