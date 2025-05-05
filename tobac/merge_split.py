@@ -1,10 +1,10 @@
 """
-    Tobac merge and split
-    This submodule is a post processing step to address tracked cells which merge/split. 
-    The first iteration of this module is to combine the cells which are merging but have received
-    a new cell id (and are considered a new cell) once merged. In general this submodule will label merged/split cells
-    with a TRACK number in addition to its CELL number.
-    
+Tobac merge and split
+This submodule is a post processing step to address tracked cells which merge/split.
+The first iteration of this module is to combine the cells which are merging but have received
+a new cell id (and are considered a new cell) once merged. In general this submodule will label merged/split cells
+with a TRACK number in addition to its CELL number.
+
 """
 
 from __future__ import annotations
@@ -185,7 +185,12 @@ def merge_split_MEST(
     if PBC_flag in ["hdim_1", "hdim_2", "both"]:
         # Note that we multiply by dxy to get the distances in spatial coordinates
         dist_func = build_distance_function(
-            min_h1 * dxy, max_h1 * dxy, min_h2 * dxy, max_h2 * dxy, PBC_flag, is_3D
+            min_h1 * dxy if min_h1 is not None else None,
+            max_h1 * dxy if max_h1 is not None else None,
+            min_h2 * dxy if min_h2 is not None else None,
+            max_h2 * dxy if max_h2 is not None else None,
+            PBC_flag,
+            is_3D,
         )
         cell_start_tree = BallTree(
             cell_start_locations, metric="pyfunc", func=dist_func

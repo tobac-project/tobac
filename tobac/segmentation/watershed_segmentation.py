@@ -14,18 +14,18 @@ the threshold condition are set to the respective marker. The algorithm
 then fills the area (2D) or volume (3D) based on the input field
 starting from these markers until reaching the threshold. If two or more
 features are directly connected, the border runs along the
-watershed line between the two regions. This procedure creates a mask 
-that has the same form as the input data, with the corresponding integer 
-number at all grid points that belong to a feature, else with zero. This 
+watershed line between the two regions. This procedure creates a mask
+that has the same form as the input data, with the corresponding integer
+number at all grid points that belong to a feature, else with zero. This
 mask can be conveniently and efficiently used to select the volume of each
-feature at a specific time step for further analysis or visialization. 
+feature at a specific time step for further analysis or visialization.
 
 References
 ----------
 .. Heikenfeld, M., Marinescu, P. J., Christensen, M.,
    Watson-Parris, D., Senf, F., van den Heever, S. C.
-   & Stier, P. (2019). tobac 1.2: towards a flexible 
-   framework for tracking and analysis of clouds in 
+   & Stier, P. (2019). tobac 1.2: towards a flexible
+   framework for tracking and analysis of clouds in
    diverse datasets. Geoscientific Model Development,
    12(11), 4551-4570.
 """
@@ -33,22 +33,23 @@ References
 from __future__ import annotations
 import copy
 import logging
+import datetime
+import warnings
 
 import iris.cube
-import numpy as np
-import pandas as pd
+import xarray as xr
 from typing_extensions import Literal
-from typing import Union, Callable
+from typing import Union, Callable, Optional
 
 import skimage
 import numpy as np
 import pandas as pd
 
-from . import utils as tb_utils
-from .utils import periodic_boundaries as pbc_utils
-from .utils import internal as internal_utils
-from .utils import get_statistics
-from .utils import decorators
+from tobac.utils import periodic_boundaries as pbc_utils
+from tobac.utils import internal as internal_utils
+from tobac.utils import get_statistics
+from tobac.utils import decorators
+from tobac.utils.generators import field_and_features_over_time
 
 
 def add_markers(
@@ -331,9 +332,9 @@ def segmentation_2D(
     )
 
 
-@decorators.xarray_to_iris()
+@decorators.iris_to_xarray()
 def segmentation_timestep(
-    field_in: iris.cube.Cube,
+    field_in: xr.DataArray,
     features_in: pd.DataFrame,
     dxy: float,
     threshold: float = 3e-3,
@@ -354,7 +355,7 @@ def segmentation_timestep(
 
     Parameters
     ----------
-    field_in : iris.cube.Cube
+    field_in : xr.DataArray
         Input field to perform the watershedding on (2D or 3D for one
         specific point in time).
 
@@ -416,12 +417,11 @@ def segmentation_timestep(
     statistics: boolean, optional
         Default is None. If True, bulk statistics for the data points assigned to each feature are saved in output.
 
-
     Returns
     -------
-    segmentation_out : iris.cube.Cube
+    segmentation_out : xarray.DataArray
         Mask, 0 outside and integer numbers according to track
-        inside the ojects.
+        inside the objects.
 
     features_out : pandas.DataFrame
         Feature dataframe including the number of cells (2D or 3D) in
@@ -459,14 +459,14 @@ def segmentation_timestep(
     if field_in.ndim == 2:
         hdim_1_axis = 0
         hdim_2_axis = 1
+        vertical_coord_axis = None
     elif field_in.ndim == 3:
-        vertical_axis = internal_utils.find_vertical_axis_from_coord(
+        vertical_axis = internal_utils.find_vertical_coord_name(
             field_in, vertical_coord=vertical_coord
         )
-        ndim_vertical = field_in.coord_dims(vertical_axis)
-        if len(ndim_vertical) > 1:
-            raise ValueError("please specify 1 dimensional vertical coordinate")
-        vertical_coord_axis = ndim_vertical[0]
+        vertical_coord_axis = internal_utils.find_axis_from_coord(
+            field_in, vertical_axis
+        )
         # Once we know the vertical coordinate, we can resolve the
         # horizontal coordinates
         # To make things easier, we will transpose the axes
@@ -486,12 +486,11 @@ def segmentation_timestep(
     # copy feature dataframe for output
     features_out = deepcopy(features_in)
     # Create cube of the same dimensions and coordinates as input data to store mask:
-    segmentation_out = 1 * field_in
-    segmentation_out.rename("segmentation_mask")
-    segmentation_out.units = 1
+    segmentation_out = xr.zeros_like(field_in, dtype=int)
+    segmentation_out = segmentation_out.rename("segmentation_mask")
 
     # Get raw array from input data:
-    data = field_in.core_data()
+    data = field_in.values
     is_3D_seg = len(data.shape) == 3
     # To make things easier, we will transpose the axes
     # so that they are consistent: z, hdim_1, hdim_2
@@ -1118,10 +1117,10 @@ def check_add_unseeded_across_bdrys(
     return markers_out
 
 
-@decorators.xarray_to_iris()
+@decorators.iris_to_xarray()
 def segmentation(
     features: pd.DataFrame,
-    field: iris.cube.Cube,
+    field: xr.DataArray,
     dxy: float,
     threshold: float = 3e-3,
     target: Literal["maximum", "minimum"] = "maximum",
@@ -1135,7 +1134,8 @@ def segmentation(
     segment_number_below_threshold: int = 0,
     segment_number_unassigned: int = 0,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
-) -> tuple[iris.cube.Cube, pd.DataFrame]:
+    time_padding: Optional[datetime.timedelta] = datetime.timedelta(seconds=0.5),
+) -> tuple[xr.DataArray, pd.DataFrame]:
     """Use watershedding to determine region above a threshold
     value around initial seeding position for all time steps of
     the input data. Works both in 2D (based on single seeding
@@ -1150,7 +1150,7 @@ def segmentation(
     features : pandas.DataFrame
         Output from trackpy/maketrack.
 
-    field : iris.cube.Cube
+    field : iris.cube.Cube or xarray.DataArray
         Containing the field to perform the watershedding on.
 
     dxy : float
@@ -1207,7 +1207,11 @@ def segmentation(
     statistic : dict, optional
         Default is None. Optional parameter to calculate bulk statistics within feature detection.
         Dictionary with callable function(s) to apply over the region of each detected feature and the name of the statistics to appear in the feature output dataframe. The functions should be the values and the names of the metric the keys (e.g. {'mean': np.mean})
-
+    time_padding: timedelta, optional
+        If set, allows for segmentation to be associated with a feature input
+        timestep that is time_padding off of the feature. Extremely useful when
+        converting between micro- and nanoseconds, as is common when using Pandas
+        dataframes.
 
     Returns
     -------
@@ -1226,33 +1230,53 @@ def segmentation(
         in coords.
     """
     import pandas as pd
-    from iris.cube import CubeList
 
-    logging.info("Start watershedding 3D")
+    time_var_name: str = "time"
+    seg_out_type: str = "int64"
+
+    logging.info("Start watershedding")
 
     # check input for right dimensions:
     if not (field.ndim == 3 or field.ndim == 4):
         raise ValueError(
             "input to segmentation step must be 3D or 4D including a time dimension"
         )
-    if "time" not in [coord.name() for coord in field.coords()]:
+    try:
+        ndim_time = internal_utils.find_axis_from_coord(field, time_var_name)
+    except ValueError as exc:
         raise ValueError(
-            "input to segmentation step must include a dimension named 'time'"
-        )
+            "input to segmentation step must include a dimension named '{0}'".format(
+                time_var_name
+            )
+        ) from exc
 
-    # CubeList and list to store individual segmentation masks and feature DataFrames with information about segmentation
-    segmentation_out_list = CubeList()
+    # create our output dataarray
+    segmentation_out_data = xr.DataArray(
+        np.zeros(field.shape, dtype=int),
+        coords=field.coords,
+        dims=field.dims,
+        name="segmentation_mask",
+    ).assign_attrs(threshold=threshold)
+
     features_out_list = []
 
-    # loop over individual input timesteps for segmentation:
-    # OR do segmentation on single timestep
-    field_time = field.slices_over("time")
+    if len(field.coords[time_var_name]) == 1:
+        warnings.warn(
+            "As of v1.6.0, segmentation with time length 1 will return time as a coordinate"
+            " instead of dropping it (i.e., output will now be 1xMxN instead of MxN). ",
+            UserWarning,
+        )
 
-    for i, field_i in enumerate(field_time):
-        time_i = field_i.coord("time").units.num2date(field_i.coord("time").points[0])
-        features_i = features.loc[features["time"] == np.datetime64(time_i)]
+    for (
+        time_iteration_number,
+        time_iteration_value,
+        field_at_time,
+        features_i,
+    ) in field_and_features_over_time(
+        field, features, time_var_name=time_var_name, time_padding=time_padding
+    ):
         segmentation_out_i, features_out_i = segmentation_timestep(
-            field_i,
+            field_at_time,
             features_i,
             dxy,
             threshold=threshold,
@@ -1268,18 +1292,16 @@ def segmentation(
             segment_number_below_threshold=segment_number_below_threshold,
             statistic=statistic,
         )
-        segmentation_out_list.append(segmentation_out_i)
-        features_out_list.append(features_out_i)
-        logging.debug(
-            "Finished segmentation for " + time_i.strftime("%Y-%m-%d_%H:%M:%S")
+        segmentation_out_data.loc[{time_var_name: time_iteration_value}] = (
+            segmentation_out_i
         )
+        features_out_list.append(features_out_i)
+        logging.debug(f"Finished segmentation for {time_iteration_value.values}")
 
     # Merge output from individual timesteps:
-    segmentation_out = segmentation_out_list.merge_cube()
     features_out = pd.concat(features_out_list)
-
     logging.debug("Finished segmentation")
-    return segmentation_out, features_out
+    return segmentation_out_data, features_out
 
 
 def watershedding_3D(track, field_in, **kwargs):

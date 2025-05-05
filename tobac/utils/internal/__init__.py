@@ -1,1 +1,2 @@
-from .basic import *
+from .label_props import *
+from .coordinates import *

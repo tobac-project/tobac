@@ -25,7 +25,7 @@ Below is a snippet from a larger notebook demonstrating how to run feature detec
     )
     out_feature_dfs = db.map(
         lambda x: tobac.feature_detection_multithreshold(
-            x.to_iris(), 4000, **parameters_features
+            x, 4000, **parameters_features
         ),
         b,
     ).compute()
