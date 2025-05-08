@@ -43,6 +43,8 @@ import warnings
 import iris
 import iris.cube
 
+from typing import Union
+
 
 def feature_position(
     hdim1_indices: list[int],
@@ -925,7 +927,7 @@ def feature_detection_multithreshold_timestep(
     return_regions: bool = False,
     return_labels: bool = False,
     **kwargs: dict[str, Any],
-) -> pd.DataFrame:
+) -> Union[pd.DataFrame, tuple[xr.DataArray, pd.DataFrame]]:
     """Find features in each timestep.
 
     Based on iteratively finding regions above/below a set of
@@ -1005,7 +1007,6 @@ def feature_detection_multithreshold_timestep(
 
     return_labels: bool, optional
         Default is False. If True, return the label fields.
-        Overwrites return_regions if True.
 
     kwargs : dict
         Additional keyword arguments.
@@ -1016,12 +1017,12 @@ def feature_detection_multithreshold_timestep(
     features_threshold : pandas DataFrame
         Detected features for individual timestep.
 
-    regions : dict, optional
-        Dictionary containing the regions above/below threshold used
+    regions : xarray DataArray, optional
+        DataArray containing the regions above/below threshold used
         for each feature (feature ids as keys). Only returned if
         return_regions is True.
 
-    labels : np.array, optional
+    labels : xarray DataArray, optional
         Label fields for the respective thresholds. Only returned if
         return_labels is True.
     """
@@ -1173,7 +1174,6 @@ def feature_detection_multithreshold_timestep(
             # the feature dataframe is updated by appending a column for each metric
 
     if statistic:
-
         # select which data to use according to statistics_unsmoothed option
         stats_data = data_i.values if statistics_unsmoothed else track_data
 
@@ -1186,10 +1186,29 @@ def feature_detection_multithreshold_timestep(
             id_column="idx",
         )
 
-    if return_labels:
-        return features_thresholds, labels
-    elif return_regions:
-        return features_thresholds, regions_old
+    # Create the final output
+    if return_regions:
+        regions = (
+            xr.zeros_like(data_i, dtype=int)
+            .rename("regions")
+            .assign_attrs(threshold=threshold)
+        )
+        for key, indices in regions_old.items():
+            regions.data.ravel()[indices] = key
+
+        return regions, features_thresholds
+
+    elif return_labels:
+        label_fields = (
+            xr.zeros_like(data_i, dtype=int)
+            .rename("label_fields")
+            .assign_attrs(threshold=threshold)
+        )
+        for key, indices in regions_old.items():
+            label_fields.data.ravel()[indices] = key
+
+        return label_fields, features_thresholds
+
     else:
         return features_thresholds
 
@@ -1222,7 +1241,7 @@ def feature_detection_multithreshold(
     return_labels: bool = False,
     preserve_iris_datetime_types: bool = True,
     **kwargs: dict[str, Any],
-) -> pd.DataFrame:
+) -> Union[pd.DataFrame, tuple[xr.DataArray, pd.DataFrame]]:
     """Perform feature detection based on contiguous regions.
 
     The regions are above/below a threshold.
@@ -1318,7 +1337,6 @@ def feature_detection_multithreshold(
 
     return_labels: bool, optional
         Default is False. If True, return the label fields.
-        Overwrites return_regions if both are set to True.
 
     preserve_iris_datetime_types: bool, optional, default: True
         If True, for iris input, preserve the original datetime type (typically
@@ -1335,10 +1353,10 @@ def feature_detection_multithreshold(
         Detected features. The structure of this dataframe is explained
         `here <https://tobac.readthedocs.io/en/latest/data_input.html>`__
 
-    regions : dict, optional
-        Dictionary containing the regions above/below threshold used.
+    regions : xarray DataArray, optional
+        DataArray containing the regions above/below threshold used.
 
-    labels : np.array, optional
+    labels : xarray DataArray, optional
         Label fields for the respective thresholds. Only returned if
         return_labels is True.
 
@@ -1405,11 +1423,6 @@ def feature_detection_multithreshold(
 
             vertical_axis = vertical_axis - 1
 
-    # Initialize lists for holding results
-    list_features_timesteps = []
-    labels_list = [] if return_labels else None
-    regions_list = [] if return_regions else None
-
     # if single threshold is put in as a single value, turn it into a list
     if type(threshold) in [int, float]:
         threshold = [threshold]
@@ -1448,6 +1461,27 @@ def feature_detection_multithreshold(
                 "given in meter."
             )
 
+    # Initialize lists and xarrays for holding results
+    list_features_timesteps = []
+    if return_regions:
+        regions = (
+            xr.zeros_like(field_in, dtype=int)
+            .rename("regions")
+            .assign_attrs(threshold=threshold)
+        )
+
+    else:
+        regions = None
+
+    if return_labels:
+        label_fields = (
+            xr.zeros_like(field_in, dtype=int)
+            .rename("label_fields")
+            .assign_attrs(threshold=threshold)
+        )
+    else:
+        label_fields = None
+
     for i_time, time_i in enumerate(field_in.coords[time_var_name]):
         data_i = field_in.isel({time_var_name: i_time})
 
@@ -1474,16 +1508,16 @@ def feature_detection_multithreshold(
             return_labels=return_labels,
         )
         # Process the returned data depending on the flags
-        if return_labels:
-            features_thresholds, labels = args
-            labels_list.append(labels)
-        elif return_regions:
-            features_thresholds, regions = args
-            regions_list.append(regions)
+        if return_regions:
+            regions_i, features_thresholds_i = args
+            regions.loc[{time_var_name: time_i}] = regions_i
+        elif return_labels:
+            label_fields_i, features_thresholds_i = args
+            label_fields.loc[{time_var_name: time_i}] = label_fields_i
         else:
-            features_thresholds = args
+            features_thresholds_i = args
 
-        list_features_timesteps.append(features_thresholds)
+        list_features_timesteps.append(features_thresholds_i)
 
         logging.debug("Finished feature detection for %s", time_i)
 
@@ -1559,11 +1593,10 @@ def feature_detection_multithreshold(
     logging.debug("feature detection completed")
 
     # Create the final output
-    if return_labels:
-        labels = np.stack(labels_list, axis=0)
-        return features, labels
-    elif return_regions:
-        return features, regions_list
+    if return_regions:
+        return regions, features
+    elif return_labels:
+        return label_fields, features
     else:
         return features
 
