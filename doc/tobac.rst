@@ -66,7 +66,7 @@ tobac.plotting module
 tobac.segmentation module
 -------------------------
 
-.. automodule:: tobac.segmentation
+.. automodule:: tobac.segmentation.watershed_segmentation
    :members:
    :undoc-members:
    :show-inheritance:
