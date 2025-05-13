@@ -27,3 +27,8 @@ dependencies:
   - numba
   - dask
   - ffmpeg
+  - pyvista
+  - trame
+  - trame-vtk
+  - trame-vuetify
+  - ipywidgets
