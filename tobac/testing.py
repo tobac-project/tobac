@@ -355,7 +355,7 @@ def make_sample_data_3D_1blob(data_type="iris", invert_xy=False):
 
     x = np.arange(0, 100e3, 1000)
     y = np.arange(0, 50e3, 1000)
-    z = np.arange(0, 20e3, 1000)
+    z = np.arange(0, 50e3, 1000)
 
     t = t_0 + np.arange(0, 50, 2) * datetime.timedelta(minutes=1)
 
@@ -367,6 +367,7 @@ def make_sample_data_3D_1blob(data_type="iris", invert_xy=False):
 
     track1_x = x_0_1 + 30 * t_temp * 60
     track1_y = y_0_1 + 14 * t_temp * 60
+    track1_z = z_0_1 + 16 * t_temp * 60
     track1_magnitude = 10 * np.ones(track1_x.shape)
 
     size_factor = 5e3
@@ -387,7 +388,7 @@ def make_sample_data_3D_1blob(data_type="iris", invert_xy=False):
         if np.any(t_i in track1_t):
             x_i = track1_x[track1_t == t_i]
             y_i = track1_y[track1_t == t_i]
-            z_i = z_0_1
+            z_i = track1_z[track1_t == t_i]
             mag_i = track1_magnitude[track1_t == t_i]
             data[i_t] = data[i_t] + mag_i * np.exp(
                 -np.power(xx - x_i, 2.0) / (2 * np.power(size_factor, 2.0))

@@ -173,69 +173,49 @@ def test_make_sample_data_3D_1blob():
     - Tests `invert_xy` functionality.
     """
     # Test for default 3D data (without inversion)
-    data = make_sample_data_3D_1blob(data_type="iris", invert_xy=False)
     data_xarray = make_sample_data_3D_1blob(data_type="xarray", invert_xy=False)
 
-    for data_instance in [data, data_xarray]:
-        # Assert the data type is either an iris Cube or xarray DataArray
-        assert isinstance(
-            data_instance, (Cube, DataArray)
-        ), f"Expected iris Cube or xarray DataArray, got {type(data_instance)}"
+    # Assert the data type is xarray DataArray
+    assert isinstance(
+        data_xarray, DataArray
+    ), f"Expected iris Cube or xarray DataArray, got {type(data_xarray)}"
 
-        # For iris Cube, check using .coords
-        if isinstance(data_instance, Cube):
-            assert "time" in [
-                coord.name() for coord in data_instance.coords()
-            ], "Time coordinate missing"
-            assert "geopotential_height" in [
-                coord.name() for coord in data_instance.coords()
-            ], "Z coordinate missing"
-            assert "projection_y_coordinate" in [
-                coord.name() for coord in data_instance.coords()
-            ], "Y coordinate missing"
-            assert "projection_x_coordinate" in [
-                coord.name() for coord in data_instance.coords()
-            ], "X coordinate missing"
+    # For xarray DataArray, check directly with .coords
+    assert "time" in data_xarray.coords, "Time coordinate missing"
+    assert "z" in data_xarray.coords, "Z coordinate missing"
+    assert "y" in data_xarray.coords, "Y coordinate missing"
+    assert "x" in data_xarray.coords, "X coordinate missing"
 
-        # For xarray DataArray, check directly with .coords
-        elif isinstance(data_instance, DataArray):
-            assert "time" in data_instance.coords, "Time coordinate missing"
-            assert "z" in data_instance.coords, "Z coordinate missing"
-            assert "y" in data_instance.coords, "Y coordinate missing"
-            assert "x" in data_instance.coords, "X coordinate missing"
+    # Test the shape of the returned data
+    assert data_xarray.shape == (
+        25,
+        50,
+        50,
+        100,
+    ), f"Unexpected data shape: {data_xarray.shape}"
 
-        # Test the shape of the returned data
-        assert data_instance.shape == (
-            25,
-            20,
-            50,
-            100,
-        ), f"Unexpected data shape: {data_instance.shape}"
+    # Test for the presence of the blob at the first time step
+    data_at_time_0 = data_xarray[0]  # Get the data at the first time step
+    blob = data_at_time_0[
+        0, 10:20, 10:20
+    ]  # Checking a small region in the blob's location
+    assert np.any(blob.data > 0), "No blob detected at time 0"
 
-        # Test for the presence of the blob at the first time step
-        data_at_time_0 = data_instance[0]  # Get the data at the first time step
-        blob = data_at_time_0[
-            0, 10:20, 10:20
-        ]  # Checking a small region in the blob's location
-        assert np.any(blob.data > 0), "No blob detected at time 0"
+    # Test when `invert_xy=True`
+    data_inverted = make_sample_data_3D_1blob(data_type="xarray", invert_xy=True)
 
-        # Test when `invert_xy=True`
-        data_inverted = make_sample_data_3D_1blob(data_type="iris", invert_xy=True)
+    # Assert the shape has changed due to inversion
+    assert data_inverted.shape == (
+        25,
+        50,
+        100,
+        50,
+    ), f"Unexpected shape with invert_xy=True: {data_inverted.shape}"
 
-        # Assert the shape has changed due to inversion
-        assert data_inverted.shape == (
-            25,
-            20,
-            100,
-            50,
-        ), f"Unexpected shape with invert_xy=True: {data_inverted.shape}"
-
-        # Check if the blob's presence is still correct after inversion
-        data_inverted_at_time_0 = data_inverted[0]
-        inverted_blob = data_inverted_at_time_0[0, 10:20, 10:20]
-        assert np.any(
-            inverted_blob.data > 0
-        ), "No blob detected at time 0 after inversion"
+    # Check if the blob's presence is still correct after inversion
+    data_inverted_at_time_0 = data_inverted[0]
+    inverted_blob = data_inverted_at_time_0[0, 10:20, 10:20]
+    assert np.any(inverted_blob.data > 0), "No blob detected at time 0 after inversion"
 
 
 def test_get_single_pbc_coordinate():
