@@ -3,6 +3,6 @@
 ###########################
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
 
     3D-Blob-Tracking_Example
