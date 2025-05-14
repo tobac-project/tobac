@@ -319,6 +319,124 @@ def make_sample_data_2D_3blobs_inv(data_type="iris"):
     return sample_data
 
 
+def make_sample_data_3D_1blob(data_type="iris", invert_xy=False):
+    """Create a simple dataset to use in tests with one blob moving diagonally.
+    The grid has a grid spacing of 1km in both horizontal directions
+    and 100 grid cells in the x direction and 50 in the y direction.
+    Time resolution is 1 minute, and the total length of the dataset is
+    50 minutes starting from an arbitrary date (2000-01-01 12:00).
+    The longitude and latitude coordinates are added as 2D aux
+    coordinates and are arbitrary, but within a realistic range.
+    The data contains a single blob traveling on a linear trajectory
+    through the dataset for part of the time. The blob follows a
+    trajectory that starts at (x=10km, y=10km, z=4km) and moves along a
+    linear path at each time step.
+    Parameters
+    ----------
+    data_type : {'iris', 'xarray'}, optional
+        Choose type of the dataset that will be produced.
+        Default is 'iris'.
+    invert_xy : bool, optional
+        Flag to determine whether to switch x and y coordinates.
+        Default is False.
+    Returns
+    -------
+    sample_data : iris.cube.Cube or xarray.DataArray
+    """
+
+    from iris.cube import Cube
+    from iris.coords import DimCoord, AuxCoord
+
+    t_0 = datetime.datetime(2000, 1, 1, 12, 0, 0)
+
+    x = np.arange(0, 100e3, 1000)
+    y = np.arange(0, 50e3, 1000)
+    z = np.arange(0, 50e3, 1000)
+
+    t = t_0 + np.arange(0, 50, 2) * datetime.timedelta(minutes=1)
+
+    t_temp = np.arange(0, 60, 1)
+    track1_t = t_0 + t_temp * datetime.timedelta(minutes=1)
+    x_0_1 = 10e3
+    y_0_1 = 10e3
+    z_0_1 = 4e3
+
+    track1_x = x_0_1 + 30 * t_temp * 60
+    track1_y = y_0_1 + 14 * t_temp * 60
+    track1_z = z_0_1 + 16 * t_temp * 60
+    track1_magnitude = 10 * np.ones(track1_x.shape)
+
+    size_factor = 5e3
+
+    if invert_xy == False:
+        zz, yy, xx = np.meshgrid(z, y, x, indexing="ij")
+        y_dim = 2
+        x_dim = 3
+        data = np.zeros((t.shape[0], z.shape[0], y.shape[0], x.shape[0]))
+
+    else:
+        zz, xx, yy = np.meshgrid(z, x, y, indexing="ij")
+        x_dim = 2
+        y_dim = 3
+        data = np.zeros((t.shape[0], z.shape[0], x.shape[0], y.shape[0]))
+
+    for i_t, t_i in enumerate(t):
+        if np.any(t_i in track1_t):
+            x_i = track1_x[track1_t == t_i]
+            y_i = track1_y[track1_t == t_i]
+            z_i = track1_z[track1_t == t_i]
+            mag_i = track1_magnitude[track1_t == t_i]
+            data[i_t] = data[i_t] + mag_i * np.exp(
+                -np.power(xx - x_i, 2.0) / (2 * np.power(size_factor, 2.0))
+            ) * np.exp(
+                -np.power(yy - y_i, 2.0) / (2 * np.power(size_factor, 2.0))
+            ) * np.exp(
+                -np.power(zz - z_i, 2.0) / (2 * np.power(5e3, 2.0))
+            )
+
+    t_start = datetime.datetime(1970, 1, 1, 0, 0)
+    t_points = (t - t_start).astype("timedelta64[ms]").astype(int) // 1000
+    t_coord = DimCoord(
+        t_points,
+        standard_name="time",
+        var_name="time",
+        units="seconds since 1970-01-01 00:00",
+    )
+    z_coord = DimCoord(z, standard_name="geopotential_height", var_name="z", units="m")
+    y_coord = DimCoord(
+        y, standard_name="projection_y_coordinate", var_name="y", units="m"
+    )
+    x_coord = DimCoord(
+        x, standard_name="projection_x_coordinate", var_name="x", units="m"
+    )
+    lat_coord = AuxCoord(
+        24 + 1e-5 * xx[0], standard_name="latitude", var_name="latitude", units="degree"
+    )
+    lon_coord = AuxCoord(
+        150 + 1e-5 * yy[0],
+        standard_name="longitude",
+        var_name="longitude",
+        units="degree",
+    )
+    sample_data = Cube(
+        data,
+        dim_coords_and_dims=[
+            (t_coord, 0),
+            (z_coord, 1),
+            (y_coord, y_dim),
+            (x_coord, x_dim),
+        ],
+        aux_coords_and_dims=[(lat_coord, (2, 3)), (lon_coord, (2, 3))],
+        var_name="w",
+        units="m s-1",
+    )
+
+    if data_type == "xarray":
+        sample_data = DataArray.from_iris(sample_data)
+
+    return sample_data
+
+
 def make_sample_data_3D_3blobs(data_type="iris", invert_xy=False):
     """Create a simple dataset to use in tests.
 

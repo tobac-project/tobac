@@ -58,6 +58,7 @@ The project is currently being extended by several contributors to include addit
 
    linking  
    tracking_output
+   tracking/index
    
 .. toctree::
    :caption: Merge/Split
