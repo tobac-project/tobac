@@ -86,3 +86,9 @@ The project is currently being extended by several contributors to include addit
    :maxdepth: 3
 
    tobac
+
+.. toctree::
+   :caption: 3D Tracking
+   :maxdepth: 2
+
+   tracking/index
