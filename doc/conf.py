@@ -87,7 +87,7 @@ napoleon_attr_annotations = True
 nbsphinx_thumbnails = {
     "examples/Basics/Idealized-Case-1_Tracking-of-a-Test-Blob-in-2D": "_static/thumbnails/Basics_Idealized-Case-1_Tracking-of-a-Test-Blob-in-2D_Thumbnail.png",
     "examples/Basics/Idealized-Case-2_Two_crossing_Blobs": "_static/thumbnails/Basics_Idealized-Case-2_Two_crossing_Blobs_Thumbnail.png",
-    "exs/Doc_Idealized-Case-3_3D-Blob-Tracking": "_static/thumbnails/Basics_Idealized-Case-3_Tracking-of-a-Test-Blob-in-3D_Thumbnail.png",
+    "tracking/3D-Blob-Tracking_Example": "_static/thumbnails/Basics_Idealized-Case-3_Tracking-of-a-Test-Blob-in-3D_Thumbnail.png",
     "examples/Basics/Methods-and-Parameters-for-Feature-Detection_Part_1": "_static/thumbnails/Basics_Methods-and-Parameters-for-Feature-Detection_Part_1_Thumbnail.png",
     "examples/Basics/Methods-and-Parameters-for-Feature-Detection_Part_2": "_static/thumbnails/Basics_Methods-and-Parameters-for-Feature-Detection_Part_2_Thumbnail.png",
     "examples/Basics/Methods-and-Parameters-for-Linking": "_static/thumbnails/Basics_Methods-and-Parameters-for-Linking_Thumbnail.png",

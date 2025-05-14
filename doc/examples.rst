@@ -8,7 +8,7 @@ tobac is provided with a set of Jupyter notebooks that show examples of the appl
    
    Test Blob in 2D <examples/Basics/Idealized-Case-1_Tracking-of-a-Test-Blob-in-2D>
    Two crossing Blobs <examples/Basics/Idealized-Case-2_Two_crossing_Blobs.ipynb>
-   Test Blob in 3D <exs/Doc_Idealized-Case-3_3D-Blob-Tracking.ipynb>
+   Test Blob in 3D <tracking/3D-Blob-Tracking_Example.ipynb>
 
    On Feature Detection: Part 1 <examples/Basics/Methods-and-Parameters-for-Feature-Detection_Part_1.ipynb>
    On Feature Detection: Part 2 <examples/Basics/Methods-and-Parameters-for-Feature-Detection_Part_2.ipynb>
