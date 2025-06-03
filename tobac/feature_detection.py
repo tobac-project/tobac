@@ -1188,22 +1188,26 @@ def feature_detection_multithreshold_timestep(
 
     # Create the final output
     if return_regions:
-        regions = (
-            xr.zeros_like(data_i, dtype=int)
-            .rename("regions")
-            .assign_attrs(threshold=threshold)
-        )
+        regions = xr.DataArray(
+            np.zeros(data_i.shape, dtype=int),
+            coords=data_i.coords,
+            dims=data_i.dims,
+            name="regions",
+        ).assign_attrs(threshold=threshold)
+
         for key, indices in regions_old.items():
             regions.data.ravel()[indices] = key
 
         return regions, features_thresholds
 
     elif return_labels:
-        label_fields = (
-            xr.zeros_like(data_i, dtype=int)
-            .rename("label_fields")
-            .assign_attrs(threshold=threshold)
-        )
+        label_fields = xr.DataArray(
+            np.zeros(data_i.shape, dtype=int),
+            coords=data_i.coords,
+            dims=data_i.dims,
+            name="label_fields",
+        ).assign_attrs(threshold=threshold)
+
         for key, indices in regions_old.items():
             label_fields.data.ravel()[indices] = key
 
@@ -1464,21 +1468,22 @@ def feature_detection_multithreshold(
     # Initialize lists and xarrays for holding results
     list_features_timesteps = []
     if return_regions:
-        regions = (
-            xr.zeros_like(field_in, dtype=int)
-            .rename("regions")
-            .assign_attrs(threshold=threshold)
-        )
-
+        regions = xr.DataArray(
+            np.zeros(field_in.shape, dtype=int),
+            coords=field_in.coords,
+            dims=field_in.dims,
+            name="regions",
+        ).assign_attrs(threshold=threshold)
     else:
         regions = None
 
     if return_labels:
-        label_fields = (
-            xr.zeros_like(field_in, dtype=int)
-            .rename("label_fields")
-            .assign_attrs(threshold=threshold)
-        )
+        label_fields = xr.DataArray(
+            np.zeros(field_in.shape, dtype=int),
+            coords=field_in.coords,
+            dims=field_in.dims,
+            name="label_fields",
+        ).assign_attrs(threshold=threshold)
     else:
         label_fields = None
 
