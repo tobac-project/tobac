@@ -1243,7 +1243,8 @@ def feature_detection_multithreshold(
     statistics_unsmoothed: bool = False,
     return_regions: bool = False,
     return_labels: bool = False,
-    preserve_iris_datetime_types: bool = True,
+    use_standard_names: Optional[bool] = None,
+    converted_from_iris: bool = False,
     **kwargs: dict[str, Any],
 ) -> Union[pd.DataFrame, tuple[xr.DataArray, pd.DataFrame]]:
     """Perform feature detection based on contiguous regions.
@@ -1326,6 +1327,11 @@ def feature_detection_multithreshold(
     strict_thresholding: Bool, optional
         If True, a feature can only be detected if all previous thresholds have been met.
         Default is False.
+
+    use_standard_names: bool
+        If true, when interpolating a coordinate, it looks for a standard_name
+        and uses that to name the output coordinate, to mimic iris functionality.
+        If false, uses the actual name of the coordinate to output.
 
     statistic : dict, optional
         Default is None. Optional parameter to calculate bulk statistics within feature detection.
@@ -1533,18 +1539,23 @@ def feature_detection_multithreshold(
     if any([not x.empty for x in list_features_timesteps]):
         features = pd.concat(list_features_timesteps, ignore_index=True)
         features["feature"] = features.index + feature_number_start
-        #    features_filtered = features.drop(features[features['num'] < min_num].index)
-        #    features_filtered.drop(columns=['idx','num','threshold_value'],inplace=True)
+
+        if use_standard_names is None:
+            use_standard_names = True if converted_from_iris else False
+
         if "vdim" in features:
             features = add_coordinates_3D(
                 features,
                 field_in,
                 vertical_coord=vertical_coord,
-                preserve_iris_datetime_types=kwargs["converted_from_iris"]
-                & preserve_iris_datetime_types,
+                use_standard_names=use_standard_names,
             )
         else:
-            features = add_coordinates(features, field_in)
+            features = add_coordinates(
+                features,
+                field_in,
+                use_standard_names=use_standard_names,
+            )
 
         # Loop over DataFrame to remove features that are closer than distance_min to each
         # other:
@@ -1576,12 +1587,6 @@ def feature_detection_multithreshold(
                 )
             features = pd.concat(filtered_features, ignore_index=True)
 
-            features = add_coordinates(
-                features,
-                field_in,
-                preserve_iris_datetime_types=kwargs["converted_from_iris"]
-                & preserve_iris_datetime_types,
-            )
 
         # regions and label fields are not filtered currently
         if return_regions or return_labels:
