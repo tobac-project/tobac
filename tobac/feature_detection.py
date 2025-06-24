@@ -924,7 +924,6 @@ def feature_detection_multithreshold_timestep(
     strict_thresholding: bool = False,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
     statistics_unsmoothed: bool = False,
-    return_regions: bool = False,
     return_labels: bool = False,
     **kwargs: dict[str, Any],
 ) -> Union[pd.DataFrame, tuple[xr.DataArray, pd.DataFrame]]:
@@ -1002,8 +1001,6 @@ def feature_detection_multithreshold_timestep(
     statistics_unsmoothed: bool, optional
             Default is False. If True, calculate the statistics on the raw data instead of the smoothed input data.
 
-    return_regions: bool, optional
-        Default is False. If True, return the regions for each feature.
 
     return_labels: bool, optional
         Default is False. If True, return the label fields.
@@ -1016,11 +1013,6 @@ def feature_detection_multithreshold_timestep(
     -------
     features_threshold : pandas DataFrame
         Detected features for individual timestep.
-
-    regions : xarray DataArray, optional
-        DataArray containing the regions above/below threshold used
-        for each feature (feature ids as keys). Only returned if
-        return_regions is True.
 
     labels : xarray DataArray, optional
         Label fields for the respective thresholds. Only returned if
@@ -1038,10 +1030,6 @@ def feature_detection_multithreshold_timestep(
             "Please use n_min_threshold instead",
             FutureWarning,
         )
-
-    # Check for conflicting flags
-    if return_labels and return_regions:
-        raise ValueError("Cannot return both labels and regions. Please choose one.")
 
     # get actual numpy array and make a copy so as not to change the data in the iris cube
     track_data = data_i.values.copy()
@@ -1187,29 +1175,14 @@ def feature_detection_multithreshold_timestep(
         )
 
     # Create the final output
-    if return_regions:
-        regions = xr.DataArray(
-            np.zeros(data_i.shape, dtype=int),
-            coords=data_i.coords,
-            dims=data_i.dims,
-            name="regions",
-        ).assign_attrs(threshold=threshold)
-
-        for key, indices in regions_old.items():
-            regions.data.ravel()[indices] = key
-
-        return regions, features_thresholds
-
-    elif return_labels:
+    if return_labels:
         label_fields = xr.DataArray(
-            np.zeros(data_i.shape, dtype=int),
+            labels,
             coords=data_i.coords,
             dims=data_i.dims,
             name="label_fields",
         ).assign_attrs(threshold=threshold)
 
-        for key, indices in regions_old.items():
-            label_fields.data.ravel()[indices] = key
 
         return label_fields, features_thresholds
 
@@ -1241,7 +1214,6 @@ def feature_detection_multithreshold(
     strict_thresholding: bool = False,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
     statistics_unsmoothed: bool = False,
-    return_regions: bool = False,
     return_labels: bool = False,
     use_standard_names: Optional[bool] = None,
     converted_from_iris: bool = False,
@@ -1261,8 +1233,7 @@ def feature_detection_multithreshold(
         Grid spacing of the input data (in meter).
 
     thresholds : list of floats, optional
-        Threshold values used to select target regions to track. The feature detection is inclusive of the threshold value(s), i.e. values
-        greater/less than or equal are included in the target region. Default is None.
+        Threshold values used to select target regions to track. The feature detection is inclusive of the threshold value(s), i.e. values greater/less than or equal are included in the target region. Default is None.
 
     target : {'maximum', 'minimum'}, optional
         Flag to determine if tracking is targetting minima or maxima in
@@ -1342,9 +1313,6 @@ def feature_detection_multithreshold(
     statistics_unsmoothed: bool, optional
         Default is False. If True, calculate the statistics on the raw data instead of the smoothed input data.
 
-    return_regions: bool, optional
-        Default is False. If True, return the regions for each feature.
-
     return_labels: bool, optional
         Default is False. If True, return the label fields.
 
@@ -1363,18 +1331,11 @@ def feature_detection_multithreshold(
         Detected features. The structure of this dataframe is explained
         `here <https://tobac.readthedocs.io/en/latest/data_input.html>`__
 
-    regions : xarray DataArray, optional
-        DataArray containing the regions above/below threshold used.
-
     labels : xarray DataArray, optional
         Label fields for the respective thresholds. Only returned if
         return_labels is True.
 
     """
-    # Check for conflicting flags
-    if return_labels and return_regions:
-        raise ValueError("Cannot return both labels and regions. Please choose one.")
-
     from .utils import add_coordinates, add_coordinates_3D
 
     time_var_name: str = "time"
@@ -1473,16 +1434,6 @@ def feature_detection_multithreshold(
 
     # Initialize lists and xarrays for holding results
     list_features_timesteps = []
-    if return_regions:
-        regions = xr.DataArray(
-            np.zeros(field_in.shape, dtype=int),
-            coords=field_in.coords,
-            dims=field_in.dims,
-            name="regions",
-        ).assign_attrs(threshold=threshold)
-    else:
-        regions = None
-
     if return_labels:
         label_fields = xr.DataArray(
             np.zeros(field_in.shape, dtype=int),
@@ -1515,16 +1466,13 @@ def feature_detection_multithreshold(
             strict_thresholding=strict_thresholding,
             statistic=statistic,
             statistics_unsmoothed=statistics_unsmoothed,
-            return_regions=return_regions,
             return_labels=return_labels,
         )
         # Process the returned data depending on the flags
-        if return_regions:
-            regions_i, features_thresholds_i = args
-            regions.loc[{time_var_name: time_i}] = regions_i
-        elif return_labels:
+        if return_labels:
             label_fields_i, features_thresholds_i = args
             label_fields.loc[{time_var_name: time_i}] = label_fields_i
+
         else:
             features_thresholds_i = args
 
@@ -1587,25 +1535,35 @@ def feature_detection_multithreshold(
                 )
             features = pd.concat(filtered_features, ignore_index=True)
 
+            
+        # we map  the feature index to the original index
+        if return_labels:
 
-        # regions and label fields are not filtered currently
-        if return_regions or return_labels:
-            warnings.warn(
-                "Warning: Regions or label fields are not filtered for minimum distance. "
-                "This may lead to more features in the region or label fields than in the feature dataframe."
-                "Filtering need to be done manually using the feature dataframe."
-            )
+            labels_reordered = xr.zeros_like(label_fields)
 
+            for index in features.index:
+                frame = features.frame[index]
+                idx = features.idx[index]
+                feature = features.feature[index]
+
+                # Instead of integer-based indexing, use dimension name
+                mask = label_fields.isel({time_var_name: frame}) == idx
+
+                # Use loc to set values by coordinate
+                time_value = field_in[time_var_name][frame]
+                labels_reordered.loc[{time_var_name: time_value}] = xr.where(mask, feature, 
+                                                            labels_reordered.isel({time_var_name: frame}))
+
+            label_fields = labels_reordered
     else:
         features = None
+        label_fields = None
         logging.debug("No features detected")
 
     logging.debug("feature detection completed")
 
     # Create the final output
-    if return_regions:
-        return regions, features
-    elif return_labels:
+    if return_labels:
         return label_fields, features
     else:
         return features
