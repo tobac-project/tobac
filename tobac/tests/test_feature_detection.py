@@ -71,7 +71,6 @@ def test_feature_detection_multithreshold_timestep(
         dxy=dxy,
         wavelength_filtering=wavelength_filtering,
         return_labels=True,
-        return_regions=False,
     )
 
     # Make sure we have only one feature
@@ -98,53 +97,6 @@ def test_feature_detection_multithreshold_timestep(
     assert (
         labels.attrs["threshold"] == test_threshs
     ), f"Expected threshold to be {test_threshs}, but got {labels.attrs['threshold']}"
-
-    regions, features = feat_detect.feature_detection_multithreshold_timestep(
-        test_data_xr,
-        0,
-        threshold=test_threshs,
-        n_min_threshold=n_min_threshold,
-        dxy=dxy,
-        wavelength_filtering=wavelength_filtering,
-        return_labels=False,
-        return_regions=True,
-    )
-
-    # Make sure we have only one feature
-    assert len(features) == 1, f"Expected 1 feature, but got {len(features)}"
-
-    # Check if labels are returned
-    assert isinstance(
-        regions, xr.DataArray
-    ), "Expected regions to be a xarray.DataArray"
-
-    # Check if labels have the correct shape
-    assert regions.shape == (
-        test_data_xr.shape[0],
-        test_data_xr.shape[1],
-    ), f"Expected regions shape to be {test_data_xr.shape}, but got {regions.shape}"
-
-    # Ensure regions have at least one non-zero entry
-    assert (regions > 0).any(), "No labels detected in the regions array"
-
-    # Optionally check for the threshold attribute
-    assert hasattr(regions, "threshold"), "Expected 'threshold' attribute in regions"
-    assert (
-        regions.attrs["threshold"] == test_threshs
-    ), f"Expected threshold to be {test_threshs}, but got {regions.attrs['threshold']}"
-
-    # Test if ValueError is raised
-    with pytest.raises(ValueError):
-        features, labels = feat_detect.feature_detection_multithreshold_timestep(
-            test_data_xr,
-            0,
-            threshold=test_threshs,
-            n_min_threshold=n_min_threshold,
-            dxy=dxy,
-            wavelength_filtering=wavelength_filtering,
-            return_labels=True,
-            return_regions=True,
-        )
 
 
 @pytest.mark.parametrize(
@@ -682,7 +634,7 @@ def test_feature_detection_setting_multiple():
 
 
 def test_feature_detection_multithreshold_returns():
-    """Tests regarding return_labels and return_regions."""
+    """Tests regarding return_labels."""
     test_data = np.zeros((1, 5, 5, 5))
     test_data[0, 0:5, 0:5, 0:5] = 3
     common_dset_opts = {
@@ -698,18 +650,6 @@ def test_feature_detection_multithreshold_returns():
         **common_dset_opts,
     )
 
-    # Test if ValueError is raised
-    with pytest.raises(ValueError):
-        features, labels = feat_detect.feature_detection_multithreshold(
-            field_in=test_data_xr,
-            dxy=10000,
-            threshold=[
-                1.5,
-            ],
-            return_labels=True,
-            return_regions=True,
-        )
-
     # Test when return_labels is True
     labels, features = feat_detect.feature_detection_multithreshold(
         field_in=test_data_xr,
@@ -718,27 +658,10 @@ def test_feature_detection_multithreshold_returns():
             1.5,
         ],
         return_labels=True,
-        return_regions=False,
     )
     assert labels is not None, "Expected labels to be returned"
     assert isinstance(labels, xr.DataArray), "Expected labels to be a xarray DataArray"
     assert (labels > 0).any(), "Expected at least one labeled feature"
-
-    # Test when return_regions is True
-    regions, features = feat_detect.feature_detection_multithreshold(
-        field_in=test_data_xr,
-        dxy=10000,
-        threshold=[
-            1.5,
-        ],
-        return_labels=False,
-        return_regions=True,
-    )
-    assert regions is not None, "Expected regions to be returned"
-    assert isinstance(
-        regions, xr.DataArray
-    ), "Expected regions to be a xarray DataArray"
-    assert (labels > 0).any(), "Expected at least one region"
 
 
 @pytest.mark.parametrize(

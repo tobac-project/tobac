@@ -1001,7 +1001,6 @@ def feature_detection_multithreshold_timestep(
     statistics_unsmoothed: bool, optional
             Default is False. If True, calculate the statistics on the raw data instead of the smoothed input data.
 
-
     return_labels: bool, optional
         Default is False. If True, return the label fields.
 
