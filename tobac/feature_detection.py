@@ -1182,7 +1182,6 @@ def feature_detection_multithreshold_timestep(
             name="label_fields",
         ).assign_attrs(threshold=threshold)
 
-
         return label_fields, features_thresholds
 
     else:
@@ -1534,7 +1533,6 @@ def feature_detection_multithreshold(
                 )
             features = pd.concat(filtered_features, ignore_index=True)
 
-            
         # we map  the feature index to the original index
         if return_labels:
 
@@ -1550,8 +1548,9 @@ def feature_detection_multithreshold(
 
                 # Use loc to set values by coordinate
                 time_value = field_in[time_var_name][frame]
-                labels_reordered.loc[{time_var_name: time_value}] = xr.where(mask, feature, 
-                                                            labels_reordered.isel({time_var_name: frame}))
+                labels_reordered.loc[{time_var_name: time_value}] = xr.where(
+                    mask, feature, labels_reordered.isel({time_var_name: frame})
+                )
 
             label_fields = labels_reordered
     else:
