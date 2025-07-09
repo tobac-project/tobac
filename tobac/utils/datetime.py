@@ -69,13 +69,13 @@ def to_timestamp(
         dates = np.atleast_1d(dates)
         squeeze_output = True
 
-    if isinstance(dates[0], cftime.datetime):
+    if isinstance(next(iter(dates)), cftime.datetime):
         pd_dates = xr.CFTimeIndex(dates).to_datetimeindex()
     else:
         pd_dates = pd.to_datetime(dates)
 
     if squeeze_output:
-        return pd_dates[0]
+        return next(iter(dates))
     return pd_dates
 
 
