@@ -75,7 +75,7 @@ def to_timestamp(
         pd_dates = pd.to_datetime(dates)
 
     if squeeze_output:
-        return next(iter(dates))
+        return next(iter(pd_dates))
     return pd_dates
 
 

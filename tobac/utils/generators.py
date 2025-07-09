@@ -59,8 +59,8 @@ def field_and_features_over_time(
     all_times = pd.Series(
         datetime_utils.match_datetime_format(
             features[time_var_name], field.coords[time_var_name]
-        ), 
-        index = features.index
+        ),
+        index=features.index,
     )
     for time_iteration_number, time_iteration_value in enumerate(
         field.coords[time_var_name]

@@ -57,7 +57,7 @@ def test_field_and_features_over_time():
 
 
 def test_field_and_features_over_time_no_0_dataframe():
-    """Test that field and features over time works when the dataframe has no 0 
+    """Test that field and features over time works when the dataframe has no 0
     index value
     """
 
@@ -76,8 +76,8 @@ def test_field_and_features_over_time_no_0_dataframe():
                 datetime(2000, 1, 1),
                 datetime(2000, 1, 1, 1),
             ],
-        }, 
-        index = [1,2,3]
+        },
+        index=[1, 2, 3],
     )
 
     iterator = generators.field_and_features_over_time(test_data, test_features)
@@ -90,6 +90,7 @@ def test_field_and_features_over_time_no_0_dataframe():
     assert_frame_equal(
         iter_0[3], test_features[test_features.time == datetime(2000, 1, 1)]
     )
+
 
 def test_field_and_features_over_time_time_padding():
     """Test the time_padding functionality of field_and_features_over_time
