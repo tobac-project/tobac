@@ -101,6 +101,7 @@ autodoc_mock_imports = [
     "numba",
     "skimage",
     "sklearn",
+    "cftime",
 ]
 
 sys.path.insert(0, os.path.abspath("../"))

@@ -49,6 +49,7 @@ from tobac.utils import periodic_boundaries as pbc_utils
 from tobac.utils import internal as internal_utils
 from tobac.utils import get_statistics
 from tobac.utils import decorators
+from tobac.utils.generators import field_and_features_over_time
 
 
 def add_markers(
@@ -1250,20 +1251,14 @@ def segmentation(
         ) from exc
 
     # create our output dataarray
-    segmentation_out_data = (
-        xr.zeros_like(field, dtype=int)
-        .rename("segmentation_mask")
-        .assign_attrs(threshold=threshold)
-    )
+    segmentation_out_data = xr.DataArray(
+        np.zeros(field.shape, dtype=int),
+        coords=field.coords,
+        dims=field.dims,
+        name="segmentation_mask",
+    ).assign_attrs(threshold=threshold)
+
     features_out_list = []
-
-    # Iris workaround: convert cftime to datetime64
-
-    if np.issubdtype(features["time"].dtype, np.datetime64):
-        # we are (likely) a numpy datetime
-        all_times = features["time"]
-    else:
-        all_times = features["time"].map(np.datetime64)
 
     if len(field.coords[time_var_name]) == 1:
         warnings.warn(
@@ -1272,17 +1267,14 @@ def segmentation(
             UserWarning,
         )
 
-    for time_iteration_number, time_iteration_value in enumerate(
-        field.coords[time_var_name]
+    for (
+        time_iteration_number,
+        time_iteration_value,
+        field_at_time,
+        features_i,
+    ) in field_and_features_over_time(
+        field, features, time_var_name=time_var_name, time_padding=time_padding
     ):
-        field_at_time = field.isel({time_var_name: time_iteration_number})
-        if time_padding is not None:
-            padded_conv = pd.Timedelta(time_padding).to_timedelta64()
-            min_time = time_iteration_value.values - padded_conv
-            max_time = time_iteration_value.values + padded_conv
-            features_i = features.loc[all_times.between(min_time, max_time)]
-        else:
-            features_i = features.loc[all_times == time_iteration_value.values]
         segmentation_out_i, features_out_i = segmentation_timestep(
             field_at_time,
             features_i,
@@ -1304,10 +1296,7 @@ def segmentation(
             segmentation_out_i
         )
         features_out_list.append(features_out_i)
-        logging.debug(
-            "Finished segmentation for "
-            + pd.to_datetime(time_iteration_value.values).strftime("%Y-%m-%d %H:%M:%S")
-        )
+        logging.debug(f"Finished segmentation for {time_iteration_value.values}")
 
     # Merge output from individual timesteps:
     features_out = pd.concat(features_out_list)

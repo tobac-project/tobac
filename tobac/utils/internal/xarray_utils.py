@@ -8,9 +8,7 @@ from typing import Union
 import numpy as np
 import pandas as pd
 import xarray as xr
-from . import basic as tb_utils_gi
-import random
-import string
+from . import coordinates as tb_utils_gi
 
 
 def find_axis_from_dim_coord(
@@ -135,8 +133,6 @@ def find_axis_from_coord(in_da: xr.DataArray, coord_name: str) -> tuple[int]:
             )
         )
 
-    if len(all_matching_coords) > 1:
-        raise ValueError("Too many matching coords")
     raise ValueError("No matching coords")
 
 
@@ -269,7 +265,6 @@ def add_coordinates_to_features(
     vertical_axis: Union[int, None] = None,
     use_standard_names: bool = True,
     interp_dims_without_coords: bool = False,
-    preserve_iris_datetime_types: bool = True,
 ) -> pd.DataFrame:
     """Function to populate the interpolated coordinates to feature
 
@@ -297,9 +292,7 @@ def add_coordinates_to_features(
     interp_dims_without_coords: bool
         If True, interpolates dimensions without coordinates
         If False, skips dimensions without coordinates
-    preserve_iris_datetime_types: bool
-        If True, uses the same datetime types as iris (cftime)
-        If False, converts datetime output to pandas standard
+
     Returns
     -------
     Dataframe with coordinates added
@@ -375,9 +368,21 @@ def add_coordinates_to_features(
         time_dim_name: time_name_new,
     }
     dim_interp_coords = {
-        hdim1_name_new: xr.DataArray(return_feat_df["hdim_1"].values, dims="features"),
-        hdim2_name_new: xr.DataArray(return_feat_df["hdim_2"].values, dims="features"),
-        time_name_new: xr.DataArray(return_feat_df["frame"].values, dims="features"),
+        hdim1_name_new: xr.DataArray(
+            return_feat_df["hdim_1"].values,
+            dims="features",
+            coords={"features": return_feat_df.index},
+        ),
+        hdim2_name_new: xr.DataArray(
+            return_feat_df["hdim_2"].values,
+            dims="features",
+            coords={"features": return_feat_df.index},
+        ),
+        time_name_new: xr.DataArray(
+            return_feat_df["frame"].values,
+            dims="features",
+            coords={"features": return_feat_df.index},
+        ),
     }
 
     if is_3d:
@@ -391,10 +396,6 @@ def add_coordinates_to_features(
     # you can only rename dims alone when operating on datasets, so add our dataarray to a
     # dataset
     renamed_dim_da = variable_da.swap_dims(dim_new_names)
-    interpolated_df = renamed_dim_da.interp(coords=dim_interp_coords)
-    interpolated_df = interpolated_df.drop_vars(
-        [hdim1_name_new, hdim2_name_new, vdim_name_new], errors="ignore"
-    )
     return_feat_df[time_dim_name] = variable_da[time_dim_name].values[
         return_feat_df["frame"]
     ]
@@ -403,7 +404,7 @@ def add_coordinates_to_features(
         for x in variable_da[time_dim_name].values[return_feat_df["frame"]]
     ]
 
-    for interp_coord in interpolated_df.coords:
+    for interp_coord in renamed_dim_da.coords:
         # skip time coordinate because we dealt with that already
         if interp_coord == time_dim_name:
             continue
@@ -415,20 +416,13 @@ def add_coordinates_to_features(
         # if we have standard names and are using them, rename our coordinates.
         if use_standard_names:
             try:
-                interp_coord_name = interpolated_df[interp_coord].attrs["standard_name"]
+                interp_coord_name = renamed_dim_da[interp_coord].attrs["standard_name"]
             except KeyError:
                 pass
 
-        return_feat_df[interp_coord_name] = interpolated_df[interp_coord].values
-    if preserve_iris_datetime_types:
-        # We should only need to switch from datetime to DatetimeGregorian.
-        # if the datetime type is anything else, it stays as the original type.
-        if "datetime64" in str(variable_da[time_dim_name].dtype):
-            import cftime
-
-            return_feat_df[time_dim_name] = return_feat_df[time_dim_name].apply(
-                lambda x: cftime.DatetimeGregorian(
-                    x.year, x.month, x.day, x.hour, x.minute, x.second, x.microsecond
-                )
-            )
+        return_feat_df[interp_coord_name] = renamed_dim_da[interp_coord].interp(
+            coords={
+                dim: dim_interp_coords[dim] for dim in renamed_dim_da[interp_coord].dims
+            }
+        )
     return return_feat_df
