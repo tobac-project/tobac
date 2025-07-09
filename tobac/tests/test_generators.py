@@ -56,6 +56,42 @@ def test_field_and_features_over_time():
         next(iterator)
 
 
+def test_field_and_features_over_time_no_0_dataframe():
+    """Test that field and features over time works when the dataframe has no 0
+    index value
+    """
+
+    test_data = xr.DataArray(
+        np.zeros([2, 10, 10]),
+        dims=("time", "y", "x"),
+        coords={"time": [datetime(2000, 1, 1), datetime(2000, 1, 1, 1)]},
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3],
+            "frame": [0, 0, 1],
+            "time": [
+                datetime(2000, 1, 1),
+                datetime(2000, 1, 1),
+                datetime(2000, 1, 1, 1),
+            ],
+        },
+        index=[1, 2, 3],
+    )
+
+    iterator = generators.field_and_features_over_time(test_data, test_features)
+
+    iter_0 = next(iterator)
+
+    assert iter_0[0] == 0
+    assert iter_0[1] == np.datetime64("2000-01-01")
+    assert np.all(iter_0[2] == test_data.isel(time=0))
+    assert_frame_equal(
+        iter_0[3], test_features[test_features.time == datetime(2000, 1, 1)]
+    )
+
+
 def test_field_and_features_over_time_time_padding():
     """Test the time_padding functionality of field_and_features_over_time
     generator
