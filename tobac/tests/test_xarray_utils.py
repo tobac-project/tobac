@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Union
 
+import pandas as pd
 import pytest
 import numpy as np
 import xarray as xr
@@ -156,6 +157,22 @@ def test_find_axis_from_dim_coord(
             (1, 1),
             {"test_coord1": (1, 1, 1), "test_coord_time": (5, 6, 7)},
         ),
+        (
+            ["time", "x", "y"],
+            {
+                "test_coord_datetime": ("time", pd.date_range(
+                    datetime.datetime(2000,1,1), datetime.datetime(2000,1,1,6), freq="1h", inclusive="left", 
+                )),
+                "test_coord_time": ("time", [5, 6, 7, 8, 9, 10]),
+            },
+            (1, 1),
+            {
+                "test_coord_datetime": pd.date_range(
+                    datetime.datetime(2000,1,1), datetime.datetime(2000,1,1,3), freq="1h", inclusive="left", 
+                ), 
+                "test_coord_time": (5, 6, 7)
+            },
+        ),
     ],
 )
 def test_add_coordinates_to_features_interpolate_along_other_dims(
@@ -204,3 +221,4 @@ def test_add_coordinates_to_features_interpolate_along_other_dims(
         assert coord in resulting_df
         if coord != "time":
             assert np.all(resulting_df[coord].values == expected_vals[coord])
+
