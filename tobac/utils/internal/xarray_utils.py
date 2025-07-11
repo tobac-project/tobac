@@ -420,9 +420,20 @@ def add_coordinates_to_features(
             except KeyError:
                 pass
 
-        return_feat_df[interp_coord_name] = renamed_dim_da[interp_coord].interp(
-            coords={
-                dim: dim_interp_coords[dim] for dim in renamed_dim_da[interp_coord].dims
-            }
-        )
+        try:
+            # Interpolate over the coordinate
+            return_feat_df[interp_coord_name] = renamed_dim_da[interp_coord].interp(
+                coords={
+                    dim: dim_interp_coords[dim]
+                    for dim in renamed_dim_da[interp_coord].dims
+                }
+            )
+        except TypeError:
+            # If non-numeric, we should instead just index the nearest values:
+            return_feat_df[interp_coord_name] = renamed_dim_da[interp_coord].isel(
+                **{
+                    dim: np.round(dim_interp_coords[dim]).astype(int)
+                    for dim in renamed_dim_da[interp_coord].dims
+                }
+            )
     return return_feat_df
