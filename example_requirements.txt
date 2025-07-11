@@ -20,4 +20,5 @@ typing_extensions
 rioxarray
 numba
 dask
-
+intake==0.7.0
+intake-xarray==0.7.0
