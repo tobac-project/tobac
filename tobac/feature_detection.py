@@ -18,32 +18,24 @@ References
 """
 
 from __future__ import annotations
-from typing import Optional, Union, Callable
-import warnings
 import logging
+import warnings
 
+from typing import Optional, Union, Callable, Any
 from typing_extensions import Literal
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 from scipy.spatial import KDTree
 from sklearn.neighbors import BallTree
-import iris
-import xarray as xr
 
-from tobac.utils import internal as internal_utils
 from tobac.utils import decorators
-
+from tobac.utils import get_statistics
+from tobac.utils import internal as internal_utils
 from tobac.utils import periodic_boundaries as pbc_utils
 from tobac.utils.general import spectral_filtering
-from tobac.utils import get_statistics
-import warnings
-
-# from typing_extensions import Literal
-import iris
-import iris.cube
-
-from typing import Union
+from tobac.utils.generators import field_and_features_over_time
 
 
 def feature_position(
@@ -1533,26 +1525,23 @@ def feature_detection_multithreshold(
                 )
             features = pd.concat(filtered_features, ignore_index=True)
 
-        # we map  the feature index to the original index
+        # we map the feature index to the original index
         if return_labels:
 
-            labels_reordered = xr.zeros_like(label_fields)
+            for i, time_i, label_field_i, features_i in field_and_features_over_time(
+                label_fields, features
+            ):
+                wh_all_labels = np.isin(label_field_i, features_i.idx)
 
-            for index in features.index:
-                frame = features.frame[index]
-                idx = features.idx[index]
-                feature = features.feature[index]
-
-                # Instead of integer-based indexing, use dimension name
-                mask = label_fields.isel({time_var_name: frame}) == idx
-
-                # Use loc to set values by coordinate
-                time_value = field_in[time_var_name][frame]
-                labels_reordered.loc[{time_var_name: time_value}] = xr.where(
-                    mask, feature, labels_reordered.isel({time_var_name: frame})
+                remapper = xr.DataArray(
+                    features_i.feature, dims=("idx",), coords=dict(idx=features_i.idx)
                 )
 
-            label_fields = labels_reordered
+                label_fields[i].data[wh_all_labels] = remapper.loc[
+                    label_field_i.data[wh_all_labels]
+                ]
+                label_fields[i].data[~wh_all_labels] = 0
+
     else:
         features = None
         label_fields = None
