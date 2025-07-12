@@ -34,6 +34,7 @@ from __future__ import annotations
 import copy
 import logging
 import datetime
+from token import OP
 import warnings
 
 import iris.cube
@@ -50,6 +51,7 @@ from tobac.utils import internal as internal_utils
 from tobac.utils import get_statistics
 from tobac.utils import decorators
 from tobac.utils.generators import field_and_features_over_time
+from tobac.utils.mask import convert_feature_mask_to_cells
 
 
 def add_markers(
@@ -1135,6 +1137,8 @@ def segmentation(
     segment_number_unassigned: int = 0,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
     time_padding: Optional[datetime.timedelta] = datetime.timedelta(seconds=0.5),
+    return_cells: bool = False,
+    stubs: Optional[int] = None,
 ) -> tuple[xr.DataArray, pd.DataFrame]:
     """Use watershedding to determine region above a threshold
     value around initial seeding position for all time steps of
@@ -1212,6 +1216,18 @@ def segmentation(
         timestep that is time_padding off of the feature. Extremely useful when
         converting between micro- and nanoseconds, as is common when using Pandas
         dataframes.
+    return_cells: bool, optional (default: False)
+        If True, the segmentation mask returned will use the cell values of the
+        input dataframe, rather than the feature values. This requires the
+        features input to be the output from tobac.linking_trackpy
+    stubs: int, optional (default: None)
+        The stub values used for unlinked cells in tobac.linking_trackpy, used
+        when return_cells=True If None, the stub cells with be relabelled with
+        the stub cell value in the feature dataframe. If a value is provided,
+        the masked regions corresponding to stub cells with be removed from the
+        output. Warning: the presence of stub cells may make it impossible to
+        perfectly reconstruct the feature mask afterwards as any stub features
+        will be removed.
 
     Returns
     -------
@@ -1249,6 +1265,12 @@ def segmentation(
                 time_var_name
             )
         ) from exc
+
+    # Check features has cell column if return_cells is True:
+    if return_cells and "cell" not in features.columns:
+        raise ValueError(
+            "`cell` column not found in features input, please perform tracking on this data before performing segmentation with `return_cells=True`"
+        )
 
     # create our output dataarray
     segmentation_out_data = xr.DataArray(
@@ -1300,6 +1322,15 @@ def segmentation(
 
     # Merge output from individual timesteps:
     features_out = pd.concat(features_out_list)
+
+    # Convert feature mask to cells if return_cells is True:
+    if return_cells:
+        segmentation_out_data = convert_feature_mask_to_cells(
+            features_out,
+            segmentation_out_data,
+            stubs=stubs,
+        )
+
     logging.debug("Finished segmentation")
     return segmentation_out_data, features_out
 

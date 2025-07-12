@@ -1,6 +1,9 @@
-import pytest
-import tobac.segmentation as seg
+from datetime import datetime
+from os import WTERMSIG
 import numpy as np
+import pandas as pd
+import xarray as xr
+import pytest
 from tobac import segmentation, feature_detection, testing
 from tobac.utils import periodic_boundaries as pbc_utils
 
@@ -86,7 +89,7 @@ def test_segmentation_timestep_2D_feature_2D_seg():
     )
 
     for pbc_option in ["none", "hdim_1", "hdim_2", "both"]:
-        out_seg_mask, out_df = seg.segmentation_timestep(
+        out_seg_mask, out_df = segmentation.segmentation_timestep(
             field_in=test_data_iris,
             features_in=test_feature_ds,
             dxy=test_dxy,
@@ -154,7 +157,7 @@ def test_segmentation_timestep_2D_feature_2D_seg():
     )
 
     for pbc_option in ["none", "hdim_1", "hdim_2", "both"]:
-        out_seg_mask, out_df = seg.segmentation_timestep(
+        out_seg_mask, out_df = segmentation.segmentation_timestep(
             field_in=test_data_iris,
             features_in=test_feature_ds,
             dxy=test_dxy,
@@ -222,7 +225,7 @@ def test_segmentation_timestep_2D_feature_2D_seg():
     )
 
     for pbc_option in ["none", "hdim_1", "hdim_2", "both"]:
-        out_seg_mask, out_df = seg.segmentation_timestep(
+        out_seg_mask, out_df = segmentation.segmentation_timestep(
             field_in=test_data_iris,
             features_in=test_feature_ds,
             dxy=test_dxy,
@@ -762,7 +765,7 @@ def test_segmentation_timestep_3d_buddy_box(
         common_seg_opts["seed_3D_flag"] = "box"
         common_seg_opts["seed_3D_size"] = seed_3D_size
 
-    out_seg_mask, out_df = seg.segmentation_timestep(
+    out_seg_mask, out_df = segmentation.segmentation_timestep(
         field_in=test_data_iris, features_in=test_feature_ds, **common_seg_opts
     )
 
@@ -790,7 +793,7 @@ def test_segmentation_timestep_3d_buddy_box(
         PBC_flag="both",
     )
     test_feature_ds_shifted = pd.concat([test_feature_ds_1, test_feature_ds_2])
-    out_seg_mask_shifted, out_df = seg.segmentation_timestep(
+    out_seg_mask_shifted, out_df = segmentation.segmentation_timestep(
         field_in=test_data_iris_shifted,
         features_in=test_feature_ds_shifted,
         **common_seg_opts,
@@ -895,7 +898,7 @@ def test_add_markers_pbcs(
         common_marker_opts["seed_3D_flag"] = "box"
         common_marker_opts["seed_3D_size"] = seed_3D_size
 
-    marker_arr = seg.add_markers(
+    marker_arr = segmentation.add_markers(
         test_feature_ds, np.zeros(dset_size), **common_marker_opts
     )
 
@@ -931,7 +934,7 @@ def test_add_markers_pbcs(
 
     test_feature_ds_shifted = pd.concat([test_feature_ds_1, test_feature_ds_2])
 
-    marker_arr_shifted = seg.add_markers(
+    marker_arr_shifted = segmentation.add_markers(
         test_feature_ds_shifted, np.zeros(dset_size), **common_marker_opts
     )
 
@@ -989,7 +992,7 @@ def test_empty_segmentation(PBC_flag):
         seg_arr, data_type="iris", z_dim_num=0, y_dim_num=1, x_dim_num=2
     )
 
-    out_seg_mask, out_df = seg.segmentation_timestep(
+    out_seg_mask, out_df = segmentation.segmentation_timestep(
         field_in=test_data_iris, features_in=test_feature, **seg_opts
     )
 
@@ -1181,3 +1184,127 @@ def test_seg_alt_unseed_num(below_thresh, above_thresh, error):
 
         seg_out_arr = seg_output.core_data()
         assert np.all(correct_seg_arr == seg_out_arr)
+
+
+def test_segmentation_return_cells():
+    """Test segmentation with the return_cells option"""
+    test_data = np.zeros([3, 4, 5], dtype=int)
+    test_data[:, 1:3, 1:4] = 2
+
+    test_data = xr.DataArray(
+        test_data,
+        dims=("time", "y", "x"),
+        coords=dict(
+            time=pd.date_range(
+                datetime(2000, 1, 1, 0), datetime(2000, 1, 1, 2), periods=3
+            )
+        ),
+        attrs=dict(units="feature"),
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3],
+            "frame": [0, 1, 2],
+            "time": pd.date_range(
+                datetime(2000, 1, 1, 0), datetime(2000, 1, 1, 2), periods=3
+            ),
+            "hdim_1": [1.5, 1.5, 1.5],
+            "hdim_2": [2, 2, 2],
+            "cell": [1, 1, 1],
+        }
+    )
+
+    cell_mask, _ = segmentation.segmentation(
+        test_features, test_data, 1, threshold=1, return_cells=True
+    )
+
+    assert np.all(cell_mask.values[test_data.values == 2] == 1)
+    assert np.all(cell_mask.values[test_data.values == 0] == 0)
+
+
+def test_segmentation_return_cells_stubs():
+    """Test segmentation with the return_cells option and stubs option"""
+    test_data = np.zeros([3, 4, 5], dtype=int)
+    test_data[:, 1:3, 1:4] = 2
+
+    test_data = xr.DataArray(
+        test_data,
+        dims=("time", "y", "x"),
+        coords=dict(
+            time=pd.date_range(
+                datetime(2000, 1, 1, 0), datetime(2000, 1, 1, 2), periods=3
+            )
+        ),
+        attrs=dict(units="feature"),
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3],
+            "frame": [0, 1, 2],
+            "time": pd.date_range(
+                datetime(2000, 1, 1, 0), datetime(2000, 1, 1, 2), periods=3
+            ),
+            "hdim_1": [1.5, 1.5, 1.5],
+            "hdim_2": [2, 2, 2],
+            "cell": [1, 1, -1],
+        }
+    )
+
+    # Without stubs
+    cell_mask, _ = segmentation.segmentation(
+        test_features, test_data, 1, threshold=1, return_cells=True
+    )
+
+    assert np.all(cell_mask[:-1].values[test_data[:-1].values == 2] == 1)
+    assert np.all(cell_mask[-1].values[test_data[-1].values == 2] == -1)
+    assert np.all(cell_mask.values[test_data.values == 0] == 0)
+
+    # With stubs
+    cell_mask, _ = segmentation.segmentation(
+        test_features, test_data, 1, threshold=1, return_cells=True, stubs=-1
+    )
+
+    assert np.all(cell_mask[:-1].values[test_data[:-1].values == 2] == 1)
+    assert np.all(cell_mask[-1].values[test_data[-1].values == 2] == 0)
+    assert np.all(cell_mask.values[test_data.values == 0] == 0)
+
+
+def test_segmentation_return_cells_no_cell_column():
+    """Test segmentation with the return_cells raise the correct error if the
+    input features has no cell column
+    """
+    test_data = np.zeros([3, 4, 5], dtype=int)
+    test_data[:, 1:3, 1:4] = 2
+
+    test_data = xr.DataArray(
+        test_data,
+        dims=("time", "y", "x"),
+        coords=dict(
+            time=pd.date_range(
+                datetime(2000, 1, 1, 0), datetime(2000, 1, 1, 2), periods=3
+            )
+        ),
+        attrs=dict(units="feature"),
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3],
+            "frame": [0, 1, 2],
+            "time": pd.date_range(
+                datetime(2000, 1, 1, 0), datetime(2000, 1, 1, 2), periods=3
+            ),
+            "hdim_1": [1.5, 1.5, 1.5],
+            "hdim_2": [2, 2, 2],
+        }
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="`cell` column not found in features input, please perform tracking on this data before performing segmentation with *",
+    ):
+        cell_mask, _ = segmentation.segmentation(
+            test_features, test_data, 1, threshold=1, return_cells=True
+        )
