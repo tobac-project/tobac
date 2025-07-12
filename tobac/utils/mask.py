@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from tobac.utils.decorators import iris_to_xarray
 from tobac.utils.generators import field_and_features_over_time
 
 
@@ -371,6 +372,7 @@ def mask_all_surface(mask, masked=False, z_coord="model_level_number"):
     return mask_i_surface
 
 
+@iris_to_xarray()
 def convert_feature_mask_to_cells(
     features: pd.DataFrame, feature_mask: xr.DataArray, stubs: Optional[int] = None
 ) -> xr.DataArray:
@@ -436,6 +438,7 @@ def convert_feature_mask_to_cells(
     return cell_mask
 
 
+@iris_to_xarray()
 def convert_cell_mask_to_features(
     features: pd.DataFrame,
     cell_mask: xr.DataArray,
