@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from tobac.utils.generators import field_and_features_over_time
+
 
 def column_mask_from2D(mask_2D, cube, z_coord="model_level_number"):
     """Turn 2D watershedding mask into a 3D mask of selected columns.
@@ -386,9 +388,10 @@ def convert_feature_mask_to_cells(
         The stub values used for unlinked cells in tobac.linking_trackpy. If
         None, the stub cells with be relabelled with the stub cell value in the
         feature dataframe. If a value is provided, the masked regions
-        corresponding to stub cells with be removed from the output. WARNING:
-        using this input will make it impossible to perfectly reverse this
-        operation using convert_cell_mask_to_features.
+        corresponding to stub cells with be removed from the output. Warning:
+        the presence of stub cells may make it impossible to perfectly
+        reconstruct the feature mask afterwards as any stub features will be
+        removed.
 
     Returns
     -------
@@ -431,3 +434,99 @@ def convert_feature_mask_to_cells(
     cell_mask = cell_mask.assign_attrs(dict(units="cell"))
 
     return cell_mask
+
+
+def convert_cell_mask_to_features(
+    features: pd.DataFrame,
+    cell_mask: xr.DataArray,
+    stubs: Optional[int] = None,
+) -> xr.DataArray:
+    """Relabels a cell mask, such as that produced by
+    convert_feature_mask_to_cells, to the feature values provided by
+    tobac.linking_trackpy
+
+    Parameters
+    ----------
+    features : pd.DataFrame
+        A feature dataframe with cell values provided by tobac.linking_trackpy
+    cell_mask : xr.DataArray
+        A cekk mask corresponding to the cells in the feature dataframe input
+    stubs : int, optional (default: None)
+        The stub values used for unlinked cells in tobac.linking_trackpy. If
+        None, the stub cells with be relabelled with the stub cell value in the
+        feature dataframe. If a value is provided, the masked regions
+        corresponding to stub cells with be removed from the output. Warning:
+        features with stub values will be set to zero in the output feature
+        mask
+
+    Returns
+    -------
+    xr.DataArray
+        A mask of feature regions corresponding to the features in the input
+        dataframe
+
+    Raises
+    ------
+    ValueError
+        If duplicate cell values are present at any timestep in the input
+        dataframe and the stubs parameter is not provided
+    ValueError
+        If duplicate cell values are present at any timestep in the input
+        dataframe that are not equal to the provided stubs value
+    ValueError
+        If cell_mask includes cell values not present in the input dataframe
+    """
+    feature_mask = cell_mask.copy()
+
+    for i, _, mask_slice, features_slice in field_and_features_over_time(
+        feature_mask, features
+    ):
+
+        if stubs is None:
+            if np.any(features_slice.cell.duplicated(keep=False)):
+                raise ValueError(
+                    "Duplicate cell values found for a single timestep in features. This may be because there are stub cells included in the dataframe. If so, please provide these using the stubs parameter"
+                )
+
+            cell_mapper = xr.DataArray(
+                features_slice.feature.copy(),
+                dims=("feature",),
+                coords=dict(feature=features_slice.cell.copy()),
+            )
+
+        else:
+            features_slice = features_slice.copy()
+            # Set feature label to 0 for stub cells
+            features_slice.loc[features_slice.cell == stubs, ["feature"]] = 0
+
+            if np.any(
+                features_slice.loc[features_slice.feature != 0, ["cell"]].duplicated(
+                    keep=False
+                )
+            ):
+                raise ValueError(
+                    "Duplicate cell values found for a single timestep in features that does not match the provided stub value. This may be because the stub value provided is incorrect."
+                )
+
+            features_slice = features_slice[~features_slice.duplicated()]
+
+            cell_mapper = xr.DataArray(
+                features_slice.feature.copy(),
+                dims=("feature",),
+                coords=dict(feature=features_slice.cell.copy()),
+            )
+
+        wh_nonzero_label = np.flatnonzero(mask_slice)
+
+        try:
+            feature_mask.data[i].ravel()[wh_nonzero_label] = cell_mapper.loc[
+                mask_slice.values.ravel()[wh_nonzero_label]
+            ]
+        except KeyError:
+            raise ValueError(
+                "Cell values in cell_mask are not present in features, please ensure that you are using the correct cell_mask for the tracked features, and that any filtering has been applied to both the mask and features"
+            )
+
+    feature_mask = feature_mask.assign_attrs(dict(units="feature"))
+
+    return feature_mask

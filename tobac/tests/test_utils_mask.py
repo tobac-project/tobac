@@ -7,7 +7,10 @@ import pandas as pd
 import pytest
 import xarray as xr
 
-from tobac.utils.mask import convert_feature_mask_to_cells
+from tobac.utils.mask import (
+    convert_cell_mask_to_features,
+    convert_feature_mask_to_cells,
+)
 
 
 def test_convert_feature_mask_to_cells_single_cell():
@@ -272,3 +275,287 @@ def test_convert_feature_mask_to_cells_no_input_mutation():
 
     # Test mask is the same
     assert mask_copy.equals(test_mask)
+
+
+def test_convert_cell_mask_to_features_single_timestep():
+    """Test basic functionality of convert_cell_mask_to_features with a single
+    tracked cell and timestep
+    """
+    test_data = np.zeros([1, 4, 5], dtype=int)
+    test_data[0, 1:3, 1:4] = 1
+
+    test_mask = xr.DataArray(
+        test_data,
+        dims=("time", "y", "x"),
+        coords=dict(time=[datetime(2000, 1, 1, 0)]),
+        attrs=dict(units="feature"),
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [2],
+            "frame": [0],
+            "time": [datetime(2000, 1, 1, 0)],
+            "cell": [1],
+        }
+    )
+
+    feature_mask = convert_cell_mask_to_features(test_features, test_mask)
+
+    # Test all feature mask values are 0 or 2
+    assert np.all(np.isin(feature_mask.values, [0, 2]))
+
+    # Test all feature mask values where the cell mask is not zero are 2
+    assert np.all(feature_mask.values[test_mask.values != 0] == 2)
+
+    # Test all cell mask values where the feature mask is zero are 0
+    assert np.all(feature_mask.values[test_mask.values == 0] == 0)
+
+    # Test coords are the same
+    assert feature_mask.coords.keys() == test_mask.coords.keys()
+
+
+def test_convert_cell_mask_to_features_single_cell():
+    """Test basic functionality of convert_cell_mask_to_features with a single
+    tracked cell
+    """
+    test_data = np.zeros([3, 4, 5], dtype=int)
+    test_data[0, 1:3, 1:4] = 1
+    test_data[1, 1:3, 1:4] = 1
+    test_data[2, 1:3, 1:4] = 1
+
+    test_mask = xr.DataArray(
+        test_data,
+        dims=("time", "y", "x"),
+        coords=dict(
+            time=pd.date_range(
+                datetime(2000, 1, 1, 0), datetime(2000, 1, 1, 2), periods=3
+            )
+        ),
+        attrs=dict(units="feature"),
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3],
+            "frame": [0, 1, 2],
+            "time": pd.date_range(
+                datetime(2000, 1, 1, 0), datetime(2000, 1, 1, 2), periods=3
+            ),
+            "cell": [1, 1, 1],
+        }
+    )
+
+    feature_mask = convert_cell_mask_to_features(test_features, test_mask)
+
+    # Test all feature mask values where the cell mask is not zero are in test_features.feature
+    assert np.all(
+        np.isin(feature_mask.values[test_mask.values != 0], test_features.feature)
+    )
+
+    # Test all cell mask values where the feature mask is zero are 0
+    assert np.all(feature_mask.values[test_mask.values == 0] == 0)
+
+    # Test coords are the same
+    assert feature_mask.coords.keys() == test_mask.coords.keys()
+
+
+def test_convert_cell_mask_to_features_multiple_cells():
+    """Test functionality of convert_cell_mask_to_features with multiple cells
+    and non-consecutive feature and cell values
+    """
+    test_data = np.zeros([3, 4, 5], dtype=int)
+    test_data[0, 1:3, 1:4] = 1
+    test_data[1, 1:3, 1:4] = 1
+    test_data[1, 3:, 3:] = 3
+    test_data[2, 3:, 3:] = 3
+
+    test_mask = xr.DataArray(
+        test_data,
+        dims=("time", "y", "x"),
+        coords=dict(
+            time=pd.date_range(
+                datetime(2000, 1, 1, 0), datetime(2000, 1, 1, 2), periods=3
+            )
+        ),
+        attrs=dict(units="feature"),
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 5, 6],
+            "frame": [0, 1, 1, 2],
+            "time": [
+                datetime(2000, 1, 1, 0),
+                datetime(2000, 1, 1, 1),
+                datetime(2000, 1, 1, 1),
+                datetime(2000, 1, 1, 2),
+            ],
+            "cell": [1, 1, 3, 3],
+        }
+    )
+
+    feature_mask = convert_cell_mask_to_features(test_features, test_mask)
+
+    # Test all feature mask values where the cell mask is not zero are in test_features.feature
+    assert np.all(
+        np.isin(feature_mask.values[test_mask.values != 0], test_features.feature)
+    )
+
+    # Test all cell mask values where the cell mask is 1 are 1 or 2
+    assert np.all(np.isin(feature_mask.values[test_mask.values == 1], [1, 2]))
+
+    # Test all cell mask values where the cell mask is 3 are 5 or 6
+    assert np.all(np.isin(feature_mask.values[test_mask.values == 3], [5, 6]))
+
+    # Test all cell mask values where the feature mask is zero are 0
+    assert np.all(feature_mask.values[test_mask.values == 0] == 0)
+
+    # Test coords are the same
+    assert feature_mask.coords.keys() == test_mask.coords.keys()
+
+
+def test_convert_cell_mask_to_features_0_cell():
+    """Test functionality of convert_feature_mask_to_cells when a cell has the
+    value 0
+    """
+    test_data = np.zeros([3, 4, 5], dtype=int)
+    test_data[0, 1:3, 1:4] = 1
+    test_data[1, 1:3, 1:4] = 1
+    test_data[2, 1:3, 1:4] = 0
+
+    test_mask = xr.DataArray(
+        test_data,
+        dims=("time", "y", "x"),
+        coords=dict(
+            time=pd.date_range(
+                datetime(2000, 1, 1, 0), datetime(2000, 1, 1, 2), periods=3
+            )
+        ),
+        attrs=dict(units="feature"),
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3],
+            "frame": [0, 1, 2],
+            "time": pd.date_range(
+                datetime(2000, 1, 1, 0), datetime(2000, 1, 1, 2), periods=3
+            ),
+            "cell": [1, 1, -1],
+        }
+    )
+
+    feature_mask = convert_cell_mask_to_features(test_features, test_mask)
+
+    # Test all feature mask values where the cell mask is not zero are in test_features.feature
+    assert np.all(
+        np.isin(feature_mask.values[test_mask.values != 0], test_features.feature)
+    )
+
+    # Test all cell mask values where the feature mask is zero are 0
+    assert np.all(feature_mask.values[test_mask.values == 0] == 0)
+
+    # Test coords are the same
+    assert feature_mask.coords.keys() == test_mask.coords.keys()
+
+
+def test_convert_cell_mask_to_features_stub_cell():
+    """Test functionality of convert_feature_mask_to_cells when a cell has a
+    stub value but cell mask is 0
+    """
+    test_data = np.zeros([3, 4, 5], dtype=int)
+    test_data[0, 1:3, 1:4] = 1
+    test_data[1, 1:3, 1:4] = -1
+    test_data[1, 3:, 3:] = -1
+    test_data[2, 3:, 3:] = 3
+
+    test_mask = xr.DataArray(
+        test_data,
+        dims=("time", "y", "x"),
+        coords=dict(
+            time=pd.date_range(
+                datetime(2000, 1, 1, 0), datetime(2000, 1, 1, 2), periods=3
+            )
+        ),
+        attrs=dict(units="feature"),
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 5, 6],
+            "frame": [0, 1, 1, 2],
+            "time": [
+                datetime(2000, 1, 1, 0),
+                datetime(2000, 1, 1, 1),
+                datetime(2000, 1, 1, 1),
+                datetime(2000, 1, 1, 2),
+            ],
+            "cell": [1, -1, -1, 3],
+        }
+    )
+
+    # Test without stub value provided the correct error is raised.
+    with pytest.raises(
+        ValueError,
+        match="Duplicate cell values found for a single timestep in features. This may be because there are stub cells *",
+    ):
+        feature_mask = convert_cell_mask_to_features(test_features, test_mask)
+
+    feature_mask = convert_cell_mask_to_features(test_features, test_mask, stubs=-1)
+
+    # Test all feature mask values where the cell mask is not zero are in test_features.feature
+    assert np.all(
+        np.isin(feature_mask.values[test_mask.values > 0], test_features.feature)
+    )
+
+    # Test all cell mask values where the feature mask is zero or the stub value are 0
+    assert np.all(feature_mask.values[np.isin(test_mask.values, [0, -1])] == 0)
+
+    # Test coords are the same
+    assert feature_mask.coords.keys() == test_mask.coords.keys()
+
+    with pytest.raises(
+        ValueError,
+        match="Duplicate cell values found for a single timestep in features that does not match the provided stub value*",
+    ):
+        feature_mask = convert_cell_mask_to_features(
+            test_features, test_mask, stubs=-999
+        )
+
+
+def test_convert_cell_mask_to_features_mismatched_cell():
+    """Test functionality of convert_feature_mask_to_cells when a cell exists in
+    the mask that does not occur in the features dataframe
+    """
+    test_data = np.zeros([3, 4, 5], dtype=int)
+    test_data[0, 1:3, 1:4] = 1
+    test_data[1, 1:3, 1:4] = 1
+    test_data[2, 1:3, 1:4] = 3
+
+    test_mask = xr.DataArray(
+        test_data,
+        dims=("time", "y", "x"),
+        coords=dict(
+            time=pd.date_range(
+                datetime(2000, 1, 1, 0), datetime(2000, 1, 1, 2), periods=3
+            )
+        ),
+        attrs=dict(units="feature"),
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3],
+            "frame": [0, 1, 2],
+            "time": pd.date_range(
+                datetime(2000, 1, 1, 0), datetime(2000, 1, 1, 2), periods=3
+            ),
+            "cell": [1, 1, 2],
+        }
+    )
+
+    with pytest.raises(
+        ValueError, match="Cell values in cell_mask are not present in features, *"
+    ):
+        feature_mask = convert_cell_mask_to_features(test_features, test_mask)
