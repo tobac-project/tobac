@@ -468,6 +468,8 @@ def convert_cell_mask_to_features(
     Raises
     ------
     ValueError
+        If the features input does not have a cell column
+    ValueError
         If duplicate cell values are present at any timestep in the input
         dataframe and the stubs parameter is not provided
     ValueError
@@ -476,6 +478,11 @@ def convert_cell_mask_to_features(
     ValueError
         If cell_mask includes cell values not present in the input dataframe
     """
+    if "cell" not in features.columns:
+        raise ValueError(
+            "`cell` column not found in features input, please perform tracking on this data before converting features to cells"
+        )
+
     feature_mask = cell_mask.copy()
 
     for i, _, mask_slice, features_slice in field_and_features_over_time(
