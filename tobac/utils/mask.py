@@ -1,5 +1,10 @@
 """Provide essential methods for masking"""
 
+from typing import Optional
+import numpy as np
+import pandas as pd
+import xarray as xr
+
 
 def column_mask_from2D(mask_2D, cube, z_coord="model_level_number"):
     """Turn 2D watershedding mask into a 3D mask of selected columns.
@@ -362,3 +367,34 @@ def mask_all_surface(mask, masked=False, z_coord="model_level_number"):
     if masked:
         mask_i_surface.data = ma.masked_equal(mask_i_surface.core_data(), 0)
     return mask_i_surface
+
+
+def convert_feature_mask_to_cells(
+    features: pd.DataFrame, feature_mask: xr.DataArray, stubs: Optional[int] = None
+) -> xr.DataArray:
+    if "cell" not in features.columns:
+        raise ValueError(
+            "`cell` column not found in features input, please perform tracking on this data before converting features to cells"
+        )
+
+    cell_mask = feature_mask.copy()
+
+    cell_mapper = xr.DataArray(
+        features.cell.copy(), dims=("feature",), coords=dict(feature=features.feature)
+    )
+
+    if stubs is not None:
+        cell_mapper.data[features.cell == stubs] = 0
+
+    wh_nonzero_label = np.flatnonzero(cell_mask)
+
+    try:
+        cell_mask.data.ravel()[wh_nonzero_label] = cell_mapper.loc[
+            feature_mask.values.ravel()[wh_nonzero_label]
+        ]
+    except KeyError:
+        raise ValueError(
+            "Values in feature_mask are not present in features, please ensure that you are using the correct feature_mask for the tracked features, and that any filtering has been applied to both the mask and features"
+        )
+
+    return cell_mask
