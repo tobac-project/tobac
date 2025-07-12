@@ -372,6 +372,37 @@ def mask_all_surface(mask, masked=False, z_coord="model_level_number"):
 def convert_feature_mask_to_cells(
     features: pd.DataFrame, feature_mask: xr.DataArray, stubs: Optional[int] = None
 ) -> xr.DataArray:
+    """Relabels a feature mask provided by tobac.segmentation with the cell
+    values provided by tobac.linking_trackpy
+
+    Parameters
+    ----------
+    features : pd.DataFrame
+        A feature dataframe with cell values provided by tobac.linking_trackpy
+    feature_mask : xr.DataArray
+        A feature mask from tobac.segmentation corresponding to the features in
+        the feature dataframe input
+    stubs : int, optional (default: None)
+        The stub values used for unlinked cells in tobac.linking_trackpy. If
+        None, the stub cells with be relabelled with the stub cell value in the
+        feature dataframe. If a value is provided, the masked regions
+        corresponding to stub cells with be removed from the output. WARNING:
+        using this input will make it impossible to perfectly reverse this
+        operation using convert_cell_mask_to_features.
+
+    Returns
+    -------
+    xr.DataArray
+        A mask of cell regions corresponding to the cells in the input dataframe
+
+    Raises
+    ------
+    ValueError
+        If the features input does not have a cell column
+    ValueError
+        If there are labels in the feature_mask that are not present in the
+        features dataframe
+    """
     if "cell" not in features.columns:
         raise ValueError(
             "`cell` column not found in features input, please perform tracking on this data before converting features to cells"
@@ -396,5 +427,7 @@ def convert_feature_mask_to_cells(
         raise ValueError(
             "Values in feature_mask are not present in features, please ensure that you are using the correct feature_mask for the tracked features, and that any filtering has been applied to both the mask and features"
         )
+
+    cell_mask = cell_mask.assign_attrs(dict(units="cell"))
 
     return cell_mask

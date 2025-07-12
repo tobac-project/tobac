@@ -232,7 +232,7 @@ def test_convert_feature_mask_to_cells_stub_value():
 
 
 def test_convert_feature_mask_to_cells_no_input_mutation():
-    """Test that convert_feature_mask_to_cells does not alter the input features 
+    """Test that convert_feature_mask_to_cells does not alter the input features
     and mask
     """
     test_data = np.zeros([3, 4, 5], dtype=int)
@@ -268,9 +268,7 @@ def test_convert_feature_mask_to_cells_no_input_mutation():
     cell_mask = convert_feature_mask_to_cells(test_features, test_mask, stubs=-1)
 
     # Test dataframe is the same
-    pd.testing.assert_frame_equal(
-        test_features, features_copy
-    )
-    
+    pd.testing.assert_frame_equal(test_features, features_copy)
+
     # Test mask is the same
     assert mask_copy.equals(test_mask)
