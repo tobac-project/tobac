@@ -453,7 +453,7 @@ def convert_cell_mask_to_features(
     features : pd.DataFrame
         A feature dataframe with cell values provided by tobac.linking_trackpy
     cell_mask : xr.DataArray
-        A cekk mask corresponding to the cells in the feature dataframe input
+        A cell mask corresponding to the cells in the feature dataframe input
     stubs : int, optional (default: None)
         The stub values used for unlinked cells in tobac.linking_trackpy. If
         None, the stub cells with be relabelled with the stub cell value in the

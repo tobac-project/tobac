@@ -34,7 +34,6 @@ from __future__ import annotations
 import copy
 import logging
 import datetime
-from token import OP
 import warnings
 
 import iris.cube
