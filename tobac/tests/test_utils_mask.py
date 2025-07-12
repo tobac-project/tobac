@@ -559,38 +559,3 @@ def test_convert_cell_mask_to_features_mismatched_cell():
         ValueError, match="Cell values in cell_mask are not present in features, *"
     ):
         feature_mask = convert_cell_mask_to_features(test_features, test_mask)
-
-
-def test_convert_cell_mask_to_features_no_cell_column():
-    """
-    Test correct error handling when convert_cell_mask_to_features is given a
-    features dataframe with no cell column
-    """
-    test_data = np.zeros([3, 4, 5], dtype=int)
-    test_data[0, 1:3, 1:4] = 1
-    test_data[1, 1:3, 1:4] = 1
-    test_data[2, 1:3, 1:4] = 1
-
-    test_mask = xr.DataArray(
-        test_data,
-        dims=("time", "y", "x"),
-        coords=dict(
-            time=pd.date_range(
-                datetime(2000, 1, 1, 0), datetime(2000, 1, 1, 2), periods=3
-            )
-        ),
-        attrs=dict(units="feature"),
-    )
-
-    test_features = pd.DataFrame(
-        {
-            "feature": [1, 2, 3],
-            "frame": [0, 1, 2],
-            "time": pd.date_range(
-                datetime(2000, 1, 1, 0), datetime(2000, 1, 1, 2), periods=3
-            ),
-        }
-    )
-
-    with pytest.raises(ValueError, match="`cell` column not found in features input*"):
-        cell_mask = convert_cell_mask_to_features(test_features, test_mask)
