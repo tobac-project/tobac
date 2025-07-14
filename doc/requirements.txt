@@ -7,3 +7,4 @@ pydata_sphinx_theme
 myst-parser
 sphinx-design
 sphinx-toolbox
+linkify-it-py
