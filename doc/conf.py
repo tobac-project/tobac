@@ -1,5 +1,5 @@
 """This file is used to configure the Sphinx build of our documentation.
-The documentation on setting this up is here: https://www.sphinx-doc.org/en/master/usage/configuration.html 
+The documentation on setting this up is here: https://www.sphinx-doc.org/en/master/usage/configuration.html
 """
 
 # This is the standard readthedocs theme.
@@ -17,7 +17,6 @@ extensions = [
     "sphinx.ext.coverage",
     "sphinx.ext.imgmath",
     "sphinx.ext.ifconfig",
-    "sphinx_rtd_theme",
     "sphinx.ext.napoleon",
     "nbsphinx",
     "sphinx_gallery.load_style",
@@ -33,8 +32,23 @@ html_static_path = ["_static"]
 html_css_files = ["custom.css", "theme_overrides.css"]
 
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
-source_suffix = {".rst": "restructuredtext", ".md": "restructuredtext"}
-myst_enable_extensions = ["colon_fence"]
+source_suffix = {".rst": "restructuredtext", ".md": "markdown"}
+myst_enable_extensions = [
+    "colon_fence",
+    "amsmath",
+    "colon_fence",
+    "deflist",
+    "dollarmath",
+    "fieldlist",
+    "html_admonition",
+    "html_image",
+    "linkify",
+    "replacements",
+    "smartquotes",
+    "strikethrough",
+    "substitution",
+    "tasklist",
+]
 
 html_context = {
     "api_dir": "api/generated",

@@ -6,18 +6,18 @@ sd_hide_title: true
 <!-- CSS overrides on the homepage only -->
 <style>
 .bd-main .bd-content .bd-article-container {
-  max-width: 70rem; /* Make homepage a little wider instead of 60em */
+max-width: 70rem; /* Make homepage a little wider instead of 60em */
 }
 /* Extra top/bottom padding to the sections */
 article.bd-article section {
-  padding: 3rem 0 7rem;
+padding: 3rem 0 7rem;
 }
 /* Override all h1 headers except for the hidden ones */
 h1:not(.sd-d-none) {
-  font-weight: bold;
-  font-size: 48px;
-  text-align: center;
-  margin-bottom: 4rem;
+font-weight: bold;
+font-size: 48px;
+text-align: center;
+margin-bottom: 4rem;
 }
 /* Override all h3 headers that are not in hero */
 h3:not(#hero h3) {
@@ -39,11 +39,11 @@ atmospheric phenomena, enabling object-based analysis in model, observational, a
 
 <div class="homepage-button-container">
   <div class="homepage-button-container-row">
-      <a href="./getting_started/index.html" class="homepage-button primary-button">Get Started</a>
-      <a href="./examples/index.html" class="homepage-button secondary-button">Examples</a>
+  <a href="./getting_started/index.html" class="homepage-button primary-button">Get Started</a>
+  <a href="./examples/index.html" class="homepage-button secondary-button">Examples</a>
   </div>
   <div class="homepage-button-container-row">
-      <a href="./tobac.html" class="homepage-button-link">See API Reference →</a>
+  <a href="./tobac.html" class="homepage-button-link">See API Reference →</a>
   </div>
 </div>
 </div>  <!-- End Hero Left -->
