@@ -35,8 +35,8 @@ from tobac.utils import internal as internal_utils
 from tobac.utils import decorators
 
 from tobac.utils import periodic_boundaries as pbc_utils
-from tobac.utils.general import spectral_filtering
-from tobac.utils import get_statistics
+import tobac.utils
+import tobac.utils.general
 import warnings
 
 # from typing_extensions import Literal
@@ -64,7 +64,9 @@ def feature_position(
 ) -> tuple[float]:
     """Determine feature position with regard to the horizontal
     dimensions in pixels from the identified region above
-    threshold values
+    threshold values.
+
+    :hidden:
 
     Parameters
     ----------
@@ -152,7 +154,8 @@ def feature_position(
         lies exactly between hdim1_max and hdim1_min, the output could be
         between hdim1_max and hdim1_max+1. While a value between hdim1_min-1
         and hdim1_min would also be valid, we choose to overflow on the max side of things.
-
+    Notes
+    -----
     """
 
     # First, if necessary, run PBC processing.
@@ -260,6 +263,8 @@ def test_overlap(
 ) -> bool:
     """Test for overlap between two regions
 
+    :hidden:
+
     Parameters
     ----------
     region_1 : list
@@ -291,6 +296,8 @@ def remove_parents(
 
     Remove features where its regions surround newly
     detected feature regions.
+
+    :hidden:
 
     Parameters
     ----------
@@ -405,6 +412,8 @@ def feature_detection_threshold(
     vertical_axis: int = 0,
 ) -> tuple[pd.DataFrame, dict]:
     """Find features based on individual threshold value.
+
+    :hidden:
 
     Parameters
     ----------
@@ -925,6 +934,8 @@ def feature_detection_multithreshold_timestep(
     thresholds. Smoothing the input data with the Gaussian filter makes
     output less sensitive to noisiness of input data.
 
+    :hidden:
+
     Parameters
     ----------
 
@@ -1027,7 +1038,7 @@ def feature_detection_multithreshold_timestep(
 
     # spectrally filter the input data, if desired
     if wavelength_filtering is not None:
-        track_data = spectral_filtering(
+        track_data = tobac.utils.general.spectral_filtering(
             dxy, track_data, wavelength_filtering[0], wavelength_filtering[1]
         )
 
@@ -1144,7 +1155,7 @@ def feature_detection_multithreshold_timestep(
         # select which data to use according to statistics_unsmoothed option
         stats_data = data_i.values if statistics_unsmoothed else track_data
 
-        features_thresholds = get_statistics(
+        features_thresholds = tobac.utils.get_statistics(
             features_thresholds,
             labels,
             stats_data,
@@ -1187,6 +1198,7 @@ def feature_detection_multithreshold(
     """Perform feature detection based on contiguous regions.
 
     The regions are above/below a threshold.
+
 
     Parameters
     ----------
@@ -1489,6 +1501,9 @@ def filter_min_distance(
     """Function to remove features that are too close together.
     If two features are closer than `min_distance`, it keeps the
     larger feature.
+
+    :hidden:
+
 
     Parameters
     ----------

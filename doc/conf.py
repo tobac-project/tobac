@@ -92,10 +92,33 @@ master_doc = "index"
 collapse_navigation = False
 
 
+def skip_member_check(app, what, name, obj, skip, options):
+    """Function to skip members (autodoc-skip-member)
+
+    Parameters
+    ----------
+    app
+    what
+    name
+    obj
+    skip
+    options
+
+    Returns
+    -------
+
+    """
+    if hasattr(obj, "__doc__") and obj.__doc__ and ":hidden:" in obj.__doc__:
+        return True
+
+    return skip
+
+
 # Include our custom CSS (currently for special table config)
 def setup(app):
     app.add_css_file("theme_overrides.css")
     app.add_css_file("custom.css")
+    app.connect("autodoc-skip-member", skip_member_check)
 
 
 # This should include all modules used in tobac. These are dummy imports,
@@ -117,6 +140,14 @@ autodoc_mock_imports = [
     "sklearn",
     "cftime",
 ]
+
+autodoc_default_options = {
+    "members": True,
+    "undoc-members": True,
+    "show-inheritance": True,
+    "ignore-module-all": False,
+    "private-members": False,
+}
 
 sys.path.insert(0, os.path.abspath("../"))
 
