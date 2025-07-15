@@ -54,15 +54,15 @@ atmospheric phenomena, enabling object-based analysis in model, observational, a
 :gutter: 3
 
 :::::{grid-item-card}
-:link: examples/Basics/Idealized-Case-1_Tracking-of-a-Test-Blob-in-2D.html
+:link: examples/Example_vorticity_tracking_model/Example_vorticity_tracking_model.html
 :shadow: none
 :class-card: example-gallery
 
 :::{div} example-img-plot-overlay
-Tracking a Simple Blob
+Tracking a cyclones with vorticity in a model
 :::
 
-:::{image} ./images/Figure_linking.png
+:::{image} ./_static/thumbnails/Example_vorticity_tracking_model_Thumbnail.png
 :::
 :::::
 
