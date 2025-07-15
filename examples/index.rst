@@ -20,6 +20,7 @@ tobac is provided with a set of Jupyter notebooks that show examples of the appl
 
    OLR from GOES-13 Satellite <./Example_OLR_Tracking_satellite/Example_OLR_Tracking_satellite>
    Combine Radar & Satellite <./Example_Track_on_Radar_Segment_on_Satellite/Example_Track_on_Radar_Segment_on_Satellite>
+   Parallel Processing <./big_data_processing/parallel_processing_tobac>
 
 
 .. nbgallery::
