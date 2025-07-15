@@ -1,15 +1,15 @@
 """First step toward working with *tobac*. Detects features from input 2D or 3D data.
 
 This module can work with any two-dimensional or three-dimensional field.
-To identify the features, contiguous regions above or 
+To identify the features, contiguous regions above or
 below a threshold are determined and labelled individually.
 To describe the specific location of the feature at a
 specific point in time, different spatial properties
-are used to describe the identified region. [2]_
+are used to describe the identified region. [1]_
 
 References
 ----------
-.. Heikenfeld, M., Marinescu, P. J., Christensen, M.,
+.. [1] Heikenfeld, M., Marinescu, P. J., Christensen, M.,
    Watson-Parris, D., Senf, F., van den Heever, S. C.
    & Stier, P. (2019). tobac 1.2: towards a flexible
    framework for tracking and analysis of clouds in
@@ -99,8 +99,7 @@ def feature_position(
     threshold_i : float
         The threshold value that we are testing against
 
-    position_threshold : {'center', 'extreme', 'weighted_diff', '
-                          weighted abs'}
+    position_threshold : {'center', 'extreme', 'weighted_diff', 'weighted abs'}
         How to select the single point position from our data.
         'center' picks the geometrical centre of the region,
         and is typically not recommended. 'extreme' picks the
@@ -153,6 +152,7 @@ def feature_position(
         lies exactly between hdim1_max and hdim1_min, the output could be
         between hdim1_max and hdim1_max+1. While a value between hdim1_min-1
         and hdim1_min would also be valid, we choose to overflow on the max side of things.
+
     """
 
     # First, if necessary, run PBC processing.

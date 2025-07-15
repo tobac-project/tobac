@@ -140,6 +140,8 @@ napoleon_preprocess_types = False
 napoleon_type_aliases = None
 napoleon_attr_annotations = True
 
+nbsphinx_execute = "never"
+
 nbsphinx_thumbnails = {
     "examples/Basics/Idealized-Case-1_Tracking-of-a-Test-Blob-in-2D": "_static/thumbnails/Basics_Idealized-Case-1_Tracking-of-a-Test-Blob-in-2D_Thumbnail.png",
     "examples/Basics/Idealized-Case-2_Two_crossing_Blobs": "_static/thumbnails/Basics_Idealized-Case-2_Two_crossing_Blobs_Thumbnail.png",
