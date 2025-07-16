@@ -81,6 +81,7 @@ from .tracking import linking_trackpy
 from .wrapper import maketrack
 from .wrapper import tracking_wrapper
 from . import merge_split
+import importlib.metadata
 
 # Set version number
-__version__ = "1.6.0"
+__version__ = importlib.metadata.version("tobac")
