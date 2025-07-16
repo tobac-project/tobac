@@ -84,4 +84,5 @@ from . import merge_split
 import importlib.metadata
 
 # Set version number
-__version__ = importlib.metadata.version("tobac")
+# This version should work without needing the package installed
+__version__ = importlib.metadata.version(__package__ or __name__)
