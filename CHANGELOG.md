@@ -1,12 +1,42 @@
 ### Tobac Changelog
 
+_**Version 1.6.0:**_
+
+**Enhancements for Users**
+
+- MAJOR CHANGE: Feature detection and segmentation have been changed to use xarray DataArrays for representation of spatial fields instead of Iris Cubes. This change will allow for increased flexibility for input data and ease development. Support for Iris Cube input is maintained through a conversion wrapper. [#354](https://github.com/tobac-project/tobac/pull/354) & [#417](https://github.com/tobac-project/tobac/pull/417)
+- Some differences in the output of feature detection are present in the output from feature detection: when using xarray, the column names for coordinates will use the variable names, while with iris the columns will use the standard names. This differences reflects the different ways in which coordinates are named in xarray and iris, and can be overridden by the user using the `use_standard_names` parameter. [#489](https://github.com/tobac-project/tobac/pull/489)
+
+**Bug fixes**
+
+- An issue with datetime output from feature detection being converted to `cftime` format erroneously was fixed, and datetime formats should now match the formatting in the input field. Time matching within a tolerance range now works with any combination of datetime formats [#489](https://github.com/tobac-project/tobac/pull/489)
+
+**Documentation**
+
+- Example notebooks have been converted to use `xarray`, and have had minor enhancements to descriptions and visualisations. A notebook showing the legacy approach using Iris Cube input is retained [#487](https://github.com/tobac-project/tobac/pull/487)
+
+**Internal Enhancements**
+
+- `tobac.utils.internal.basic` was restructured into `coordinates` and `label_props` utils, and new `datetime` and `generators` utils were added [#489](https://github.com/tobac-project/tobac/pull/489)
+
+_**Version 1.5.5:**_
+
+**Bug fixes**
+
+- Including of annotations import for python versions before 3.10 [#468](https://github.com/tobac-project/tobac/pull/468)
+- Fix bulk statistics calculation when provided a dask array [#474](https://github.com/tobac-project/tobac/pull/474)
+
+**Internal Enhancements**
+
+- Fix matrix testing to use the specified python versions [#468](https://github.com/tobac-project/tobac/pull/468)
+
+
 _**Version 1.5.4:**_
 
 **Enhancements for Users**
 
 - Added the ability to use the Minimum Euclidean Spanning Tree merge/split method on data with periodic boundaries [#372](https://github.com/tobac-project/tobac/pull/372)
 - Added the ability to calculate online bulk statistics during feature detection on the raw (i.e., unsmoothed) data [#449](https://github.com/tobac-project/tobac/pull/449)
-
 
 **Bug fixes**
 
@@ -15,15 +45,13 @@ _**Version 1.5.4:**_
 - Fixed an error that allows non-matching features to be used in the offline bulk statistics calculation [#448](https://github.com/tobac-project/tobac/pull/448)
 - Fixed a bug that prevented using minimum distance filtering with varying vertical coordinates [#452](https://github.com/tobac-project/tobac/pull/452)
 
-
 **Documentation**
 
 - Add thumbnails to the new example gallery [#428](https://github.com/tobac-project/tobac/pull/428)
 - Added documentation for developers [#281](https://github.com/tobac-project/tobac/pull/281)
 - Updated documentation for the `n_min_threshold` function in feature detection [#432](https://github.com/tobac-project/tobac/pull/432)
 - Added documentation for dealing with big datasets [#408](https://github.com/tobac-project/tobac/pull/408)
-- Updated documentation to note that the *tobac* v1.5.0 paper in GMD is in its final form [#450](https://github.com/tobac-project/tobac/pull/450)
-- 
+- Updated documentation to note that the *tobac* v1.5.0 paper in GMD is in its final form [#450](https://github.com/tobac-project/tobac/pull/450) 
 
 **Internal Enhancements**
 
@@ -31,8 +59,6 @@ _**Version 1.5.4:**_
 - Added tests to `tobac.utils.get_spacings`  [#429](https://github.com/tobac-project/tobac/pull/429)
 - Added matrix testing for Python 3.12  [#451](https://github.com/tobac-project/tobac/pull/451)
 - Resolved issues around updating dependencies in `black` formatting checks and Zenodo JSON checks [#457](https://github.com/tobac-project/tobac/pull/457)
-
-
 
 
 _**Version 1.5.3:**_

@@ -14,7 +14,10 @@ def tracking_wrapper(
 ):
     from .feature_detection import feature_detection_multithreshold
     from .tracking import linking_trackpy
-    from .segmentation import segmentation_3D, segmentation_2D
+    from tobac.segmentation.watershed_segmentation import (
+        segmentation_3D,
+        segmentation_2D,
+    )
     from .utils import get_spacings
 
     warnings.warn(

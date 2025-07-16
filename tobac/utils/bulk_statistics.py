@@ -1,15 +1,19 @@
 """
 Support functions to compute bulk statistics of features, either as a postprocessing step
-or within feature detection or segmentation. 
+or within feature detection or segmentation.
 
 """
 
+from __future__ import annotations
+from datetime import timedelta
 import logging
 import warnings
 from functools import partial
-from typing import Callable, Union
+from typing import Callable, Optional, Union
 
 import numpy as np
+
+from tobac.utils.generators import field_and_features_over_time
 
 # numpy renamed core to _core recently
 try:
@@ -220,6 +224,8 @@ def get_statistics_from_mask(
     default: Union[None, float] = None,
     id_column: str = "feature",
     collapse_dim: Union[None, str, list[str]] = None,
+    time_var_name: str = "time",
+    time_padding: Optional[timedelta] = None,
 ) -> pd.DataFrame:
     """Derives bulk statistics for each object in the segmentation mask, and
     returns a features Dataframe with these properties for each feature.
@@ -255,9 +261,20 @@ def get_statistics_from_mask(
 
     id_column: str, optional (default: "feature")
         Name of the column in feature dataframe that contains IDs that match with the labels in mask. The default is the column "feature".
-    collapse_dim: None | str | list[str], optional (defailt: None)
+
+    collapse_dim: None | str | list[str], optional (default: None)
         Dimension names of labels to collapse, allowing, e.g. calulcation of statistics on 2D
         fields for the footprint of 3D objects
+
+    time_var_name : str, optional (default: "time")
+        The name of the time dimension in the input fields and the time column
+        in features, by default "time"
+
+    time_padding: timedelta, optional (default: None)
+        If set, allows for statistics to be associated with a feature input
+        timestep that is within time_padding off of the feature. Extremely useful when
+        converting between micro- and nanoseconds, as is common when using Pandas
+        dataframes.
 
      Returns:
      -------
@@ -299,33 +316,36 @@ def get_statistics_from_mask(
     # get bulk statistics for each timestep
     step_statistics = []
 
-    for tt in pd.to_datetime(segmentation_mask.time):
+    for _, tt, segmentation_mask_t, features_t in field_and_features_over_time(
+        segmentation_mask,
+        features,
+        time_var_name=time_var_name,
+        time_padding=time_padding,
+    ):
         # select specific timestep
-        segmentation_mask_t = segmentation_mask.sel(time=tt, method="nearest").data
         fields_t = (
             (
                 field.sel(
-                    time=tt, method="nearest", tolerance=np.timedelta64(1000, "us")
+                    {time_var_name: tt}, method="nearest", tolerance=time_padding
                 ).values
-                if "time" in field.coords
+                if time_var_name in field.coords
                 else field.values
             )
             for field in fields
         )
 
-        features_t = features.loc[features.time == tt].copy()
         # make sure that the labels in the segmentation mask exist in feature dataframe
         # continue loop because not all timesteps might have matching IDs
         if not np.any(np.isin(features_t[id_column], np.unique(segmentation_mask_t))):
             warnings.warn("Not all timesteps have matching features", UserWarning)
-            step_statistics.append(features_t)
+            step_statistics.append(features_t.copy())
             continue
         else:
             # make sure that features are not double-defined
             step_statistics.append(
                 get_statistics(
-                    features_t,
-                    segmentation_mask_t,
+                    features_t.copy(),
+                    segmentation_mask_t.values.astype(np.int64),
                     *fields_t,
                     statistic=statistic,
                     default=default,

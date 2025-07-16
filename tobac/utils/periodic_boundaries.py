@@ -1,5 +1,4 @@
-"""Utilities for handling indexing and distance calculation with periodic boundaries
-"""
+"""Utilities for handling indexing and distance calculation with periodic boundaries"""
 
 from __future__ import annotations
 import functools
