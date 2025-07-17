@@ -62,7 +62,7 @@ def add_markers(
 ) -> np.array:
     """Adds markers for watershedding using the `features` dataframe
     to the marker_arr.
-
+    :hidden:
     Parameters
     ----------
     features: pandas.DataFrame
@@ -352,7 +352,7 @@ def segmentation_timestep(
 ) -> tuple[iris.cube.Cube, pd.DataFrame]:
     """Perform watershedding for an individual time step of the data. Works
     for both 2D and 3D data
-
+    :hidden:
     Parameters
     ----------
     field_in : xr.DataArray
@@ -1064,7 +1064,7 @@ def check_add_unseeded_across_bdrys(
 ) -> np.array:
     """Add new markers to unseeded but eligible regions when they are bordering
     an appropriate boundary.
-
+    :hidden:
     Parameters
     ----------
     dim_to_run:  {'hdim_1', 'hdim_2'}
