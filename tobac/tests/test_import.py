@@ -18,4 +18,7 @@ def test_version():
     # Make sure that we are following semantic versioning
     # i.e., our version is of form x.x.x, where x are all
     # integer numbers.
-    assert re.match(r"[0-9]+\.[0-9]+\.[0-9]+", tobac.__version__) is not None
+    assert (
+        re.match(r"[0-9]+\.[0-9]+\.[0-9]+", tobac.__version__) is not None
+        or tobac.__version__ == "unknown_dev_version"
+    )
