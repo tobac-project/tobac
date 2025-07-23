@@ -23,6 +23,7 @@ extensions = [
     "myst_parser",
     "sphinx_design",
     "sphinx_toolbox.code",
+    "sphinxcontrib.mermaid",
 ]
 
 
