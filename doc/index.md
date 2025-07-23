@@ -243,6 +243,7 @@ or, if you are using features introduced from v1.5.0 or above, please also cite 
 Getting Started<getting_started/index>
 Example Gallery<examples/index>
 User Guide<userguide/index>
+Get Help<get_help/index>
 Developer Guide<developer_guide/index>
 API <api/index>
 :::
