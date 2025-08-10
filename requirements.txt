@@ -1,8 +1,8 @@
 # Python dependencies
 numpy
 scipy
-scikit-image
-scikit-learn
+scikit - image
+scikit - learn
 pandas
 matplotlib
 iris
