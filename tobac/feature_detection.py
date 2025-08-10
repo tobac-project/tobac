@@ -1,18 +1,18 @@
 """Provide feature detection.
 
 This module can work with any two-dimensional field.
-To identify the features, contiguous regions above or 
+To identify the features, contiguous regions above or
 below a threshold are determined and labelled individually.
-To describe the specific location of the feature at a 
-specific point in time, different spatial properties 
+To describe the specific location of the feature at a
+specific point in time, different spatial properties
 are used to describe the identified region. [2]_
 
 References
 ----------
 .. Heikenfeld, M., Marinescu, P. J., Christensen, M.,
    Watson-Parris, D., Senf, F., van den Heever, S. C.
-   & Stier, P. (2019). tobac 1.2: towards a flexible 
-   framework for tracking and analysis of clouds in 
+   & Stier, P. (2019). tobac 1.2: towards a flexible
+   framework for tracking and analysis of clouds in
    diverse datasets. Geoscientific Model Development,
    12(11), 4551-4570.
 """
@@ -38,6 +38,10 @@ from tobac.utils import periodic_boundaries as pbc_utils
 from tobac.utils.general import spectral_filtering
 from tobac.utils import get_statistics
 import warnings
+
+# from typing_extensions import Literal
+import iris
+import iris.cube
 
 
 def feature_position(
@@ -892,8 +896,9 @@ def feature_detection_threshold(
     return features_threshold, regions
 
 
+@internal_utils.irispandas_to_xarray()
 def feature_detection_multithreshold_timestep(
-    data_i: np.array,
+    data_i: xr.DataArray,
     i_time: int,
     threshold: list[float] = None,
     min_num: int = 0,
@@ -923,7 +928,7 @@ def feature_detection_multithreshold_timestep(
     Parameters
     ----------
 
-    data_i : iris.cube.Cube
+    data_i : iris.cube.Cube or xarray.DataArray
         3D field to perform the feature detection (single timestep) on.
 
     i_time : int
@@ -1007,7 +1012,7 @@ def feature_detection_multithreshold_timestep(
         )
 
     # get actual numpy array and make a copy so as not to change the data in the iris cube
-    track_data = data_i.core_data().copy()
+    track_data = data_i.values.copy()
 
     # keep a copy of the unsmoothed data (that can be used for calculating stats)
     if statistics_unsmoothed:
@@ -1137,7 +1142,7 @@ def feature_detection_multithreshold_timestep(
             # the feature dataframe is updated by appending a column for each metric
 
         # select which data to use according to statistics_unsmoothed option
-        stats_data = data_i.core_data() if statistics_unsmoothed else track_data
+        stats_data = data_i.values if statistics_unsmoothed else track_data
 
         features_thresholds = get_statistics(
             features_thresholds,
@@ -1151,9 +1156,9 @@ def feature_detection_multithreshold_timestep(
     return features_thresholds
 
 
-@decorators.xarray_to_iris()
+@decorators.irispandas_to_xarray(save_iris_info=True)
 def feature_detection_multithreshold(
-    field_in: iris.cube.Cube,
+    field_in: xr.DataArray,
     dxy: float = None,
     threshold: list[float] = None,
     min_num: int = 0,
@@ -1175,6 +1180,9 @@ def feature_detection_multithreshold(
     strict_thresholding: bool = False,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
     statistics_unsmoothed: bool = False,
+    use_standard_names: Optional[bool] = None,
+    converted_from_iris: bool = False,
+    **kwargs,
 ) -> pd.DataFrame:
     """Perform feature detection based on contiguous regions.
 
@@ -1182,8 +1190,8 @@ def feature_detection_multithreshold(
 
     Parameters
     ----------
-    field_in : iris.cube.Cube
-        2D field to perform the tracking on (needs to have coordinate
+    field_in : iris.cube.Cube or xarray.DataArray
+        2D or 3D field to perform the tracking on (needs to have coordinate
         'time' along one of its dimensions),
 
     dxy : float
@@ -1257,6 +1265,16 @@ def feature_detection_multithreshold(
         If True, a feature can only be detected if all previous thresholds have been met.
         Default is False.
 
+    use_standard_names: bool
+        If true, when interpolating a coordinate, it looks for a standard_name
+        and uses that to name the output coordinate, to mimic iris functionality.
+        If false, uses the actual name of the coordinate to output.
+
+    preserve_iris_datetime_types: bool, optional, default: True
+        If True, for iris input, preserve the original datetime type (typically
+        `cftime.DatetimeGregorian`) where possible. For xarray input, this parameter has no
+        effect.
+
     Returns
     -------
     features : pandas.DataFrame
@@ -1265,12 +1283,10 @@ def feature_detection_multithreshold(
     """
     from .utils import add_coordinates, add_coordinates_3D
 
+    time_var_name: str = "time"
     logging.debug("start feature detection based on thresholds")
 
-    if "time" not in [coord.name() for coord in field_in.coords()]:
-        raise ValueError(
-            "input to feature detection step must include a dimension named 'time'"
-        )
+    ndim_time = internal_utils.find_axis_from_coord(field_in, time_var_name)
 
     # Check whether we need to run 2D or 3D feature detection
     if field_in.ndim == 3:
@@ -1281,8 +1297,6 @@ def feature_detection_multithreshold(
         is_3D = True
     else:
         raise ValueError("Feature detection only works with 2D or 3D data")
-
-    ndim_time = field_in.coord_dims("time")[0]
 
     if detect_subset is not None:
         raise NotImplementedError("Subsetting feature detection not yet supported.")
@@ -1305,7 +1319,7 @@ def feature_detection_multithreshold(
         if vertical_axis is None:
             # We need to determine vertical axis.
             # first, find the name of the vertical axis
-            vertical_axis_name = internal_utils.find_vertical_axis_from_coord(
+            vertical_axis_name = internal_utils.find_vertical_coord_name(
                 field_in, vertical_coord=vertical_coord
             )
             # then find our axis number.
@@ -1327,9 +1341,6 @@ def feature_detection_multithreshold(
 
     # create empty list to store features for all timesteps
     list_features_timesteps = []
-
-    # loop over timesteps for feature identification:
-    data_time = field_in.slices_over("time")
 
     # if single threshold is put in as a single value, turn it into a list
     if type(threshold) in [int, float]:
@@ -1369,8 +1380,8 @@ def feature_detection_multithreshold(
                 "given in meter."
             )
 
-    for i_time, data_i in enumerate(data_time):
-        time_i = data_i.coord("time").units.num2date(data_i.coord("time").points[0])
+    for i_time, time_i in enumerate(field_in.coords[time_var_name]):
+        data_i = field_in.isel({time_var_name: i_time})
 
         features_thresholds = feature_detection_multithreshold_timestep(
             data_i,
@@ -1395,9 +1406,7 @@ def feature_detection_multithreshold(
 
         list_features_timesteps.append(features_thresholds)
 
-        logging.debug(
-            "Finished feature detection for " + time_i.strftime("%Y-%m-%d_%H:%M:%S")
-        )
+        logging.debug("Finished feature detection for %s", time_i)
 
     logging.debug("feature detection: merging DataFrames")
     # Check if features are detected and then concatenate features from different timesteps into
@@ -1406,14 +1415,23 @@ def feature_detection_multithreshold(
     if any([not x.empty for x in list_features_timesteps]):
         features = pd.concat(list_features_timesteps, ignore_index=True)
         features["feature"] = features.index + feature_number_start
-        #    features_filtered = features.drop(features[features['num'] < min_num].index)
-        #    features_filtered.drop(columns=['idx','num','threshold_value'],inplace=True)
+
+        if use_standard_names is None:
+            use_standard_names = True if converted_from_iris else False
+
         if "vdim" in features:
             features = add_coordinates_3D(
-                features, field_in, vertical_coord=vertical_coord
+                features,
+                field_in,
+                vertical_coord=vertical_coord,
+                use_standard_names=use_standard_names,
             )
         else:
-            features = add_coordinates(features, field_in)
+            features = add_coordinates(
+                features,
+                field_in,
+                use_standard_names=use_standard_names,
+            )
 
         # Loop over DataFrame to remove features that are closer than distance_min to each
         # other:

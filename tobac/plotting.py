@@ -1,15 +1,15 @@
 """Provide methods for plotting analyzed data.
 
-Plotting routines including both visualizations for 
-the entire dataset including all tracks, and detailed 
+Plotting routines including both visualizations for
+the entire dataset including all tracks, and detailed
 visualizations for individual cells and their properties.
 
 References
 ----------
 .. Heikenfeld, M., Marinescu, P. J., Christensen, M.,
    Watson-Parris, D., Senf, F., van den Heever, S. C.
-   & Stier, P. (2019). tobac 1.2: towards a flexible 
-   framework for tracking and analysis of clouds in 
+   & Stier, P. (2019). tobac 1.2: towards a flexible
+   framework for tracking and analysis of clouds in
    diverse datasets. Geoscientific Model Development,
    12(11), 4551-4570.
 """
@@ -26,6 +26,8 @@ from tobac.analysis.cell_analysis import (
     histogram_cellwise,
 )
 from tobac.analysis.feature_analysis import histogram_featurewise
+from tobac.utils import decorators
+from tobac.utils.internal.coordinates import find_dataframe_horizontal_coords
 
 
 def plot_tracks_mask_field_loop(
@@ -154,6 +156,7 @@ def plot_tracks_mask_field_loop(
         plt.close()
 
 
+@decorators.xarray_to_iris()
 def plot_tracks_mask_field(
     track,
     field,
@@ -401,22 +404,30 @@ def plot_tracks_mask_field(
         makersize_feature = markersize_track
 
     # Plot the identified features by looping over rows of DataFrame:
+    features_lat_dim, features_lon_dim, _ = find_dataframe_horizontal_coords(
+        features, coord_type="latlon"
+    )
+
     if plot_features:
-        for i_row, row in features.iterrows():
+        for _, row in features.iterrows():
             axes.plot(
-                row["longitude"],
-                row["latitude"],
+                row[features_lon_dim],
+                row[features_lat_dim],
                 color="grey",
                 marker=maker_feature,
                 markersize=makersize_feature,
             )
 
     # restrict features to featues inside axis extent
+    track_lat_dim, track_lon_dim, _ = find_dataframe_horizontal_coords(
+        features, coord_type="latlon"
+    )
+
     track = track.loc[
-        (track["longitude"] > axis_extent[0])
-        & (track["longitude"] < axis_extent[1])
-        & (track["latitude"] > axis_extent[2])
-        & (track["latitude"] < axis_extent[3])
+        (track[track_lon_dim] > axis_extent[0])
+        & (track[track_lon_dim] < axis_extent[1])
+        & (track[track_lat_dim] > axis_extent[2])
+        & (track[track_lat_dim] < axis_extent[3])
     ]
 
     # Plot tracked features by looping over rows of Dataframe
@@ -429,8 +440,8 @@ def plot_tracks_mask_field(
             if plot_number:
                 cell_string = "  " + str(int(row["cell"]))
                 axes.text(
-                    row["longitude"],
-                    row["latitude"],
+                    row[features_lon_dim],
+                    row[features_lat_dim],
                     cell_string,
                     color=color,
                     fontsize=6,
@@ -463,8 +474,8 @@ def plot_tracks_mask_field(
 
         if plot_marker:
             axes.plot(
-                row["longitude"],
-                row["latitude"],
+                row[features_lon_dim],
+                row[features_lat_dim],
                 color=color,
                 marker=marker_track,
                 markersize=markersize_track,
@@ -474,6 +485,7 @@ def plot_tracks_mask_field(
     return axes
 
 
+@decorators.iris_to_xarray()
 def animation_mask_field(
     track, features, field, mask, interval=500, figsize=(10, 10), **kwargs
 ):
@@ -527,24 +539,29 @@ def animation_mask_field(
     fig = plt.figure(figsize=figsize)
     plt.close()
 
+    tracks_gb = track.groupby("time")
+    features_gb = features.groupby("time")
+
     def update(time_in):
         fig.clf()
         ax = fig.add_subplot(111, projection=ccrs.PlateCarree())
-        constraint_time = Constraint(time=time_in)
-        field_i = field.extract(constraint_time)
-        mask_i = mask.extract(constraint_time)
-        track_i = track[track["time"] == time_in]
-        features_i = features[features["time"] == time_in]
+        field_i = field.sel(time=time_in)
+        mask_i = mask.sel(time=time_in)
+        track_i = tracks_gb.get_group(time_in)
+        features_i = features_gb.get_group(time_in)
         # fig1,ax1=plt.subplots(ncols=1, nrows=1,figsize=figsize, subplot_kw={'projection': ccrs.PlateCarree()})
         plot_tobac = plot_tracks_mask_field(
             track_i, field=field_i, mask=mask_i, features=features_i, axes=ax, **kwargs
         )
         ax.set_title("{}".format(time_in))
 
-    time = field.coord("time")
-    datetimes = time.units.num2date(time.points)
     animation = matplotlib.animation.FuncAnimation(
-        fig, update, init_func=None, frames=datetimes, interval=interval, blit=False
+        fig,
+        update,
+        init_func=None,
+        frames=field.time.values,
+        interval=interval,
+        blit=False,
     )
     return animation
 
@@ -2048,11 +2065,14 @@ def map_tracks(
         raise ValueError(
             "axes needed to plot tracks onto. Pass in an axis to axes to resolve this error."
         )
+
+    lat_dim, lon_dim, _ = find_dataframe_horizontal_coords(track, coord_type="latlon")
+
     for cell in track["cell"].dropna().unique():
         if cell == untracked_cell_value:
             continue
         track_i = track[track["cell"] == cell]
-        axes.plot(track_i["longitude"], track_i["latitude"], "-")
+        axes.plot(track_i[lon_dim], track_i[lat_dim], "-")
         if axis_extent:
             axes.set_extent(axis_extent)
         axes = make_map(axes)

@@ -12,7 +12,7 @@ if sys.version_info < (3, 7):
 
     print(warning)
 
-from .segmentation import (
+from tobac.segmentation.watershed_segmentation import (
     segmentation_3D,
     segmentation_2D,
     watershedding_3D,
@@ -83,4 +83,4 @@ from .wrapper import tracking_wrapper
 from . import merge_split
 
 # Set version number
-__version__ = "1.5.5"
+__version__ = "1.6.1"
