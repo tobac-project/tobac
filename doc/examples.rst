@@ -32,6 +32,7 @@ tobac is provided with a set of Jupyter notebooks that show examples of the appl
    WRF Updrafts <examples/Example_Updraft_Tracking/Example_Updraft_Tracking>
    WRF Mesoscale Vorticity <examples/Example_vorticity_tracking_model/Example_vorticity_tracking_model>
    DALES Cloud Botany LWP (cumulus tracking) <examples/Example_low_cloud_tracking_eurec4a/Example_low_cloud_tracking_eurec4a>
+   ICON Global MCS Tracking <examples/Example_ICON_MCS_tracking/Example_ICON_MCS_tracking>
 
 
 .. nbgallery::
