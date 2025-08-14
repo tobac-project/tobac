@@ -1,0 +1,20 @@
+name: tobac-dev
+channels:
+  - conda-forge
+dependencies:
+  - numpy
+  - scipy
+  - scikit-image
+  - scikit-learn
+  - pandas
+  - matplotlib
+  - iris
+  - xarray
+  - cartopy
+  - trackpy
+  - pytest
+  - typing_extensions
+  - black
+  - coverage
+  - pytest-cov
+  - pylint

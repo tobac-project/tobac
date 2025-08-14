@@ -1,5 +1,129 @@
 ### Tobac Changelog
 
+_**Version 1.6.1:**_
+
+**Bug fixes**
+
+- An bug in the `field_and_features_over_time` generator, used to loop through mask `DataArrays` and feature `Dataframes` simultaneously which caused an error in the dataframe had no 0 index value has been fixed [#506](https://github.com/tobac-project/tobac/pull/506)
+- Interpolation of non-numeric coordinates (such as datetime) now works, and chooses the nearest element [#509](https://github.com/tobac-project/tobac/pull/509)
+
+_**Version 1.6.0:**_
+
+**Enhancements for Users**
+
+- MAJOR CHANGE: Feature detection and segmentation have been changed to use xarray DataArrays for representation of spatial fields instead of Iris Cubes. This change will allow for increased flexibility for input data and ease development. Support for Iris Cube input is maintained through a conversion wrapper. [#354](https://github.com/tobac-project/tobac/pull/354) & [#417](https://github.com/tobac-project/tobac/pull/417)
+- Some differences in the output of feature detection are present in the output from feature detection: when using xarray, the column names for coordinates will use the variable names, while with iris the columns will use the standard names. This differences reflects the different ways in which coordinates are named in xarray and iris, and can be overridden by the user using the `use_standard_names` parameter. [#489](https://github.com/tobac-project/tobac/pull/489)
+
+**Bug fixes**
+
+- An issue with datetime output from feature detection being converted to `cftime` format erroneously was fixed, and datetime formats should now match the formatting in the input field. Time matching within a tolerance range now works with any combination of datetime formats [#489](https://github.com/tobac-project/tobac/pull/489)
+
+**Documentation**
+
+- Example notebooks have been converted to use `xarray`, and have had minor enhancements to descriptions and visualisations. A notebook showing the legacy approach using Iris Cube input is retained [#487](https://github.com/tobac-project/tobac/pull/487)
+
+**Internal Enhancements**
+
+- `tobac.utils.internal.basic` was restructured into `coordinates` and `label_props` utils, and new `datetime` and `generators` utils were added [#489](https://github.com/tobac-project/tobac/pull/489)
+
+_**Version 1.5.5:**_
+
+**Bug fixes**
+
+- Including of annotations import for python versions before 3.10 [#468](https://github.com/tobac-project/tobac/pull/468)
+- Fix bulk statistics calculation when provided a dask array [#474](https://github.com/tobac-project/tobac/pull/474)
+
+**Internal Enhancements**
+
+- Fix matrix testing to use the specified python versions [#468](https://github.com/tobac-project/tobac/pull/468)
+
+
+_**Version 1.5.4:**_
+
+**Enhancements for Users**
+
+- Added the ability to use the Minimum Euclidean Spanning Tree merge/split method on data with periodic boundaries [#372](https://github.com/tobac-project/tobac/pull/372)
+- Added the ability to calculate online bulk statistics during feature detection on the raw (i.e., unsmoothed) data [#449](https://github.com/tobac-project/tobac/pull/449)
+
+**Bug fixes**
+
+- Fixes to calculations of bulk statistics [#437](https://github.com/tobac-project/tobac/pull/437)
+- Fixes to handling of PBC feature points on the PBC wraparound border [#434](https://github.com/tobac-project/tobac/pull/434)
+- Fixed an error that allows non-matching features to be used in the offline bulk statistics calculation [#448](https://github.com/tobac-project/tobac/pull/448)
+- Fixed a bug that prevented using minimum distance filtering with varying vertical coordinates [#452](https://github.com/tobac-project/tobac/pull/452)
+
+**Documentation**
+
+- Add thumbnails to the new example gallery [#428](https://github.com/tobac-project/tobac/pull/428)
+- Added documentation for developers [#281](https://github.com/tobac-project/tobac/pull/281)
+- Updated documentation for the `n_min_threshold` function in feature detection [#432](https://github.com/tobac-project/tobac/pull/432)
+- Added documentation for dealing with big datasets [#408](https://github.com/tobac-project/tobac/pull/408)
+- Updated documentation to note that the *tobac* v1.5.0 paper in GMD is in its final form [#450](https://github.com/tobac-project/tobac/pull/450) 
+
+**Internal Enhancements**
+
+- PBC Distance Function handling improved for tracking and other portions of the library that uses it [#386](https://github.com/tobac-project/tobac/pull/386)
+- Added tests to `tobac.utils.get_spacings`  [#429](https://github.com/tobac-project/tobac/pull/429)
+- Added matrix testing for Python 3.12  [#451](https://github.com/tobac-project/tobac/pull/451)
+- Resolved issues around updating dependencies in `black` formatting checks and Zenodo JSON checks [#457](https://github.com/tobac-project/tobac/pull/457)
+
+
+_**Version 1.5.3:**_
+
+**Enhancements for Users**
+
+- Update `calculate_area` to allow the calculation of the projected 2D area of 3D objects, and enhance bulk statistics to allow calculation of statistics on the projected footprint on 2D fields [#378](https://github.com/tobac-project/tobac/pull/378)
+
+**Bug fixes**
+
+- Fix a bug in `get_spacing` that would return a negative value if one coordinate was in ascending order and the other in descending order, and fix other bugs where the wrong coordinate was referenced [#400](https://github.com/tobac-project/tobac/pull/400)
+
+**Documentation**
+
+- Re-integration of notebooks from the tobac-tutorials repo [#334](https://github.com/tobac-project/tobac/pull/334)
+- Add example gallery to readthedocs page [#411](https://github.com/tobac-project/tobac/pull/411)
+
+**Internal Enhancements**
+
+- Add ability to save whether iris to xarray conversion ocurred and update decorators to allow keyword parameters [#380](https://github.com/tobac-project/tobac/pull/380)
+- Reorganisation of analysis tools into analysis package [#378](https://github.com/tobac-project/tobac/pull/378)
+
+
+_**Version 1.5.2:**_
+
+**Enhancements for Users**
+
+- Let users optionally derive bulk statistics of the data points belonging to each feature. Bulk statistics can be calulcated during feature detection, segmentation or afterwards by applying one of more functions to each feature [#293](https://github.com/tobac-project/tobac/pull/293)
+- Wrapped functions now show the correct docstring [#359](https://github.com/tobac-project/tobac/pull/359)
+
+**Bug fixes**
+
+- Fixed an out-of-bounds error that could occur when performing segmentation with PBCs [#350](https://github.com/tobac-project/tobac/pull/350)
+- Path to data in example notebooks fixed after changes to zenodo [#357](https://github.com/tobac-project/tobac/pull/357)
+- Bulk statistics updated to use multiple fields correctly and perform numpy-style broadcasting [#368](https://github.com/tobac-project/tobac/pull/368)
+- PBCs now work when using predictive tracking [#376](https://github.com/tobac-project/tobac/pull/376)
+- Fixed error with PBC distance calculation using numba if all of `min_h1`, `max_h1`, `min_h2`, `max_h2` were not specified, even if not calculating PBCs over one of the dimensions [#384](https://github.com/tobac-project/tobac/pull/384)
+
+**Documentation**
+
+- Documentation on use of `time_cell_min` in tracking added [#361](https://github.com/tobac-project/tobac/pull/361)
+- Documentation on how thresholding is applied in segmentation update [#365](https://github.com/tobac-project/tobac/pull/365)
+- References to tobac papers updated [#365](https://github.com/tobac-project/tobac/pull/365)
+
+**Internal Enhancements**
+
+- Type hints added for feature detection [#337](https://github.com/tobac-project/tobac/pull/337)
+- Reorganisation and addition of type hints to interal utils [#241](https://github.com/tobac-project/tobac/pull/241)
+- Type hints added for segmentation [#351](https://github.com/tobac-project/tobac/pull/351)
+
+**Repository Enhancements**
+
+- Matrix CI testing added for multiple python versions on Linux, MacOS and Windows [#353](https://github.com/tobac-project/tobac/pull/353)
+- Issue templates with checklists added [#358](https://github.com/tobac-project/tobac/pull/358)
+- Black reformatting updated to say what is wrong [#362](https://github.com/tobac-project/tobac/pull/362)
+- Pylint CI workflow added to assess code quality and compare to base branch [#373](https://github.com/tobac-project/tobac/pull/373)
+
+
 _**Version 1.5.1:**_
 
 **Bug fixes**
@@ -73,7 +197,7 @@ _**Version 1.5.0:**_
 _**Version 1.4.2:**_
 
 
-**Bug fix**
+**Bug fixes**
 
 - Fixed a bug in the segmentation procedure that assigned the wrong grid cell areas to features in data frame  [#246](https://github.com/tobac-project/tobac/pull/246)
 

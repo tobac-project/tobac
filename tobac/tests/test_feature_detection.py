@@ -1,3 +1,4 @@
+import cftime
 import tobac
 import tobac.testing as tbtest
 import tobac.feature_detection as feat_detect
@@ -319,6 +320,34 @@ def test_feature_detection_position(position_threshold):
             True,
             False,
         ),
+        (  # Test using z coord name
+            (0, 0, 0, 4, 1),
+            (1, 1, 1, 4, 1),
+            1000,
+            None,
+            1,
+            "maximum",
+            False,
+            False,
+            True,
+            "none",
+            True,
+            True,
+        ),
+        (  # Test using z coord name
+            (0, 0, 0, 5, 1),
+            (1, 1, 1, 4, 1),
+            1,
+            None,
+            101,
+            "maximum",
+            False,
+            False,
+            True,
+            "none",
+            True,
+            False,
+        ),
     ],
 )
 def test_filter_min_distance(
@@ -415,18 +444,6 @@ def test_filter_min_distance(
 
     feat_combined = pd.concat([feat_1_interp, feat_2_interp], ignore_index=True)
 
-    filter_dist_opts = dict()
-
-    if add_x_coords:
-        feat_combined[x_coord_name] = feat_combined["hdim_2"] * assumed_dxy
-        filter_dist_opts["x_coordinate_name"] = x_coord_name
-    if add_y_coords:
-        feat_combined[y_coord_name] = feat_combined["hdim_1"] * assumed_dxy
-        filter_dist_opts["y_coordinate_name"] = y_coord_name
-    if add_z_coords and is_3D:
-        feat_combined[z_coord_name] = feat_combined["vdim"] * assumed_dz
-        filter_dist_opts["z_coordinate_name"] = z_coord_name
-
     filter_dist_opts = {
         "features": feat_combined,
         "dxy": dxy,
@@ -439,6 +456,16 @@ def test_filter_min_distance(
         "min_h2": 0,
         "max_h2": 100,
     }
+    if add_x_coords:
+        feat_combined[x_coord_name] = feat_combined["hdim_2"] * assumed_dxy
+        filter_dist_opts["x_coordinate_name"] = x_coord_name
+    if add_y_coords:
+        feat_combined[y_coord_name] = feat_combined["hdim_1"] * assumed_dxy
+        filter_dist_opts["y_coordinate_name"] = y_coord_name
+    if add_z_coords and is_3D:
+        feat_combined[z_coord_name] = feat_combined["vdim"] * assumed_dz
+        filter_dist_opts["z_coordinate_name"] = z_coord_name
+
     if target not in ["maximum", "minimum"]:
         with pytest.raises(ValueError):
             out_feats = feat_detect.filter_min_distance(**filter_dist_opts)
@@ -681,18 +708,221 @@ def test_feature_detection_coords():
         h2_size=test_hdim_2_sz,
         amplitude=test_amp,
     )
-    test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type="iris")
-    fd_output_first = feat_detect.feature_detection_multithreshold_timestep(
-        test_data_iris,
-        0,
+    test_data_xr = xr.DataArray(
+        test_data[np.newaxis, ...],
+        dims=("time", "y", "x"),
+        coords={
+            "time": [np.datetime64("2000-01-01T00:00:00")],
+            "y": np.arange(test_data.shape[0]),
+            "x": np.arange(test_data.shape[1]),
+            "2d_coord": xr.DataArray(np.random.rand(*test_data.shape), dims=("y", "x")),
+        },
+    )
+
+    fd_output = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_xr,
         threshold=[1, 2, 3],
         n_min_threshold=test_min_num,
         dxy=1,
         target="maximum",
     )
 
-    for coord in test_data_iris.coords():
-        assert coord.name() in fd_output_first
+    assert all([coord in fd_output for coord in test_data_xr.coords])
+
+    test_data_iris = test_data_xr.to_iris()
+
+    fd_output_iris = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_iris,
+        threshold=[1, 2, 3],
+        n_min_threshold=test_min_num,
+        dxy=1,
+        target="maximum",
+    )
+
+    assert all([coord.name() in fd_output_iris for coord in test_data_iris.coords()])
+
+
+def test_feature_detection_preserve_datetime():
+    """Tests that datetime output is of the correct type when converting to and from iris cubes"""
+    test_dset_size = (50, 50)
+    test_hdim_1_pt = 20.0
+    test_hdim_2_pt = 20.0
+    test_hdim_1_sz = 5
+    test_hdim_2_sz = 5
+    test_amp = 2
+    test_min_num = 2
+
+    test_data = np.zeros(test_dset_size)
+    test_data = tbtest.make_feature_blob(
+        test_data,
+        test_hdim_1_pt,
+        test_hdim_2_pt,
+        h1_size=test_hdim_1_sz,
+        h2_size=test_hdim_2_sz,
+        amplitude=test_amp,
+    )
+    test_data_xr = xr.DataArray(
+        test_data[np.newaxis, ...],
+        dims=("time", "y", "x"),
+        coords={
+            "time": [np.datetime64("2000-01-01T00:00:00")],
+        },
+    )
+
+    fd_output = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_xr,
+        threshold=[1, 2, 3],
+        n_min_threshold=test_min_num,
+        dxy=1,
+        target="maximum",
+    )
+
+    assert isinstance(fd_output.time.to_numpy()[0], np.datetime64)
+
+    test_data_iris = test_data_xr.to_iris()
+
+    fd_output_iris_dt64 = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_iris,
+        threshold=[1, 2, 3],
+        n_min_threshold=test_min_num,
+        dxy=1,
+        target="maximum",
+        preserve_iris_datetime_types=False,
+    )
+
+    assert isinstance(fd_output_iris_dt64.time.to_numpy()[0], np.datetime64)
+
+    fd_output_iris_cft = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_iris,
+        threshold=[1, 2, 3],
+        n_min_threshold=test_min_num,
+        dxy=1,
+        target="maximum",
+        preserve_iris_datetime_types=True,
+    )
+
+    assert isinstance(
+        fd_output_iris_cft.time.to_numpy()[0], cftime.DatetimeProlepticGregorian
+    )
+
+
+def test_feature_detection_preserve_datetime_3d():
+    """Tests that datetime output is of the correct type when converting to and from iris cubes with 3d data"""
+    test_dset_size = (10, 50, 50)
+    test_hdim_1_pt = 20.0
+    test_hdim_2_pt = 20.0
+    test_vdim_pt = 5
+    test_hdim_1_sz = 5
+    test_hdim_2_sz = 5
+    test_amp = 2
+    test_min_num = 2
+
+    test_data = np.zeros(test_dset_size)
+    test_data = tbtest.make_feature_blob(
+        test_data,
+        test_hdim_1_pt,
+        test_hdim_2_pt,
+        test_vdim_pt,
+        h1_size=test_hdim_1_sz,
+        h2_size=test_hdim_2_sz,
+        amplitude=test_amp,
+    )
+    test_data_xr = xr.DataArray(
+        test_data[np.newaxis, ...],
+        dims=("time", "z", "y", "x"),
+        coords={
+            "time": [np.datetime64("2000-01-01T00:00:00")],
+            "z": np.arange(test_data.shape[0]),
+        },
+    )
+
+    fd_output = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_xr,
+        threshold=[1, 2, 3],
+        n_min_threshold=test_min_num,
+        dxy=1,
+        target="maximum",
+    )
+
+    assert isinstance(fd_output.time.to_numpy()[0], np.datetime64)
+
+    test_data_iris = test_data_xr.to_iris()
+
+    fd_output_iris_dt64 = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_iris,
+        threshold=[1, 2, 3],
+        n_min_threshold=test_min_num,
+        dxy=1,
+        target="maximum",
+        preserve_iris_datetime_types=False,
+    )
+
+    assert isinstance(fd_output_iris_dt64.time.to_numpy()[0], np.datetime64)
+
+    fd_output_iris_cft = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_iris,
+        threshold=[1, 2, 3],
+        n_min_threshold=test_min_num,
+        dxy=1,
+        target="maximum",
+        preserve_iris_datetime_types=True,
+    )
+
+    assert isinstance(
+        fd_output_iris_cft.time.to_numpy()[0], cftime.DatetimeProlepticGregorian
+    )
+
+
+def test_feature_detection_360_day_calendar():
+    """Tests that datetime format and feature detection work correctly with
+    cftime 360-day calendars
+    """
+    test_dset_size = (50, 50)
+    test_hdim_1_pt = 20.0
+    test_hdim_2_pt = 20.0
+    test_hdim_1_sz = 5
+    test_hdim_2_sz = 5
+    test_amp = 2
+    test_min_num = 2
+
+    test_data = np.zeros(test_dset_size)
+    test_data = tbtest.make_feature_blob(
+        test_data,
+        test_hdim_1_pt,
+        test_hdim_2_pt,
+        h1_size=test_hdim_1_sz,
+        h2_size=test_hdim_2_sz,
+        amplitude=test_amp,
+    )
+    test_data_xr = xr.DataArray(
+        test_data[np.newaxis, ...],
+        dims=("time", "y", "x"),
+        coords={
+            "time": [cftime.Datetime360Day(2000, 1, 1)],
+        },
+    )
+
+    fd_output = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_xr,
+        threshold=[1, 2, 3],
+        n_min_threshold=test_min_num,
+        dxy=1,
+        target="maximum",
+    )
+
+    assert isinstance(fd_output.time.to_numpy()[0], cftime.Datetime360Day)
+
+    test_data_iris = test_data_xr.to_iris()
+
+    fd_output_iris = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_iris,
+        threshold=[1, 2, 3],
+        n_min_threshold=test_min_num,
+        dxy=1,
+        target="maximum",
+    )
+
+    assert isinstance(fd_output_iris.time.to_numpy()[0], cftime.Datetime360Day)
 
 
 def test_strict_thresholding():

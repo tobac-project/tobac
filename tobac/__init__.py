@@ -12,7 +12,7 @@ if sys.version_info < (3, 7):
 
     print(warning)
 
-from .segmentation import (
+from tobac.segmentation.watershed_segmentation import (
     segmentation_3D,
     segmentation_2D,
     watershedding_3D,
@@ -29,47 +29,53 @@ from .plotting import (
     plot_mask_cell_track_follow,
     plot_mask_cell_track_static,
     plot_mask_cell_track_static_timeseries,
-)
-from .plotting import (
     plot_lifetime_histogram,
     plot_lifetime_histogram_bar,
     plot_histogram_cellwise,
     plot_histogram_featurewise,
-)
-from .plotting import plot_mask_cell_track_3Dstatic, plot_mask_cell_track_2D3Dstatic
-from .plotting import (
+    plot_mask_cell_track_3Dstatic,
+    plot_mask_cell_track_2D3Dstatic,
     plot_mask_cell_individual_static,
     plot_mask_cell_individual_3Dstatic,
+    animation_mask_field,
+    make_map,
+    map_tracks,
 )
-from .plotting import animation_mask_field
-from .plotting import make_map, map_tracks
-from .analysis import (
+from tobac.analysis.cell_analysis import (
     cell_statistics,
     cog_cell,
     lifetime_histogram,
-    histogram_featurewise,
     histogram_cellwise,
-)
-from .analysis import calculate_velocity, calculate_distance, calculate_area
-from .analysis import calculate_nearestneighbordistance
-from .analysis import (
     velocity_histogram,
+    calculate_overlap,
+)
+from tobac.analysis.feature_analysis import (
+    histogram_featurewise,
+    calculate_nearestneighbordistance,
     nearestneighbordistance_histogram,
     area_histogram,
 )
-from .analysis import calculate_overlap
-from .utils import (
+from tobac.analysis.spatial import (
+    calculate_velocity,
+    calculate_distance,
+    calculate_area,
+)
+from .utils.mask import (
     mask_cell,
     mask_cell_surface,
     mask_cube_cell,
     mask_cube_untracked,
     mask_cube,
     column_mask_from2D,
-    get_bounding_box,
+    mask_features,
+    mask_features_surface,
+    mask_cube_features,
 )
-from .utils import mask_features, mask_features_surface, mask_cube_features
-
-from .utils import add_coordinates, get_spacings
+from .utils.general import (
+    get_bounding_box,
+    add_coordinates,
+    get_spacings,
+)
 from .feature_detection import feature_detection_multithreshold
 from .tracking import linking_trackpy
 from .wrapper import maketrack
@@ -77,4 +83,4 @@ from .wrapper import tracking_wrapper
 from . import merge_split
 
 # Set version number
-__version__ = "1.5.1"
+__version__ = "1.6.1"

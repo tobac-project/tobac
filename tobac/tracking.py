@@ -19,6 +19,7 @@ References
    12(11), 4551-4570.
 """
 
+from __future__ import annotations
 import logging
 from operator import is_
 import numpy as np
@@ -85,34 +86,28 @@ def linking_trackpy(
     features : pandas.DataFrame
         Detected features to be linked.
 
-    field_in : xarray.DataArray
-        Input field to perform the watershedding on (2D or 3D for one
-        specific point in time).
+    field_in : None
+        Input field. Not currently used; can be set to `None`.
 
     dt : float
-        Time resolution of tracked features.
+        Time resolution of tracked features in seconds.
 
     dxy : float
-        Horizontal grid spacing of the input data.
+        Horizontal grid spacing of the input data in meters.
 
     dz : float
-        Constant vertical grid spacing (m), optional. If not specified
+        Constant vertical grid spacing (meters), optional. If not specified
         and the input is 3D, this function requires that `vertical_coord` is available
         in the `features` input. If you specify a value here, this function assumes
         that it is the constant z spacing between points, even if ```vertical_coord```
         is specified.
 
     d_max : float, optional
-        Maximum search range
+        Maximum search range in meters. Only one of `d_max`, `d_min`, or `v_max` can be set.
         Default is None.
 
     d_min : float, optional
-        Variations in the shape of the regions used to determine the
-        positions of the features can lead to quasi-instantaneous shifts
-        of the position of the feature by one or two grid cells even for
-        a very high temporal resolution of the input data, potentially
-        jeopardising the tracking procedure. To prevent this, tobac uses
-        an additional minimum radius of the search range.
+        Deprecated. Only one of `d_max`, `d_min`, or `v_max` can be set.
         Default is None.
 
     subnetwork_size : int, optional
@@ -124,7 +119,9 @@ def linking_trackpy(
         Default is None.
 
     v_max : float, optional
-        Speed at which features are allowed to move. Default is None.
+        Speed at which features are allowed to move in meters per second.
+        Only one of `d_max`, `d_min`, or `v_max` can be set.
+        Default is None.
 
     memory : int, optional
         Number of output timesteps features allowed to vanish for to
@@ -138,7 +135,8 @@ def linking_trackpy(
         Default is 1
 
     time_cell_min : float, optional
-        Minimum length in time of tracked cell to be reported in minutes
+        Minimum length in time that a cell must be tracked for to be considered a
+        valid cell in seconds.
         Default is None.
 
     order : int, optional
@@ -147,12 +145,12 @@ def linking_trackpy(
         Default is 1.
 
     extrapolate : int, optional
-        Number or timesteps to extrapolate trajectories.
+        Number or timesteps to extrapolate trajectories. Currently unused.
         Default is 0.
 
     method_linking : {'random', 'predict'}, optional
         Flag choosing method used for trajectory linking.
-        Default is 'random'.
+        Default is 'random', although we typically encourage users to use 'predict'.
 
     adaptive_step : float, optional
         Reduce search range by multiplying it by this factor. Needs to be
@@ -332,7 +330,9 @@ def linking_trackpy(
         # which we need for PBCs, neighbor_strategy must be 'BTree'.
         # I think this shouldn't change results, but it will degrade performance.
         neighbor_strategy = "BTree"
-        dist_func = build_distance_function(min_h1, max_h1, min_h2, max_h2, PBC_flag)
+        dist_func = pbc_utils.build_distance_function(
+            min_h1, max_h1, min_h2, max_h2, PBC_flag, is_3D
+        )
 
     else:
         neighbor_strategy = "KDTree"
@@ -388,7 +388,7 @@ def linking_trackpy(
             link_strategy="auto",
             adaptive_step=adaptive_step,
             adaptive_stop=adaptive_stop,
-            # dist_func=dist_func
+            dist_func=dist_func,
             #                                 copy_features=False, diagnostics=False,
             #                                 hash_size=None, box_size=None, verify_integrity=True,
             #                                 retain_index=False
@@ -612,43 +612,3 @@ def remap_particle_to_cell_nv(particle_cell_map, input_particle):
 
     """
     return particle_cell_map[input_particle]
-
-
-def build_distance_function(min_h1, max_h1, min_h2, max_h2, PBC_flag):
-    """Function to build a partial ```calc_distance_coords_pbc``` function
-    suitable for use with trackpy
-
-    Parameters
-    ----------
-    min_h1: int
-        Minimum point in hdim_1
-    max_h1: int
-        Maximum point in hdim_1
-    min_h2: int
-        Minimum point in hdim_2
-    max_h2: int
-        Maximum point in hdim_2
-    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
-        Sets whether to use periodic boundaries, and if so in which directions.
-        'none' means that we do not have periodic boundaries
-        'hdim_1' means that we are periodic along hdim1
-        'hdim_2' means that we are periodic along hdim2
-        'both' means that we are periodic along both horizontal dimensions
-
-    Returns
-    -------
-    function object
-        A version of calc_distance_coords_pbc suitable to be called by
-        just f(coords_1, coords_2)
-
-    """
-    import functools
-
-    return functools.partial(
-        pbc_utils.calc_distance_coords_pbc,
-        min_h1=min_h1,
-        max_h1=max_h1,
-        min_h2=min_h2,
-        max_h2=max_h2,
-        PBC_flag=PBC_flag,
-    )

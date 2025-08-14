@@ -1,14 +1,19 @@
 """
 Test for the trackpy tracking functions
 """
-import pytest
-import tobac.testing
-import tobac.tracking
+
+from __future__ import annotations
+import datetime
 import copy
+
+import pytest
+import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal
-import numpy as np
 import trackpy as tp
+
+import tobac.testing
+import tobac.tracking
 
 
 def convert_cell_dtype_if_appropriate(output, expected_output):
@@ -269,18 +274,6 @@ def test_linking_trackpy():
     )
     assert_frame_equal(
         expected_out_feature.sort_index(axis=1), actual_out_feature.sort_index(axis=1)
-    )
-
-
-def test_build_distance_function():
-    """Tests ```tobac.tracking.build_distance_function```
-    Currently tests:
-    that this produces an object that is suitable to call from trackpy
-    """
-
-    test_func = tobac.tracking.build_distance_function(0, 10, 0, 10, "both")
-    assert test_func(np.array((0, 9, 9)), np.array((0, 0, 0))) == pytest.approx(
-        1.4142135
     )
 
 
@@ -557,3 +550,165 @@ def test_untracked_nat():
     # the exact data type depends on architecture, so
     # instead just check by name
     assert output["time_cell"].dtype.name == "timedelta64[ns]"
+
+
+@pytest.mark.parametrize(
+    "cell_time_lengths, min_time_length, expected_there",
+    [
+        (
+            [0, 5, 10, 120, 300],
+            0,
+            [True, True, True, True, True],
+        ),
+        (
+            [0, 5, 10, 120, 300],
+            5,
+            [False, False, True, True, True],
+        ),
+        (
+            [0, 5, 10, 120, 300],
+            6,
+            [False, False, True, True, True],
+        ),
+        (
+            [0, 5, 10, 120, 300],
+            120,
+            [False, False, False, False, True],
+        ),
+        (
+            [0, 5, 10, 120, 300],
+            900,
+            [False, False, False, False, False],
+        ),
+    ],
+)
+def test_time_cell_min(
+    cell_time_lengths: list[int],
+    min_time_length: int,
+    expected_there: list[bool],
+):
+    """
+    Tests time_cell_min in particle-based tracking
+    Parameters
+    ----------
+    cell_time_lengths: list[int]
+        Length that each cell appears for
+    min_time_length: int
+        time_cell_min value
+    expected_there: list[bool]
+        whether to expect the cell there.
+
+    """
+    # delta time automatically set by smallest difference between cell lengths
+    delta_time = 1
+    # how far horizontally to separate test features
+    sep_factor = 2
+    all_feats = list()
+    # generate dataframes
+    for i, cell_time in enumerate(cell_time_lengths):
+        curr_feat = tobac.testing.generate_single_feature(
+            start_h1=i * sep_factor,
+            start_h2=i * sep_factor,
+            spd_h1=1,
+            spd_h2=1,
+            max_h1=1000,
+            max_h2=1000,
+            num_frames=cell_time // delta_time,
+            dt=datetime.timedelta(seconds=delta_time),
+        )
+        curr_feat["orig_cell_num"] = i
+
+        all_feats.append(curr_feat)
+    all_feats_df = tobac.utils.combine_feature_dataframes(all_feats)
+
+    all_feats_tracked = tobac.tracking.linking_trackpy(
+        all_feats_df,
+        field_in=None,
+        dt=delta_time,
+        dxy=1000,
+        v_max=(1000 * 2) / delta_time,
+        cell_number_unassigned=-1,
+        time_cell_min=min_time_length,
+    )
+    all_feats_tracked_drop_no_cells = all_feats_tracked[all_feats_tracked["cell"] != -1]
+
+    for i, cell_expected in enumerate(expected_there):
+        if cell_expected:
+            expected_val = cell_time_lengths[i] // delta_time
+        else:
+            expected_val = 0
+        assert (
+            np.sum(all_feats_tracked_drop_no_cells["orig_cell_num"] == i)
+            == expected_val
+        )
+
+
+def test_trackpy_predict_PBC():
+    """Test if predictive tracking with PBCs works correctly"""
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3, 4, 5, 6, 7, 8],
+            "hdim_1": [85, 15, 95, 5, 5, 95, 15, 85],
+            "hdim_2": [50, 45, 50, 45, 50, 45, 50, 45],
+            "frame": [0, 0, 1, 1, 2, 2, 3, 3],
+            "time": [
+                datetime.datetime(2000, 1, 1),
+                datetime.datetime(2000, 1, 1),
+                datetime.datetime(2000, 1, 1, 0, 5),
+                datetime.datetime(2000, 1, 1, 0, 5),
+                datetime.datetime(2000, 1, 1, 0, 10),
+                datetime.datetime(2000, 1, 1, 0, 10),
+                datetime.datetime(2000, 1, 1, 0, 15),
+                datetime.datetime(2000, 1, 1, 0, 15),
+            ],
+        }
+    )
+
+    output_random_no_pbc = tobac.linking_trackpy(
+        test_features, None, 1, 1, d_max=10, method_linking="random"
+    )
+
+    # Assert cell does not cross border
+    assert output_random_no_pbc["cell"].tolist() == [1, 2, 1, 2, 2, 1, 2, 1]
+
+    output_random_pbc = tobac.linking_trackpy(
+        test_features,
+        None,
+        1,
+        1,
+        d_max=10,
+        method_linking="random",
+        PBC_flag="hdim_1",
+        min_h1=0,
+        max_h1=100,
+        min_h2=0,
+        max_h2=100,
+    )
+
+    # Assert cell does not cross border even with PBC because of random tracking
+    assert output_random_pbc["cell"].tolist() == [1, 2, 1, 2, 2, 1, 2, 1]
+
+    output_predict_no_pbc = tobac.linking_trackpy(
+        test_features, None, 1, 1, d_max=10, method_linking="predict"
+    )
+
+    # Assert that without PBCs predictive tracking creates 4 cells because the d_max criteria is too small
+    assert output_predict_no_pbc["cell"].tolist() == [1, 2, 1, 2, 3, 4, 3, 4]
+
+    output_predict_pbc = tobac.linking_trackpy(
+        test_features,
+        None,
+        1,
+        1,
+        d_max=10,
+        method_linking="predict",
+        PBC_flag="hdim_1",
+        min_h1=0,
+        max_h1=100,
+        min_h2=0,
+        max_h2=100,
+    )
+
+    # Assert with PBCs and prdictive tracking the cells should cross the border
+    assert output_predict_pbc["cell"].tolist() == [1, 2, 1, 2, 1, 2, 1, 2]

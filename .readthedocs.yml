@@ -1,6 +1,12 @@
 version: 2
 formats: all
+build:
+  os: ubuntu-22.04
+  tools:
+    python: "3.9"
 python:
-  version: 3
   install:
     - requirements: doc/requirements.txt
+sphinx:
+  # Path to your Sphinx configuration file.
+  configuration: doc/conf.py
