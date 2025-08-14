@@ -8,7 +8,7 @@ import datetime
 
 import tobac.testing as tbtest
 import tobac.tracking as tbtrack
-import tobac.merge_split as mergesplit
+import tobac.merge_split.merge_split_feature_points as mergesplit
 
 
 def test_merge_split_MEST():
