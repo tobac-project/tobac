@@ -744,7 +744,6 @@ def standardize_track_dataset(TrackedFeatures, Mask, Projection=None):
     return ds
 
 
-@internal_utils.iris_to_xarray
 def identify_feature_families(
     feature_df: pd.DataFrame,
     in_segmentation: xr.DataArray,
