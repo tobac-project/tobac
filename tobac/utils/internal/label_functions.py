@@ -13,12 +13,30 @@ from tobac.utils import periodic_boundaries as pbc_utils
 def label_with_pbcs(
     in_label_arr: np.typing.ArrayLike,
     PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
+    connectivity: int = 2,
 ):
+    """Function to run labeling, with checks for periodic boundaries.
+
+    Parameters
+    ----------
+    in_label_arr: ArrayLike (bool)
+        Input array to label. Can be 2D or 3D, but needs to be a binary
+    PBC_flag: {"none", "hdim_1", "hdim_2", "both"}
+        Flag to indicate which boundaries are periodic
+    connectivity: int
+        What kind of connectivity to use - the sklearn default is 2 (meaning diagonals are included).
+
+
+    Returns
+    -------
+    ArrayLike (int)
+        A labeled field
+    """
 
     is_3d = len(np.shape(in_label_arr)) == 3
 
     labels, num_labels = skimage.measure.label(
-        in_label_arr, background=0, return_num=True
+        in_label_arr, background=0, return_num=True, connectivity=connectivity
     )
     if not is_3d:
         # let's transpose labels to a 1,y,x array to make calculations etc easier.
@@ -196,8 +214,8 @@ def label_with_pbcs(
                         new_label_ind = labels_2_alt
                         skip_list = np.append(skip_list, label_ind)
 
-                if (PBC_flag == "hdim_2" or PBC_flag == "both") and np.any(
-                    label_x == [x_min, x_max]
+                if (PBC_flag == "hdim_2" or PBC_flag == "both") and (
+                    np.any(label_x == x_min) or np.any(label_x == x_max)
                 ):
                     x_val_alt = pbc_utils.adjust_pbc_point(label_x, x_min, x_max)
 
