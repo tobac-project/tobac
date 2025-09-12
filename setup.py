@@ -72,28 +72,6 @@ CLASSIFIERS = [
 
 
 setup(
-    name=PACKAGE_NAME,
-    version=get_version(PACKAGE_NAME),
-    description="Tracking and object-based analysis of clouds",
-    url="http://github.com/tobac-project/tobac",
-    classifiers=CLASSIFIERS,
-    author=[
-        "Max Heikenfeld",
-        "William Jones",
-        "Fabian Senf",
-        "Sean Freeman",
-        "Julia Kukulies",
-        "Peter Marinescu",
-    ],
-    author_email=[
-        "max.heikenfeld@physics.ox.ac.uk",
-        "william.jones@physics.ox.ac.uk",
-        "senf@tropos.de",
-        "sean.freeman@uah.edu",
-        "julia.kukulies@gu.se",
-        "peter.marinescu@colostate.edu",
-    ],
-    license="BSD-3-Clause License",
     packages=get_packages(PACKAGE_NAME),
     install_requires=get_requirements("requirements.txt"),
     test_requires=["pytest"],
