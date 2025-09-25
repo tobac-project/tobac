@@ -1,15 +1,15 @@
 # Python dependencies
 numpy
 scipy
-scikit - image
-scikit - learn
+scikit-image
+scikit-learn
 pandas
 matplotlib
 iris
 xarray
 cartopy
 trackpy
-pre - commit
+pre-commit
 black
 pytest
 typing_extensions
