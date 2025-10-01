@@ -32,6 +32,7 @@ tobac is provided with a set of Jupyter notebooks that show examples of the appl
    WRF Precip <examples/Example_Precip_Tracking/Example_Precip_Tracking>
    WRF Updrafts <examples/Example_Updraft_Tracking/Example_Updraft_Tracking>
    WRF Mesoscale Vorticity <examples/Example_vorticity_tracking_model/Example_vorticity_tracking_model>
+   ICON Global MCS Tracking <examples/Example_ICON_MCS_tracking/Example_ICON_MCS_tracking>
 
 
 .. nbgallery::
