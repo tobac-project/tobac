@@ -3,6 +3,7 @@ Calculate spatial properties (distances, velocities, areas, volumes) of tracked 
 """
 
 import logging
+import warnings
 from itertools import combinations
 from typing import Literal, Optional, Union
 
@@ -167,14 +168,16 @@ def calculate_distance(
     if method_distance == "xy":
         dy = feature_2[hdim1_coord] - feature_1[hdim1_coord]
         dx = feature_2[hdim2_coord] - feature_1[hdim2_coord]
-        distance = np.sqrt(dx**2 + dy**2)
-        result = {"distance": distance, "dx": dx, "dy": dy}
+
         if has_z:
             dz = feature_2[vertical_coord] - feature_1[vertical_coord]
             distance_3d = np.sqrt(dx**2 + dy**2 + dz**2)
-            result.update({"dz": dz, "distance_3d": distance_3d})
+            result = {"distance_3d": distance_3d, "dx": dx, "dy": dy, "dz": dz}
             return result if return_components else distance_3d
         else:
+            # Horizontal distance
+            distance = np.sqrt(dx**2 + dy**2)
+            result = {"distance": distance, "dx": dx, "dy": dy}
             return result if return_components else distance
 
     elif method_distance == "latlon":
@@ -189,13 +192,26 @@ def calculate_distance(
             feature_2[hdim2_coord],
         )
 
+        RADIUS_EARTH = 6378.0
+        lat1_r, lat2_r = np.radians(feature_1[hdim1_coord]), np.radians(
+            feature_2[hdim1_coord]
+        )
+        lon1_r, lon2_r = np.radians(feature_1[hdim2_coord]), np.radians(
+            feature_2[hdim2_coord]
+        )
+        dlat = lat2_r - lat1_r
+        dlon = lon2_r - lon1_r
+        dx = RADIUS_EARTH * dlon * np.cos((lat1_r + lat2_r) / 2) * 1000
+        dy = RADIUS_EARTH * dlat * 1000
+
         if has_z:
             dz = feature_2[vertical_coord] - feature_1[vertical_coord]
             distance_3d = np.sqrt(distance**2 + dz**2)
-            result = {"distance": distance, "dz": dz, "distance_3d": distance_3d}
+            result = {"distance_3d": distance_3d, "dx": dx, "dy": dy, "dz": dz}
             return result if return_components else distance_3d
         else:
-            return {"distance": distance} if return_components else distance
+            result = {"distance": distance, "dx": dx, "dy": dy}
+            return result if return_components else distance
 
 
 def calculate_velocity_individual(
@@ -261,13 +277,32 @@ def calculate_velocity_individual(
     )
     diff_time = (feature_new["time"] - feature_old["time"]).total_seconds()
 
+    if not np.isfinite(diff_time) or diff_time == 0:
+        msg = (
+            f"Velocity calculation skipped: Δt={diff_time} s "
+            f"between feature_old (time={feature_old['time']}) and feature_new (time={feature_new['time']})."
+        )
+        warnings.warn(msg, RuntimeWarning)
+
+        if return_components and isinstance(distance_result, dict):
+            out = {}
+            if "distance_3d" in distance_result:
+                out["v_3d"] = np.nan
+            if "distance" in distance_result:
+                out["v"] = np.nan
+            for key in ("dx", "dy", "dz"):
+                if key in distance_result:
+                    out["v" + key[1:]] = np.nan
+            return out
+        return np.nan
+
     if return_components and isinstance(distance_result, dict):
         velocity = {}
         if "distance_3d" in distance_result:
             velocity["v_3d"] = distance_result["distance_3d"] / diff_time
         if "distance" in distance_result:
             velocity["v"] = distance_result["distance"] / diff_time
-        for key in ["dx", "dy", "dz", "dlat", "dlon"]:
+        for key in ["dx", "dy", "dz"]:
             if key in distance_result:
                 velocity["v" + key[1:]] = distance_result[key] / diff_time
         return velocity
