@@ -128,7 +128,7 @@ We have a {ref}`developer guide <Developer-Guide>` to help you through the proce
 
 <h3>Scientific Use</h3>
 
-_tobac_ has been used in over 30 peer-reviewed publications, a subset of which are listed on our {ref}`publications page <Refereed-Publications>`. 
+_tobac_ has been used in over 40 peer-reviewed publications, a subset of which are listed on our {ref}`publications page <Refereed-Publications>`. 
 
 :::
 :::{grid-item}
