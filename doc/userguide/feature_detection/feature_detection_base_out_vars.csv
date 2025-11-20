@@ -8,9 +8,3 @@ threshold_value,Maximum threshold value reached by the feature,Units of the inpu
 feature,Unique number of the feature; starts from 1 and increments by 1 to the number of features identified in all frames,n/a,int
 time,Time of the feature,Date and time,object/python datetime
 timestr,String representation of the feature time,YYYY-MM-DD HH:MM:SS,object/string
-y,Grid point y location of the feature (see hdim_1 and hdim_2). Note that this is not necessarily an integer value depending on your selection of position_threshold,Number of grid points,float
-x,Grid point x location of the feature (see also y),Number of grid points,float
-projection_y_coordinate,Y location of the feature in projection coordinates,Projection coordinates (usually m),float
-projection_x_coordinate,X location of the feature in projection coodinates,Projection coordinates (usually m),float
-lat,Latitude of the feature,Decimal degrees,float
-lon,Longitude of the feature,Decimal degrees,float
