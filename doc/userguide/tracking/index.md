@@ -1,11 +1,11 @@
 # Tracking
 
+Tracking allows you to stitch together the single, individual points of feature detection to a tracked dataset.
+
 ```{toctree}
-:hidden: true
 :maxdepth: 2
 
 tracking_output
 
 ```
 
-Tracking

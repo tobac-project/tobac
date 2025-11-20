@@ -6,13 +6,22 @@ The maintenance of *tobac*, including approving and merging pull requests, relea
 
 The Current Lead Developers are:
 
-* Kelcy Brunner (Texas Tech University, email)
-* Sean Freeman (The University of Alabama in Huntsville, sean.freeman@uah.edu)
-* Julia Kukulies (NSF NCAR, email)
-* Will Jones (Oxford University, email)
-* Fabian Senf (TROPOS, email)
+* Kelcy Brunner (Texas Tech University)
+* Sean Freeman (The University of Alabama in Huntsville)
+* Julia Kukulies (NSF NCAR)
+* Will Jones (Oxford University)
+* Fabian Senf (TROPOS)
 
 # *tobac* Steering Committee
 While the *tobac* lead developers are responsible for the day-to-day development and maintenance of *tobac*, the broader *tobac* steering committee is responsible for governing the longer-term roadmap for the package. 
 
 The current Steering Committee is:
+
+* Eric Bruning (Texas Tech University)
+* Kelcy Brunner (Texas Tech University)
+* Sean Freeman (The University of Alabama in Huntsville)
+* Julia Kukulies (NSF NCAR)
+* Will Jones (Oxford University)
+* Philip Stier (Oxford University)
+* Fabian Senf (TROPOS)
+* Sue van den Heever (Colorado State University)
