@@ -1,7 +1,8 @@
 # Feature Detection
 
+Feature Detection is always the first step in *tobac*. These pages serve to go more in depth on Feature Detection parameters and options and the implications of using each of them. 
+
 ```{toctree}
-:hidden: true
 :maxdepth: 2
 
 threshold_detection_parameters
@@ -13,4 +14,3 @@ notebooks/feature_detection_filtering
 
 ```
 
-Feature Detection
