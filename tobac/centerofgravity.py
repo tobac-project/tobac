@@ -1,5 +1,4 @@
-"""Identify center of gravity and mass for analysis.
-"""
+"""Identify center of gravity and mass for analysis."""
 
 import logging
 import warnings

@@ -1,3 +1,4 @@
+from cycler import V
 import pytest
 import tobac.testing
 import tobac.testing as tbtest
@@ -116,6 +117,10 @@ def test_get_indices_of_labels_from_reg_prop_dict():
         assert np.all(y_indices[index_key] >= 0) and np.all(
             y_indices[index_key] < ny_2D
         )
+
+    # Test error if empty dict is passed:
+    with pytest.raises(ValueError, match="No regions!"):
+        tb_utils.get_indices_of_labels_from_reg_prop_dict({})
 
 
 @pytest.mark.parametrize(

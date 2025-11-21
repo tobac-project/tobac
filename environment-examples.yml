@@ -9,7 +9,7 @@ dependencies:
   - pandas
   - matplotlib
   - iris
-  - xarray
+  - xarray<2024.10.0
   - cartopy
   - trackpy>=0.6.1
   - pytest
@@ -26,4 +26,8 @@ dependencies:
   - rioxarray
   - numba
   - dask
-  -
+  - ffmpeg
+  - intake==0.7.0
+  - intake-xarray==0.7.0
+  - healpix
+  - easygems

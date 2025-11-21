@@ -7,7 +7,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  build:
+  lint-workflow:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -15,21 +15,19 @@ jobs:
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v4
-
-      - name: Set up mamba
+      - name: Set up mamba environment
         uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: environment-ci.yml
           generate-run-shell: true
           cache-environment: true
           cache-downloads: true
-
       - name: Install tobac
-        run: |
+        run:
           pip install .
 
       - name: Store the PR branch
-        run: |
+        run:
           echo "SHA=$(git rev-parse "$GITHUB_SHA")" >> $GITHUB_OUTPUT
         id: git
 
@@ -39,14 +37,14 @@ jobs:
           ref: ${{ github.base_ref }}
           
       - name: Get pylint score of RC branch
-        run: |
+        run:
           pylint tobac --disable=C --exit-zero
         id: main_score
 
       - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
-          ref: "${{ steps.git.outputs.SHA }}"  
+          ref: ${{ steps.git.outputs.SHA }}
 
       - name: Get pylint score of PR branch
         run: |

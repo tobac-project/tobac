@@ -16,6 +16,11 @@ import xarray as xr
         ("iris", 3, 0, (1, 2)),
         ("iris", 0, 3, (1, 2)),
         ("iris", 1, 2, (0, 3)),
+        ("xarray", 0, 1, (2, 3)),
+        ("xarray", 0, 2, (1, 3)),
+        ("xarray", 3, 0, (1, 2)),
+        ("xarray", 0, 3, (1, 2)),
+        ("xarray", 1, 2, (0, 3)),
     ],
 )
 def test_find_hdim_axes_3D(dset_type, time_axis, vertical_axis, expected_out):
