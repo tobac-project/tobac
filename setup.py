@@ -61,11 +61,11 @@ CLASSIFIERS = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Atmospheric Science",
 ]
@@ -77,6 +77,7 @@ setup(
     description="Tracking and object-based analysis of clouds",
     url="http://github.com/tobac-project/tobac",
     classifiers=CLASSIFIERS,
+    python_requires=">=3.9,<3.14",
     author=[
         "Max Heikenfeld",
         "William Jones",
@@ -84,6 +85,7 @@ setup(
         "Sean Freeman",
         "Julia Kukulies",
         "Peter Marinescu",
+        "Sven Starzer",
     ],
     author_email=[
         "max.heikenfeld@physics.ox.ac.uk",
@@ -92,6 +94,7 @@ setup(
         "sean.freeman@uah.edu",
         "julia.kukulies@gu.se",
         "peter.marinescu@colostate.edu",
+        "sven.starzer@proton.me",
     ],
     license="BSD-3-Clause License",
     packages=get_packages(PACKAGE_NAME),
