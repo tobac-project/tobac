@@ -13,6 +13,7 @@ tobac is provided with a set of Jupyter notebooks that show examples of the appl
    On Feature Detection: Part 2 <./Basics/Methods-and-Parameters-for-Feature-Detection_Part_2.ipynb>
    On Segmentation <./Basics/Methods-and-Parameters-for-Segmentation.ipynb>
    On Linking <./Basics/Methods-and-Parameters-for-Linking.ipynb>
+   ICON Global MCS Tracking <examples/Example_ICON_MCS_tracking/Example_ICON_MCS_tracking>
 
 
 .. nbgallery::
