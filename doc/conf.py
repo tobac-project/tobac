@@ -30,7 +30,7 @@ extensions = [
 html_theme = "pydata_sphinx_theme"
 
 html_static_path = ["_static"]
-html_css_files = ["custom.css", "theme_overrides.css"]
+html_css_files = ["custom.css", "theme_overrides.css", "api_custom.css"]
 
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 source_suffix = {".rst": "restructuredtext", ".md": "markdown"}
