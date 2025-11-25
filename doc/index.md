@@ -24,6 +24,21 @@ h3:not(#hero h3) {
   font-weight: bold;
   text-align: center;
 }
+
+/* Make images fill the full width of grid cards */
+.example-gallery img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
+/* Remove default card padding so images touch edges */
+.example-gallery .sd-card-body {
+  padding: 0;
+}
+
+
 </style>
 
 (homepage)=
@@ -51,7 +66,7 @@ atmospheric phenomena, enabling object-based analysis in model, observational, a
 <div id="hero-right">  <!-- Start Hero Right -->
 
 ::::::{grid} 2
-:gutter: 3
+:gutter: 1
 
 :::::{grid-item-card}
 :link: examples/Example_vorticity_tracking_model/Example_vorticity_tracking_model.html
