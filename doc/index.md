@@ -38,6 +38,44 @@ h3:not(#hero h3) {
   padding: 0;
 }
 
+/* Floating scroll indicator */
+.scroll-indicator {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: bounce 2s infinite;
+  z-index: 10;
+}
+
+.scroll-indicator a {
+  color: inherit;
+  opacity: 0.6;
+  transition: opacity 0.3s;
+}
+
+.scroll-indicator a:hover {
+  opacity: 1;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateX(-50%) translateY(0);
+  }
+  40% {
+    transform: translateX(-50%) translateY(-10px);
+  }
+  60% {
+    transform: translateX(-50%) translateY(-5px);
+  }
+}
+
+/* Make hero position relative so the arrow positions correctly */
+#hero {
+  position: relative;
+}
+
+
 
 </style>
 
@@ -125,6 +163,15 @@ Updraft Tracking
 <!-- grid ended above, do not put anything on the right of markdown closings -->
 
 </div>  <!-- End Hero Right -->
+<div class="scroll-indicator">
+  <a href="#tobac-use-and-development" aria-label="Scroll to content">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="7 13 12 18 17 13"></polyline>
+      <polyline points="7 6 12 11 17 6"></polyline>
+    </svg>
+  </a>
+</div>
+
 </div>  <!-- End Hero -->
 
 
