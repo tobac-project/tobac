@@ -68,8 +68,8 @@ templates_path = ["_templates"]
 
 html_theme_options = {
     "logo": {
-        "image_light": "images/tobac-logo-colors.png",
-        "image_dark": "images/tobac-logo-colors.png",
+        "image_light": "images/tobac-logo-colors-notext.png",
+        "image_dark": "images/tobac-logo-colors-notext.png",
     },
     # https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/header-links.html#fontawesome-icons
     "icon_links": [
