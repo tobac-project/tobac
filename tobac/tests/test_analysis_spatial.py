@@ -813,7 +813,7 @@ def test_calculate_distance_latlon_3d():
 
 def test_calculate_velocity_individual_xy_3d():
     """
-    3D velocity for xy with vertical coord and use_3d=True
+    3D velocity for xy with vertical coord and use_3d=True/False
     """
     test_features = pd.DataFrame(
         {
@@ -821,7 +821,7 @@ def test_calculate_velocity_individual_xy_3d():
             "frame": [0, 1],
             "time": [datetime(2000, 1, 1, 0, 0), datetime(2000, 1, 1, 0, 10)],
             "projection_x_coordinate": [0, 6000],
-            "projection_y_coordinate": [0, 0],
+            "projection_y_coordinate": [0, 300],
             "height": [0, 800],
         }
     )
@@ -832,7 +832,7 @@ def test_calculate_velocity_individual_xy_3d():
         vertical_coord="height",
         use_3d=True,
     )
-    assert v3d == pytest.approx(np.sqrt(6000**2 + 800**2) / 600, rel=1e-9)
+    assert v3d == pytest.approx(np.sqrt(6000**2 + 300**2 + 800**2) / 600, rel=1e-9)
 
     res = calculate_velocity_individual(
         test_features.iloc[0],
@@ -843,7 +843,20 @@ def test_calculate_velocity_individual_xy_3d():
         return_components=True,
     )
     assert set(res.keys()) >= {"v_3d", "vx", "vy", "vz"}
-    assert res["v_3d"] == pytest.approx(np.sqrt(6000**2 + 800**2) / 600, rel=1e-9)
+    assert res["v_3d"] == pytest.approx(
+        np.sqrt(6000**2 + 300**2 + 800**2) / 600, rel=1e-9
+    )
+
+    res2d = calculate_velocity_individual(
+        test_features.iloc[0],
+        test_features.iloc[1],
+        method_distance="xy",
+        vertical_coord="height",
+        use_3d=False,
+        return_components=True,
+    )
+    assert set(res2d.keys()) >= {"v", "vx", "vy"}
+    assert res2d["v"] == pytest.approx(np.sqrt(6000**2 + 300**2) / 600, rel=1e-9)
 
 
 def test_calculate_velocity_individual_latlon_3d():
@@ -909,6 +922,53 @@ def test_calculate_velocity_3d_track():
         np.sqrt(9000**2 + 1200**2) / 600, rel=1e-9
     )
 
+    out_w_components = calculate_velocity(
+        test_features,
+        method_distance="xy",
+        use_3d=True,
+        return_components=True,
+    )
+
+    dt = 600.0
+    # Expected values for cell 1
+    dx1 = 6000.0
+    dy1 = 0.0
+    dz1 = 800.0
+    v1_3d = np.sqrt(dx1**2 + dy1**2 + dz1**2) / dt
+    vx1 = dx1 / dt
+    vy1 = dy1 / dt
+    vz1 = dz1 / dt
+
+    # Expected values for cell 2
+    dx2 = 0.0
+    dy2 = 9000.0
+    dz2 = 1200.0
+    v2_3d = np.sqrt(dx2**2 + dy2**2 + dz2**2) / dt
+    vx2 = dx2 / dt
+    vy2 = dy2 / dt
+    vz2 = dz2 / dt
+
+    for col in ("v_3d", "vx", "vy", "vz"):
+        assert col in out_w_components.columns
+
+    # Cell 1:
+    assert out_w_components.at[0, "v_3d"] == pytest.approx(v1_3d, rel=1e-12)
+    assert out_w_components.at[0, "vx"] == pytest.approx(vx1, rel=1e-12)
+    assert out_w_components.at[0, "vy"] == pytest.approx(vy1, rel=1e-12)
+    assert out_w_components.at[0, "vz"] == pytest.approx(vz1, rel=1e-12)
+
+    # Cell 2:
+    assert out_w_components.at[1, "v_3d"] == pytest.approx(v2_3d, rel=1e-12)
+    assert out_w_components.at[1, "vx"] == pytest.approx(vx2, rel=1e-12)
+    assert out_w_components.at[1, "vy"] == pytest.approx(vy2, rel=1e-12)
+    assert out_w_components.at[1, "vz"] == pytest.approx(vz2, rel=1e-12)
+
+    for idx in (2, 3):
+        assert np.isnan(out_w_components.at[idx, "v_3d"])
+        assert np.isnan(out_w_components.at[idx, "vx"])
+        assert np.isnan(out_w_components.at[idx, "vy"])
+        assert np.isnan(out_w_components.at[idx, "vz"])
+
 
 def test_latlon_3d_no_degree_components():
     """
@@ -941,7 +1001,6 @@ def test_latlon_3d_no_degree_components():
 def test_latlon_3d_dt_zero_returns_nan_scalar():
     """
     Δt = 0 should return NaN (not crash) for scalar output.
-    NOTE: requires a dt==0 guard in calculate_velocity_individual.
     """
     t = datetime(2000, 1, 1, 0, 0, 0)
     test_features = pd.DataFrame(
@@ -969,7 +1028,6 @@ def test_latlon_3d_dt_zero_returns_nan_scalar():
 def test_latlon_3d_dt_zero_returns_nan_components():
     """
     Δt = 0 should return NaN values in the components dict (not raise).
-    NOTE: requires a dt==0 guard in calculate_velocity_individual.
     """
     t = datetime(2000, 1, 1, 0, 0, 0)
     test_features = pd.DataFrame(
@@ -995,3 +1053,13 @@ def test_latlon_3d_dt_zero_returns_nan_components():
     assert "v_3d" in res and "vx" in res and "vy" in res and "vz" in res
     assert np.isnan(res["v_3d"])
     assert "v" not in res
+
+    res_2d = calculate_velocity_individual(
+        test_features.iloc[0],
+        test_features.iloc[1],
+        method_distance="latlon",
+        vertical_coord="height",
+        use_3d=False,
+        return_components=True,
+    )
+    assert np.isnan(res_2d["v"])
