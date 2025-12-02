@@ -188,4 +188,5 @@ nbsphinx_thumbnails = {
     "examples/Example_Updraft_Tracking/Example_Updraft_Tracking": "_static/thumbnails/Example_Updraft_Tracking_Thumbnail.png",
     "examples/Example_vorticity_tracking_model/Example_vorticity_tracking_model": "_static/thumbnails/Example_vorticity_tracking_model_Thumbnail.png",
     "examples/Example_ICON_MCS_tracking/Example_ICON_MCS_tracking": "_static/thumbnails/Example_ICON_MCS_tracking_Thumbnail.png",
+    "examples/big_data_processing/parallel_processing_tobac": "_static/thumbnails/big_data_processing_parallel_processing_tobac.svg",
 }
