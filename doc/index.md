@@ -96,7 +96,7 @@ atmospheric phenomena, enabling object-based analysis in model, observational, a
   <a href="./examples/index.html" class="homepage-button secondary-button">Examples</a>
   </div>
   <div class="homepage-button-container-row">
-  <a href="./tobac.html" class="homepage-button-link">See API Reference →</a>
+  <a href="./api/" class="homepage-button-link">See API Reference →</a>
   </div>
 </div>
 </div>  <!-- End Hero Left -->
