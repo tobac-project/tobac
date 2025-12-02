@@ -34,8 +34,10 @@ website out of the documentation material present in ``tobac``.
 
    .. code:: bash
 
+      /tmp/website-testing> cd tobac
       /tmp/website-testing/tobac> git fetch --all
-      /tmp/website-testing/tobac> git checkout -t origin/<BRANCH> 
+      /tmp/website-testing/tobac> git checkout -t origin/<BRANCH>
+      /tmp/website-testing/tobac> cd .. 
 
 -  **Python environment**
 
@@ -55,13 +57,10 @@ website out of the documentation material present in ``tobac``.
 
          # activate the new env and upgrade ``pip`` 
          /tmp/website-testing> source .python3-venv/bin/activate 
-         /tmp/website-testing> pip install –upgrade pip
+         /tmp/website-testing> pip install --upgrade pip
 
          # now everything is installed into the local python env!
          /tmp/website-testing> pip install -r tobac/doc/requirements.txt
-
-         # and also install RTD scheme 
-         /tmp/website-testing> pip install sphinx_rtd_theme
 
       `pip`-based installation takes a bit of time, but is much faster than `conda`.
    
