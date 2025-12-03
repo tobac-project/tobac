@@ -6,6 +6,7 @@
 
 installguide
 data_input
+data_output
 feature_detection_overview
 tracking_basics
 segmentation
@@ -16,7 +17,7 @@ get_help
 
 Welcome to *tobac*! We hope that you will find this tracking library to be useful in your research or operational work. To help you get started, we have put together this quickstart guide with some of the basic information you need to know to get started tracking your data with *tobac*.
 
-The easiest way to get started is by perusing our [Example Gallery](/examples/), which contains a number of worked examples using different kinds of input data from start to finish. 
+The easiest way to get started is by perusing our [Example Gallery](/examples/index), which contains a number of worked examples using different kinds of input data from start to finish. 
 
 ## What is *tobac*?
 
@@ -26,7 +27,7 @@ The easiest way to get started is by perusing our [Example Gallery](/examples/),
 
 ## What has *tobac* been used to track?
 
-*tobac* has been used in [several dozen peer-reviewed manuscripts](../userguide/publications), identifying and tracking fields as diverse as dust in cloud model output, clouds from geostationary IR, and vorticity in large-scale model output. A subset of these differnet use cases can be seen in the [example gallery](../examples/) The key requirement for identification of a phenomena is that the variable that you are tracking on is continuously increasing (e.g., vertical velocity) or decreasing (e.g., brightness temperature), and that the variable be able to be represented on a regular or semi-regular grid. [^comingsoonugrid]
+*tobac* has been used in [several dozen peer-reviewed manuscripts](../userguide/publications), identifying and tracking fields as diverse as dust in cloud model output, clouds from geostationary IR, and vorticity in large-scale model output. A subset of these differnet use cases can be seen in the [example gallery](../examples/index) The key requirement for identification of a phenomena is that the variable that you are tracking on is continuously increasing (e.g., vertical velocity) or decreasing (e.g., brightness temperature), and that the variable be able to be represented on a regular or semi-regular grid. [^comingsoonugrid]
 
 
 ## *tobac* Core Concepts
