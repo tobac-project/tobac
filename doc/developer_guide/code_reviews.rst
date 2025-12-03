@@ -3,7 +3,7 @@
 Code reviews
 ------------------
 
-Before anything is merged into the release branch (:code:`RC_*`), we require that two reviewers accept the code changes of a pull request. 
+Before anything is merged into the release branch (:code:`RC_*`), we require that one reviewer accepts the code changes of a pull request.
 
 ============================
 How to do a code review 
