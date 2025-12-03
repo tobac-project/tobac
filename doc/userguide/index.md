@@ -18,7 +18,6 @@ tracking/index
 bulk_statistics/index
 big_datasets
 analysis
-faqs
 publications
 governance
 
