@@ -1,4 +1,4 @@
-#Features without segmented areas
+# Features without segmented areas
 
 
 Not all detected features have a segmented area associated with them. Here, we show two cases in which a detected feature might
