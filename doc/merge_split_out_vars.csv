@@ -1,9 +1,0 @@
-﻿Variable Name,Description,Units,Type
-feature,Unique number of the feature; starts from 1 and increments by 1 to the number of features identified in all frames,n/a,int64
-cell,Tracked cell number; generally starts from 1. Untracked cell value is -1.,n/a,int64
-track,Unique number of the track; starts from 0 and increments by 1 to the number of tracks identified. Untracked cells and features have a track id of -1.,n/a,int64
-cell_parent_track_id,"The associated track id for each cell. All cells that have merged or split will have the same parent track id. If a cell never merges/splits, only one cell will have a particular track id.",n/a,int64
-feature_parent_cell_id,The associated parent cell id for each feature. All feature in a given cell will have the same cell id.,n/a,int64
-feature_parent_track_id,The associated parent track id for each feature. This is not the same as the cell id number.,n/a,int64
-track_child_cell_count,The number of features belonging to all child cells of a given track id.,n/a,int64
-cell_child_feature_count,The number of features for each cell.,n/a,int64

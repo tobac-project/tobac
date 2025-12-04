@@ -12,6 +12,7 @@ authors = [
       { name="Sean Freeman", email="sean.freeman@uah.edu" },
       { name="Julia Kukulies", email="kukulies@ucar.edu" },
       { name="Kelcy Brunner", email="Kelcy.Brunner@ttu.edu" },
+      { name="Sven Starzer", email="sven.starzer@proton.me"}
 ]
 description = "A package for identifying and tracking atmospheric phenomena"
 readme = "README.md"

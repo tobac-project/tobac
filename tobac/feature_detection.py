@@ -1,15 +1,15 @@
-"""Provide feature detection.
+"""First step toward working with *tobac*. Detects features from input 2D or 3D data.
 
-This module can work with any two-dimensional field.
+This module can work with any two-dimensional or three-dimensional field.
 To identify the features, contiguous regions above or
 below a threshold are determined and labelled individually.
 To describe the specific location of the feature at a
 specific point in time, different spatial properties
-are used to describe the identified region. [2]_
+are used to describe the identified region. [1]_
 
 References
 ----------
-.. Heikenfeld, M., Marinescu, P. J., Christensen, M.,
+.. [1] Heikenfeld, M., Marinescu, P. J., Christensen, M.,
    Watson-Parris, D., Senf, F., van den Heever, S. C.
    & Stier, P. (2019). tobac 1.2: towards a flexible
    framework for tracking and analysis of clouds in
@@ -35,8 +35,8 @@ from tobac.utils import internal as internal_utils
 from tobac.utils import decorators
 
 from tobac.utils import periodic_boundaries as pbc_utils
-from tobac.utils.general import spectral_filtering
-from tobac.utils import get_statistics
+import tobac.utils
+import tobac.utils.general
 import warnings
 
 # from typing_extensions import Literal
@@ -64,7 +64,9 @@ def feature_position(
 ) -> tuple[float]:
     """Determine feature position with regard to the horizontal
     dimensions in pixels from the identified region above
-    threshold values
+    threshold values.
+
+    :hidden:
 
     Parameters
     ----------
@@ -99,8 +101,7 @@ def feature_position(
     threshold_i : float
         The threshold value that we are testing against
 
-    position_threshold : {'center', 'extreme', 'weighted_diff', '
-                          weighted abs'}
+    position_threshold : {'center', 'extreme', 'weighted_diff', 'weighted abs'}
         How to select the single point position from our data.
         'center' picks the geometrical centre of the region,
         and is typically not recommended. 'extreme' picks the
@@ -153,6 +154,8 @@ def feature_position(
         lies exactly between hdim1_max and hdim1_min, the output could be
         between hdim1_max and hdim1_max+1. While a value between hdim1_min-1
         and hdim1_min would also be valid, we choose to overflow on the max side of things.
+    Notes
+    -----
     """
 
     # First, if necessary, run PBC processing.
@@ -260,6 +263,8 @@ def test_overlap(
 ) -> bool:
     """Test for overlap between two regions
 
+    :hidden:
+
     Parameters
     ----------
     region_1 : list
@@ -291,6 +296,8 @@ def remove_parents(
 
     Remove features where its regions surround newly
     detected feature regions.
+
+    :hidden:
 
     Parameters
     ----------
@@ -405,6 +412,8 @@ def feature_detection_threshold(
     vertical_axis: int = 0,
 ) -> tuple[pd.DataFrame, dict]:
     """Find features based on individual threshold value.
+
+    :hidden:
 
     Parameters
     ----------
@@ -925,6 +934,8 @@ def feature_detection_multithreshold_timestep(
     thresholds. Smoothing the input data with the Gaussian filter makes
     output less sensitive to noisiness of input data.
 
+    :hidden:
+
     Parameters
     ----------
 
@@ -1027,7 +1038,7 @@ def feature_detection_multithreshold_timestep(
 
     # spectrally filter the input data, if desired
     if wavelength_filtering is not None:
-        track_data = spectral_filtering(
+        track_data = tobac.utils.general.spectral_filtering(
             dxy, track_data, wavelength_filtering[0], wavelength_filtering[1]
         )
 
@@ -1144,7 +1155,7 @@ def feature_detection_multithreshold_timestep(
         # select which data to use according to statistics_unsmoothed option
         stats_data = data_i.values if statistics_unsmoothed else track_data
 
-        features_thresholds = get_statistics(
+        features_thresholds = tobac.utils.get_statistics(
             features_thresholds,
             labels,
             stats_data,
@@ -1187,6 +1198,7 @@ def feature_detection_multithreshold(
     """Perform feature detection based on contiguous regions.
 
     The regions are above/below a threshold.
+
 
     Parameters
     ----------
@@ -1489,6 +1501,9 @@ def filter_min_distance(
     """Function to remove features that are too close together.
     If two features are closer than `min_distance`, it keeps the
     larger feature.
+
+    :hidden:
+
 
     Parameters
     ----------

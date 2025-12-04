@@ -1,0 +1,2 @@
+Variable Name,Description,Units,Type
+ncells,Total number of grid points that belong to the segmented area associated with feature. ,n/a,int64
