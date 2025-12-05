@@ -1049,7 +1049,7 @@ def feature_detection_multithreshold_timestep(
 
     # spectrally filter the input data, if desired
     if wavelength_filtering is not None:
-        track_data = tobac.utils.general.spectral_filtering(
+        track_data = spectral_filtering(
             dxy, track_data, wavelength_filtering[0], wavelength_filtering[1]
         )
 
@@ -1167,7 +1167,7 @@ def feature_detection_multithreshold_timestep(
         # select which data to use according to statistics_unsmoothed option
         stats_data = data_i.values if statistics_unsmoothed else track_data
 
-        features_thresholds = tobac.utils.get_statistics(
+        features_thresholds = get_statistics(
             features_thresholds,
             labels,
             stats_data,

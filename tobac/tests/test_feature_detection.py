@@ -98,6 +98,25 @@ def test_feature_detection_multithreshold_timestep(
         labels.attrs["threshold"] == test_threshs
     ), f"Expected threshold to be {test_threshs}, but got {labels.attrs['threshold']}"
 
+    # All non-zero labels must match the feature IDs in the returned dataframe
+    nonzero_labels = labels.values[labels.values > 0]
+    unique_label_value = np.unique(nonzero_labels)[0]
+    feature_label_value = features["idx"].iloc[0]
+
+    assert (
+        unique_label_value == feature_label_value
+    ), f"Label field contains {unique_label_value}, but features dataframe idx is {feature_label_value}"
+
+    # All labeled points are <= the threshold value in the input field
+    mask = labels.values > 0
+    labeled_values = test_data_xr.values[mask]
+    feature_threshold = features["threshold_value"].iloc[0]
+    print(labeled_values)
+    assert np.all(labeled_values >= feature_threshold), (
+        f"Found labeled pixels below threshold {feature_threshold}. "
+        f"Minimum labeled value is {labeled_values.min()}"
+    )
+
 
 @pytest.mark.parametrize(
     "position_threshold", [("center"), ("extreme"), ("weighted_diff"), ("weighted_abs")]
