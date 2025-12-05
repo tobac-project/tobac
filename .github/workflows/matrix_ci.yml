@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
         os: [macos, ubuntu, windows]
 
     steps:
@@ -39,7 +39,7 @@ jobs:
 
       - name: Fetch all history for all tags and branches
         run: |
-           git fetch --prune --unshallow
+          git fetch --prune --unshallow
 
       - name: Install tobac
         shell: bash -l {0}
@@ -50,4 +50,4 @@ jobs:
         id: run_tests
         shell: bash -l {0}
         run: |
-          python -m pytest -v 
+          python -m pytest -v

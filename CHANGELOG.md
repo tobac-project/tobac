@@ -1,5 +1,12 @@
 ### Tobac Changelog
 
+_**Version 1.6.1:**_
+
+**Bug fixes**
+
+- An bug in the `field_and_features_over_time` generator, used to loop through mask `DataArrays` and feature `Dataframes` simultaneously which caused an error in the dataframe had no 0 index value has been fixed [#506](https://github.com/tobac-project/tobac/pull/506)
+- Interpolation of non-numeric coordinates (such as datetime) now works, and chooses the nearest element [#509](https://github.com/tobac-project/tobac/pull/509)
+
 _**Version 1.6.0:**_
 
 **Enhancements for Users**
