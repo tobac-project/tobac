@@ -773,6 +773,10 @@ def test_calculate_distance_xy_3d():
     assert set(res.keys()) == {"distance_3d", "dx", "dy", "dz"}
     assert res["distance_3d"] == pytest.approx(np.sqrt(1000**2 + 600**2), rel=1e-9)
 
+    assert res["dx"] == pytest.approx(1000, rel=1e-12)
+    assert res["dy"] == pytest.approx(0, rel=1e-12)
+    assert res["dz"] == pytest.approx(600, rel=1e-12)
+
 
 def test_calculate_distance_latlon_3d():
     """
@@ -808,7 +812,16 @@ def test_calculate_distance_latlon_3d():
         use_3d=True,
         return_components=True,
     )
-    assert "distance_3d" in res and "dx" in res and "dy" in res and "dz" in res
+
+    assert set(res.keys()) == {"distance_3d", "dx", "dy", "dz"}
+
+    assert res["distance_3d"] == pytest.approx(d3d, rel=1e-9)
+    horizontal = np.hypot(res["dx"], res["dy"])
+    assert horizontal == pytest.approx(d2d, rel=1e-9)
+
+    assert res["dx"] == pytest.approx(d2d, rel=1e-9)
+    assert res["dy"] == pytest.approx(0.0, abs=1e-6)
+    assert res["dz"] == pytest.approx(1000, rel=1e-12)
 
 
 def test_calculate_velocity_individual_xy_3d():
@@ -847,6 +860,13 @@ def test_calculate_velocity_individual_xy_3d():
         np.sqrt(6000**2 + 300**2 + 800**2) / 600, rel=1e-9
     )
 
+    assert res["vx"] == pytest.approx(10.0, rel=1e-12)
+    assert res["vy"] == pytest.approx(0.5, rel=1e-12)
+    assert res["vz"] == pytest.approx(800 / 600, rel=1e-12)
+
+    v3d_from_components = np.sqrt(res["vx"] ** 2 + res["vy"] ** 2 + res["vz"] ** 2)
+    assert res["v_3d"] == pytest.approx(v3d_from_components, rel=1e-12)
+
     res2d = calculate_velocity_individual(
         test_features.iloc[0],
         test_features.iloc[1],
@@ -857,6 +877,12 @@ def test_calculate_velocity_individual_xy_3d():
     )
     assert set(res2d.keys()) >= {"v", "vx", "vy"}
     assert res2d["v"] == pytest.approx(np.sqrt(6000**2 + 300**2) / 600, rel=1e-9)
+
+    assert res2d["vx"] == pytest.approx(10.0, rel=1e-12)
+    assert res2d["vy"] == pytest.approx(0.5, rel=1e-12)
+
+    v2d_from_components = np.sqrt(res2d["vx"] ** 2 + res2d["vy"] ** 2)
+    assert res2d["v"] == pytest.approx(v2d_from_components, rel=1e-12)
 
 
 def test_calculate_velocity_individual_latlon_3d():
@@ -874,7 +900,10 @@ def test_calculate_velocity_individual_latlon_3d():
         }
     )
     d2d = calculate_distance(
-        test_features.iloc[0], test_features.iloc[1], method_distance="latlon"
+        test_features.iloc[0],
+        test_features.iloc[1],
+        method_distance="latlon",
+        return_components=True,
     )
     v3d = calculate_velocity_individual(
         test_features.iloc[0],
@@ -883,7 +912,7 @@ def test_calculate_velocity_individual_latlon_3d():
         vertical_coord="height",
         use_3d=True,
     )
-    assert v3d == pytest.approx(np.sqrt(d2d**2 + 1000**2) / 600, rel=1e-9)
+    assert v3d == pytest.approx(np.sqrt(d2d["distance"] ** 2 + 1000**2) / 600, rel=1e-9)
 
     res = calculate_velocity_individual(
         test_features.iloc[0],
@@ -893,7 +922,22 @@ def test_calculate_velocity_individual_latlon_3d():
         use_3d=True,
         return_components=True,
     )
-    assert "v_3d" in res and "vx" in res and "vy" in res and "vz" in res
+    assert set(res.keys()) >= {"v_3d", "vx", "vy", "vz"}
+
+    dt = (test_features.iloc[1]["time"] - test_features.iloc[0]["time"]).total_seconds()
+    dx = d2d["dx"]
+    assert res["vx"] == pytest.approx(dx / dt, rel=1e-9)
+
+    assert res["vy"] == pytest.approx(0.0, abs=1e-6)
+    assert res["vz"] == pytest.approx(1000 / 600, rel=1e-12)
+
+    assert res["v_3d"] == pytest.approx(v3d, rel=1e-9)
+
+    v_horizontal = np.hypot(res["vx"], res["vy"])
+    assert v_horizontal == pytest.approx(d2d["distance"] / 600, rel=1e-9)
+
+    v3d_from_components = np.sqrt(res["vx"] ** 2 + res["vy"] ** 2 + res["vz"] ** 2)
+    assert res["v_3d"] == pytest.approx(v3d_from_components, rel=1e-12)
 
 
 def test_calculate_velocity_3d_track():
