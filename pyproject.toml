@@ -44,3 +44,8 @@ classifiers = [
 Homepage = "http://github.com/tobac-project/tobac"
 Documentation = "http://tobac.io"
 Issues = "http://github.com/tobac-project/tobac/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["tobac*"]
+exclude = ["tmp*"]
