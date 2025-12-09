@@ -43,17 +43,26 @@ def meters_to_latlon(base_lat, base_lon, dx_meters, dy_meters):
 
 
 @pytest.mark.parametrize(
-    "base_latitude, base_longitude, dxy, dt, d_max",
+    "base_latitude, base_longitude, dxy, dt, d_max, spd_h1, spd_h2",
     [
-        [40, 40, 1000, 60, 2000],
-        [-40, 40, 1000, 60, 2000],
-        [-40, 320, 1000, 60, 10000],
-        [-40, -150, 1000, 60, 10000],
-        [40, -90, 2000, 60, 2000],
+        [40, 40, 1000, 60, 2000, 1, 1],
+        [-40, 40, 1000, 60, 2000, 1, 1],
+        [-40, 320, 1000, 60, 10000, 1, 1],
+        [-40, -150, 1000, 60, 10000, 1, 1],
+        [40, -90, 2000, 60, 2000, 1, 1],
+        [40, -90, 2000, 60, 2000, 5, 5],
+        [40, -90, 2000, 60, 2000, 10, 10],
+        [40, -90, 2000, 60, 2000, 20, 20],
     ],
 )
 def test_lat_lon_tracking_vs_base_simple(
-    base_latitude: float, base_longitude: float, dxy: float, dt: float, d_max: float
+    base_latitude: float,
+    base_longitude: float,
+    dxy: float,
+    dt: float,
+    d_max: float,
+    spd_h1: float,
+    spd_h2: float,
 ):
     """Tests the lat/lon tracking functions"""
 

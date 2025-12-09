@@ -687,7 +687,7 @@ def linking_trackpy_latlon(
 
     # calculate search range based on timestep and grid spacing
     if v_max is not None:
-        search_range = dt * v_max / planet_radius
+        search_range = (dt * v_max) / planet_radius
 
     # using d_max
     else:
@@ -743,6 +743,7 @@ def linking_trackpy_latlon(
             features_linking,
             search_range=search_range,
             memory=memory,
+            pos_columns=["y", "x"],
             t_column="frame",
             adaptive_step=adaptive_step,
             adaptive_stop=adaptive_stop,
@@ -762,6 +763,7 @@ def linking_trackpy_latlon(
             features_linking_list,
             search_range=search_range,
             memory=memory,
+            pos_columns=["y", "x"],
             # pos_columns=["hdim_1", "hdim_2"], # not working atm
             t_column="frame",
             neighbor_strategy=neighbor_strategy,
