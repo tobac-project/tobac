@@ -28,10 +28,13 @@ import math
 from . import utils as tb_utils
 from .utils import periodic_boundaries as pbc_utils
 from .utils import internal as internal_utils
+from .utils.internal import coordinates as coord_utils
 
 from packaging import version as pkgvsn
 import trackpy as tp
 import copy
+
+import sklearn
 
 
 def linking_trackpy(
@@ -488,6 +491,378 @@ def linking_trackpy(
     # add coordinate to raw features identified:
     logging.debug("start adding coordinates to detected features")
     logging.debug("feature linking completed")
+
+    return trajectories_final
+
+
+def linking_trackpy_latlon(
+    features: pd.DataFrame,
+    dt: float,
+    v_max: float = None,
+    d_max: float = None,
+    latitude_name: str = "",
+    longitude_name: str = "",
+    subnetwork_size=None,
+    memory=0,
+    stubs=1,
+    time_cell_min=None,
+    order=1,
+    extrapolate=0,
+    method_linking="random",
+    adaptive_step=None,
+    adaptive_stop=None,
+    cell_number_start=1,
+    cell_number_unassigned=-1,
+    planet_radius: float = 6378137.0,
+):
+    """Perform Linking of features in trajectories using latitude/longitue values.
+
+    Similar to linking_trackpy, but for 2D latitude/longitude values.
+    Uses the haversine formula to calculate the distance between all
+    points. This function is significantly faster than linking_trackpy for
+    periodic boundary condition global data.
+
+    The linking determines which of the features detected in a specific
+    timestep is most likely identical to an existing feature in the
+    previous timestep[3]_. For each existing feature, the movement within
+    a time step is extrapolated based on the velocities in a number
+    previous time steps.
+
+    The algorithm then breaks the search process
+    down to a few candidate features by restricting the search to a
+    circular search region centered around the predicted position of
+    the feature in the next time step. For newly initialized trajectories,
+    where no velocity from previous time steps is available, the
+    algorithm resorts to the average velocity of the nearest tracked
+    objects.
+
+    v_max or d_min are given as quantities in terms of meters.
+
+    This function currently only supports 2D feature detection output.
+
+    The original function and algorithm is described in [1]_[2]_[3]_[4]_.
+
+    Parameters
+    ----------
+    features : pandas.DataFrame
+        Detected features to be linked.
+
+    dt : float
+        Time resolution of tracked features in seconds.
+
+    d_max : float, optional
+        Maximum search range in meters. Only one of `d_max` or `v_max` can be set.
+        Default is None.
+
+    v_max : float, optional
+        Speed at which features are allowed to move in meters per second.
+        Only one of `d_max` or `v_max` can be set.
+        Default is None.
+
+    subnetwork_size : int, optional
+        Maximum size of subnetwork for linking. This parameter should be
+        adjusted when using adaptive search. Usually a lower value is desired
+        in that case. For a more in depth explanation have look
+        `here <https://soft-matter.github.io/trackpy/v0.5.0/tutorial/adaptive-search.html>`_
+        If None, 30 is used for regular search and 15 for adaptive search.
+        Default is None.
+
+    memory : int, optional
+        Number of output timesteps features allowed to vanish for to
+        be still considered tracked. Default is 0.
+        .. warning :: This parameter should be used with caution, as it
+                     can lead to erroneous trajectory linking,
+                     especially for data with low time resolution.
+
+    time_cell_min : float, optional
+        Minimum length in time that a cell must be tracked for to be considered a
+        valid cell in seconds.
+        Default is None.
+
+    order : int, optional
+        Order of polynomial used to extrapolate trajectory into gaps and
+        ond start and end point.
+        Default is 1.
+
+    extrapolate : int, optional
+        Number or timesteps to extrapolate trajectories. Currently unused.
+        Default is 0.
+
+    method_linking : {'random', 'predict'}, optional
+        Flag choosing method used for trajectory linking.
+        Default is 'predict'. 'random' has no prediction built-in, and simply
+        picks the closest at the next timestep.
+
+    adaptive_step : float, optional
+        Reduce search range by multiplying it by this factor. Needs to be
+        used in combination with adaptive_stop. Default is None.
+
+    adaptive_stop : float, optional
+        If not None, when encountering an oversize subnet, retry by progressively
+        reducing search_range by multiplying with adaptive_step until the subnet
+        is solvable. If search_range becomes <= adaptive_stop, give up and raise
+        a SubnetOversizeException. Needs to be used in combination with
+        adaptive_step. Default is None.
+
+    cell_number_start : int, optional
+        Cell number for first tracked cell.
+        Default is 1
+
+    cell_number_unassigned: int
+        Number to set the unassigned/non-tracked cells to. Note that if you set this
+        to `np.nan`, the data type of 'cell' will change to float.
+        Default is -1
+    planet_radius: float
+        Radius of the planet of interest in meters. By default, an average earth
+        radius value.
+
+
+    Returns
+    -------
+    trajectories_final : pandas.DataFrame
+        Dataframe of the linked features, containing the variable 'cell',
+        with integers indicating the affiliation of a feature to a specific
+        track, and the variable 'time_cell' with the time the cell has
+        already existed.
+
+    Raises
+    ------
+    ValueError
+        If method_linking is neither 'random' nor 'predict' or if the input
+        is 3D (determined by the presence of the 'vdim' column)
+
+    References
+    ----------
+    .. [1] Heikenfeld, M., Marinescu, P. J., Christensen, M.,
+       Watson-Parris, D., Senf, F., van den Heever, S. C.
+       & Stier, P. (2019). tobac 1.2: towards a flexible
+       framework for tracking and analysis of clouds in
+       diverse datasets. Geoscientific Model Development,
+       12(11), 4551-4570.
+    .. [2] Sokolowsky, G.A., S.W. Freeman, W. Jones, J. Kukulies,
+        F. Senf, P.J. Marinescu, M. Heikenfeld, K. Brunner, E. Bruning,
+        S. Collis, R. Jackson, G.R. Leung, N. Pfeifer, B. Raut, S. Saleeby,
+        P. Stier, & S.C. van den Heever: 2024. tobac v1.5: Introducing fast
+        3D tracking, splits and mergers, and other enhancements for identifying
+        and analylzing meteorological phenomena. Geophys. Model Dev. 17, 5309–5330.
+        10.5194/gmd-17-5309-2024
+    .. [3] Crocker, J. C., & Grier, D. G. (1996). Methods of Digital Video Microscopy
+        for Colloidal Studies. J. Colloid Interf. Sci., 179(1), 298–310.
+        http://doi.org/10.1006/jcis.1996.0217
+    .. [4] Allan, D. B., Caswell, T., Keim, N. C., van der Wel, C. M., & Verweij, R. W.
+        (2025). soft-matter/trackpy: v0.7 (v0.7). Zenodo.
+        https://doi.org/10.5281/zenodo.16089574
+
+    """
+    if "vdim" in features.columns:
+        raise ValueError(
+            "linking_trackpy_latlon only supports 2D tracking. We suggest using "
+            "the slightly slower but still accurate linking_trackpy with "
+            "periodic boundaries."
+        )
+
+    if not ((v_max is None) != (d_max is None)):
+        raise ValueError("Exactly one of 'v_max' or 'd_max' should be specified.")
+
+    if not ((time_cell_min is None) != (stubs is None)):
+        raise ValueError(
+            "Exactly one of 'time_cell_min' or 'stubs' should be specified."
+        )
+
+    # in case of adaptive search, check whether both parameters are specified
+    if adaptive_stop is not None:
+        if adaptive_step is None:
+            raise ValueError(
+                "Adaptive search requires values for adaptive_step and adaptive_stop. Please specify adaptive_step."
+            )
+
+    if adaptive_step is not None:
+        if adaptive_stop is None:
+            raise ValueError(
+                "Adaptive search requires values for adaptive_step and adaptive_stop. Please specify adaptive_stop."
+            )
+
+    # calculate search range. Because the haversine distancemetric is
+    # in units of radians, we need to divide these by the planet radius.
+
+    # calculate search range based on timestep and grid spacing
+    if v_max is not None:
+        search_range = dt * v_max / planet_radius
+
+    # using d_max
+    else:
+        search_range = d_max / planet_radius
+
+    if time_cell_min:
+        stubs = np.floor(time_cell_min / dt) + 1
+
+    # If subnetwork size given, set maximum subnet size
+    if subnetwork_size is not None:
+        # Choose the right parameter depending on the use of adaptive search, save previously set values
+        if adaptive_step is None and adaptive_stop is None:
+            size_cache = tp.linking.Linker.MAX_SUB_NET_SIZE
+            tp.linking.Linker.MAX_SUB_NET_SIZE = subnetwork_size
+        else:
+            size_cache = tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE
+            tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE = subnetwork_size
+
+    # find latitude and longitude columns
+    if latitude_name == "":
+        latitude_name = None
+    if longitude_name == "":
+        longitude_name = None
+    lat_col = coord_utils.find_coord_in_dataframe(
+        features, latitude_name, coord_utils.COMMON_LAT_COORDS
+    )
+    lon_col = coord_utils.find_coord_in_dataframe(
+        features, longitude_name, coord_utils.COMMON_LON_COORDS
+    )
+
+    # deep copy to preserve features field:
+    features_linking = copy.deepcopy(features)
+
+    # avoid setting pos_columns by renaming to default values to avoid trackpy bug
+    features_linking.rename(
+        columns={
+            "y": "__temp_y_coord",
+            "x": "__temp_x_coord",
+            "z": "__temp_z_coord",
+        },
+        inplace=True,
+    )
+
+    # need to convert input lat/lon into radians from degrees
+    features_linking["x"] = np.deg2rad(features_linking[lon_col])
+    features_linking["y"] = np.deg2rad(features_linking[lat_col])
+
+    # must use btree for custom distance metric as we will use here
+    neighbor_strategy = "BTree"
+    dist_func = sklearn.metrics.DistanceMetric.get_metric("haversine")
+    if method_linking == "random":
+        trajectories_unfiltered = tp.link(
+            features_linking,
+            search_range=search_range,
+            memory=memory,
+            t_column="frame",
+            adaptive_step=adaptive_step,
+            adaptive_stop=adaptive_stop,
+            neighbor_strategy=neighbor_strategy,
+            link_strategy="auto",
+            dist_func=dist_func,
+        )
+
+    elif method_linking == "predict":
+        # generate list of features as input for df_link_iter to avoid bug in df_link
+        features_linking_list = [
+            frame for i, frame in features_linking.groupby("frame", sort=True)
+        ]
+
+        pred = tp.predict.NearestVelocityPredict(span=1)
+        trajectories_unfiltered = pred.link_df_iter(
+            features_linking_list,
+            search_range=search_range,
+            memory=memory,
+            # pos_columns=["hdim_1", "hdim_2"], # not working atm
+            t_column="frame",
+            neighbor_strategy=neighbor_strategy,
+            link_strategy="auto",
+            adaptive_step=adaptive_step,
+            adaptive_stop=adaptive_stop,
+            dist_func=dist_func,
+        )
+        # recreate a single dataframe from the list
+        trajectories_unfiltered = pd.concat(trajectories_unfiltered)
+
+        trajectories_unfiltered.drop(columns=["x", "y"], inplace=True)
+
+        trajectories_unfiltered.rename(
+            columns={
+                "__temp_y_coord": "y",
+                "__temp_x_coord": "x",
+                "__temp_z_coord": "z",
+            },
+            inplace=True,
+        )
+
+    # Reset trackpy parameters to previously set values
+    if subnetwork_size is not None:
+        if adaptive_step is None and adaptive_stop is None:
+            tp.linking.Linker.MAX_SUB_NET_SIZE = size_cache
+        else:
+            tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE = size_cache
+
+    filtered_trajectories = _filter_trajectories(
+        trajectories_unfiltered,
+        cell_number_start=cell_number_start,
+        cell_number_unassigned=cell_number_unassigned,
+        stubs=stubs,
+    )
+    return filtered_trajectories
+
+
+def _filter_trajectories(
+    trajectories_unfiltered: pd.DataFrame,
+    cell_number_start: int,
+    cell_number_unassigned: int,
+    stubs: int,
+) -> pd.DataFrame:
+    # Reset particle numbers from the arbitray numbers at the end of the feature detection and linking to consecutive cell numbers
+    # keep 'particle' for reference to the feature detection step.
+    trajectories_unfiltered["cell"] = None
+    particle_num_to_cell_num = dict()
+    for i_particle, particle in enumerate(
+        pd.Series.unique(trajectories_unfiltered["particle"])
+    ):
+        cell = int(i_particle + cell_number_start)
+        particle_num_to_cell_num[particle] = int(cell)
+    remap_particle_to_cell_vec = np.vectorize(remap_particle_to_cell_nv)
+    trajectories_unfiltered["cell"] = remap_particle_to_cell_vec(
+        particle_num_to_cell_num, trajectories_unfiltered["particle"]
+    )
+    trajectories_unfiltered["cell"] = trajectories_unfiltered["cell"].astype(int)
+    trajectories_unfiltered.drop(columns=["particle"], inplace=True)
+
+    trajectories_bycell = trajectories_unfiltered.groupby("cell")
+    stub_cell_nums = list()
+    for cell, trajectories_cell in trajectories_bycell:
+        # logging.debug("cell: "+str(cell))
+        # logging.debug("feature: "+str(trajectories_cell['feature'].values))
+        # logging.debug("trajectories_cell.shape[0]: "+ str(trajectories_cell.shape[0]))
+
+        if trajectories_cell.shape[0] < stubs:
+            logging.debug(
+                "cell"
+                + str(cell)
+                + "  is a stub ("
+                + str(trajectories_cell.shape[0])
+                + "), setting cell number to "
+                + str(cell_number_unassigned)
+            )
+            stub_cell_nums.append(cell)
+
+    trajectories_unfiltered.loc[
+        trajectories_unfiltered["cell"].isin(stub_cell_nums), "cell"
+    ] = cell_number_unassigned
+
+    trajectories_filtered = trajectories_unfiltered
+
+    # Interpolate to fill the gaps in the trajectories (left from allowing memory in the linking)
+    trajectories_filtered_unfilled = copy.deepcopy(trajectories_filtered)
+
+    #    trajectories_filtered_filled=fill_gaps(trajectories_filtered_unfilled,order=order,
+    #                                extrapolate=extrapolate,frame_max=field_in.shape[0]-1,
+    #                                hdim_1_max=field_in.shape[1],hdim_2_max=field_in.shape[2])
+    #     add coorinates from input fields to output trajectories (time,dimensions)
+    #    logging.debug('start adding coordinates to trajectories')
+    #    trajectories_filtered_filled=add_coordinates(trajectories_filtered_filled,field_in)
+    #     add time coordinate relative to cell initiation:
+    #    logging.debug('start adding cell time to trajectories')
+    trajectories_filtered_filled = trajectories_filtered_unfilled
+    trajectories_final = add_cell_time(
+        trajectories_filtered_filled, cell_number_unassigned=cell_number_unassigned
+    )
+    # Add metadata
+    trajectories_final.attrs["cell_number_unassigned"] = cell_number_unassigned
 
     return trajectories_final
 
