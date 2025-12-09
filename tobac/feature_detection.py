@@ -18,30 +18,24 @@ References
 """
 
 from __future__ import annotations
-from typing import Optional, Union, Callable
-import warnings
 import logging
+import warnings
 
+from typing import Optional, Union, Callable, Any
 from typing_extensions import Literal
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 from scipy.spatial import KDTree
 from sklearn.neighbors import BallTree
-import iris
-import xarray as xr
 
-from tobac.utils import internal as internal_utils
 from tobac.utils import decorators
-
+from tobac.utils import get_statistics
+from tobac.utils import internal as internal_utils
 from tobac.utils import periodic_boundaries as pbc_utils
-import tobac.utils
-import tobac.utils.general
-import warnings
-
-# from typing_extensions import Literal
-import iris
-import iris.cube
+from tobac.utils.general import spectral_filtering
+from tobac.utils.generators import field_and_features_over_time
 
 
 def feature_position(
@@ -410,6 +404,7 @@ def feature_detection_threshold(
     idx_start: int = 0,
     PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
     vertical_axis: int = 0,
+    **kwargs: dict[str, Any],
 ) -> tuple[pd.DataFrame, dict]:
     """Find features based on individual threshold value.
 
@@ -430,7 +425,7 @@ def feature_detection_threshold(
         included in the target region. Default is None.
 
     target : {'maximum', 'minimum'}, optional
-        Flag to determine if tracking is targetting minima or maxima
+        Flag to determine if tracking is targeting minima or maxima
         in the data. Default is 'maximum'.
 
     position_threshold : {'center', 'extreme', 'weighted_diff',
@@ -439,7 +434,7 @@ def feature_detection_threshold(
         feature. Default is 'center'.
 
     sigma_threshold: float, optional
-        Standard deviation for intial filtering step. Default is 0.5.
+        Standard deviation for initial filtering step. Default is 0.5.
 
     n_erosion_threshold: int, optional
         Number of pixels by which to erode the identified features.
@@ -464,6 +459,9 @@ def feature_detection_threshold(
          'both' means that we are periodic along both horizontal dimensions
     vertical_axis: int
         The vertical axis number of the data.
+
+    kwargs : dict
+        Additional keyword arguments.
 
 
     Returns
@@ -927,7 +925,9 @@ def feature_detection_multithreshold_timestep(
     strict_thresholding: bool = False,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
     statistics_unsmoothed: bool = False,
-) -> pd.DataFrame:
+    return_labels: bool = False,
+    **kwargs: dict[str, Any],
+) -> Union[pd.DataFrame, tuple[xr.DataArray, pd.DataFrame]]:
     """Find features in each timestep.
 
     Based on iteratively finding regions above/below a set of
@@ -1004,10 +1004,21 @@ def feature_detection_multithreshold_timestep(
     statistics_unsmoothed: bool, optional
             Default is False. If True, calculate the statistics on the raw data instead of the smoothed input data.
 
+    return_labels: bool, optional
+        Default is False. If True, return the label fields.
+
+    kwargs : dict
+        Additional keyword arguments.
+
+
     Returns
     -------
     features_threshold : pandas DataFrame
         Detected features for individual timestep.
+
+    labels : xarray DataArray, optional
+        Label fields for the respective thresholds. Only returned if
+        return_labels is True.
     """
     # Handle scipy depreciation gracefully
     try:
@@ -1038,7 +1049,7 @@ def feature_detection_multithreshold_timestep(
 
     # spectrally filter the input data, if desired
     if wavelength_filtering is not None:
-        track_data = tobac.utils.general.spectral_filtering(
+        track_data = spectral_filtering(
             dxy, track_data, wavelength_filtering[0], wavelength_filtering[1]
         )
 
@@ -1143,7 +1154,7 @@ def feature_detection_multithreshold_timestep(
             + str(threshold_i)
         )
 
-    if statistic:
+    if return_labels or statistic:
         # reconstruct the labeled regions based on the regions dict
         labels = np.zeros(track_data.shape)
         labels = labels.astype(int)
@@ -1152,10 +1163,11 @@ def feature_detection_multithreshold_timestep(
             # apply function to get statistics based on labeled regions and functions provided by the user
             # the feature dataframe is updated by appending a column for each metric
 
+    if statistic:
         # select which data to use according to statistics_unsmoothed option
         stats_data = data_i.values if statistics_unsmoothed else track_data
 
-        features_thresholds = tobac.utils.get_statistics(
+        features_thresholds = get_statistics(
             features_thresholds,
             labels,
             stats_data,
@@ -1164,7 +1176,19 @@ def feature_detection_multithreshold_timestep(
             id_column="idx",
         )
 
-    return features_thresholds
+    # Create the final output
+    if return_labels:
+        label_fields = xr.DataArray(
+            labels,
+            coords=data_i.coords,
+            dims=data_i.dims,
+            name="label_fields",
+        ).assign_attrs(threshold=threshold)
+
+        return label_fields, features_thresholds
+
+    else:
+        return features_thresholds
 
 
 @decorators.irispandas_to_xarray(save_iris_info=True)
@@ -1191,10 +1215,11 @@ def feature_detection_multithreshold(
     strict_thresholding: bool = False,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
     statistics_unsmoothed: bool = False,
+    return_labels: bool = False,
     use_standard_names: Optional[bool] = None,
     converted_from_iris: bool = False,
-    **kwargs,
-) -> pd.DataFrame:
+    **kwargs: dict[str, Any],
+) -> Union[pd.DataFrame, tuple[xr.DataArray, pd.DataFrame]]:
     """Perform feature detection based on contiguous regions.
 
     The regions are above/below a threshold.
@@ -1210,8 +1235,7 @@ def feature_detection_multithreshold(
         Grid spacing of the input data (in meter).
 
     thresholds : list of floats, optional
-        Threshold values used to select target regions to track. The feature detection is inclusive of the threshold value(s), i.e. values
-        greater/less than or equal are included in the target region. Default is None.
+        Threshold values used to select target regions to track. The feature detection is inclusive of the threshold value(s), i.e. values greater/less than or equal are included in the target region. Default is None.
 
     target : {'maximum', 'minimum'}, optional
         Flag to determine if tracking is targetting minima or maxima in
@@ -1282,16 +1306,37 @@ def feature_detection_multithreshold(
         and uses that to name the output coordinate, to mimic iris functionality.
         If false, uses the actual name of the coordinate to output.
 
+    statistic : dict, optional
+        Default is None. Optional parameter to calculate bulk statistics within feature detection.
+        Dictionary with callable function(s) to apply over the region of each detected feature and
+        the name of the statistics to appear in the feature output dataframe.
+        The functions should be the values and the names of the metric the keys (e.g. {'mean': np.mean})
+
+    statistics_unsmoothed: bool, optional
+        Default is False. If True, calculate the statistics on the raw data instead of the smoothed input data.
+
+    return_labels: bool, optional
+        Default is False. If True, return the label fields.
+
     preserve_iris_datetime_types: bool, optional, default: True
         If True, for iris input, preserve the original datetime type (typically
         `cftime.DatetimeGregorian`) where possible. For xarray input, this parameter has no
         effect.
+
+    kwargs : dict
+        Additional keyword arguments.
+
 
     Returns
     -------
     features : pandas.DataFrame
         Detected features. The structure of this dataframe is explained
         `here <https://tobac.readthedocs.io/en/latest/data_input.html>`__
+
+    labels : xarray DataArray, optional
+        Label fields for the respective thresholds. Only returned if
+        return_labels is True.
+
     """
     from .utils import add_coordinates, add_coordinates_3D
 
@@ -1351,9 +1396,6 @@ def feature_detection_multithreshold(
 
             vertical_axis = vertical_axis - 1
 
-    # create empty list to store features for all timesteps
-    list_features_timesteps = []
-
     # if single threshold is put in as a single value, turn it into a list
     if type(threshold) in [int, float]:
         threshold = [threshold]
@@ -1392,10 +1434,22 @@ def feature_detection_multithreshold(
                 "given in meter."
             )
 
+    # Initialize lists and xarrays for holding results
+    list_features_timesteps = []
+    if return_labels:
+        label_fields = xr.DataArray(
+            np.zeros(field_in.shape, dtype=int),
+            coords=field_in.coords,
+            dims=field_in.dims,
+            name="label_fields",
+        ).assign_attrs(threshold=threshold)
+    else:
+        label_fields = None
+
     for i_time, time_i in enumerate(field_in.coords[time_var_name]):
         data_i = field_in.isel({time_var_name: i_time})
 
-        features_thresholds = feature_detection_multithreshold_timestep(
+        args = feature_detection_multithreshold_timestep(
             data_i,
             i_time,
             threshold=threshold,
@@ -1414,9 +1468,17 @@ def feature_detection_multithreshold(
             strict_thresholding=strict_thresholding,
             statistic=statistic,
             statistics_unsmoothed=statistics_unsmoothed,
+            return_labels=return_labels,
         )
+        # Process the returned data depending on the flags
+        if return_labels:
+            label_fields_i, features_thresholds_i = args
+            label_fields.loc[{time_var_name: time_i}] = label_fields_i
 
-        list_features_timesteps.append(features_thresholds)
+        else:
+            features_thresholds_i = args
+
+        list_features_timesteps.append(features_thresholds_i)
 
         logging.debug("Finished feature detection for %s", time_i)
 
@@ -1475,12 +1537,35 @@ def feature_detection_multithreshold(
                 )
             features = pd.concat(filtered_features, ignore_index=True)
 
+        # we map the feature index to the original index
+        if return_labels:
+
+            for i, time_i, label_field_i, features_i in field_and_features_over_time(
+                label_fields, features
+            ):
+                wh_all_labels = np.isin(label_field_i, features_i.idx)
+
+                remapper = xr.DataArray(
+                    features_i.feature, dims=("idx",), coords=dict(idx=features_i.idx)
+                )
+
+                label_fields[i].data[wh_all_labels] = remapper.loc[
+                    label_field_i.data[wh_all_labels]
+                ]
+                label_fields[i].data[~wh_all_labels] = 0
+
     else:
         features = None
+        label_fields = None
         logging.debug("No features detected")
 
     logging.debug("feature detection completed")
-    return features
+
+    # Create the final output
+    if return_labels:
+        return label_fields, features
+    else:
+        return features
 
 
 def filter_min_distance(

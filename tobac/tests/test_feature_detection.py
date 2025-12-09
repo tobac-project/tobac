@@ -43,9 +43,9 @@ def test_feature_detection_multithreshold_timestep(
         h2_size=test_hdim_2_sz,
         amplitude=test_amp,
     )
-    test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type="iris")
+    test_data_xr = tbtest.make_dataset_from_arr(test_data, data_type="xarray")
     fd_output = feat_detect.feature_detection_multithreshold_timestep(
-        test_data_iris,
+        test_data_xr,
         0,
         threshold=test_threshs,
         n_min_threshold=n_min_threshold,
@@ -54,10 +54,68 @@ def test_feature_detection_multithreshold_timestep(
     )
 
     # Make sure we have only one feature
-    assert len(fd_output.index) == 1
+    assert len(fd_output) == 1, f"Expected 1 feature, but got {len(fd_output)}"
     # Make sure that the location of the feature is correct
-    assert fd_output.iloc[0]["hdim_1"] == pytest.approx(test_hdim_1_pt)
-    assert fd_output.iloc[0]["hdim_2"] == pytest.approx(test_hdim_2_pt)
+    assert fd_output.iloc[0]["hdim_1"] == pytest.approx(
+        test_hdim_1_pt
+    ), f"Expected hdim_1 to be {test_hdim_1_pt}, but got {fd_output.iloc[0]['hdim_1']}"
+    assert fd_output.iloc[0]["hdim_2"] == pytest.approx(
+        test_hdim_2_pt
+    ), f"Expected hdim_2 to be {test_hdim_2_pt}, but got {fd_output.iloc[0]['hdim_2']}"
+
+    labels, features = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_xr,
+        0,
+        threshold=test_threshs,
+        n_min_threshold=n_min_threshold,
+        dxy=dxy,
+        wavelength_filtering=wavelength_filtering,
+        return_labels=True,
+    )
+
+    # Make sure we have only one feature
+    assert (
+        len(features.index) == 1
+    ), f"Expected 1 feature, but got {len(features.index)}"
+
+    # Check if labels are returned
+    assert isinstance(
+        labels, xr.DataArray
+    ), "Expected label fields to be a xarray.DataArray"
+
+    # Check if labels have the correct shape
+    assert labels.shape == (
+        test_data_xr.shape[0],
+        test_data_xr.shape[1],
+    ), f"Expected labels shape to be {test_data_xr.shape}, but got {labels.shape}"
+
+    # Ensure labels have at least one non-zero entry
+    assert (labels > 0).any(), "No labels detected in the labels array"
+
+    # Optionally check for the threshold attribute
+    assert hasattr(labels, "threshold"), "Expected 'threshold' attribute in labels"
+    assert (
+        labels.attrs["threshold"] == test_threshs
+    ), f"Expected threshold to be {test_threshs}, but got {labels.attrs['threshold']}"
+
+    # All non-zero labels must match the feature IDs in the returned dataframe
+    nonzero_labels = labels.values[labels.values > 0]
+    unique_label_value = np.unique(nonzero_labels)[0]
+    feature_label_value = features["idx"].iloc[0]
+
+    assert (
+        unique_label_value == feature_label_value
+    ), f"Label field contains {unique_label_value}, but features dataframe idx is {feature_label_value}"
+
+    # All labeled points are <= the threshold value in the input field
+    mask = labels.values > 0
+    labeled_values = test_data_xr.values[mask]
+    feature_threshold = features["threshold_value"].iloc[0]
+    print(labeled_values)
+    assert np.all(labeled_values >= feature_threshold), (
+        f"Found labeled pixels below threshold {feature_threshold}. "
+        f"Minimum labeled value is {labeled_values.min()}"
+    )
 
 
 @pytest.mark.parametrize(
@@ -592,6 +650,37 @@ def test_feature_detection_setting_multiple():
             vertical_coord="altitude",
             vertical_axis=1,
         )
+
+
+def test_feature_detection_multithreshold_returns():
+    """Tests regarding return_labels."""
+    test_data = np.zeros((1, 5, 5, 5))
+    test_data[0, 0:5, 0:5, 0:5] = 3
+    common_dset_opts = {
+        "in_arr": test_data,
+        "data_type": "xarray",
+        "z_dim_name": "altitude",
+    }
+    test_data_xr = tbtest.make_dataset_from_arr(
+        time_dim_num=0,
+        z_dim_num=1,
+        y_dim_num=2,
+        x_dim_num=3,
+        **common_dset_opts,
+    )
+
+    # Test when return_labels is True
+    labels, features = feat_detect.feature_detection_multithreshold(
+        field_in=test_data_xr,
+        dxy=10000,
+        threshold=[
+            1.5,
+        ],
+        return_labels=True,
+    )
+    assert labels is not None, "Expected labels to be returned"
+    assert isinstance(labels, xr.DataArray), "Expected labels to be a xarray DataArray"
+    assert (labels > 0).any(), "Expected at least one labeled feature"
 
 
 @pytest.mark.parametrize(
