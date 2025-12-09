@@ -180,6 +180,14 @@ def get_spacings(
     """Determine spatial and temporal grid spacing of the
     input data.
 
+    .. admonition:: Deprecated
+       :class: warning
+
+       Deprecated in version 1.6.2: ``get_spacings`` is deprecated and will be removed in a future version.
+       We encourage users to calculate their grid spacing and time delta themselves as it leads to
+       more accurate outcomes.
+
+
     Parameters
     ----------
     field_in : iris.cube.Cube
@@ -220,6 +228,11 @@ def get_spacings(
     """
 
     from copy import deepcopy
+
+    warnings.warn(
+        "get_spacings is depreciated and will be removed in a future version. ",
+        DeprecationWarning,
+    )
 
     # set horizontal grid spacing of input data
     # If cartesian x and y corrdinates are present, use these to determine dxy (vertical grid spacing used to transfer pixel distances to real distances):
