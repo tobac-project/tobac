@@ -374,7 +374,7 @@ def mask_all_surface(mask, masked=False, z_coord="model_level_number"):
 
 @iris_to_xarray()
 def convert_feature_mask_to_cells(
-    features: pd.DataFrame, feature_mask: xr.DataArray, stubs: Optional[int] = None
+    features: pd.DataFrame, feature_mask: xr.DataArray, stubs: Optional[int] = None, inplace: bool = False
 ) -> xr.DataArray:
     """Relabels a feature mask provided by tobac.segmentation with the cell
     values provided by tobac.linking_trackpy
@@ -394,6 +394,8 @@ def convert_feature_mask_to_cells(
         the presence of stub cells may make it impossible to perfectly
         reconstruct the feature mask afterwards as any stub features will be
         removed.
+    inplace : bool, optional (default: False)
+        If True, update the cell mask in-place
 
     Returns
     -------
@@ -413,7 +415,10 @@ def convert_feature_mask_to_cells(
             "`cell` column not found in features input, please perform tracking on this data before converting features to cells"
         )
 
-    cell_mask = feature_mask.copy()
+    if inplace:
+        cell_mask = feature_mask
+    else:
+        cell_mask = feature_mask.copy()
 
     cell_mapper = xr.DataArray(
         features.cell.copy(), dims=("feature",), coords=dict(feature=features.feature)
@@ -443,6 +448,7 @@ def convert_cell_mask_to_features(
     features: pd.DataFrame,
     cell_mask: xr.DataArray,
     stubs: Optional[int] = None,
+    inplace: bool = False, 
 ) -> xr.DataArray:
     """Relabels a cell mask, such as that produced by
     convert_feature_mask_to_cells, to the feature values provided by
@@ -461,6 +467,8 @@ def convert_cell_mask_to_features(
         corresponding to stub cells with be removed from the output. Warning:
         features with stub values will be set to zero in the output feature
         mask
+    inplace : bool, optional (default: False)
+        If True, update the cell mask in-place
 
     Returns
     -------
@@ -486,7 +494,10 @@ def convert_cell_mask_to_features(
             "`cell` column not found in features input, please perform tracking on this data before converting features to cells"
         )
 
-    feature_mask = cell_mask.copy()
+    if inplace:
+        feature_mask = cell_mask
+    else:
+        feature_mask = cell_mask.copy()
 
     for i, _, mask_slice, features_slice in field_and_features_over_time(
         feature_mask, features
