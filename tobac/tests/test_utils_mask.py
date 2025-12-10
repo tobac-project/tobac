@@ -276,6 +276,49 @@ def test_convert_feature_mask_to_cells_no_input_mutation():
     # Test mask is the same
     assert mask_copy.equals(test_mask)
 
+def test_convert_feature_mask_to_cells_inplace():
+    """Test that convert_feature_mask_to_cells does alter the input mask when 
+    the inplace keyword is used
+    """
+    test_data = np.zeros([3, 4, 5], dtype=int)
+    test_data[0, 1:3, 1:4] = 1
+    test_data[1, 1:3, 1:4] = 2
+    test_data[2, 1:3, 1:4] = 3
+
+    test_mask = xr.DataArray(
+        test_data,
+        dims=("time", "y", "x"),
+        coords=dict(
+            time=pd.date_range(
+                datetime(2000, 1, 1, 0), datetime(2000, 1, 1, 2), periods=3
+            )
+        ),
+        attrs=dict(units="feature"),
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3],
+            "frame": [0, 1, 2],
+            "time": pd.date_range(
+                datetime(2000, 1, 1, 0), datetime(2000, 1, 1, 2), periods=3
+            ),
+            "cell": [1, 1, -1],
+        }
+    )
+
+    mask_copy = test_mask.copy(deep=True)
+    features_copy = test_features.copy(deep=True)
+
+    cell_mask = convert_feature_mask_to_cells(test_features, test_mask, stubs=-1, inplace=True)
+
+    # Test dataframe is the same
+    pd.testing.assert_frame_equal(test_features, features_copy)
+
+    # Test mask is the same
+    assert cell_mask.equals(test_mask)
+    assert not mask_copy.equals(test_mask)
+
 
 def test_convert_cell_mask_to_features_single_timestep():
     """Test basic functionality of convert_cell_mask_to_features with a single
@@ -637,3 +680,49 @@ def test_convert_cell_mask_to_features_no_input_mutation():
 
     # Test mask is the same
     assert mask_copy.equals(test_mask)
+
+
+def test_convert_cell_mask_to_features_inplace():
+    """Test that convert_cell_mask_to_features does alter the input mask when 
+    the inplace keyword is used
+    """
+    test_data = np.zeros([3, 4, 5], dtype=int)
+    test_data[0, 1:3, 1:4] = 1
+    test_data[1, 1:3, 1:4] = 1
+    test_data[2, 1:3, 1:4] = -1
+
+    test_mask = xr.DataArray(
+        test_data,
+        dims=("time", "y", "x"),
+        coords=dict(
+            time=pd.date_range(
+                datetime(2000, 1, 1, 0), datetime(2000, 1, 1, 2), periods=3
+            )
+        ),
+        attrs=dict(units="feature"),
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3],
+            "frame": [0, 1, 2],
+            "time": pd.date_range(
+                datetime(2000, 1, 1, 0), datetime(2000, 1, 1, 2), periods=3
+            ),
+            "cell": [1, 1, -1],
+        }
+    )
+
+    mask_copy = test_mask.copy(deep=True)
+    features_copy = test_features.copy(deep=True)
+
+    feature_mask = convert_cell_mask_to_features(test_features, test_mask, stubs=-1, inplace=True)
+
+    # Test dataframe is the same
+    pd.testing.assert_frame_equal(test_features, features_copy)
+
+    # Test mask is the same
+    assert feature_mask.equals(test_mask)
+    assert not mask_copy.equals(test_mask)
+
+
