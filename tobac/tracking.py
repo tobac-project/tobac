@@ -511,6 +511,7 @@ def linking_trackpy_latlon(
     method_linking="random",
     adaptive_step=None,
     adaptive_stop=None,
+    adaptive_stop_multiplier=None,
     cell_number_start=1,
     cell_number_unassigned=-1,
     planet_radius: float = 6378137.0,
@@ -559,6 +560,12 @@ def linking_trackpy_latlon(
         Only one of `d_max` or `v_max` can be set.
         Default is None.
 
+    latitude_name : str, optional
+        Name of latitude column. If not set, tries to guess from a list.
+
+    longitude_name : str, optional
+        Name of longitude column. If not set, tries to guess from a list.
+
     subnetwork_size : int, optional
         Maximum size of subnetwork for linking. This parameter should be
         adjusted when using adaptive search. Usually a lower value is desired
@@ -574,9 +581,15 @@ def linking_trackpy_latlon(
                      can lead to erroneous trajectory linking,
                      especially for data with low time resolution.
 
+    stubs : int, optional
+        Minimum number of timesteps of a tracked cell to be reported
+        only one of stubs or time_cell_min can be set.
+        Default is 1
+
     time_cell_min : float, optional
         Minimum length in time that a cell must be tracked for to be considered a
         valid cell in seconds.
+        only one of stubs or time_cell_min can be set.
         Default is None.
 
     order : int, optional
@@ -603,6 +616,14 @@ def linking_trackpy_latlon(
         is solvable. If search_range becomes <= adaptive_stop, give up and raise
         a SubnetOversizeException. Needs to be used in combination with
         adaptive_step. Default is None.
+        Only one of adaptive_stop or adaptive_stop_multiplier can be used.
+
+    adaptive_stop_multiplier: float, optional
+        If not None, enables adaptive tracking when adaptive_step is set. When encountering
+        too many (as set by subnetwork_size) candidate points for linking, multiply the search
+        radius (controlled by v_max or d_max) by adaptive_step continuously to try to reduce
+        the size of the problem, until (new_radius < (old_radius*adaptive_stop_multiplier))
+        Only one of adaptive_stop or adaptive_stop_multiplier can be used.
 
     cell_number_start : int, optional
         Cell number for first tracked cell.
@@ -668,21 +689,32 @@ def linking_trackpy_latlon(
         raise ValueError(
             "Exactly one of 'time_cell_min' or 'stubs' should be specified."
         )
+    if (adaptive_stop is not None) and (adaptive_stop_multiplier is not None):
+        raise ValueError(
+            "Only one of 'adaptive_stop' or 'adaptive_stop_multiplier' can be specified."
+        )
 
     # in case of adaptive search, check whether both parameters are specified
-    if adaptive_stop is not None:
+    if adaptive_stop is not None or adaptive_stop_multiplier is not None:
         if adaptive_step is None:
             raise ValueError(
                 "Adaptive search requires values for adaptive_step and adaptive_stop. Please specify adaptive_step."
             )
 
     if adaptive_step is not None:
-        if adaptive_stop is None:
+        if adaptive_stop is None and adaptive_stop_multiplier is None:
             raise ValueError(
-                "Adaptive search requires values for adaptive_step and adaptive_stop. Please specify adaptive_stop."
+                "Adaptive search requires values for adaptive_step and adaptive_stop or "
+                "adaptive_stop_multiplier. Please specify adaptive_stop or adaptive_stop_multiplier."
             )
 
-    # calculate search range. Because the haversine distancemetric is
+    if adaptive_stop_multiplier is not None:
+        if adaptive_stop_multiplier < 0 or adaptive_stop_multiplier > 1:
+            raise ValueError(
+                "Adaptive search requires values for adaptive_stop_multiplier between 0 and 1."
+            )
+
+    # calculate search range. Because the haversine DistanceMetric is
     # in units of radians, we need to divide these by the planet radius.
 
     # calculate search range based on timestep and grid spacing
@@ -695,6 +727,9 @@ def linking_trackpy_latlon(
 
     if time_cell_min:
         stubs = np.floor(time_cell_min / dt) + 1
+
+    if adaptive_stop_multiplier is not None:
+        adaptive_stop = search_range * adaptive_stop_multiplier
 
     # If subnetwork size given, set maximum subnet size
     if subnetwork_size is not None:

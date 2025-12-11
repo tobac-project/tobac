@@ -78,8 +78,8 @@ def test_lat_lon_tracking_vs_base_simple(
         max_h2=100,
         frame_start=0,
         num_frames=5,
-        spd_h1=1,
-        spd_h2=1,
+        spd_h1=spd_h1,
+        spd_h2=spd_h2,
         PBC_flag="none",
     )
 
