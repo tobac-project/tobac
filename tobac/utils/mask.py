@@ -551,3 +551,154 @@ def convert_cell_mask_to_features(
     feature_mask = feature_mask.assign_attrs(dict(units="feature"))
 
     return feature_mask
+
+
+@iris_to_xarray()
+def convert_feature_mask_to_tracks(
+    features: pd.DataFrame, feature_mask: xr.DataArray, stubs: Optional[int] = None, inplace: bool = False
+) -> xr.DataArray:
+    """Relabels a feature mask provided by tobac.segmentation with the track
+    values provided by tobac.merge_split.merge_split_MEST
+
+    WARNING: it is not possible to reconstruct the feature mask from the output 
+    from this function. The inplace keyword, and overwriting the original mask, 
+    should be used with care.
+
+    Parameters
+    ----------
+    features : pd.DataFrame
+        A feature dataframe with cell values provided by tobac.linking_trackpy
+    feature_mask : xr.DataArray
+        A feature mask from tobac.segmentation corresponding to the features in
+        the feature dataframe input
+    stubs : int, optional (default: None)
+        The stub values used for unlinked cells in tobac.linking_trackpy. If
+        None, the stub cells with be relabelled with the stub cell value in the
+        feature dataframe. If a value is provided, the masked regions
+        corresponding to stub cells with be removed from the output. Warning:
+        the presence of stub cells may make it impossible to perfectly
+        reconstruct the feature mask afterwards as any stub features will be
+        removed.
+    inplace : bool, optional (default: False)
+        If True, update the cell mask in-place
+
+    Returns
+    -------
+    xr.DataArray
+        A mask of cell regions corresponding to the cells in the input dataframe
+
+    Raises
+    ------
+    ValueError
+        If the features input does not have a cell column
+    ValueError
+        If there are labels in the feature_mask that are not present in the
+        features dataframe
+    """
+    if "track" not in features.columns:
+        raise ValueError(
+            "`track` column not found in features input, please perform merge/split detection on this data before converting features to tracks"
+        )
+
+    if inplace:
+        track_mask = feature_mask
+    else:
+        track_mask = feature_mask.copy()
+
+    track_mapper = xr.DataArray(
+        features.track.copy(), dims=("feature",), coords=dict(feature=features.feature)
+    )
+
+    if stubs is not None:
+        track_mapper.data[features.cell == stubs] = 0
+
+    wh_nonzero_label = np.flatnonzero(track_mask)
+
+    try:
+        track_mask.data.ravel()[wh_nonzero_label] = track_mapper.loc[
+            feature_mask.values.ravel()[wh_nonzero_label]
+        ]
+    except KeyError:
+        raise ValueError(
+            "Values in feature_mask are not present in features, please ensure that you are using the correct feature_mask for the tracked features, and that any filtering has been applied to both the mask and features"
+        )
+
+    track_mask = track_mask.assign_attrs(dict(units="track"))
+
+    return track_mask
+
+@iris_to_xarray()
+def convert_cell_mask_to_tracks(
+    features: pd.DataFrame, cell_mask: xr.DataArray, stubs: Optional[int] = None, inplace: bool = False
+) -> xr.DataArray:
+    """Relabels a cell mask provided by tobac.segmentation with the track
+    values provided by tobac.merge_split.merge_split_MEST
+
+    WARNING: it is not possible to reconstruct the cell mask from the output 
+    from this function. The inplace keyword, and overwriting the original mask, 
+    should be used with care.
+
+    Parameters
+    ----------
+    features : pd.DataFrame
+        A feature dataframe with cell values provided by tobac.linking_trackpy
+    feature_mask : xr.DataArray
+        A feature mask from tobac.segmentation corresponding to the features in
+        the feature dataframe input
+    stubs : int, optional (default: None)
+        The stub values used for unlinked cells in tobac.linking_trackpy. If
+        None, the stub cells with be relabelled with the stub cell value in the
+        feature dataframe. If a value is provided, the masked regions
+        corresponding to stub cells with be removed from the output. Warning:
+        the presence of stub cells may make it impossible to perfectly
+        reconstruct the feature mask afterwards as any stub features will be
+        removed.
+    inplace : bool, optional (default: False)
+        If True, update the cell mask in-place
+
+    Returns
+    -------
+    xr.DataArray
+        A mask of cell regions corresponding to the cells in the input dataframe
+
+    Raises
+    ------
+    ValueError
+        If the features input does not have a cell column
+    ValueError
+        If there are labels in the feature_mask that are not present in the
+        features dataframe
+    """
+    if "track" not in features.columns:
+        raise ValueError(
+            "`track` column not found in features input, please perform merge/split detection on this data before converting features to tracks"
+        )
+
+    if inplace:
+        track_mask = cell_mask
+    else:
+        track_mask = cell_mask.copy()
+
+    feature_to_cell = features.track.groupby(features.cell).first()
+
+    track_mapper = xr.DataArray(
+        feature_to_cell.copy(), dims=("cell",), coords=dict(cell=feature_to_cell.index)
+    )
+
+    if stubs is not None:
+        track_mapper.data[feature_to_cell.index == stubs] = 0
+
+    wh_nonzero_label = np.flatnonzero(track_mask)
+
+    try:
+        track_mask.data.ravel()[wh_nonzero_label] = track_mapper.loc[
+            cell_mask.values.ravel()[wh_nonzero_label]
+        ]
+    except KeyError:
+        raise ValueError(
+            "Values in cell_mask are not present in features, please ensure that you are using the correct cell_mask for the tracked features, and that any filtering has been applied to both the mask and features"
+        )
+
+    track_mask = track_mask.assign_attrs(dict(units="track"))
+
+    return track_mask
