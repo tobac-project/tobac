@@ -510,7 +510,6 @@ def linking_trackpy_latlon(
     extrapolate=0,
     method_linking="random",
     adaptive_step=None,
-    adaptive_stop=None,
     adaptive_stop_multiplier=None,
     cell_number_start=1,
     cell_number_unassigned=-1,
@@ -610,20 +609,11 @@ def linking_trackpy_latlon(
         Reduce search range by multiplying it by this factor. Needs to be
         used in combination with adaptive_stop. Default is None.
 
-    adaptive_stop : float, optional
-        If not None, when encountering an oversize subnet, retry by progressively
-        reducing search_range by multiplying with adaptive_step until the subnet
-        is solvable. If search_range becomes <= adaptive_stop, give up and raise
-        a SubnetOversizeException. Needs to be used in combination with
-        adaptive_step. Default is None.
-        Only one of adaptive_stop or adaptive_stop_multiplier can be used.
-
     adaptive_stop_multiplier: float, optional
         If not None, enables adaptive tracking when adaptive_step is set. When encountering
         too many (as set by subnetwork_size) candidate points for linking, multiply the search
         radius (controlled by v_max or d_max) by adaptive_step continuously to try to reduce
         the size of the problem, until (new_radius < (old_radius*adaptive_stop_multiplier))
-        Only one of adaptive_stop or adaptive_stop_multiplier can be used.
 
     cell_number_start : int, optional
         Cell number for first tracked cell.
@@ -689,23 +679,20 @@ def linking_trackpy_latlon(
         raise ValueError(
             "Exactly one of 'time_cell_min' or 'stubs' should be specified."
         )
-    if (adaptive_stop is not None) and (adaptive_stop_multiplier is not None):
-        raise ValueError(
-            "Only one of 'adaptive_stop' or 'adaptive_stop_multiplier' can be specified."
-        )
 
     # in case of adaptive search, check whether both parameters are specified
-    if adaptive_stop is not None or adaptive_stop_multiplier is not None:
+    if adaptive_stop_multiplier is not None:
         if adaptive_step is None:
             raise ValueError(
-                "Adaptive search requires values for adaptive_step and adaptive_stop. Please specify adaptive_step."
+                "Adaptive search requires values for adaptive_step and adaptive_stop_multiplier. "
+                "Please specify adaptive_step."
             )
 
     if adaptive_step is not None:
-        if adaptive_stop is None and adaptive_stop_multiplier is None:
+        if adaptive_stop_multiplier is None:
             raise ValueError(
-                "Adaptive search requires values for adaptive_step and adaptive_stop or "
-                "adaptive_stop_multiplier. Please specify adaptive_stop or adaptive_stop_multiplier."
+                "Adaptive search requires values for adaptive_step and "
+                "adaptive_stop_multiplier. Please specify adaptive_stop_multiplier."
             )
 
     if adaptive_stop_multiplier is not None:
@@ -730,6 +717,8 @@ def linking_trackpy_latlon(
 
     if adaptive_stop_multiplier is not None:
         adaptive_stop = search_range * adaptive_stop_multiplier
+    else:
+        adaptive_stop = None
 
     # If subnetwork size given, set maximum subnet size
     if subnetwork_size is not None:
