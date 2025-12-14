@@ -701,6 +701,12 @@ def linking_trackpy_latlon(
                 "Adaptive search requires values for adaptive_stop_multiplier between 0 and 1."
             )
 
+    if adaptive_step is not None:
+        if adaptive_step < 0 or adaptive_step > 1:
+            raise ValueError(
+                "Adaptive search requires values for adaptive_step between 0 and 1."
+            )
+
     # calculate search range. Because the haversine DistanceMetric is
     # in units of radians, we need to divide these by the planet radius.
 
