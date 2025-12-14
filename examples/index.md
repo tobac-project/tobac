@@ -29,6 +29,7 @@ tobac is provided with a set of Jupyter notebooks that show examples of the appl
    :caption: Examples of Using tobac with Model Data
 
    WRF OLR <./Example_OLR_Tracking_model/Example_OLR_Tracking_model>
+  WRF OLR with Latitude/Longitude Tracking <./Example_OLR_Tracking_model_latlon_tracking/Example_OLR_Tracking_model_latlon_tracking>
    WRF Precip <./Example_Precip_Tracking/Example_Precip_Tracking>
    WRF Updrafts <./Example_Updraft_Tracking/Example_Updraft_Tracking>
    WRF Mesoscale Vorticity <./Example_vorticity_tracking_model/Example_vorticity_tracking_model>
