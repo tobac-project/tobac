@@ -18,7 +18,6 @@ def tracking_wrapper(
         segmentation_3D,
         segmentation_2D,
     )
-    from .utils import get_spacings
 
     warnings.warn(
         "tracking_wrapper is depreciated and will be removed in v2.0.",
@@ -28,12 +27,6 @@ def tracking_wrapper(
     logger = logging.getLogger("trackpy")
     logger.propagate = False
     logger.setLevel(logging.WARNING)
-
-    ### Prepare Tracking
-
-    dxy, dt = get_spacings(
-        field_in_features, grid_spacing=grid_spacing, time_spacing=time_spacing
-    )
 
     ### Start Tracking
     # Feature detection:

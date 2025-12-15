@@ -385,7 +385,8 @@ def test_keep_trackpy_parameters(max_trackpy, max_tobac, adaptive_step, adaptive
     expected_value_adaptive = tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE
 
     data = tobac.testing.make_simple_sample_data_2D()
-    dxy, dt = tobac.utils.get_spacings(data)
+    dxy = 1000
+    dt = 60
     features = tobac.feature_detection.feature_detection_multithreshold(
         data, dxy, threshold=0.1
     )
