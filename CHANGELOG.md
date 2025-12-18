@@ -1,5 +1,23 @@
 ### Tobac Changelog
 
+_**Version 1.6.2:**_
+
+**Enhancements for Users**
+
+- Updated Python version requirements to Python 3.9-3.13. This fixes bugs with Python 3.14 issues upstream, and allows us to introduce thorough typechecking (Python >=3.9) in *tobac*. [#532](https://github.com/tobac-project/tobac/pull/532), [#541](https://github.com/tobac-project/tobac/pull/541/)
+- Added support for calculating 3D velocity components. [#530](https://github.com/tobac-project/tobac/pull/530)
+- Added support for returning the detected field from feature detection [#488](https://github.com/tobac-project/tobac/pull/488)
+
+**Documentation**
+
+- The documentation pages have been overhauled to use a new, modern theme and have had several pages added to them. [#477](https://github.com/tobac-project/tobac/pull/477)
+- Multiple new examples were added to the documentation [#486](https://github.com/tobac-project/tobac/pull/486), [#492](https://github.com/tobac-project/tobac/pull/492), [#500](https://github.com/tobac-project/tobac/pull/500)
+
+**Internal Enhancements**
+
+- Updated pyproject.toml and removed setup.py to support eventual release on PyPi [#537](https://github.com/tobac-project/tobac/pull/537)
+
+
 _**Version 1.6.1:**_
 
 **Bug fixes**
