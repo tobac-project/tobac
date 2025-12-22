@@ -27,3 +27,13 @@ dependencies:
   - numba
   - dask
   - ffmpeg
+  - intake==0.7.0
+  - intake-xarray==0.7.0
+  - healpix
+  - easygems
+  - pyvista>=0.46
+  - trame
+  - trame-vtk
+  - trame-vuetify
+  - ipywidgets
+  - vtk>=9.4.2

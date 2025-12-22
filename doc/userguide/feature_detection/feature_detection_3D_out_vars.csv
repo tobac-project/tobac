@@ -1,0 +1,2 @@
+Variable Name,Description,Units,Type
+vdim,vertical dimension in grid point space,Number of grid points,float64

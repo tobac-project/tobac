@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tobac"
-version = "1.6.1"
+version = "1.6.2"
 authors = [
       { name="Max Heikenfeld", email="max.heikenfeld@physics.ox.ac.uk" },
       { name="William Jones", email="william.jones@physics.ox.ac.uk" },
@@ -12,34 +12,104 @@ authors = [
       { name="Sean Freeman", email="sean.freeman@uah.edu" },
       { name="Julia Kukulies", email="kukulies@ucar.edu" },
       { name="Kelcy Brunner", email="Kelcy.Brunner@ttu.edu" },
+      { name="Sven Starzer", email="sven.starzer@proton.me"}
 ]
 description = "A package for identifying and tracking atmospheric phenomena"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.9,<3.14"
+license = "BSD-3-Clause"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Intended Audience :: Education",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: BSD License",
     "Operating System :: POSIX :: Linux",
     "Operating System :: MacOS :: MacOS X",
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Atmospheric Science",
 ]
+
+# always required
+dependencies = [
+    "numpy",
+    "scipy",
+    "scikit-image",
+    "scikit-learn",
+    "pandas",
+    "matplotlib",
+    "scitools-iris",
+    "xarray",
+    "cartopy",
+    "trackpy",
+    "typing_extensions",
+]
+
+[project.optional-dependencies]
+# required for development
+dev = [
+    "pre-commit",
+    "black",
+    "pytest",
+    "nbconvert",
+]
+
+# required to run example notebooks
+examples = [
+    "jupyter",
+    "notebook",
+    "pytables",
+    "s3fs",
+    "arm_pyart",
+    "seaborn",
+    "h5netcdf",
+    "rioxarray",
+    "numba",
+    "dask",
+    "intake==0.7.0",
+    "intake-xarray==0.7.0",
+    "healpix",
+    "easygems",
+]
+
+# All extras combined
+all = [
+    "pre-commit",
+    "black",
+    "pytest",
+    "nbconvert",
+    "jupyter",
+    "notebook",
+    "pytables",
+    "s3fs",
+    "arm_pyart",
+    "seaborn",
+    "h5netcdf",
+    "rioxarray",
+    "numba",
+    "dask",
+    "intake==0.7.0",
+    "intake-xarray==0.7.0",
+    "healpix",
+    "easygems",
+]
+
 
 [project.urls]
 Homepage = "http://github.com/tobac-project/tobac"
 Documentation = "http://tobac.io"
 Issues = "http://github.com/tobac-project/tobac/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["tobac*"]
+exclude = ["tmp*"]
