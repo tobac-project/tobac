@@ -737,3 +737,373 @@ def test_calculate_area_2D_latlon():
     area = calculate_area(test_features, test_cube)
 
     assert np.all(area["area"] == expected_areas)
+
+
+def test_calculate_distance_xy_3d():
+    """
+    3D distance for xy with use_3d flag and vertical coord
+    """
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2],
+            "frame": [0, 0],
+            "time": [datetime(2000, 1, 1), datetime(2000, 1, 1)],
+            "projection_x_coordinate": [0, 1000],
+            "projection_y_coordinate": [0, 0],
+            "height": [0, 600],
+        }
+    )
+    d3d = calculate_distance(
+        test_features.iloc[0],
+        test_features.iloc[1],
+        method_distance="xy",
+        vertical_coord="height",
+        use_3d=True,
+    )
+    assert d3d == pytest.approx(np.sqrt(1000**2 + 600**2), rel=1e-9)
+
+    res = calculate_distance(
+        test_features.iloc[0],
+        test_features.iloc[1],
+        method_distance="xy",
+        vertical_coord="height",
+        use_3d=True,
+        return_components=True,
+    )
+    assert set(res.keys()) == {"distance_3d", "dx", "dy", "dz"}
+    assert res["distance_3d"] == pytest.approx(np.sqrt(1000**2 + 600**2), rel=1e-9)
+
+    assert res["dx"] == pytest.approx(1000, rel=1e-12)
+    assert res["dy"] == pytest.approx(0, rel=1e-12)
+    assert res["dz"] == pytest.approx(600, rel=1e-12)
+
+
+def test_calculate_distance_latlon_3d():
+    """
+    3D distance for lat/lon with use_3d flag and vertical coord
+    """
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2],
+            "frame": [0, 0],
+            "time": [datetime(2000, 1, 1), datetime(2000, 1, 1)],
+            "longitude": [0, 1],
+            "latitude": [0, 0],
+            "height": [0, 1000],
+        }
+    )
+    d2d = calculate_distance(
+        test_features.iloc[0], test_features.iloc[1], method_distance="latlon"
+    )
+    d3d = calculate_distance(
+        test_features.iloc[0],
+        test_features.iloc[1],
+        method_distance="latlon",
+        vertical_coord="height",
+        use_3d=True,
+    )
+    assert d3d == pytest.approx(np.sqrt(d2d**2 + 1000**2), rel=1e-9)
+
+    res = calculate_distance(
+        test_features.iloc[0],
+        test_features.iloc[1],
+        method_distance="latlon",
+        vertical_coord="height",
+        use_3d=True,
+        return_components=True,
+    )
+
+    assert set(res.keys()) == {"distance_3d", "dx", "dy", "dz"}
+
+    assert res["distance_3d"] == pytest.approx(d3d, rel=1e-9)
+    horizontal = np.hypot(res["dx"], res["dy"])
+    assert horizontal == pytest.approx(d2d, rel=1e-9)
+
+    assert res["dx"] == pytest.approx(d2d, rel=1e-9)
+    assert res["dy"] == pytest.approx(0.0, abs=1e-6)
+    assert res["dz"] == pytest.approx(1000, rel=1e-12)
+
+
+def test_calculate_velocity_individual_xy_3d():
+    """
+    3D velocity for xy with vertical coord and use_3d=True/False
+    """
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2],
+            "frame": [0, 1],
+            "time": [datetime(2000, 1, 1, 0, 0), datetime(2000, 1, 1, 0, 10)],
+            "projection_x_coordinate": [0, 6000],
+            "projection_y_coordinate": [0, 300],
+            "height": [0, 800],
+        }
+    )
+    v3d = calculate_velocity_individual(
+        test_features.iloc[0],
+        test_features.iloc[1],
+        method_distance="xy",
+        vertical_coord="height",
+        use_3d=True,
+    )
+    assert v3d == pytest.approx(np.sqrt(6000**2 + 300**2 + 800**2) / 600, rel=1e-9)
+
+    res = calculate_velocity_individual(
+        test_features.iloc[0],
+        test_features.iloc[1],
+        method_distance="xy",
+        vertical_coord="height",
+        use_3d=True,
+        return_components=True,
+    )
+    assert set(res.keys()) >= {"v_3d", "vx", "vy", "vz"}
+    assert res["v_3d"] == pytest.approx(
+        np.sqrt(6000**2 + 300**2 + 800**2) / 600, rel=1e-9
+    )
+
+    assert res["vx"] == pytest.approx(10.0, rel=1e-12)
+    assert res["vy"] == pytest.approx(0.5, rel=1e-12)
+    assert res["vz"] == pytest.approx(800 / 600, rel=1e-12)
+
+    v3d_from_components = np.sqrt(res["vx"] ** 2 + res["vy"] ** 2 + res["vz"] ** 2)
+    assert res["v_3d"] == pytest.approx(v3d_from_components, rel=1e-12)
+
+    res2d = calculate_velocity_individual(
+        test_features.iloc[0],
+        test_features.iloc[1],
+        method_distance="xy",
+        vertical_coord="height",
+        use_3d=False,
+        return_components=True,
+    )
+    assert set(res2d.keys()) >= {"v", "vx", "vy"}
+    assert res2d["v"] == pytest.approx(np.sqrt(6000**2 + 300**2) / 600, rel=1e-9)
+
+    assert res2d["vx"] == pytest.approx(10.0, rel=1e-12)
+    assert res2d["vy"] == pytest.approx(0.5, rel=1e-12)
+
+    v2d_from_components = np.sqrt(res2d["vx"] ** 2 + res2d["vy"] ** 2)
+    assert res2d["v"] == pytest.approx(v2d_from_components, rel=1e-12)
+
+
+def test_calculate_velocity_individual_latlon_3d():
+    """
+    3D velocity for lat/lon with vertical coord and use_3d=True
+    """
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2],
+            "frame": [0, 0],
+            "time": [datetime(2000, 1, 1, 0, 0), datetime(2000, 1, 1, 0, 10)],
+            "longitude": [0, 1],
+            "latitude": [0, 0],
+            "height": [0, 1000],
+        }
+    )
+    d2d = calculate_distance(
+        test_features.iloc[0],
+        test_features.iloc[1],
+        method_distance="latlon",
+        return_components=True,
+    )
+    v3d = calculate_velocity_individual(
+        test_features.iloc[0],
+        test_features.iloc[1],
+        method_distance="latlon",
+        vertical_coord="height",
+        use_3d=True,
+    )
+    assert v3d == pytest.approx(np.sqrt(d2d["distance"] ** 2 + 1000**2) / 600, rel=1e-9)
+
+    res = calculate_velocity_individual(
+        test_features.iloc[0],
+        test_features.iloc[1],
+        method_distance="latlon",
+        vertical_coord="height",
+        use_3d=True,
+        return_components=True,
+    )
+    assert set(res.keys()) >= {"v_3d", "vx", "vy", "vz"}
+
+    dt = (test_features.iloc[1]["time"] - test_features.iloc[0]["time"]).total_seconds()
+    dx = d2d["dx"]
+    assert res["vx"] == pytest.approx(dx / dt, rel=1e-9)
+
+    assert res["vy"] == pytest.approx(0.0, abs=1e-6)
+    assert res["vz"] == pytest.approx(1000 / 600, rel=1e-12)
+
+    assert res["v_3d"] == pytest.approx(v3d, rel=1e-9)
+
+    v_horizontal = np.hypot(res["vx"], res["vy"])
+    assert v_horizontal == pytest.approx(d2d["distance"] / 600, rel=1e-9)
+
+    v3d_from_components = np.sqrt(res["vx"] ** 2 + res["vy"] ** 2 + res["vz"] ** 2)
+    assert res["v_3d"] == pytest.approx(v3d_from_components, rel=1e-12)
+
+
+def test_calculate_velocity_3d_track():
+    """
+    Track with Z: use_3d=True -> 'v_3d' gets set
+    """
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3, 4],
+            "frame": [0, 0, 1, 1],
+            "time": [
+                datetime(2000, 1, 1, 0, 0),
+                datetime(2000, 1, 1, 0, 0),
+                datetime(2000, 1, 1, 0, 10),
+                datetime(2000, 1, 1, 0, 10),
+            ],
+            "projection_x_coordinate": [0, 0, 6000, 0],
+            "projection_y_coordinate": [0, 0, 0, 9000],
+            "height": [0, 0, 800, 1200],
+            "cell": [1, 2, 1, 2],
+        }
+    )
+    out = calculate_velocity(test_features, method_distance="xy", use_3d=True)
+    assert out.at[0, "v_3d"] == pytest.approx(np.sqrt(6000**2 + 800**2) / 600, rel=1e-9)
+    assert out.at[1, "v_3d"] == pytest.approx(
+        np.sqrt(9000**2 + 1200**2) / 600, rel=1e-9
+    )
+
+    out_w_components = calculate_velocity(
+        test_features,
+        method_distance="xy",
+        use_3d=True,
+        return_components=True,
+    )
+
+    dt = 600.0
+    # Expected values for cell 1
+    dx1 = 6000.0
+    dy1 = 0.0
+    dz1 = 800.0
+    v1_3d = np.sqrt(dx1**2 + dy1**2 + dz1**2) / dt
+    vx1 = dx1 / dt
+    vy1 = dy1 / dt
+    vz1 = dz1 / dt
+
+    # Expected values for cell 2
+    dx2 = 0.0
+    dy2 = 9000.0
+    dz2 = 1200.0
+    v2_3d = np.sqrt(dx2**2 + dy2**2 + dz2**2) / dt
+    vx2 = dx2 / dt
+    vy2 = dy2 / dt
+    vz2 = dz2 / dt
+
+    for col in ("v_3d", "vx", "vy", "vz"):
+        assert col in out_w_components.columns
+
+    # Cell 1:
+    assert out_w_components.at[0, "v_3d"] == pytest.approx(v1_3d, rel=1e-12)
+    assert out_w_components.at[0, "vx"] == pytest.approx(vx1, rel=1e-12)
+    assert out_w_components.at[0, "vy"] == pytest.approx(vy1, rel=1e-12)
+    assert out_w_components.at[0, "vz"] == pytest.approx(vz1, rel=1e-12)
+
+    # Cell 2:
+    assert out_w_components.at[1, "v_3d"] == pytest.approx(v2_3d, rel=1e-12)
+    assert out_w_components.at[1, "vx"] == pytest.approx(vx2, rel=1e-12)
+    assert out_w_components.at[1, "vy"] == pytest.approx(vy2, rel=1e-12)
+    assert out_w_components.at[1, "vz"] == pytest.approx(vz2, rel=1e-12)
+
+    for idx in (2, 3):
+        assert np.isnan(out_w_components.at[idx, "v_3d"])
+        assert np.isnan(out_w_components.at[idx, "vx"])
+        assert np.isnan(out_w_components.at[idx, "vy"])
+        assert np.isnan(out_w_components.at[idx, "vz"])
+
+
+def test_latlon_3d_no_degree_components():
+    """
+    For lat/lon + use_3d + return_components: components dict must contain all components
+    v_3d plus optional vx, vy, vz are expected.
+    """
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2],
+            "frame": [0, 0],
+            "time": [datetime(2000, 1, 1), datetime(2000, 1, 1)],
+            "longitude": [0.0, 1.0],
+            "latitude": [0.0, 0.0],
+            "height": [100.0, 500.0],
+        }
+    )
+
+    res = calculate_velocity_individual(
+        test_features.iloc[0],
+        test_features.iloc[1],
+        method_distance="latlon",
+        vertical_coord="height",
+        use_3d=True,
+        return_components=True,
+    )
+
+    assert "v_3d" in res and "vx" in res and "vy" in res and "vz" in res
+
+
+def test_latlon_3d_dt_zero_returns_nan_scalar():
+    """
+    Δt = 0 should return NaN (not crash) for scalar output.
+    """
+    t = datetime(2000, 1, 1, 0, 0, 0)
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2],
+            "frame": [0, 0],
+            "time": [t, t],
+            "longitude": [0.0, 1.0],
+            "latitude": [0.0, 0.0],
+            "height": [0.0, 1000.0],
+        }
+    )
+
+    v = calculate_velocity_individual(
+        test_features.iloc[0],
+        test_features.iloc[1],
+        method_distance="latlon",
+        vertical_coord="height",
+        use_3d=True,
+        return_components=False,
+    )
+    assert np.isnan(v)
+
+
+def test_latlon_3d_dt_zero_returns_nan_components():
+    """
+    Δt = 0 should return NaN values in the components dict (not raise).
+    """
+    t = datetime(2000, 1, 1, 0, 0, 0)
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2],
+            "frame": [0, 0],
+            "time": [t, t],
+            "longitude": [0.0, 1.0],
+            "latitude": [0.0, 0.0],
+            "height": [0.0, 1000.0],
+        }
+    )
+
+    res = calculate_velocity_individual(
+        test_features.iloc[0],
+        test_features.iloc[1],
+        method_distance="latlon",
+        vertical_coord="height",
+        use_3d=True,
+        return_components=True,
+    )
+    # Keys present, values NaN
+    assert "v_3d" in res and "vx" in res and "vy" in res and "vz" in res
+    assert np.isnan(res["v_3d"])
+    assert "v" not in res
+
+    res_2d = calculate_velocity_individual(
+        test_features.iloc[0],
+        test_features.iloc[1],
+        method_distance="latlon",
+        vertical_coord="height",
+        use_3d=False,
+        return_components=True,
+    )
+    assert np.isnan(res_2d["v"])

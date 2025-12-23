@@ -3,4 +3,9 @@ nbsphinx
 numpy
 sphinx_rtd_theme
 sphinx-gallery
+pydata_sphinx_theme
+myst-parser
+sphinx-design
 sphinx-toolbox
+linkify-it-py
+sphinxcontrib-mermaid
