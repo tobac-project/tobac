@@ -81,6 +81,32 @@ from .tracking import linking_trackpy
 from .wrapper import maketrack
 from .wrapper import tracking_wrapper
 from . import merge_split
+import importlib.metadata
+import pathlib
+
+# default version number
+__version__ = "unknown_dev_version"
 
 # Set version number
-__version__ = "1.6.1"
+# This version should work without needing the package installed
+try:
+    __version__ = importlib.metadata.version(__package__ or __name__)
+except importlib.metadata.PackageNotFoundError:
+    # need to get version directly from text file
+    try:
+        import tomllib
+
+        pyproject_toml_file_name = (
+            pathlib.Path(__file__).parent.parent / "pyproject.toml"
+        )
+        if pyproject_toml_file_name.exists() and pyproject_toml_file_name.is_file():
+            with open(pyproject_toml_file_name, "rb") as f:
+                toml_data = tomllib.load(f)
+                if "project" in toml_data and "version" in toml_data["project"]:
+                    __version__ = toml_data["project"]["version"]
+
+    except ImportError:
+        # on python <3.11 but not installing tobac.
+        # don't bother giving precise version number.
+        __version__ = "unknown_dev_version"
+    pass

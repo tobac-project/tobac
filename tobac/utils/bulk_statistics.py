@@ -276,7 +276,7 @@ def get_statistics_from_mask(
         converting between micro- and nanoseconds, as is common when using Pandas
         dataframes.
 
-     Returns:
+     Returns
      -------
      features: pd.DataFrame
          Updated feature dataframe with bulk statistics for each feature saved in a new column

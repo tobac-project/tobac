@@ -3,6 +3,7 @@ Calculate spatial properties (distances, velocities, areas, volumes) of tracked 
 """
 
 import logging
+import warnings
 from itertools import combinations
 from typing import Literal, Optional, Union
 
@@ -72,7 +73,10 @@ def calculate_distance(
     method_distance: Optional[Literal["xy", "latlon"]] = None,
     hdim1_coord: Optional[str] = None,
     hdim2_coord: Optional[str] = None,
-) -> Union[float, pd.Series]:
+    return_components: bool = False,
+    vertical_coord: Optional[str] = None,
+    use_3d: bool = False,
+) -> Union[float, pd.Series, dict]:
     """Compute the distance between two features. It is based on
     either lat/lon coordinates or x/y coordinates.
 
@@ -95,9 +99,26 @@ def calculate_distance(
         If None, tobac.utils.internal.general_internal.find_dataframe_horizontal_coords
         will be used to search for coordinate names present in both dataframes
 
+    return_components : bool, optional (default=False)
+        Flag to control whether the velocity is calculated and
+        returned as its vector components. If False, only the scalar
+        (absolute) value is returned. If True, the function returns a dictionary
+        containing the scalar value as well as its individual directional components
+        (e.g., 'vx', 'vy', 'vz' for velocity).
+
+    vertical_coord : str, optional (default=None)
+        Name of the column in the feature representing the vertical (z-axis) coordinate.
+        If the tracking data includes a vertical dimension, it is identified by checking for common names
+        such as 'z', 'height', or 'altitude'. If none of these are present, `vertical_coord` is set to None,
+        indicating that the data should be treated as 2D.
+
+    use_3d : bool, optional (default=False)
+        If True and a vertical coordinate is available, compute full 3D distances and velocities.
+        Otherwise, only 2D (horizontal) distances are used.
+
     Returns
     -------
-    distance : float or pandas.Series
+    distance : float or pandas.Series or dict
         Float with the distance between the two features in meters if
         the input are two pandas.Series containing one feature,
         pandas.Series of the distances if one of the inputs contains
@@ -137,11 +158,28 @@ def calculate_distance(
     hdim2_coord = feature_1_coord[1]
     method_distance = feature_1_coord[2]
 
+    has_z = (
+        use_3d
+        and vertical_coord is not None
+        and vertical_coord in feature_1
+        and vertical_coord in feature_2
+    )
+
     if method_distance == "xy":
-        distance = np.sqrt(
-            (feature_1[hdim1_coord] - feature_2[hdim1_coord]) ** 2
-            + (feature_1[hdim2_coord] - feature_2[hdim2_coord]) ** 2
-        )
+        dy = feature_2[hdim1_coord] - feature_1[hdim1_coord]
+        dx = feature_2[hdim2_coord] - feature_1[hdim2_coord]
+
+        if has_z:
+            dz = feature_2[vertical_coord] - feature_1[vertical_coord]
+            distance_3d = np.sqrt(dx**2 + dy**2 + dz**2)
+            result = {"distance_3d": distance_3d, "dx": dx, "dy": dy, "dz": dz}
+            return result if return_components else distance_3d
+        else:
+            # Horizontal distance
+            distance = np.sqrt(dx**2 + dy**2)
+            result = {"distance": distance, "dx": dx, "dy": dy}
+            return result if return_components else distance
+
     elif method_distance == "latlon":
         # Check if order of coords is correct, and swap if mismatched:
         if hdim1_coord.lower() in COMMON_LON_COORDS:
@@ -154,10 +192,36 @@ def calculate_distance(
             feature_2[hdim2_coord],
         )
 
-    return distance
+        RADIUS_EARTH = 6378.0
+        lat1_r, lat2_r = np.radians(feature_1[hdim1_coord]), np.radians(
+            feature_2[hdim1_coord]
+        )
+        lon1_r, lon2_r = np.radians(feature_1[hdim2_coord]), np.radians(
+            feature_2[hdim2_coord]
+        )
+        dlat = lat2_r - lat1_r
+        dlon = lon2_r - lon1_r
+        dx = RADIUS_EARTH * dlon * np.cos((lat1_r + lat2_r) / 2) * 1000
+        dy = RADIUS_EARTH * dlat * 1000
+
+        if has_z:
+            dz = feature_2[vertical_coord] - feature_1[vertical_coord]
+            distance_3d = np.sqrt(distance**2 + dz**2)
+            result = {"distance_3d": distance_3d, "dx": dx, "dy": dy, "dz": dz}
+            return result if return_components else distance_3d
+        else:
+            result = {"distance": distance, "dx": dx, "dy": dy}
+            return result if return_components else distance
 
 
-def calculate_velocity_individual(feature_old, feature_new, method_distance=None):
+def calculate_velocity_individual(
+    feature_old,
+    feature_new,
+    method_distance=None,
+    return_components=False,
+    vertical_coord=None,
+    use_3d: bool = False,
+):
     """Calculate the mean velocity of a feature between two timeframes.
 
     Parameters
@@ -179,6 +243,23 @@ def calculate_velocity_individual(feature_old, feature_new, method_distance=None
         required coordinates are present and starts with 'xy'.
         Default is None.
 
+    return_components : bool, optional (default=False)
+        Flag to control whether the velocity is calculated and
+        returned as its vector components. If False, only the scalar
+        (absolute) value is returned. If True, the function returns a dictionary
+        containing the scalar value as well as its individual directional components
+        (e.g., 'vx', 'vy', 'vz' for velocity).
+
+    vertical_coord : str, optional (default=None)
+        Name of the column in the feature representing the vertical (z-axis) coordinate.
+        If the tracking data includes a vertical dimension, it is identified by checking for common names
+        such as 'z', 'height', or 'altitude'. If none of these are present, `vertical_coord` is set to None,
+        indicating that the data should be treated as 2D.
+
+    use_3d : bool, optional (default=False)
+        If True and a vertical coordinate is available, compute full 3D distances and velocities.
+        Otherwise, only 2D (horizontal) distances are used.
+
     Returns
     -------
     velocity : float
@@ -186,15 +267,52 @@ def calculate_velocity_individual(feature_old, feature_new, method_distance=None
 
     """
 
-    distance = calculate_distance(
-        feature_old, feature_new, method_distance=method_distance
+    distance_result = calculate_distance(
+        feature_old,
+        feature_new,
+        method_distance=method_distance,
+        return_components=return_components,
+        vertical_coord=vertical_coord,
+        use_3d=use_3d,
     )
     diff_time = (feature_new["time"] - feature_old["time"]).total_seconds()
-    velocity = distance / diff_time
-    return velocity
+
+    if not np.isfinite(diff_time) or diff_time == 0:
+        msg = (
+            f"Velocity calculation skipped: Δt={diff_time} s "
+            f"between feature_old (time={feature_old['time']}) and feature_new (time={feature_new['time']})."
+        )
+        warnings.warn(msg, RuntimeWarning)
+
+        if return_components and isinstance(distance_result, dict):
+            out = {}
+            if "distance_3d" in distance_result:
+                out["v_3d"] = np.nan
+            if "distance" in distance_result:
+                out["v"] = np.nan
+            for key in ("dx", "dy", "dz"):
+                if key in distance_result:
+                    out["v" + key[1:]] = np.nan
+            return out
+        return np.nan
+
+    if return_components and isinstance(distance_result, dict):
+        velocity = {}
+        if "distance_3d" in distance_result:
+            velocity["v_3d"] = distance_result["distance_3d"] / diff_time
+        if "distance" in distance_result:
+            velocity["v"] = distance_result["distance"] / diff_time
+        for key in ["dx", "dy", "dz"]:
+            if key in distance_result:
+                velocity["v" + key[1:]] = distance_result[key] / diff_time
+        return velocity
+    else:
+        return distance_result / diff_time
 
 
-def calculate_velocity(track, method_distance=None):
+def calculate_velocity(
+    track, method_distance=None, return_components=False, use_3d: bool = False
+):
     """Calculate the velocities of a set of linked features.
 
     Parameters
@@ -211,6 +329,17 @@ def calculate_velocity(track, method_distance=None):
         checks wether the required coordinates are present and
         starts with 'xy'. Default is None.
 
+    return_components : bool, optional (default=False)
+        Flag to control whether the velocity is calculated and
+        returned as its vector components. If False, only the scalar
+        (absolute) value is returned. If True, the function returns a dictionary
+        containing the scalar value as well as its individual directional components
+        (e.g., 'vx', 'vy', 'vz' for velocity).
+
+    use_3d : bool, optional (default=False)
+        If True and a vertical coordinate is available, compute full 3D distances and velocities.
+        Otherwise, only 2D (horizontal) distances are used.
+
     Returns
     -------
     track  : pandas.DataFrame
@@ -219,6 +348,14 @@ def calculate_velocity(track, method_distance=None):
         every possible timestep
     """
 
+    # Check if data is 3d
+    for cand in ["z", "height", "altitude"]:
+        if cand in track:
+            vertical_coord = cand
+            break
+        else:
+            vertical_coord = None
+
     for cell_i, track_i in track.groupby("cell"):
         index = track_i.index.values
         for i, index_i in enumerate(index[:-1]):
@@ -226,8 +363,17 @@ def calculate_velocity(track, method_distance=None):
                 track_i.loc[index[i]],
                 track_i.loc[index[i + 1]],
                 method_distance=method_distance,
+                return_components=return_components,
+                vertical_coord=vertical_coord,
+                use_3d=use_3d,
             )
-            track.at[index_i, "v"] = velocity
+            if return_components and isinstance(velocity, dict):
+                for key, value in velocity.items():
+                    track.at[index_i, key] = value
+            else:
+                key = "v_3d" if (use_3d and vertical_coord is not None) else "v"
+                track.at[index_i, key] = velocity
+
     return track
 
 

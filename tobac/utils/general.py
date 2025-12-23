@@ -28,6 +28,8 @@ def add_coordinates(
     """Add coordinates from the input cube of the feature detection
     to the trajectories/features.
 
+    :meta private:
+
     Parameters
     ----------
     features : pandas.DataFrame
@@ -124,9 +126,11 @@ def add_coordinates_3D(
 
 
 def get_bounding_box(x, buffer=1):
-    """Finds the bounding box of a ndarray, i.e. the smallest
-    bounding rectangle for nonzero values as explained here:
+    """Finds the bounding box of a ndarray
+
+    This is the smallest bounding rectangle for nonzero values as explained here:
     https://stackoverflow.com/questions/31400769/bounding-box-of-numpy-array
+
     Parameters
     ----------
     x : numpy.ndarray
@@ -134,6 +138,7 @@ def get_bounding_box(x, buffer=1):
     buffer : int, optional
         Number to set a buffer between the nonzero values and
         the edges of the box. Default is 1.
+
     Returns
     -------
     bbox : list
@@ -357,6 +362,9 @@ def combine_tobac_feats(list_of_feats, preserve_old_feat_nums=None):
     Function to combine a list of tobac feature detection dataframes
     into one combined dataframe that can be used for tracking
     or segmentation.
+
+    :meta private:
+
     Parameters
     ----------
     list_of_feats: array-like of Pandas DataFrames
@@ -392,6 +400,7 @@ def combine_feature_dataframes(
     """Function to combine a list of tobac feature detection dataframes
     into one combined dataframe that can be used for tracking
     or segmentation.
+
     Parameters
     ----------
     feature_df_list: array-like of Pandas DataFrames
@@ -620,16 +629,16 @@ def transform_feature_points(
 
 
 def standardize_track_dataset(TrackedFeatures, Mask, Projection=None):
-    """
+    """Combine a feature mask with the feature data table into a common dataset returned by tobac.segmentation
+
     CAUTION: this function is experimental. No data structures output are guaranteed to be supported in future versions of tobac.
-    Combine a feature mask with the feature data table into a common dataset.
-    returned by tobac.segmentation
     with the TrackedFeatures dataset returned by tobac.linking_trackpy.
     Also rename the variables to be more descriptive and comply with cf-tree.
     Convert the default cell parent ID  to an integer table.
     Add a cell dimension to reflect
     Projection is an xarray DataArray
     TODO: Add metadata attributes
+
     Parameters
     ----------
     TrackedFeatures : xarray.core.dataset.Dataset
@@ -652,6 +661,7 @@ def standardize_track_dataset(TrackedFeatures, Mask, Projection=None):
         longitude_of_prime_meridian :0.0
         false_easting :0.0
         false_northing :0.0
+
     Returns
     -------
     ds : xarray.core.dataset.Dataset

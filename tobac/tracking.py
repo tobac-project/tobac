@@ -21,7 +21,6 @@ References
 
 from __future__ import annotations
 import logging
-from operator import is_
 import numpy as np
 import pandas as pd
 import warnings
@@ -32,7 +31,7 @@ from .utils import internal as internal_utils
 
 from packaging import version as pkgvsn
 import trackpy as tp
-from copy import deepcopy
+import copy
 
 
 def linking_trackpy(
@@ -307,7 +306,7 @@ def linking_trackpy(
             tp.linking.Linker.MAX_SUB_NET_SIZE_ADAPTIVE = subnetwork_size
 
     # deep copy to preserve features field:
-    features_linking = deepcopy(features)
+    features_linking = copy.deepcopy(features)
 
     # check if we are 3D or not
     if is_3D:
@@ -469,7 +468,7 @@ def linking_trackpy(
     trajectories_filtered = trajectories_unfiltered
 
     # Interpolate to fill the gaps in the trajectories (left from allowing memory in the linking)
-    trajectories_filtered_unfilled = deepcopy(trajectories_filtered)
+    trajectories_filtered_unfilled = copy.deepcopy(trajectories_filtered)
 
     #    trajectories_filtered_filled=fill_gaps(trajectories_filtered_unfilled,order=order,
     #                                extrapolate=extrapolate,frame_max=field_in.shape[0]-1,
@@ -497,7 +496,7 @@ def fill_gaps(
     t, order=1, extrapolate=0, frame_max=None, hdim_1_max=None, hdim_2_max=None
 ):
     """Add cell time as time since the initiation of each cell.
-
+    :hidden:
     Parameters
     ----------
     t : pandas.DataFrame
@@ -576,7 +575,7 @@ def fill_gaps(
 
 def add_cell_time(t: pd.DataFrame, cell_number_unassigned: int):
     """add cell time as time since the initiation of each cell
-
+    :hidden:
     Parameters
     ----------
     t : pandas.DataFrame
@@ -602,7 +601,7 @@ def add_cell_time(t: pd.DataFrame, cell_number_unassigned: int):
 def remap_particle_to_cell_nv(particle_cell_map, input_particle):
     """Remaps the particles to new cells given an input map and the current particle.
     Helper function that is designed to be vectorized with np.vectorize
-
+    :hidden:
     Parameters
     ----------
     particle_cell_map: dict-like
