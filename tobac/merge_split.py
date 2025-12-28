@@ -65,7 +65,7 @@ def merge_split_MEST(
         cell and the start of a related cell, by default 5 frames.
 
     cell_number_unassigned: int, optional
-        Value given tp unassigned/non-tracked cells by tracking, by default -1.
+        Value given to unassigned/non-tracked cells by tracking, by default -1.
 
     vertical_coord: str, optional
         Name of the vertical coordinate, default None. The vertical coordinate
