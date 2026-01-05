@@ -1,5 +1,3 @@
-Here's your file converted to MyST Markdown:
-markdown(code-reviews)=
 # Code reviews
 
 Before anything is merged into the release branch (`RC_*`), we require that one reviewer accepts the code changes of a pull request.
