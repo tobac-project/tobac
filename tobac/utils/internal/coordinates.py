@@ -428,3 +428,59 @@ def detect_latlon_coord_name(
                 out_lon = test_lon_name
                 break
     return out_lat, out_lon
+
+
+def make_empty_features_dataframe(is_3D: bool) -> pd.DataFrame:
+    """
+    Create an empty but properly formatted feature DataFrame.
+
+    Returns an empty pandas DataFrame with the same columns and dtypes as the feature detection output.
+    This is used when no features are detected, to ensure a consistent return type and avoid returning ``None``.
+
+    Parameters
+    ----------
+    is_3d : bool
+        Whether the feature detection is 3D. If True, include vertical coordinate columns.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Empty DataFrame with the correct columns and dtypes for feature output.
+    """
+
+    if is_3D:
+        schema = {
+            "frame": "int64",
+            "idx": "int64",
+            "vdim": "float64",
+            "hdim_1": "float64",
+            "hdim_2": "float64",
+            "num": "int64",
+            "threshold_value": "int64",
+            "feature": "int64",
+            "time": "datetime64[ns]",
+            "timestr": "object",
+            "z": "float64",
+            "y": "float64",
+            "x": "float64",
+            "latitude": "float64",
+            "longitude": "float64",
+        }
+    else:
+        schema = {
+            "frame": "int64",
+            "idx": "int64",
+            "hdim_1": "float64",
+            "hdim_2": "float64",
+            "num": "int64",
+            "threshold_value": "int64",
+            "feature": "int64",
+            "time": "datetime64[ns]",
+            "timestr": "object",
+            "y": "float64",
+            "x": "float64",
+            "latitude": "float64",
+            "longitude": "float64",
+        }
+
+    return pd.DataFrame({c: pd.Series(dtype=t) for c, t in schema.items()})
