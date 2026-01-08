@@ -1556,9 +1556,6 @@ def feature_detection_multithreshold(
 
     else:
         features = internal_utils.coordinates.make_empty_features_dataframe(is_3D=is_3D)
-        if return_labels:
-            # labels should be the initialised label_fields
-            pass
         logging.debug("No features detected; returning empty features DataFrame")
 
     logging.debug("feature detection completed")
