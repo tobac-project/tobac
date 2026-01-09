@@ -1555,9 +1555,8 @@ def feature_detection_multithreshold(
                 label_fields[i].data[~wh_all_labels] = 0
 
     else:
-        features = None
-        label_fields = None
-        logging.debug("No features detected")
+        features = internal_utils.coordinates.make_empty_features_dataframe(is_3D=is_3D)
+        logging.debug("No features detected; returning empty features DataFrame")
 
     logging.debug("feature detection completed")
 

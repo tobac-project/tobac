@@ -4,6 +4,7 @@ import tobac.testing as tbtest
 import pytest
 import numpy as np
 import xarray as xr
+import pandas.api.types as ptypes
 
 
 @pytest.mark.parametrize(
@@ -95,3 +96,90 @@ def test_detect_latlon_coord_name(
     )
     assert out_lat_name == expected_result[0]
     assert out_lon_name == expected_result[1]
+
+
+def test_make_empty_features_dataframe_2d():
+    """
+    Test that the empty 2D feature DataFrame has the correct columns and dtypes.
+    """
+    df = internal_utils.make_empty_features_dataframe(is_3D=False)
+
+    expected_cols = [
+        "frame",
+        "idx",
+        "hdim_1",
+        "hdim_2",
+        "num",
+        "threshold_value",
+        "feature",
+        "time",
+        "timestr",
+        "y",
+        "x",
+        "latitude",
+        "longitude",
+    ]
+
+    assert list(df.columns) == expected_cols
+    assert df.empty
+
+    assert ptypes.is_integer_dtype(df["frame"].dtype)
+    assert ptypes.is_integer_dtype(df["idx"].dtype)
+    assert ptypes.is_float_dtype(df["hdim_1"].dtype)
+    assert ptypes.is_float_dtype(df["hdim_2"].dtype)
+    assert ptypes.is_integer_dtype(df["num"].dtype)
+    assert ptypes.is_integer_dtype(df["threshold_value"].dtype)
+    assert ptypes.is_integer_dtype(df["feature"].dtype)
+
+    assert ptypes.is_datetime64_ns_dtype(df["time"].dtype)
+    assert df["timestr"].dtype == object
+
+    assert ptypes.is_float_dtype(df["y"].dtype)
+    assert ptypes.is_float_dtype(df["x"].dtype)
+    assert ptypes.is_float_dtype(df["latitude"].dtype)
+    assert ptypes.is_float_dtype(df["longitude"].dtype)
+
+
+def test_make_empty_features_dataframe_3d_schema_and_dtypes():
+    """
+    Test that the empty 3D feature DataFrame has the correct columns and dtypes.
+    """
+    df = internal_utils.make_empty_features_dataframe(is_3D=True)
+
+    expected_cols = [
+        "frame",
+        "idx",
+        "vdim",
+        "hdim_1",
+        "hdim_2",
+        "num",
+        "threshold_value",
+        "feature",
+        "time",
+        "timestr",
+        "z",
+        "y",
+        "x",
+        "latitude",
+        "longitude",
+    ]
+    assert list(df.columns) == expected_cols
+    assert df.empty
+
+    assert ptypes.is_integer_dtype(df["frame"].dtype)
+    assert ptypes.is_integer_dtype(df["idx"].dtype)
+    assert ptypes.is_float_dtype(df["vdim"].dtype)
+    assert ptypes.is_float_dtype(df["hdim_1"].dtype)
+    assert ptypes.is_float_dtype(df["hdim_2"].dtype)
+    assert ptypes.is_integer_dtype(df["num"].dtype)
+    assert ptypes.is_integer_dtype(df["threshold_value"].dtype)
+    assert ptypes.is_integer_dtype(df["feature"].dtype)
+
+    assert ptypes.is_datetime64_ns_dtype(df["time"].dtype)
+    assert df["timestr"].dtype == object
+
+    assert ptypes.is_float_dtype(df["z"].dtype)
+    assert ptypes.is_float_dtype(df["y"].dtype)
+    assert ptypes.is_float_dtype(df["x"].dtype)
+    assert ptypes.is_float_dtype(df["latitude"].dtype)
+    assert ptypes.is_float_dtype(df["longitude"].dtype)
