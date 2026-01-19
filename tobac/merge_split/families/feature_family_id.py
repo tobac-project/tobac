@@ -240,18 +240,18 @@ def identify_feature_families_from_data(
                 family_stats[family.label + max_family_number] = dict()
                 # family_stats[family.label+max_family_number]['frame'] =
 
-                family_stats[family.label + max_family_number]["num_pixels"] = family[
+                family_stats[family.label + max_family_number][
                     "num_pixels"
-                ]
+                ] = family.area
                 family_stats[family.label + max_family_number][family_column_name] = (
                     family.label + max_family_number
                 )
                 if not is_3D:
                     family_stats[family.label + max_family_number]["hdim_1_center"] = (
-                        family["centroid"][0]
+                        family.centroid[0]
                     )
                     family_stats[family.label + max_family_number]["hdim_2_center"] = (
-                        family["centroid"][1]
+                        family.centroid[1]
                     )
 
                 else:
