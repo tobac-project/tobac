@@ -9,7 +9,7 @@ import numpy as np
 import xarray as xr
 import skimage.measure
 import copy
-from typing import Optional, Literal
+from typing import Optional, Literal, Union
 import datetime
 import tobac.utils.internal.label_functions as tb_label
 import tobac.utils.datetime as tb_datetime
@@ -96,12 +96,12 @@ def identify_feature_families_from_segmentation(
                     family.label + max_family_number
                 )
                 if not is_3D:
-                    family_stats[family.label + max_family_number]["hdim_1_center"] = (
-                        family["centroid"][0]
-                    )
-                    family_stats[family.label + max_family_number]["hdim_2_center"] = (
-                        family["centroid"][1]
-                    )
+                    family_stats[family.label + max_family_number][
+                        "hdim_1_center"
+                    ] = family["centroid"][0]
+                    family_stats[family.label + max_family_number][
+                        "hdim_2_center"
+                    ] = family["centroid"][1]
 
                 else:
                     # TODO: integrate 3D stats - mostly around center coordinates - need the functions in tobac proper
@@ -159,6 +159,7 @@ def identify_feature_families_from_data(
     time_padding: Optional[datetime.timedelta] = datetime.timedelta(seconds=0.5),
     PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
     target: Literal["minimum", "maximum"] = "maximum",
+    unlinked_family_id: Union[int, None] = -1,
 ):
     """
     Function to identify families/storm systems by identifying where segmentation touches.
@@ -185,6 +186,11 @@ def identify_feature_families_from_data(
         What axes to do periodic boundaries on
     target: {"minimum", "maximum"}
         Whether we are looking for things ascending ("maximum") or descending ("minimum")
+    unlinked_family_id: int or None
+        The value to have in the dataframe for any feature that cannot be linked to a family.
+        This is unusual (as every feature should link to a family), but this can happen
+        if e.g., the feature position is located outside of the feature area above the threshold.
+        If "None", these features are dropped from the output.
 
     Returns
     -------
@@ -213,9 +219,9 @@ def identify_feature_families_from_data(
     if enable_family_statistics:
         region_props_vals = ["bbox", "centroid", "num_pixels"]
         family_stats = dict()
-    # TODO: find index of time variable
     for time_index in range(in_data.shape[0]):
         # TODO: fix time_var_name for isel?
+        # print("time_index: ", time_index)
         in_data_at_time = in_data.isel(time=time_index)
         in_arr = np.array(in_data_at_time)
 
@@ -235,6 +241,7 @@ def identify_feature_families_from_data(
             all_family_nums = list()
 
             family_props = skimage.measure.regionprops(family_labeled_data)
+            # print(max_family_number)
             for family in family_props:
                 all_family_nums.append(family.label + max_family_number)
                 family_stats[family.label + max_family_number] = dict()
@@ -247,19 +254,16 @@ def identify_feature_families_from_data(
                     family.label + max_family_number
                 )
                 if not is_3D:
-                    family_stats[family.label + max_family_number]["hdim_1_center"] = (
-                        family.centroid[0]
-                    )
-                    family_stats[family.label + max_family_number]["hdim_2_center"] = (
-                        family.centroid[1]
-                    )
+                    family_stats[family.label + max_family_number][
+                        "hdim_1_center"
+                    ] = family.centroid[0]
+                    family_stats[family.label + max_family_number][
+                        "hdim_2_center"
+                    ] = family.centroid[1]
 
                 else:
                     # TODO: integrate 3D stats - mostly around center coordinates - need the functions in tobac proper
                     raise NotImplementedError("3D stats not implemented yet")
-
-        # associate feature ID -> family ID
-        #
 
         # need to associate family ID with each feature ID
 
@@ -310,11 +314,16 @@ def identify_feature_families_from_data(
             )
 
         # print(family_labeled_data.shape)
+
         family_ids = family_labeled_data[points_list]
+        # remove 0 (background) if needed
+
+        family_ids_sorted = np.unique(np.sort(family_ids))
+
         # we want to get rid of points that aren't features in the grid output
-        suppressing_families = np.isin(family_labeled_data, family_ids)
+        suppressing_families = np.isin(family_labeled_data, family_ids_sorted)
         feature_id_family_id_match_ct = {
-            feat: fam_id + max_family_number
+            feat: fam_id
             for feat, fam_id in zip(
                 rows_at_time["feature"].values, family_ids + max_family_number
             )
@@ -324,12 +333,16 @@ def identify_feature_families_from_data(
             family_labeled_data + max_family_number
         ) * suppressing_families.astype(int)
 
-        max_family_number = max_family_number + number_families
+        max_family_number = out_families.max().values
 
     family_series = pd.Series(seg_family_dict, name=family_column_name)
     feature_series = pd.Series({x: x for x in seg_family_dict.keys()}, name="feature")
     family_df = pd.concat([family_series, feature_series], axis=1)
     out_df = feature_df.merge(family_df, on="feature", how="inner")
+    if unlinked_family_id is not None:
+        out_df.loc[out_df["feature_family_id"] == 0, "feature_family_id"] = -1
+    else:
+        out_df = out_df[out_df["feature_family_id"] != 0]
 
     if enable_family_statistics:
         family_stats_df = pd.DataFrame.from_dict(family_stats, orient="index")
@@ -343,6 +356,14 @@ def identify_feature_families_from_data(
         family_stats_df = family_stats_df.join(
             fam_to_time_df, on=family_column_name
         ).dropna(subset="time")
+        family_stats_df = family_stats_df.drop(
+            [
+                0,
+            ],
+            axis=0,
+            errors="ignore",
+        )
+        family_stats_df = family_stats_df.set_index(family_column_name)
 
     if return_grid:
         if enable_family_statistics:
