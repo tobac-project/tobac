@@ -20,6 +20,7 @@ def identify_feature_families_from_segmentation(
     in_segmentation: xr.DataArray,
     return_grid: bool = False,
     family_column_name: str = "feature_family_id",
+    PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
     unsegmented_point_values: int = 0,
     below_threshold_values: int = -1,
 ):
@@ -43,6 +44,8 @@ def identify_feature_families_from_segmentation(
         The value in the input segmentation for unsegmented but above threshold points
     below_threshold_values: int
         The value in the input segmentation for below threshold points
+    PBC_flag: {"none", "hdim_1", "hdim_2", "both"}
+        What axes to do periodic boundaries on
 
     Returns
     -------
@@ -53,101 +56,18 @@ def identify_feature_families_from_segmentation(
 
     """
 
-    # TODO: This does not currently work if you have segmentation data that
-    # uses feature numbers pre-merging
-
-    # we need to label the data, but we currently label using skimage label, not dask label.
-
-    # 3D should be 4-D (time, then 3 spatial).
-    # 2D should be 3-D (time, then 2 spatial)
-    is_3D = len(in_segmentation.shape) == 4
-    seg_family_dict = dict()
-    out_families = copy.deepcopy(in_segmentation)
-    max_family_number = 0
-    enable_family_statistics = True
-
-    if enable_family_statistics:
-        region_props_vals = ["bbox", "centroid", "num_pixels"]
-        family_stats = dict()
-
-    for time_index in range(in_segmentation.shape[0]):
-        in_arr = np.array(in_segmentation.values[time_index])
-
-        segmented_arr = np.logical_and(
-            in_arr != unsegmented_point_values, in_arr != below_threshold_values
-        )
-        # These are our families
-        family_labeled_data, number_families = skimage.measure.label(
-            segmented_arr, return_num=True
-        )
-        if enable_family_statistics:
-            all_family_nums = list()
-
-            family_props = skimage.measure.regionprops(family_labeled_data)
-            for family in family_props:
-                all_family_nums.append(family.label + max_family_number)
-                family_stats[family.label + max_family_number] = dict()
-                # family_stats[family.label+max_family_number]['frame'] =
-
-                family_stats[family.label + max_family_number]["num_pixels"] = family[
-                    "num_pixels"
-                ]
-                family_stats[family.label + max_family_number][family_column_name] = (
-                    family.label + max_family_number
-                )
-                if not is_3D:
-                    family_stats[family.label + max_family_number][
-                        "hdim_1_center"
-                    ] = family["centroid"][0]
-                    family_stats[family.label + max_family_number][
-                        "hdim_2_center"
-                    ] = family["centroid"][1]
-
-                else:
-                    # TODO: integrate 3D stats - mostly around center coordinates - need the functions in tobac proper
-                    raise NotImplementedError("3D stats not implemented yet")
-
-        # now we need to note feature->family relationship in the dataframe.
-        segmentation_props = skimage.measure.regionprops(in_arr)
-
-        # associate feature ID -> family ID
-        for seg_area in segmentation_props:
-            if is_3D:
-                seg_family = family_labeled_data[
-                    seg_area.coords[0, 0], seg_area.coords[0, 1], seg_area.cords[0, 2]
-                ]
-            else:
-                seg_family = family_labeled_data[
-                    seg_area.coords[0, 0], seg_area.coords[0, 1]
-                ]
-            seg_family_dict[seg_area.label] = seg_family + max_family_number
-        """
-        if seg_area is not None and enable_family_statistics:
-            curr_feat = seg_area.label
-            curr_frame = feature_df[feature_df['feature'] == curr_feat]['frame']
-            for family_id in all_family_nums:
-                family_stats[family_id]['frame'] = curr_frame.values[0]
-
-        """
-        out_families[time_index] = family_labeled_data + max_family_number * (
-            (family_labeled_data > unsegmented_point_values).astype(int)
-        )
-        max_family_number = max_family_number + number_families
-
-    family_series = pd.Series(seg_family_dict, name=family_column_name)
-    feature_series = pd.Series({x: x for x in seg_family_dict.keys()}, name="feature")
-    family_df = pd.concat([family_series, feature_series], axis=1)
-    out_df = feature_df.merge(family_df, on="feature", how="inner")
-
-    if enable_family_statistics:
-        family_stats_df = pd.DataFrame.from_dict(family_stats, orient="index")
-
-    if return_grid:
-        if enable_family_statistics:
-            return out_df, family_stats_df, out_families
-
-    else:
-        return out_df, family_stats_df
+    booled_values = (in_segmentation != unsegmented_point_values) & (
+        in_segmentation != below_threshold_values
+    )
+    return identify_feature_families_from_data(
+        feature_df,
+        booled_values,
+        threshold=0,
+        target="bool",
+        return_grid=return_grid,
+        PBC_flag=PBC_flag,
+        family_column_name=family_column_name,
+    )
 
 
 def identify_feature_families_from_data(
@@ -158,7 +78,7 @@ def identify_feature_families_from_data(
     family_column_name: str = "feature_family_id",
     time_padding: Optional[datetime.timedelta] = datetime.timedelta(seconds=0.5),
     PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
-    target: Literal["minimum", "maximum"] = "maximum",
+    target: Literal["minimum", "maximum", "bool"] = "maximum",
     unlinked_family_id: Union[int, None] = -1,
 ):
     """
@@ -184,8 +104,10 @@ def identify_feature_families_from_data(
         conversions.
     PBC_flag: {"none", "hdim_1", "hdim_2", "both"}
         What axes to do periodic boundaries on
-    target: {"minimum", "maximum"}
-        Whether we are looking for things ascending ("maximum") or descending ("minimum")
+    target: {"minimum", "maximum", "bool"}
+        Whether we are looking for things ascending ("maximum") or descending ("minimum").
+        There is the special case where you already have a true/false array, then you can put
+        "bool" as the output.
     unlinked_family_id: int or None
         The value to have in the dataframe for any feature that cannot be linked to a family.
         This is unusual (as every feature should link to a family), but this can happen
@@ -230,8 +152,10 @@ def identify_feature_families_from_data(
             mask = in_arr < threshold
         elif target == "maximum":
             mask = in_arr > threshold
+        elif target == "bool":
+            mask = in_arr
         else:
-            raise ValueError("target must be minimum or maximum")
+            raise ValueError("target must be minimum, maximum, or bool")
         family_labeled_data, number_families = tb_label.label_with_pbcs(
             mask, PBC_flag=PBC_flag, connectivity=1
         )
