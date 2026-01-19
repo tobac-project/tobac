@@ -5,6 +5,7 @@ import tobac.feature_detection as feat_detect
 import pytest
 import numpy as np
 import xarray as xr
+import pandas as pd
 from pandas.testing import assert_frame_equal
 
 
@@ -1319,3 +1320,92 @@ def test_banded_feature():
     assert len(fd_output) == 1
     assert fd_output.iloc[0]["hdim_1"] == pytest.approx(24.5)
     assert fd_output.iloc[0]["hdim_2"] == pytest.approx(24.5)
+
+
+def test_feature_detection_2d_no_features_returns_empty_df():
+    """
+    Test that 2D feature detection returns an empty, properly formatted DataFrame when no features are detected.
+    """
+    # 2D + time => (time, y, x)
+    data = np.zeros((2, 10, 12), dtype=float)
+    da = xr.DataArray(
+        data,
+        dims=("time", "y", "x"),
+        coords={"time": pd.date_range("2000-01-01", periods=2, freq="2min")},
+        name="field",
+    )
+
+    features = feat_detect.feature_detection_multithreshold(
+        da,
+        dxy=1000.0,
+        threshold=[1e9],
+        return_labels=False,
+    )
+
+    assert isinstance(features, pd.DataFrame)
+    assert features.empty
+
+    expected_cols = [
+        "frame",
+        "idx",
+        "hdim_1",
+        "hdim_2",
+        "num",
+        "threshold_value",
+        "feature",
+        "time",
+        "timestr",
+        "y",
+        "x",
+        "latitude",
+        "longitude",
+    ]
+    assert list(features.columns) == expected_cols
+
+
+def test_feature_detection_3d_no_features_returns_empty_df():
+    """
+    Test that 3D feature detection returns an empty, properly formatted DataFrame when no features are detected.
+    """
+    # 3D + time => (time, z, y, x)
+    data = np.zeros((2, 3, 10, 12), dtype=float)
+    da = xr.DataArray(
+        data,
+        dims=("time", "z", "y", "x"),
+        coords={
+            "time": pd.date_range("2000-01-01", periods=2, freq="2min"),
+            "z": np.arange(3),
+            "y": np.arange(10),
+            "x": np.arange(12),
+        },
+        name="field",
+    )
+
+    features = feat_detect.feature_detection_multithreshold(
+        da,
+        dxy=1000.0,
+        threshold=[1e9],
+        return_labels=False,
+    )
+
+    assert isinstance(features, pd.DataFrame)
+    assert features.empty
+
+    expected_cols = [
+        "frame",
+        "idx",
+        "vdim",
+        "hdim_1",
+        "hdim_2",
+        "num",
+        "threshold_value",
+        "feature",
+        "time",
+        "timestr",
+        "z",
+        "y",
+        "x",
+        "latitude",
+        "longitude",
+    ]
+    assert list(features.columns) == expected_cols

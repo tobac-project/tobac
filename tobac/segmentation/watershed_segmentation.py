@@ -1258,6 +1258,12 @@ def segmentation(
         name="segmentation_mask",
     ).assign_attrs(threshold=threshold)
 
+    if features is None or features.empty:
+        logging.debug(
+            "No features provided; returning empty segmentation mask and empty features DataFrame"
+        )
+        return segmentation_out_data, features
+
     features_out_list = []
 
     if len(field.coords[time_var_name]) == 1:
