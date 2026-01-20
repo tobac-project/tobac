@@ -9,5 +9,13 @@ Features ({doc}`/userguide/feature_detection/index`) are the *base unit* of *tob
 ## Algorithm Basics
 You can either detect families from data ({py:func}`tobac.merge_split.families.identify_feature_families_from_data`) or from segmentation output ({py:func}`tobac.merge_split.families.identify_feature_families_from_segmentation`). Similar to segmentation, families are identified based on a single threshold when detected from data (defined by {py:code}`threshold`), but it does *not* need to be the same field that you detect the features on[^3dcaveat].
 
+## Family Example Notebooks
+
+```{nblinkgallery}
+:caption: Jupyter Notebook Examples
+
+../examples/Basics/Idealized-Family-Detection.ipynb
+```
+
 
 [^3dcaveat]: Although, you cannot currently project 2D features to 3D families.
