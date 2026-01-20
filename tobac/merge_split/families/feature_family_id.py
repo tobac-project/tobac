@@ -4,13 +4,14 @@ A family is defined as a set of contiguous points above a single threshold that 
 one but can contain many detected features.
 """
 
+import copy
+from typing import Optional, Literal, Union
+import datetime
+
 import pandas as pd
 import numpy as np
 import xarray as xr
 import skimage.measure
-import copy
-from typing import Optional, Literal, Union
-import datetime
 import tobac.utils.internal.label_functions as tb_label
 import tobac.utils.datetime as tb_datetime
 
@@ -178,12 +179,12 @@ def identify_feature_families_from_data(
                     family.label + max_family_number
                 )
                 if not is_3D:
-                    family_stats[family.label + max_family_number][
-                        "hdim_1_center"
-                    ] = family.centroid[0]
-                    family_stats[family.label + max_family_number][
-                        "hdim_2_center"
-                    ] = family.centroid[1]
+                    family_stats[family.label + max_family_number]["hdim_1_center"] = (
+                        family.centroid[0]
+                    )
+                    family_stats[family.label + max_family_number]["hdim_2_center"] = (
+                        family.centroid[1]
+                    )
 
                 else:
                     # TODO: integrate 3D stats - mostly around center coordinates - need the functions in tobac proper
