@@ -37,6 +37,7 @@ from tobac.utils import periodic_boundaries as pbc_utils
 from tobac.utils.general import spectral_filtering
 from tobac.utils.generators import field_and_features_over_time
 
+from tobac.segmentation.geometric_subsegmentation import clustering
 
 def feature_position(
     hdim1_indices: list[int],
@@ -478,6 +479,8 @@ def feature_detection_threshold(
     from skimage.morphology import binary_erosion
     from copy import deepcopy
 
+    feature_detection_method = kwargs.get('feature_detection_method', 'connected_components')
+
     if min_num != 0:
         warnings.warn(
             "min_num parameter has no effect and will be deprecated in a future version of tobac. "
@@ -512,7 +515,11 @@ def feature_detection_threshold(
             selem = np.ones((n_erosion_threshold, n_erosion_threshold))
         mask = binary_erosion(mask, selem)
         # detect individual regions, label  and count the number of pixels included:
-    labels, num_labels = label(mask, background=0, return_num=True)
+    
+    if feature_detection_method == 'connected_components':
+        labels, num_labels = label(mask, background=0, return_num=True)
+
+
     if not is_3D:
         # let's transpose labels to a 1,y,x array to make calculations etc easier.
         labels = labels[np.newaxis, :, :]
@@ -1127,6 +1134,7 @@ def feature_detection_multithreshold_timestep(
             idx_start=idx_start,
             PBC_flag=PBC_flag,
             vertical_axis=vertical_axis,
+            **kwargs
         )
         if any([x is not None for x in features_threshold_i]):
             features_thresholds = pd.concat(
