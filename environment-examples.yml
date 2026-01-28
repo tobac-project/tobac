@@ -6,7 +6,7 @@ dependencies:
   - scipy
   - scikit-image
   - scikit-learn
-  - pandas
+  - pandas<3
   - matplotlib
   - iris
   - xarray<2024.10.0
