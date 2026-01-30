@@ -63,6 +63,12 @@ dev = [
     "nbconvert",
 ]
 
+# optional dependencies for advanced segmentation features
+segmentation = [
+    "SimpleITK",
+    "mahotas",
+]
+
 # required to run example notebooks
 examples = [
     "jupyter",
@@ -87,6 +93,8 @@ all = [
     "black",
     "pytest",
     "nbconvert",
+    "SimpleITK",
+    "mahotas",
     "jupyter",
     "notebook",
     "pytables",

@@ -36,8 +36,8 @@ from tobac.utils import internal as internal_utils
 from tobac.utils import periodic_boundaries as pbc_utils
 from tobac.utils.general import spectral_filtering
 from tobac.utils.generators import field_and_features_over_time
+from tobac.segmentation import subsegmentation
 
-from tobac.segmentation.geometric_subsegmentation import clustering
 
 def feature_position(
     hdim1_indices: list[int],
@@ -479,7 +479,9 @@ def feature_detection_threshold(
     from skimage.morphology import binary_erosion
     from copy import deepcopy
 
-    feature_detection_method = kwargs.get('feature_detection_method', 'connected_components')
+    feature_detection_method = kwargs.get(
+        "feature_detection_method", "connected_components"
+    )
 
     if min_num != 0:
         warnings.warn(
@@ -504,21 +506,42 @@ def feature_detection_threshold(
         # if looking for minima, set values above threshold to 0 and scale by data minimum:
     elif target == "minimum":
         mask = data_i <= threshold
-    # only include values greater than threshold
-    # erode selected regions by n pixels
-    if n_erosion_threshold > 0:
-        if is_3D:
-            selem = np.ones(
-                (n_erosion_threshold, n_erosion_threshold, n_erosion_threshold)
-            )
-        else:
-            selem = np.ones((n_erosion_threshold, n_erosion_threshold))
-        mask = binary_erosion(mask, selem)
-        # detect individual regions, label  and count the number of pixels included:
-    
-    if feature_detection_method == 'connected_components':
+
+    # selecting feature detection implementations
+    # ===========================================
+    if feature_detection_method == "connected_components":
+        print('... using connected components for feature detection')
+
+        # only include values greater than threshold
+        # erode selected regions by n pixels
+        if n_erosion_threshold > 0:
+            if is_3D:
+                selem = np.ones(
+                    (n_erosion_threshold, n_erosion_threshold, n_erosion_threshold)
+                )
+            else:
+                selem = np.ones((n_erosion_threshold, n_erosion_threshold))
+            mask = binary_erosion(mask, selem)
+            # detect individual regions, label  and count the number of pixels included:
+
         labels, num_labels = label(mask, background=0, return_num=True)
 
+    elif feature_detection_method == "subsegmentation":
+        print('... using subsegmentation for feature detection')
+
+        # we keep data and just turn sign for minimum criterium
+        if target == "minimum":
+            data_for_detection = -data_i
+            threshold_for_detection = -threshold
+        else:
+            data_for_detection = data_i
+            threshold_for_detection = threshold
+
+        kwargs["min_size"] = min_num  # same things, but different option names
+        labels = subsegmentation(data_for_detection, threshold_for_detection, **kwargs)
+
+        # quickfix (dirty and potentially buggy)
+        num_labels = labels.max()
 
     if not is_3D:
         # let's transpose labels to a 1,y,x array to make calculations etc easier.
@@ -1134,7 +1157,7 @@ def feature_detection_multithreshold_timestep(
             idx_start=idx_start,
             PBC_flag=PBC_flag,
             vertical_axis=vertical_axis,
-            **kwargs
+            **kwargs,
         )
         if any([x is not None for x in features_threshold_i]):
             features_thresholds = pd.concat(
@@ -1477,6 +1500,7 @@ def feature_detection_multithreshold(
             statistic=statistic,
             statistics_unsmoothed=statistics_unsmoothed,
             return_labels=return_labels,
+            **kwargs
         )
         # Process the returned data depending on the flags
         if return_labels:

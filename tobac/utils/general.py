@@ -18,6 +18,13 @@ import datetime
 import xarray as xr
 import warnings
 
+try:
+    import SimpleITK
+except ImportError:
+    warnings.warn(
+        "SimpleITK not available. Some image processing functionality may be limited."
+    )
+
 
 def add_coordinates(
     features: pd.DataFrame,
@@ -751,3 +758,47 @@ def standardize_track_dataset(TrackedFeatures, Mask, Projection=None):
         ds["ProjectionCoordinateSystem"] = Projection
 
     return ds
+
+
+def curve_flow_filter(f, numberOfIterations=5):
+    """
+    Smoothing filter depending on isoline curvature. Interface for 
+    curvature flow filter from simpleITK toolkit.
+
+    Parameters
+    ----------
+    f : numpy array (2-dim)
+        2d field to be filtered (smoothed)
+    numberOfIterations : int, optional, default = 5
+        number of iterations, increases smooting effect
+
+    Returns
+    -------
+    f_sm : numpy array (2-dim)
+        smoothed 2d field
+
+    Notes
+    -----
+    Only works if SimpleITK is installed !!!
+
+    Raises
+    ------
+    ImportError
+        If SimpleITK is not available
+    """
+    try:
+        img = SimpleITK.GetImageFromArray(f)
+        
+        img_sm = SimpleITK.CurvatureFlow(img, numberOfIterations=numberOfIterations)
+        
+        f_sm = SimpleITK.GetArrayFromImage(img_sm)
+        
+        return f_sm
+    
+    except NameError:
+        
+        raise ImportError(
+            "SimpleITK is required for curve_flow_filter but is not available. "
+            "Please install SimpleITK to use this function."
+        )
+
