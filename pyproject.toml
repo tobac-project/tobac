@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tobac"
-version = "1.6.2"
+version = "1.6.3"
 authors = [
       { name="Max Heikenfeld", email="max.heikenfeld@physics.ox.ac.uk" },
       { name="William Jones", email="william.jones@physics.ox.ac.uk" },
@@ -45,7 +45,7 @@ dependencies = [
     "scipy",
     "scikit-image",
     "scikit-learn",
-    "pandas",
+    "pandas<3",
     "matplotlib",
     "scitools-iris",
     "xarray",
@@ -100,7 +100,7 @@ all = [
     "intake==0.7.0",
     "intake-xarray==0.7.0",
     "healpix",
-    "easygems",
+    "easygems==0.1.2",
 ]
 
 
