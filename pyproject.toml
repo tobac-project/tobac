@@ -17,7 +17,7 @@ authors = [
 description = "A package for identifying and tracking atmospheric phenomena"
 readme = "README.md"
 requires-python = ">=3.9,<3.14"
-license = "BSD-3-Clause"
+license = {text = "BSD-3-Clause"}
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
