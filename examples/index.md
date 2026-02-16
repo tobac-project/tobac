@@ -2,21 +2,24 @@
 
 tobac is provided with a set of Jupyter notebooks that show examples of the application of tobac for different types of datasets.
 
-
 ## Fundamentals of Detection and Tracking
+
 ```{nbgallery}
    :caption: Fundamentals of Detection and Tracking
 
    Test Blob in 2D <./Basics/Idealized-Case-1_Tracking-of-a-Test-Blob-in-2D>
    Two crossing Blobs <./Basics/Idealized-Case-2_Two_crossing_Blobs.ipynb>
+   Test Blob in 3D <./Basics/Idealized-Case-3_Tracking-of-a-Test-Blob-in-3D.ipynb>
 
    On Feature Detection: Part 1 <./Basics/Methods-and-Parameters-for-Feature-Detection_Part_1.ipynb>
    On Feature Detection: Part 2 <./Basics/Methods-and-Parameters-for-Feature-Detection_Part_2.ipynb>
    On Segmentation <./Basics/Methods-and-Parameters-for-Segmentation.ipynb>
    On Linking <./Basics/Methods-and-Parameters-for-Linking.ipynb>
+   Basic Family Detection <./Basics/Idealized-Family-Detection.ipynb>
 ```
 
-## Examples of Using *tobac* with Observations
+## Examples of Using _tobac_ with Observations
+
 ```{nbgallery}
    :caption: Examples of Using tobac with Observations
 
@@ -24,7 +27,8 @@ tobac is provided with a set of Jupyter notebooks that show examples of the appl
    Combine Radar & Satellite <./Example_Track_on_Radar_Segment_on_Satellite/Example_Track_on_Radar_Segment_on_Satellite>
 ```
 
-## Examples of Using *tobac* with Model Data
+## Examples of Using _tobac_ with Model Data
+
 ```{nbgallery}
    :caption: Examples of Using tobac with Model Data
 
@@ -38,6 +42,7 @@ tobac is provided with a set of Jupyter notebooks that show examples of the appl
 ```
 
 ## Calculating Bulk Statistics
+
 ```{nbgallery}
    :caption: Calculating Bulk Statistics
 
@@ -46,7 +51,8 @@ tobac is provided with a set of Jupyter notebooks that show examples of the appl
    Calculating Bulk Statistics as a Postprocessing Step </userguide/bulk_statistics/notebooks/compute_statistics_postprocessing_example>
 ```
 
-## Examples of Using *tobac* with Large Datasets and in Parallel
+## Examples of Using _tobac_ with Large Datasets and in Parallel
+
 ```{nbgallery}
    :caption: Examples of Using tobac with Large Datasets and in Parallel
 

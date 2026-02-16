@@ -11,6 +11,7 @@ feature_detection_overview
 tracking_basics
 segmentation
 merge_split
+family_detection
 plotting
 get_help
 ```

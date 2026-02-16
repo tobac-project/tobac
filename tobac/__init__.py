@@ -6,9 +6,7 @@ if sys.version_info < (3, 7):
     Support for Python versions less than 3.7 is deprecated. 
     Version 1.5 of tobac will require Python 3.7 or later.
    Python {py} detected. \n\n
-    """.format(
-        py=".".join(str(v) for v in sys.version_info[:3])
-    )
+    """.format(py=".".join(str(v) for v in sys.version_info[:3]))
 
     print(warning)
 
@@ -96,11 +94,14 @@ except importlib.metadata.PackageNotFoundError:
     try:
         import tomllib
 
-        pyproject_toml_file_name = pathlib.Path(__file__).parent / "pyproject.toml"
+        pyproject_toml_file_name = (
+            pathlib.Path(__file__).parent.parent / "pyproject.toml"
+        )
         if pyproject_toml_file_name.exists() and pyproject_toml_file_name.is_file():
-            toml_data = tomllib.load(pyproject_toml_file_name)
-            if "project" in toml_data and "version" in toml_data["project"]:
-                version = toml_data["project"]["version"]
+            with open(pyproject_toml_file_name, "rb") as f:
+                toml_data = tomllib.load(f)
+                if "project" in toml_data and "version" in toml_data["project"]:
+                    __version__ = toml_data["project"]["version"]
 
     except ImportError:
         # on python <3.11 but not installing tobac.

@@ -3,6 +3,8 @@ on: [push, pull_request]
 jobs:
   Check-Notebooks:
     runs-on: ubuntu-latest
+    env:
+      CI: true
     defaults:
       run:
         shell: bash -el {0}
