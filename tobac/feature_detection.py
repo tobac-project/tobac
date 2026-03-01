@@ -510,7 +510,7 @@ def feature_detection_threshold(
     # selecting feature detection implementations
     # ===========================================
     if feature_detection_method == "connected_components":
-        print('... using connected components for feature detection')
+        print("... using connected components for feature detection")
 
         # only include values greater than threshold
         # erode selected regions by n pixels
@@ -527,7 +527,7 @@ def feature_detection_threshold(
         labels, num_labels = label(mask, background=0, return_num=True)
 
     elif feature_detection_method == "subsegmentation":
-        print('... using subsegmentation for feature detection')
+        print("... using subsegmentation for feature detection")
 
         # we keep data and just turn sign for minimum criterium
         if target == "minimum":
@@ -1500,7 +1500,7 @@ def feature_detection_multithreshold(
             statistic=statistic,
             statistics_unsmoothed=statistics_unsmoothed,
             return_labels=return_labels,
-            **kwargs
+            **kwargs,
         )
         # Process the returned data depending on the flags
         if return_labels:

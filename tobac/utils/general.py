@@ -762,7 +762,7 @@ def standardize_track_dataset(TrackedFeatures, Mask, Projection=None):
 
 def curve_flow_filter(f, numberOfIterations=5):
     """
-    Smoothing filter depending on isoline curvature. Interface for 
+    Smoothing filter depending on isoline curvature. Interface for
     curvature flow filter from simpleITK toolkit.
 
     Parameters
@@ -788,17 +788,16 @@ def curve_flow_filter(f, numberOfIterations=5):
     """
     try:
         img = SimpleITK.GetImageFromArray(f)
-        
+
         img_sm = SimpleITK.CurvatureFlow(img, numberOfIterations=numberOfIterations)
-        
+
         f_sm = SimpleITK.GetArrayFromImage(img_sm)
-        
+
         return f_sm
-    
+
     except NameError:
-        
+
         raise ImportError(
             "SimpleITK is required for curve_flow_filter but is not available. "
             "Please install SimpleITK to use this function."
         )
-

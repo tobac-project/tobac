@@ -595,7 +595,7 @@ def markers_from_iterative_shrinking(
     # ================================================================
 
     for niter in range(marker_shrinkage_Niter):
-        print(niter, '. Shrinking iteration')
+        print(niter, ". Shrinking iteration")
 
         # get maximum distance-to-background per object ------------------
         dmax = scipy.ndimage.measurements.maximum(
