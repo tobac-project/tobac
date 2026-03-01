@@ -85,6 +85,7 @@ examples = [
     "intake-xarray==0.7.0",
     "healpix",
     "easygems",
+    "SimpleITK",
 ]
 
 # All extras combined
