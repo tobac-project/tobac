@@ -6,9 +6,7 @@ if sys.version_info < (3, 7):
     Support for Python versions less than 3.7 is deprecated. 
     Version 1.5 of tobac will require Python 3.7 or later.
    Python {py} detected. \n\n
-    """.format(
-        py=".".join(str(v) for v in sys.version_info[:3])
-    )
+    """.format(py=".".join(str(v) for v in sys.version_info[:3]))
 
     print(warning)
 

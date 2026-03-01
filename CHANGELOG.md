@@ -1,5 +1,21 @@
 ### Tobac Changelog
 
+_**Version 1.6.3:**_
+
+**Enhancements for Users**
+
+- Return empty DataFrame with the proper output format when no features are detected, rather than `None`. [#550](https://github.com/tobac-project/tobac/pull/550)
+
+**Bug fixes**
+
+- Limited pandas support to versions 1 and 2 while pandas 3 compatibility is added [#554](https://github.com/tobac-project/tobac/pull/554)
+- Fix an incompatibility between the license file and the license string in `pyproject.toml` [#546](https://github.com/tobac-project/tobac/pull/546)
+
+**Internal Enhancements**
+
+- Added continuous deployment file to deploy to PyPI/TestPyPI automatically [#548](https://github.com/tobac-project/tobac/pull/548)
+
+
 _**Version 1.6.2:**_
 
 **Enhancements for Users**
