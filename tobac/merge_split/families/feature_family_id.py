@@ -248,10 +248,8 @@ def identify_feature_families_from_data(
         # we want to get rid of points that aren't features in the grid output
         suppressing_families = np.isin(family_labeled_data, family_ids_sorted)
         feature_id_family_id_match_ct = {
-            feat: fam_id
-            for feat, fam_id in zip(
-                rows_at_time["feature"].values, family_ids + max_family_number
-            )
+            feat: (fam_id + max_family_number if fam_id != 0 else -1)
+            for feat, fam_id in zip(rows_at_time["feature"].values, family_ids)
         }
         seg_family_dict.update(feature_id_family_id_match_ct)
         out_families[time_index] = (
@@ -267,10 +265,20 @@ def identify_feature_families_from_data(
     if unlinked_family_id is not None:
         out_df.loc[out_df["feature_family_id"] == 0, "feature_family_id"] = -1
     else:
-        out_df = out_df[out_df["feature_family_id"] != 0]
+        out_df = out_df[
+            np.logical_and(
+                out_df["feature_family_id"] != 0, out_df["feature_family_id"] != -1
+            )
+        ]
 
     if enable_family_statistics:
         family_stats_df = pd.DataFrame.from_dict(family_stats, orient="index")
+        # we need to drop any family_stats that aren't in the feature DF
+        family_stats_df = family_stats_df[
+            family_stats_df[family_column_name].isin(
+                np.unique(family_df[family_column_name].dropna().values)
+            )
+        ]
         fam_to_time_df = out_df[["time", family_column_name]].set_index(
             family_column_name
         )
@@ -278,6 +286,7 @@ def identify_feature_families_from_data(
         fam_to_time_df = fam_to_time_df.loc[
             ~fam_to_time_df.index.duplicated(keep="first"), :
         ].sort_index()
+        fam_to_time_df = fam_to_time_df[fam_to_time_df.index != -1]
         family_stats_df = family_stats_df.join(
             fam_to_time_df, on=family_column_name
         ).dropna(subset="time")

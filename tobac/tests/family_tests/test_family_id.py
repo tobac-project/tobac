@@ -147,7 +147,7 @@ def test_family_id_data_features_unlinked():
     are still in the output but are unlinked (-1)
     """
 
-    test_dset_size = (100, 100)
+    test_dset_size = (2, 100, 100)
     # pretty darn circular feature
     test_hdim_1_pts = [
         60.0,
@@ -182,22 +182,25 @@ def test_family_id_data_features_unlinked():
     test_amps = [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5]
 
     test_data = np.zeros(test_dset_size)
-
-    for test_h1, test_h2, test_sz1, test_sz2, test_amp in zip(
-        test_hdim_1_pts, test_hdim_2_pts, test_hdim_1_szs, test_hdim_2_szs, test_amps
-    ):
-        test_data = tbtest.make_feature_blob(
-            test_data,
-            test_h1,
-            test_h2,
-            h1_size=test_sz1,
-            h2_size=test_sz2,
-            amplitude=test_amp,
+    for i in range(test_data.shape[0]):
+        for test_h1, test_h2, test_sz1, test_sz2, test_amp in zip(
+            test_hdim_1_pts,
+            test_hdim_2_pts,
+            test_hdim_1_szs,
+            test_hdim_2_szs,
+            test_amps,
+        ):
+            test_data[i] = tbtest.make_feature_blob(
+                test_data[i],
+                test_h1,
+                test_h2,
+                h1_size=test_sz1,
+                h2_size=test_sz2,
+                amplitude=test_amp,
+            )
+        test_data_xr = tbtest.make_dataset_from_arr(
+            test_data, data_type="xarray", time_dim_num=0
         )
-    test_data = np.expand_dims(test_data, 0)
-    test_data_xr = tbtest.make_dataset_from_arr(
-        test_data, data_type="xarray", time_dim_num=0
-    )
 
     test_threshs = [1.5, 2.5, 4.5]
     n_min_threshold = 1
@@ -209,7 +212,9 @@ def test_family_id_data_features_unlinked():
         threshold=test_threshs,
         n_min_threshold=n_min_threshold,
     )
-    assert len(fd_output) == 1, f"Expected 1 feature, but got {len(fd_output)}"
+    assert (
+        len(fd_output) == test_data.shape[0]
+    ), f"Expected {test_data.shape[0]} feature(s), but got {len(fd_output)}"
 
     # detect families from data
 
@@ -217,12 +222,15 @@ def test_family_id_data_features_unlinked():
         fd_output, test_data_xr, threshold=1.5, unlinked_family_id=-1
     )
     assert (
-        len(families_fd) == 1
-    ), f"families: Expected 1 feature, but got {len(fd_output)}"
+        len(families_fd) == test_data.shape[0]
+    ), f"families: Expected {test_data.shape[0]} feature(s), but got {len(fd_output)}"
     assert (
         len(stats_fd) == 0
     ), f"family stats: Expected 0 families, but got {len(fd_output)}"
-    assert np.all(families_fd["feature_family_id"].values == [])
+
+    assert np.all(
+        families_fd["feature_family_id"].values == -1
+    ), f'families: Expected all families to be -1, but got {np.unique(families_fd["feature_family_id"].values)}.'
 
     families_fd, stats_fd = tb_fam.identify_feature_families_from_data(
         fd_output, test_data_xr, threshold=1.5, unlinked_family_id=None
