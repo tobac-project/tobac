@@ -764,7 +764,6 @@ def _filter_trajectories(
     trajectories_bycell = trajectories_unfiltered.groupby("cell")
     stub_cell_nums = list()
     for cell, trajectories_cell in trajectories_bycell:
-
         if trajectories_cell.shape[0] < stubs:
             logging.debug(
                 "cell"
@@ -993,10 +992,13 @@ def append_tracks_trackpy(
 
     logging.debug("start linking features into trajectories")
 
-    tracks_cut, old_tracks_retrack, tracks_vel, new_features_cleaned = (
-        _clean_track_dfs_for_append(
-            tracks_orig, new_features, memory, span, cell_number_unassigned
-        )
+    (
+        tracks_cut,
+        old_tracks_retrack,
+        tracks_vel,
+        new_features_cleaned,
+    ) = _clean_track_dfs_for_append(
+        tracks_orig, new_features, memory, span, cell_number_unassigned
     )
     # drop time_cell if it's there.
     # TODO: do we really need to drop time_cell? can we recalculate?
