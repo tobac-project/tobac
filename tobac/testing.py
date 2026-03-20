@@ -1246,3 +1246,38 @@ def lists_equal_without_order(a, b):
         if not any(Counter(l2) == check_counter for l2 in b):
             return False
     return True
+
+
+def check_tracking_identical(
+    a: pd.DataFrame, b: pd.DataFrame, cell_column: str = "cell"
+) -> bool:
+    """Checks that tracks between a and b are identical, allowing for the
+    cell values to differ as long as the same features are linked together.
+
+    Parameters
+    ----------
+    a: pd.DataFrame
+        first tracking dataframe
+    b: pd.DataFrame
+        second tracking dataframe
+    cell_column: str
+        Column name of the tracking ID (cell by default)
+
+    Returns
+    -------
+    bool
+        True if identical, false if not.
+
+    """
+
+    def cell_signatures(df):
+        return {
+            frozenset(
+                zip(group["frame"], group["hdim_1"], group["hdim_2"], group["feature"])
+            )
+            for _, group in df.groupby(cell_column)
+        }
+
+    orig_sigs = cell_signatures(a)
+    app_sigs = cell_signatures(b)
+    return np.all(orig_sigs == app_sigs)

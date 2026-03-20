@@ -1193,23 +1193,27 @@ def append_tracks_trackpy(
     # check to make sure that there are no double matches, which would be bad.
     # checking for 1:1 matches.
     cell_matches = (
-        trajectories_unfiltered[["cell", "particle", "hdim_1"]]
+        trajectories_unfiltered[["cell", "particle", "feature"]]
         .drop_duplicates(["cell", "particle"])
         .groupby("cell")["particle"]
         .count()
         .max()
     )
+    if pd.isna(cell_matches):
+        # all nan tracks
+        cell_matches = 0
     particle_matches = (
-        trajectories_unfiltered[["cell", "particle", "hdim_1"]]
+        trajectories_unfiltered[["cell", "particle", "feature"]]
         .drop_duplicates(["cell", "particle"])
         .groupby("particle")["cell"]
         .count()
         .max()
     )
 
-    if cell_matches + particle_matches != 2:
+    if cell_matches + particle_matches != 2 and cell_matches + particle_matches != 0:
         raise ValueError(
-            "Error in appending tracks. Multiple pairs of cell:particle found. Please report this bug."
+            "Error in appending tracks. Multiple pairs of cell:particle found. Unable to append tracks; try tracking traditionally."
+            "Please report this bug."
             " Number of cell matches: {0}, Number of particle matches: {1}".format(
                 cell_matches, particle_matches
             )
@@ -1218,6 +1222,8 @@ def append_tracks_trackpy(
     particle_num_to_cell_num = {b: a for a, b in cell_particle_pairs}
     # update cells to link between pre-cut and post-cut.
     cell_offset = max(trajectories_unfiltered["cell"].max(), tracks_cut["cell"].max())
+    if pd.isna(cell_offset):
+        cell_offset = 0
     i_additional_particle = 1
     for i_particle, particle in enumerate(
         pd.Series.unique(trajectories_unfiltered["particle"])
@@ -1313,7 +1319,7 @@ def _clean_track_dfs_for_append(
 
     # need to cut down the existing track array to just the parts we are interested in
     # for preserving
-    min_frame_orig_needed = max(max(tracks_orig["frame"]) - memory - 1, 0)
+    min_frame_orig_needed = max(max(tracks_orig["frame"]) - memory, 0)
     max_frame_orig_needed = max(tracks_orig["frame"])
     frames_orig_cut = np.arange(min_frame_orig_needed, max_frame_orig_needed + 1, 1)
 

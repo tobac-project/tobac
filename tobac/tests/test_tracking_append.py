@@ -9,6 +9,7 @@ from pandas.testing import assert_frame_equal
 import copy
 import pandas as pd
 import numpy as np
+import datetime
 
 
 def convert_cell_dtype_if_appropriate(output, expected_output):
@@ -492,3 +493,113 @@ def test_append_tracking_single_track_predict_memory(
             curr_tracking_append, curr_times_df, **tracking_params
         )
     assert_frame_equal(curr_tracking_append, orig_tracking)
+
+
+@pytest.mark.parametrize(
+    "seed, hdim1_max, hdim2_max, n_features, n_times",
+    [(2032, 200, 200, 3, 4), (2032, 200, 200, 4, 4)],
+)
+def test_append_tracks_random(
+    seed: int,
+    hdim1_max: int,
+    hdim2_max: int,
+    n_features: int,
+    n_times: int,
+):
+    """
+    Function to test that append and regular tracking work with
+    a set of randomly generated features
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+
+    """
+    rng = np.random.default_rng(seed)
+    curr_time = datetime.datetime(2026, 1, 1)
+    delta_time = datetime.timedelta(seconds=300)
+    all_features = list()
+
+    feature_id = 1
+    for time_number in range(n_times):
+        hdim_1_vals = rng.integers(0, hdim1_max, size=n_features)
+        hdim_2_vals = rng.integers(0, hdim2_max, size=n_features)
+        idx = 0
+        for i in range(n_features):
+            all_features.append(
+                {
+                    "feature": feature_id,
+                    "frame": time_number,
+                    "idx": idx,
+                    "time": np.datetime64(curr_time),
+                    "hdim_1": hdim_1_vals[i],
+                    "hdim_2": hdim_2_vals[i],
+                    "num": 40,  # dummy: min connected pixels
+                    "threshold_value": 50.0,  # dummy: detection threshold
+                }
+            )
+            feature_id += 1
+            idx += 1
+        curr_time = curr_time + delta_time
+
+    features = pd.DataFrame(all_features)
+
+    # shared tracking parameters
+    tracking_params = {
+        "dt": 300,
+        "dxy": 500,
+        "v_max": 30,
+        "memory": 0,
+        "time_cell_min": 300,
+        "method_linking": "predict",
+    }
+
+    # Standard tracking
+    # base tracking - original tracking function
+    orig_tracking = tobac.tracking.linking_trackpy(features, None, **tracking_params)
+
+    # tracking with appends
+    # let's extract the first two times
+    first_two_times_df = features[features["frame"] < 2]
+    initial_tracking_append = tobac.tracking.linking_trackpy(
+        first_two_times_df, None, **tracking_params
+    )
+
+    append_all_tracking = tobac.tracking.append_tracks_trackpy(
+        initial_tracking_append, features, **tracking_params
+    )
+
+    assert tobac.testing.check_tracking_identical(orig_tracking, append_all_tracking)
+    # let's try to append one by one, with the full dataframe
+    curr_tracking_append = tobac.tracking.linking_trackpy(
+        first_two_times_df, None, **tracking_params
+    )
+    for i in range(3, max(features["frame"]) + 2):
+        curr_times_df = features[features["frame"] < i]
+        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+            curr_tracking_append, curr_times_df, **tracking_params
+        )
+    assert tobac.testing.check_tracking_identical(curr_tracking_append, orig_tracking)
+    # let's try to append one by one, with only individual times
+    curr_tracking_append = tobac.tracking.linking_trackpy(
+        first_two_times_df, None, **tracking_params
+    )
+    for i in range(2, max(features["frame"]) + 1):
+        curr_times_df = features[features["frame"] == i]
+        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+            curr_tracking_append, curr_times_df, **tracking_params
+        )
+    assert tobac.testing.check_tracking_identical(curr_tracking_append, orig_tracking)
+
+    # let's try to append one by one, with only individual times
+    curr_tracking_append = tobac.tracking.linking_trackpy(
+        first_two_times_df, None, **tracking_params
+    )
+    for i in range(2, max(features["frame"]) + 1):
+        curr_times_df = features[features["frame"] == i]
+        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+            curr_tracking_append, curr_times_df, **tracking_params
+        )
+    assert tobac.testing.check_tracking_identical(curr_tracking_append, orig_tracking)
