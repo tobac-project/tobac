@@ -1116,15 +1116,21 @@ def append_tracks_trackpy(
         # if span is updated, need to make sure we have enough timesteps.
         span = 1
         concat_df_linking = pd.concat(comb_features_linking)
+        # Filter out unassigned cells before velocity calculation
+        tracks_vel_assigned = tracks_vel[
+            tracks_vel["cell"].notna() & (tracks_vel["cell"] != cell_number_unassigned)
+        ]
 
-        guess_speed_pos_df = _calc_velocity_to_most_recent_point(tracks_vel, span=span)
+        guess_speed_pos_df = _calc_velocity_to_most_recent_point(
+            tracks_vel_assigned, span=span
+        )
+
         if is_3D:
             speed_cols = ["vdim_spd_mean", "hdim_1_spd_mean", "hdim_2_spd_mean"]
             pos_cols = ["z", "y", "x"]
         else:
             speed_cols = ["hdim_1_spd_mean", "hdim_2_spd_mean"]
             pos_cols = ["y", "x"]
-        # I'm not sure our predictions here are working for position.
         if len(guess_speed_pos_df) != 0:
             try:
                 pred = tp.predict.NearestVelocityPredict(
@@ -1221,9 +1227,16 @@ def append_tracks_trackpy(
     # dictionary of particle:cell pairs
     particle_num_to_cell_num = {b: a for a, b in cell_particle_pairs}
     # update cells to link between pre-cut and post-cut.
-    cell_offset = max(trajectories_unfiltered["cell"].max(), tracks_cut["cell"].max())
-    if pd.isna(cell_offset):
-        cell_offset = 0
+    traj_max = trajectories_unfiltered["cell"].max()
+    cut_max = tracks_cut["cell"].max()
+    cell_offset = int(
+        np.nanmax(
+            [
+                traj_max if not pd.isna(traj_max) else 0,
+                cut_max if not pd.isna(cut_max) else 0,
+            ]
+        )
+    )
     i_additional_particle = 1
     for i_particle, particle in enumerate(
         pd.Series.unique(trajectories_unfiltered["particle"])
@@ -1329,10 +1342,12 @@ def _clean_track_dfs_for_append(
     tracks_orig_retrack = copy.deepcopy(
         tracks_orig[tracks_orig["frame"].isin(frames_orig_cut)]
     )
-    tracks_orig_retrack["cell"].replace(cell_number_unassigned, np.nan, inplace=True)
+    tracks_orig_retrack["cell"] = tracks_orig_retrack["cell"].replace(
+        cell_number_unassigned, np.nan
+    )
 
     # Now, let's figure out what frames we need to calculate velocity
-    max_frame_vel_needed = max(max(tracks_orig["frame"]) - memory - 1, 0)
+    max_frame_vel_needed = max(max(tracks_orig["frame"]) - memory, 0)
     min_frame_vel_needed = max_frame_vel_needed - span
     frames_vel = np.arange(min_frame_vel_needed, max_frame_vel_needed + 1, 1)
 

@@ -5,7 +5,6 @@ Test for the trackpy tracking functions that append one track to another track
 import tobac.testing
 import tobac.tracking
 import pytest
-from pandas.testing import assert_frame_equal
 import copy
 import pandas as pd
 import numpy as np
@@ -139,7 +138,7 @@ def test_append_tracking_single_track(
         initial_tracking_append, all_feats, **tracking_params
     )
 
-    assert_frame_equal(orig_tracking, append_all_tracking)
+    assert tobac.testing.check_tracking_identical(orig_tracking, append_all_tracking)
 
     # let's try to append one by one, with the full dataframe
     curr_tracking_append = tobac.tracking.linking_trackpy(
@@ -150,7 +149,7 @@ def test_append_tracking_single_track(
         curr_tracking_append = tobac.tracking.append_tracks_trackpy(
             curr_tracking_append, curr_times_df, **tracking_params
         )
-    assert_frame_equal(curr_tracking_append, orig_tracking)
+    assert tobac.testing.check_tracking_identical(curr_tracking_append, orig_tracking)
 
 
 @pytest.mark.parametrize(
@@ -246,7 +245,7 @@ def test_append_tracking_single_track_predict(
         initial_tracking_append, all_feats, **tracking_params
     )
 
-    assert_frame_equal(orig_tracking, append_all_tracking)
+    assert tobac.testing.check_tracking_identical(orig_tracking, append_all_tracking)
     # let's try to append one by one, with the full dataframe
     curr_tracking_append = tobac.tracking.linking_trackpy(
         first_two_times_df, None, **tracking_params
@@ -256,7 +255,7 @@ def test_append_tracking_single_track_predict(
         curr_tracking_append = tobac.tracking.append_tracks_trackpy(
             curr_tracking_append, curr_times_df, **tracking_params
         )
-    assert_frame_equal(curr_tracking_append, orig_tracking)
+    assert tobac.testing.check_tracking_identical(curr_tracking_append, orig_tracking)
     # let's try to append one by one, with only individual times
     curr_tracking_append = tobac.tracking.linking_trackpy(
         first_two_times_df, None, **tracking_params
@@ -266,7 +265,7 @@ def test_append_tracking_single_track_predict(
         curr_tracking_append = tobac.tracking.append_tracks_trackpy(
             curr_tracking_append, curr_times_df, **tracking_params
         )
-    assert_frame_equal(curr_tracking_append, orig_tracking)
+    assert tobac.testing.check_tracking_identical(curr_tracking_append, orig_tracking)
 
     # let's try to append one by one, with only individual times
     curr_tracking_append = tobac.tracking.linking_trackpy(
@@ -277,7 +276,7 @@ def test_append_tracking_single_track_predict(
         curr_tracking_append = tobac.tracking.append_tracks_trackpy(
             curr_tracking_append, curr_times_df, **tracking_params
         )
-    assert_frame_equal(curr_tracking_append, orig_tracking)
+    assert tobac.testing.check_tracking_identical(curr_tracking_append, orig_tracking)
 
 
 def test_trackpy_predict_append():
@@ -335,7 +334,7 @@ def test_trackpy_predict_append():
         initial_tracking_append, features, **tracking_params
     )
 
-    assert_frame_equal(output_correct, append_all_tracking)
+    assert tobac.testing.check_tracking_identical(output_correct, append_all_tracking)
 
     # let's try to append one by one, with the full dataframe
     curr_tracking_append = tobac.tracking.linking_trackpy(
@@ -346,7 +345,7 @@ def test_trackpy_predict_append():
         curr_tracking_append = tobac.tracking.append_tracks_trackpy(
             curr_tracking_append, curr_times_df, **tracking_params
         )
-    assert_frame_equal(curr_tracking_append, output_correct)
+    assert tobac.testing.check_tracking_identical(curr_tracking_append, output_correct)
 
     # let's try to append one by one, with only individual times
     curr_tracking_append = tobac.tracking.linking_trackpy(
@@ -357,7 +356,7 @@ def test_trackpy_predict_append():
         curr_tracking_append = tobac.tracking.append_tracks_trackpy(
             curr_tracking_append, curr_times_df, **tracking_params
         )
-    assert_frame_equal(curr_tracking_append, output_correct)
+    assert tobac.testing.check_tracking_identical(curr_tracking_append, output_correct)
 
 
 @pytest.mark.parametrize(
@@ -461,7 +460,7 @@ def test_append_tracking_single_track_predict_memory(
         initial_tracking_append, all_feats, **tracking_params
     )
 
-    assert_frame_equal(orig_tracking, append_all_tracking)
+    assert tobac.testing.check_tracking_identical(orig_tracking, append_all_tracking)
     # let's try to append one by one, with the full dataframe
     curr_tracking_append = tobac.tracking.linking_trackpy(
         first_two_times_df, None, **tracking_params
@@ -471,7 +470,7 @@ def test_append_tracking_single_track_predict_memory(
         curr_tracking_append = tobac.tracking.append_tracks_trackpy(
             curr_tracking_append, curr_times_df, **tracking_params
         )
-    assert_frame_equal(curr_tracking_append, orig_tracking)
+    assert tobac.testing.check_tracking_identical(curr_tracking_append, orig_tracking)
     # let's try to append one by one, with only individual times
     curr_tracking_append = tobac.tracking.linking_trackpy(
         first_two_times_df, None, **tracking_params
@@ -481,7 +480,7 @@ def test_append_tracking_single_track_predict_memory(
         curr_tracking_append = tobac.tracking.append_tracks_trackpy(
             curr_tracking_append, curr_times_df, **tracking_params
         )
-    assert_frame_equal(curr_tracking_append, orig_tracking)
+    assert tobac.testing.check_tracking_identical(curr_tracking_append, orig_tracking)
 
     # let's try to append one by one, with only individual times
     curr_tracking_append = tobac.tracking.linking_trackpy(
@@ -492,12 +491,17 @@ def test_append_tracking_single_track_predict_memory(
         curr_tracking_append = tobac.tracking.append_tracks_trackpy(
             curr_tracking_append, curr_times_df, **tracking_params
         )
-    assert_frame_equal(curr_tracking_append, orig_tracking)
+    assert tobac.testing.check_tracking_identical(curr_tracking_append, orig_tracking)
 
 
 @pytest.mark.parametrize(
     "seed, hdim1_max, hdim2_max, n_features, n_times",
-    [(2032, 200, 200, 3, 4), (2032, 200, 200, 4, 4)],
+    [
+        (2032, 200, 200, 3, 4),
+        (2032, 200, 200, 4, 4),
+        (201532, 100, 100, 20, 6),
+        (10032, 1000, 1000, 20, 20),
+    ],
 )
 def test_append_tracks_random(
     seed: int,
