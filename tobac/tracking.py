@@ -1191,30 +1191,39 @@ def append_tracks_trackpy(
         trajectories_unfiltered = trajectories_unfiltered.drop("vdim_adj", axis=1)
 
     cell_particle_pairs = (
-        trajectories_unfiltered[["cell", "particle", "hdim_1"]]
+        trajectories_unfiltered[
+            trajectories_unfiltered["cell"].notna()
+            & (trajectories_unfiltered["cell"] != cell_number_unassigned)
+        ][["cell", "particle", "hdim_1"]]
         .groupby(["cell", "particle"])
         .nunique()
         .index
     )
     # check to make sure that there are no double matches, which would be bad.
     # checking for 1:1 matches.
+    _traj_valid = trajectories_unfiltered[
+        trajectories_unfiltered["cell"].notna()
+        & (trajectories_unfiltered["cell"] != cell_number_unassigned)
+    ]
     cell_matches = (
-        trajectories_unfiltered[["cell", "particle", "feature"]]
+        _traj_valid[["cell", "particle", "feature"]]
         .drop_duplicates(["cell", "particle"])
         .groupby("cell")["particle"]
         .count()
         .max()
     )
     if pd.isna(cell_matches):
-        # all nan tracks
+        # all unassigned tracks
         cell_matches = 0
     particle_matches = (
-        trajectories_unfiltered[["cell", "particle", "feature"]]
+        _traj_valid[["cell", "particle", "feature"]]
         .drop_duplicates(["cell", "particle"])
         .groupby("particle")["cell"]
         .count()
         .max()
     )
+    if pd.isna(particle_matches):
+        particle_matches = 0
 
     if cell_matches + particle_matches != 2 and cell_matches + particle_matches != 0:
         raise ValueError(
@@ -1341,9 +1350,6 @@ def _clean_track_dfs_for_append(
     )
     tracks_orig_retrack = copy.deepcopy(
         tracks_orig[tracks_orig["frame"].isin(frames_orig_cut)]
-    )
-    tracks_orig_retrack["cell"] = tracks_orig_retrack["cell"].replace(
-        cell_number_unassigned, np.nan
     )
 
     # Now, let's figure out what frames we need to calculate velocity
