@@ -24,6 +24,7 @@ extensions = [
     "sphinx_design",
     "sphinx_toolbox.code",
     "sphinxcontrib.mermaid",
+    "sphinx_codeautolink",
 ]
 
 
