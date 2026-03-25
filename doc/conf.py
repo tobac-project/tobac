@@ -193,4 +193,5 @@ nbsphinx_thumbnails = {
     "examples/Example_low_cloud_tracking_eurec4a/Example_low_cloud_tracking_eurec4a": "_static/thumbnails/Example_low_cloud_tracking_eurac4a_Thumbnail.png",
     "examples/Example_ICON_MCS_tracking/Example_ICON_MCS_tracking": "_static/thumbnails/Example_ICON_MCS_tracking_Thumbnail.png",
     "examples/big_data_processing/parallel_processing_tobac": "_static/thumbnails/big_data_processing_parallel_processing_tobac.svg",
+    "examples/Example_Append_Tracking_Radar/Example_Append_Tracking_Radar": "_static/thumbnails/Example_Append_Tracking_Radar.png",
 }
