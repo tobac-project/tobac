@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import cftime
+from typing import Optional
 
 
 def to_cftime(
@@ -182,3 +183,28 @@ def match_datetime_format(
     if isinstance(target, datetime.datetime):
         return to_datetime(dates)
     raise ValueError("Target is not a valid datetime format")
+
+
+def find_df_rows_at_time(
+    in_df: pd.DataFrame,
+    in_time,
+    time_var_name="time",
+    time_padding: Optional[datetime.timedelta] = None,
+):
+    all_times = pd.Series(
+        match_datetime_format(in_df[time_var_name], in_time),
+        index=in_df.index,
+    )
+
+    if time_padding is not None:
+        # padded_conv = pd.Timedelta(time_padding).to_timedelta64()
+        if isinstance(in_time, (int, np.datetime64)):
+            min_time = in_time - pd.Timedelta(time_padding).to_timedelta64()
+            max_time = in_time + pd.Timedelta(time_padding).to_timedelta64()
+        else:
+            min_time = in_time - time_padding
+            max_time = in_time + time_padding
+        features_i = in_df.loc[all_times.between(min_time, max_time)]
+    else:
+        features_i = in_df.loc[all_times == in_time]
+    return features_i

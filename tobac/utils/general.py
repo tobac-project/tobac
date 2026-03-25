@@ -8,6 +8,7 @@ from typing_extensions import Literal
 import iris
 import pandas as pd
 import iris.cube
+import skimage
 
 from . import internal as internal_utils
 from . import decorators
@@ -751,3 +752,87 @@ def standardize_track_dataset(TrackedFeatures, Mask, Projection=None):
         ds["ProjectionCoordinateSystem"] = Projection
 
     return ds
+
+
+def identify_feature_families(
+    feature_df: pd.DataFrame,
+    in_segmentation: xr.DataArray,
+    return_grid: bool = False,
+    family_column_name: str = "feature_family_id",
+    unsegmented_point_values: int = 0,
+    below_threshold_values: int = -1,
+) -> Union[tuple[pd.DataFrame, xr.DataArray], pd.DataFrame]:
+    """
+    Function to identify families/storm systems by identifying where segmentation touches.
+    At a given time, segmentation areas are considered part of the same family if they
+    touch at any point.
+
+    Parameters
+    ----------
+    feature_df: pd.DataFrame
+        Input feature dataframe
+    in_segmentation: xr.DataArray
+        Input segmentation
+    return_grid: bool
+        Whether to return the segmentation grid showing families
+    family_column_name: str
+        The name in the output dataframe of the family ID
+    unsegmented_point_values: int
+        The value in the input segmentation for unsegmented but above threshold points
+    below_threshold_values: int
+        The value in the input segmentation for below threshold points
+
+    Returns
+    -------
+    pd.DataFrame and xr.DataArray or pd.DataFrame
+        Input dataframe with family IDs associated with each feature
+        if return_grid is True, the segmentation grid showing families is
+        also returned.
+
+    """
+
+    # we need to label the data, but we currently label using skimage label, not dask label.
+
+    # 3D should be 4-D (time, then 3 spatial).
+    # 2D should be 3-D (time, then 2 spatial)
+    is_3D = len(in_segmentation.shape) == 4
+    seg_family_dict = dict()
+    out_families = copy.deepcopy(in_segmentation)
+
+    for time_index in range(in_segmentation.shape[0]):
+        in_arr = np.array(in_segmentation.values[time_index])
+
+        segmented_arr = np.logical_and(
+            in_arr != unsegmented_point_values, in_arr != below_threshold_values
+        )
+        # These are our families
+        family_labeled_data = skimage.measure.label(
+            segmented_arr,
+        )
+
+        # now we need to note feature->family relationship in the dataframe.
+        segmentation_props = skimage.measure.regionprops(in_arr)
+
+        # associate feature ID -> family ID
+        for seg_area in segmentation_props:
+            if is_3D:
+                seg_family = family_labeled_data[
+                    seg_area.coords[0, 0], seg_area.coords[0, 1], seg_area.cords[0, 2]
+                ]
+            else:
+                seg_family = family_labeled_data[
+                    seg_area.coords[0, 0], seg_area.coords[0, 1]
+                ]
+            seg_family_dict[seg_area.label] = seg_family
+
+        out_families[time_index] = segmented_arr
+
+    family_series = pd.Series(seg_family_dict, name=family_column_name)
+    feature_series = pd.Series({x: x for x in seg_family_dict.keys()}, name="feature")
+    family_df = pd.concat([family_series, feature_series], axis=1)
+    out_df = feature_df.merge(family_df, on="feature", how="inner")
+
+    if return_grid:
+        return out_df, out_families
+    else:
+        return out_df
