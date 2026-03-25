@@ -243,7 +243,7 @@ def identify_feature_families_from_data(
         family_ids = family_labeled_data[points_list]
         # remove 0 (background) if needed
 
-        family_ids_sorted = np.unique(np.sort(family_ids))
+        family_ids_sorted = np.unique(family_ids[family_ids > 0])
 
         # we want to get rid of points that aren't features in the grid output
         suppressing_families = np.isin(family_labeled_data, family_ids_sorted)
