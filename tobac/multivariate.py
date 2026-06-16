@@ -48,13 +48,23 @@ def get_multivariate_label_maps(child_mask, child_tracks, parent_mask, parent_tr
     child_name = child_mask.name  # expect "cell" / "updraft"
     parent_name = parent_mask.name
 
-    child_tracks[child_name] = np.where(child_tracks[child_name]>0, child_tracks[child_name], 0)
-    parent_tracks[parent_name] = np.where(parent_tracks[parent_name]>0, parent_tracks[parent_name], 0)
+    child_tracks[child_name] = np.where(
+        child_tracks[child_name] > 0, child_tracks[child_name], 0
+    )
+    parent_tracks[parent_name] = np.where(
+        parent_tracks[parent_name] > 0, parent_tracks[parent_name], 0
+    )
 
     # list all labels to update
     child_labels = np.unique(child_tracks[child_name].values)
     parent_labels = np.unique(parent_tracks[parent_name].values)
-    NAN_VAL = max(child_labels.max(initial=0), parent_labels.max(initial=0),) + 1000
+    NAN_VAL = (
+        max(
+            child_labels.max(initial=0),
+            parent_labels.max(initial=0),
+        )
+        + 1000
+    )
 
     logging.info("Start calculating the coincident label mappings")
 
@@ -242,4 +252,3 @@ def apply_multivariate_label_maps(child_mask, child_tracks, parent_mask, parent_
     ).rename("multivariate")
 
     return child_mapped, parent_mapped
-
