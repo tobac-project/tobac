@@ -21,6 +21,10 @@ from .centerofgravity import (
     calculate_cog_untracked,
     calculate_cog_domain,
 )
+from .multivariate import (
+    get_multivariate_label_maps,
+    apply_multivariate_label_maps
+)
 from .plotting import (
     plot_tracks_mask_field,
     plot_tracks_mask_field_loop,
