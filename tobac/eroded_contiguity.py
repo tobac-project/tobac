@@ -109,15 +109,15 @@ def track_using_contiguity(mask, table, PBC_flag=None, vdim=None, dims_to_skip=(
 
     logging.info("Completed tracking using contiguity")
 
-    tracked_result = xr.DataArray(
-        data=tracked_result, dims=mask.dims, coords=mask.coords
+    tracked_mask = xr.DataArray(
+        data=tracked_mask, dims=mask.dims, coords=mask.coords
     ).fillna(0)
 
     # record a table of the mappings between the original labels and the tracked labels, to be used for recording tracks in the output table
     pairs = set()
     for t in mask["time"].values:
         m = mask.sel({"time": t})
-        r = tracked_result.sel({"time": t})
+        r = tracked_mask.sel({"time": t})
         df_t = pd.DataFrame(
             {
                 "mask": m.values.ravel(),
@@ -135,7 +135,7 @@ def track_using_contiguity(mask, table, PBC_flag=None, vdim=None, dims_to_skip=(
         how="left",
     )
 
-    return tracked_result, table
+    return tracked_mask, table
 
 
 def apply_periodic_boundary(x, PBC_flag):
@@ -146,6 +146,7 @@ def apply_periodic_boundary(x, PBC_flag):
     x : numpy.ndarray
         3D or 4D array containing integer labels for connected components.
     PBC_flag : str
+        As passed for tobac detection.
 
     Returns
     ----------
@@ -154,22 +155,31 @@ def apply_periodic_boundary(x, PBC_flag):
 
     """
 
-    dim = int(PBC_flag.split("_")[-1]) - 1
-    dims = list(range(x.ndim))
-    dims.remove(dim)
-    altdim = dims[0]
+    def _apply(x, PBC_flag):
+        dim = int(PBC_flag.split("_")[-1]) - 1
+        dims = list(range(x.ndim))
+        dims.remove(dim)
+        altdim = dims[0]
 
-    slices = [slice(None)] * x.ndim
-    for i in range(x.shape[altdim]):
-        slices[altdim] = i
-        first = slices.copy()
-        first[dim] = 0
-        last = slices.copy()
-        last[dim] = -1
-        first, last = tuple(first), tuple(last)
+        slices = [slice(None)] * x.ndim
+        for i in range(x.shape[altdim]):
+            slices[altdim] = i
+            first = slices.copy()
+            first[dim] = 0
+            last = slices.copy()
+            last[dim] = -1
+            first, last = tuple(first), tuple(last)
 
-        if x[first] > 0 and x[last] > 0:
-            x[x == x[last]] = x[first]
+            if x[first] > 0 and x[last] > 0:
+                x[x == x[last]] = x[first]
+        return x
+
+    if PBC_flag == "both":
+        x = _apply(x, "hdim_1")
+        x = _apply(x, "hdim_2")
+    
+    else:
+        x = _apply(x, PBC_flag)
 
     return x
 
@@ -240,18 +250,16 @@ def erode_mask(mask, fraction, vdim, use_parallel):
 
     """
 
-    arr = mask.where(mask > 0)
-
     logging.info("Start erosion by fraction: %s" % fraction)
-    topography = calculate_mask_topography(arr, vdim, use_parallel)
-    eroded_mask = mask.where(topography > fraction)
+    topography = calculate_mask_topography(mask > 0, vdim, use_parallel)
+    eroded_mask = mask.where(topography > fraction).fillna(0)
 
     logging.info("Completed erosion by fraction: %s" % fraction)
 
     return eroded_mask
 
 
-def calculate_object_topography(label_value, arr):
+def calculate_object_topography(label_value, arr, PBC_flag=None, max_object_length=1):
     """Computes the normalised distances between each pixel in the feature with label label_value and the edge of that feature.
 
     Parameters
@@ -262,21 +270,63 @@ def calculate_object_topography(label_value, arr):
     arr : numpy.ndarray
         Array containing integer labels for features or cells to be tracked.
 
+    PBC_flag : None or str
+        As passed to tobac detection.
+
+    max_object_length : int
+        Maximum expected length of the object in pixels, used for padding when applying periodic boundary conditions.
+
     Returns
     ----------
     output : numpy.ndarray
         Array containing the normalised distance from the edge of the object for each pixel in the input array.
 
-    """
-
+    """    
     binary_mask = arr == label_value
-    distance = ndi.distance_transform_edt(binary_mask)
-    max_distance = distance.max()
 
-    return distance / max_distance
+    if PBC_flag is None:
+        pad_axes = (0,1)
+        periodic_axes = ()
+
+    elif PBC_flag == "both":
+        pad_axes = ()
+        periodic_axes = (0,1)
+
+    else:
+        hdim = int(PBC_flag.split("_")[-1]) - 1
+        pad_axes = list((0,1))
+        pad_axes.remove(hdim)
+        pad_axes = tuple(pad_axes)
+        periodic_axes = (hdim,)
+
+    # pad non-periodic edges with 0s
+    pad_width = [(0,0)] * binary_mask.ndim
+    for ax in pad_axes:
+        pad_width[ax] = (1,1)
+    padded = np.pad(binary_mask, pad_width)
+
+    # wrap periodic edges by max_object_length pixels
+    pad_width = [(0,0)] * binary_mask.ndim
+    for ax in periodic_axes:
+        pad_width[ax] = (max_object_length, max_object_length)
+    padded = np.pad(padded, pad_width, mode="wrap")
+
+    # calculate topography
+    distance = ndi.distance_transform_edt(padded)
+
+    # drop padding
+    slices = []
+    for ax in range(binary_mask.ndim):
+        if ax in periodic_axes:
+            slices.append(slice(max_object_length,-max_object_length))
+        else:
+            slices.append(slice(1,-1))
+
+    distance = distance[tuple(slices)]    
+    return distance / distance.max()
 
 
-def calculate_mask_topography(mask, vdim, use_parallel):
+def calculate_mask_topography(mask, vdim, PBC_flag=None, max_object_length=1, use_parallel=True):
     """Computes the normalised distances between the pixels in each mask feature and the edge of that feature.
 
     Parameters
@@ -316,12 +366,12 @@ def calculate_mask_topography(mask, vdim, use_parallel):
 
             if use_parallel:
                 results = joblib.Parallel(n_jobs=-1)(
-                    joblib.delayed(calculate_object_topography)(label, arr)
+                    joblib.delayed(calculate_object_topography)(label, arr, PBC_flag, max_object_length)
                     for label in unique_labels
                 )
             else:
                 results = [
-                    calculate_object_topography(label, arr) for label in unique_labels
+                    calculate_object_topography(label, arr, PBC_flag, max_object_length) for label in unique_labels
                 ]
 
             for label_topography in results:
