@@ -61,16 +61,15 @@ def track_using_contiguity(mask, table, PBC_flag=None, vdim=None, dims_to_skip=(
         )
         boolean_array = boolean_array.chunk({dim: -1 for dim in boolean_array.dims})
 
-    # check non-horizontal dimensions are known when applying period boundary conditions
-    if PBC_flag is not None:
-        if "time" not in boolean_array.dims:
-            raise ValueError("time dimension not found in data array dimensions")
-        else:
-            tdim = boolean_array.dims.index("time")
-        if isinstance(vdim, str):
-            if not vdim in boolean_array.dims:
-                raise ValueError(f"vdim '{vdim}' not found in data array dimensions")
-            vdim = boolean_array.dims.index(vdim)
+    # check non-horizontal dimensions are known
+    if "time" not in boolean_array.dims:
+        raise ValueError("time dimension not found in data array dimensions")
+    else:
+        tdim = boolean_array.dims.index("time")
+    if isinstance(vdim, str):
+        if not vdim in boolean_array.dims:
+            raise ValueError(f"vdim '{vdim}' not found in data array dimensions")
+        vdim = boolean_array.dims.index(vdim)
 
     # calculate conncected components using scipy.ndi
     logging.info("Start tracking using contiguity")
@@ -86,26 +85,27 @@ def track_using_contiguity(mask, table, PBC_flag=None, vdim=None, dims_to_skip=(
         prev_max = np.max(tracked_mask[tuple(slices)])
 
     # calculate_periodic_boundary
-    if tracked_mask.ndim == 4:
-        slices = [slice(None)] * tracked_mask.ndim
-        for t in range(tracked_mask.shape[tdim]):
-            for v in range(tracked_mask.shape[vdim]):
+    if PBC_flag is not None:
+        if tracked_mask.ndim == 4:
+            slices = [slice(None)] * tracked_mask.ndim
+            for t in range(tracked_mask.shape[tdim]):
+                for v in range(tracked_mask.shape[vdim]):
+                    slices[tdim] = t
+                    slices[vdim] = v
+                    tracked_mask[tuple(slices)] = apply_periodic_boundary(
+                        tracked_mask[tuple(slices)], PBC_flag,
+                    )
+
+        elif tracked_mask.ndim == 3:
+            slices = [slice(None)] * tracked_mask.ndim
+            for t in range(tracked_mask.shape[tdim]):
                 slices[tdim] = t
-                slices[vdim] = v
                 tracked_mask[tuple(slices)] = apply_periodic_boundary(
-                    tracked_mask[tuple(slices)]
+                    tracked_mask[tuple(slices)], PBC_flag,
                 )
 
-    elif tracked_mask.ndim == 3:
-        slices = [slice(None)] * tracked_mask.ndim
-        for t in range(tracked_mask.shape[tdim]):
-            slices[tdim] = t
-            tracked_mask[tuple(slices)] = apply_periodic_boundary(
-                tracked_mask[tuple(slices)]
-            )
-
-    else:
-        tracked_mask = apply_periodic_boundary(tracked_mask)
+        else:
+            tracked_mask = apply_periodic_boundary(tracked_mask, PBC_flag,)
 
     logging.info("Completed tracking using contiguity")
 
@@ -120,22 +120,24 @@ def track_using_contiguity(mask, table, PBC_flag=None, vdim=None, dims_to_skip=(
         r = tracked_mask.sel({"time": t})
         df_t = pd.DataFrame(
             {
-                "mask": m.values.ravel(),
-                "contiguous": r.values.ravel(),
+                mask.name: m.where(m>0).values.ravel(),
+                "contiguous": r.where(r>0).values.ravel(),
             }
         ).dropna()
         pairs.update(map(tuple, df_t.to_numpy()))
 
-    df = pd.DataFrame(sorted(pairs), columns=["mask", "contiguous"])
+    df = pd.DataFrame(sorted(pairs), columns=[mask.name, "contiguous"]).astype(int)
 
     # add to tracking table
-    table = table.merge(
+    tracked_table = table.merge(
         df,
         on=mask.name,
         how="left",
     )
 
-    return tracked_mask, table
+    logging.info("Completed creating tracking table")
+
+    return tracked_mask, tracked_table
 
 
 def apply_periodic_boundary(x, PBC_flag):
@@ -188,8 +190,9 @@ def track_using_eroded_contiguity(
     mask,
     table,
     fraction,
-    vdim=None,
     PBC_flag=None,
+    vdim=None,
+    max_object_length=1,
     use_parallel=True,
 ):
     """Perform tracking by eroding the input mask by the given fraction before testing for contiguity between timesteps.
@@ -205,8 +208,14 @@ def track_using_eroded_contiguity(
     fraction : float
         Fraction of the maximum distance from the edge to erode features by before testing for contiguity. Must be between 0 and 1.
 
+    PBC_flag : None or str
+        As passed to tobac detection.
+
     vdim : str
         Name of the vertical dimension in the input data array, if applicable.
+
+    max_object_length : int
+        Maximum expected length of the object in pixels, used for padding when applying periodic boundary conditions.
 
     use_parallel : bool
         Whether to use parallel processing.
@@ -218,15 +227,13 @@ def track_using_eroded_contiguity(
 
     """
 
-    eroded_mask = erode_mask(mask, fraction, vdim, use_parallel)
-    _, tracking_table = track_using_contiguity(
-        eroded_mask > 0, table, PBC_flag=PBC_flag, vdim=vdim
-    )
+    eroded_mask = erode_mask(mask, fraction, PBC_flag, vdim, max_object_length, use_parallel)
+    tracked_eroded_mask, tracked_table = track_using_contiguity(eroded_mask, table, PBC_flag, vdim)
 
-    return tracking_table
+    return tracked_table
 
 
-def erode_mask(mask, fraction, vdim, use_parallel):
+def erode_mask(mask, fraction, PBC_flag=None, vdim=None, max_object_length=1, use_parallel=True):
     """Perform erosion of the input features by the given fraction.
 
     Parameters
@@ -251,12 +258,91 @@ def erode_mask(mask, fraction, vdim, use_parallel):
     """
 
     logging.info("Start erosion by fraction: %s" % fraction)
-    topography = calculate_mask_topography(mask > 0, vdim, use_parallel)
+    topography = calculate_mask_topography(mask, PBC_flag, vdim, max_object_length, use_parallel)
     eroded_mask = mask.where(topography > fraction).fillna(0)
 
     logging.info("Completed erosion by fraction: %s" % fraction)
 
     return eroded_mask
+
+
+def calculate_mask_topography(mask, PBC_flag=None, vdim=None, max_object_length=1, use_parallel=True):
+    """Computes the normalised distances between the pixels in each mask feature and the edge of that feature.
+
+    Parameters
+    ----------
+    mask : xarray.DataArray
+        Input data array containing integer labels for features or cells.
+
+    PBC_flag : None or str
+        As passed to tobac detection.
+
+    vdim : str or None
+        Name of the vertical dimension in the input data array, if applicable.
+
+    max_object_length : int
+        Maximum expected length of the object in pixels, used for padding when applying periodic boundary conditions.
+
+    use_parallel : bool
+        Whether to use parallel processing.
+
+    Returns
+    ----------
+    topography : numpy.ndarray
+        Array containing the normalised distance from the edge of each feature for each pixel in the input array.
+
+    """
+
+    topography = np.zeros_like(mask, dtype=float)
+
+    ntimes = len(mask.time) if "time" in mask.dims else 1
+    slices = [slice(None)] * len(mask.dims)
+
+    itr_times = range(ntimes)
+
+    for tidx in itr_times:
+        slices[0] = tidx if ntimes > 1 else slice(None)
+        mask_t = mask.isel(time=tidx) if ntimes > 1 else mask
+
+        if vdim is None:
+            arr = mask_t.values.astype(np.int16)
+            unique_labels = np.unique(arr)
+            unique_labels = unique_labels[unique_labels != 0]
+
+            if use_parallel:
+                results = joblib.Parallel(n_jobs=-1)(
+                    joblib.delayed(calculate_object_topography)(label, arr, PBC_flag, max_object_length)
+                    for label in unique_labels
+                )
+            else:
+                results = [
+                    calculate_object_topography(label, arr, PBC_flag, max_object_length) for label in unique_labels
+                ]
+
+            for label_topography in results:
+                topography[tuple(slices)] += label_topography
+        
+        else:
+            for level in range(len(mask_t[vdim])):
+                slices[-3] = level
+                arr = mask_t.isel({vdim: level}).values.astype(np.int16)
+                unique_labels = np.unique(arr)
+                unique_labels = unique_labels[unique_labels != 0]
+
+                if use_parallel:
+                    results = joblib.Parallel(n_jobs=-1)(
+                        joblib.delayed(calculate_object_topography)(label, arr, PBC_flag, max_object_length)
+                        for label in unique_labels
+                    )
+                else:
+                    results = [
+                        calculate_object_topography(label, arr, PBC_flag, max_object_length) for label in unique_labels
+                    ]
+
+                for label_topography in results:
+                    topography[tuple(slices)] += label_topography
+
+    return topography
 
 
 def calculate_object_topography(label_value, arr, PBC_flag=None, max_object_length=1):
@@ -268,7 +354,7 @@ def calculate_object_topography(label_value, arr, PBC_flag=None, max_object_leng
         Integer label value of the object to calculate topography for.
 
     arr : numpy.ndarray
-        Array containing integer labels for features or cells to be tracked.
+        2D array containing integer labels for features or cells to be tracked.
 
     PBC_flag : None or str
         As passed to tobac detection.
@@ -322,59 +408,6 @@ def calculate_object_topography(label_value, arr, PBC_flag=None, max_object_leng
         else:
             slices.append(slice(1,-1))
 
-    distance = distance[tuple(slices)]    
+    distance = distance[tuple(slices)]
     return distance / distance.max()
 
-
-def calculate_mask_topography(mask, vdim, PBC_flag=None, max_object_length=1, use_parallel=True):
-    """Computes the normalised distances between the pixels in each mask feature and the edge of that feature.
-
-    Parameters
-    ----------
-    mask : xarray.DataArray
-        Input data array containing integer labels for features or cells.
-
-    vdim : str or None
-        Name of the vertical dimension in the input data array, if applicable.
-
-    use_parallel : bool
-        Whether to use parallel processing.
-
-    Returns
-    ----------
-    topography : numpy.ndarray
-        Array containing the normalised distance from the edge of each feature for each pixel in the input array.
-
-    """
-
-    topography = np.zeros_like(mask, dtype=float)
-
-    ntimes = len(mask.time) if "time" in mask.dims else 1
-    slices = [slice(None)] * len(mask.dims)
-
-    itr_times = range(ntimes)
-
-    for tidx in itr_times:
-        slices[0] = tidx if ntimes > 1 else slice(None)
-        mask_t = mask.isel(time=tidx) if ntimes > 1 else mask
-
-        for level in range(len(mask_t[vdim])):
-            slices[-3] = level
-            arr = mask_t.isel({vdim: level}).values.astype(np.int16)
-            unique_labels = np.unique(arr)
-            unique_labels = unique_labels[unique_labels != 0]
-
-            if use_parallel:
-                results = joblib.Parallel(n_jobs=-1)(
-                    joblib.delayed(calculate_object_topography)(label, arr, PBC_flag, max_object_length)
-                    for label in unique_labels
-                )
-            else:
-                results = [
-                    calculate_object_topography(label, arr, PBC_flag, max_object_length) for label in unique_labels
-                ]
-
-            for label_topography in results:
-                topography[tuple(slices)] += label_topography
-
-    return topography
