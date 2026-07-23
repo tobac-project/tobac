@@ -54,6 +54,10 @@ def track_using_contiguity(mask, table, PBC_flag=None, vdim=None, dims_to_skip=(
 
     boolean_array = mask > 0
 
+    # check input mask name matches a column in the feature table
+    if not np.isin(mask.name, table.columns):
+        raise ValueError(f"mask.name is {mask.name} which is not in table.columns")
+
     # check if the data are chunked
     if isinstance(boolean_array, xr.DataArray) and boolean_array.chunks is not None:
         warnings.warn(
