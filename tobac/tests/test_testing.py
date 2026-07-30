@@ -8,6 +8,7 @@ from tobac.testing import (
     generate_single_feature,
     get_single_pbc_coordinate,
     make_sample_data_3D_1blob,
+    make_sample_data_3D_2crossing_blobs_xarray,
 )
 import tobac.testing as tbtest
 from collections import Counter
@@ -745,3 +746,75 @@ def test_generate_grid_coords(min_max_coords, lengths, expected_outs):
 
     out_grid = tbtest.generate_grid_coords(min_max_coords, lengths)
     assert np.all(np.isclose(out_grid, np.array(expected_outs)))
+
+
+def test_make_sample_data_3D_2crossing_blobs_xarray():
+    """
+    Test that the 3D crossing-blobs sample dataset has the expected structure.
+    """
+    data_xarray = tbtest.make_sample_data_3D_2crossing_blobs_xarray(invert_xy=False)
+
+    assert isinstance(data_xarray, DataArray)
+    assert data_xarray.dims == ("time", "z", "y", "x")
+    assert data_xarray.shape == (25, 50, 50, 100)
+
+    assert "time" in data_xarray.coords
+    assert "z" in data_xarray.coords
+    assert "y" in data_xarray.coords
+    assert "x" in data_xarray.coords
+    assert "latitude" in data_xarray.coords
+    assert "longitude" in data_xarray.coords
+
+
+def test_make_sample_data_3D_2crossing_blobs_xarray_contains_signal():
+    """
+    Test that the 3D crossing-blobs sample dataset contains blob signal.
+    """
+    data_xarray = tbtest.make_sample_data_3D_2crossing_blobs_xarray(invert_xy=False)
+
+    assert np.any(data_xarray.data > 0)
+
+    blob_1 = (
+        data_xarray.isel(time=0).sel(z=4000, y=10000, x=10000, method="nearest").item()
+    )
+    blob_2 = (
+        data_xarray.isel(time=0).sel(z=46000, y=10000, x=90000, method="nearest").item()
+    )
+
+    assert blob_1 > 0.0
+    assert blob_2 > 0.0
+
+
+def test_make_sample_data_3D_2crossing_blobs_xarray_metadata():
+    """
+    Test that the 3D crossing-blobs sample dataset has the expected metadata.
+    """
+    data_xarray = tbtest.make_sample_data_3D_2crossing_blobs_xarray(invert_xy=False)
+
+    assert data_xarray.name == "w"
+    assert data_xarray.attrs["units"] == "m s-1"
+    assert data_xarray.coords["latitude"].dims == ("y", "x")
+    assert data_xarray.coords["longitude"].dims == ("y", "x")
+
+
+def test_make_sample_data_3D_2crossing_blobs_xarray_invert_xy():
+    """
+    Test that invert_xy changes the horizontal dimension order of the dataset.
+    """
+    data_inverted = tbtest.make_sample_data_3D_2crossing_blobs_xarray(invert_xy=True)
+
+    assert isinstance(data_inverted, DataArray)
+    assert data_inverted.dims == ("time", "z", "x", "y")
+    assert data_inverted.shape == (25, 50, 100, 50)
+
+    assert "latitude" in data_inverted.coords
+    assert "longitude" in data_inverted.coords
+    assert data_inverted.coords["latitude"].dims == ("x", "y")
+    assert data_inverted.coords["longitude"].dims == ("x", "y")
+
+    blob_1 = (
+        data_inverted.isel(time=0)
+        .sel(z=4000, x=10000, y=10000, method="nearest")
+        .item()
+    )
+    assert blob_1 > 0.0

@@ -437,6 +437,121 @@ def make_sample_data_3D_1blob(data_type="iris", invert_xy=False):
     return sample_data
 
 
+def make_sample_data_3D_2crossing_blobs_xarray(invert_xy: bool = False):
+    """
+    Create a simple 3D xarray dataset with two Gaussian blobs crossing in x-y while evolving in z.
+
+    Grid:
+      - dx=dy=dz=1 km
+      - x: 0..99 km (100 points)
+      - y: 0..49 km (50 points)
+      - z: 0..49 km (50 points)
+    Time:
+      - every 2 minutes
+      - total length 50 minutes starting at 2000-01-01 12:00
+
+    Returns
+    -------
+    sample_data : xarray.DataArray
+        dims are ("time","z","y","x") if invert_xy=False, else ("time","z","x","y")
+        coords are in meters for x/y/z, time is datetime64.
+    """
+    t_0 = datetime.datetime(2000, 1, 1, 12, 0, 0)
+
+    x = np.arange(0, 100e3, 1000)  # 100 points
+    y = np.arange(0, 50e3, 1000)  # 50 points
+    z = np.arange(0, 50e3, 1000)  # 50 points
+
+    # output times (every 2 minutes)
+    t = np.array(
+        [np.datetime64(t_0 + i * datetime.timedelta(minutes=2)) for i in range(25)]
+    )
+
+    # define tracks on the SAME output times (no iris/time conversion needed)
+    # Blob 1: from (10km,10km,4km) moving up-right and up in z
+    x0_1, y0_1, z0_1 = 10e3, 10e3, 4e3
+    vx_1, vy_1, vz_1 = 30.0, 14.0, 16.0  # m/s
+
+    # Blob 2: from (90km,10km,46km) moving up-left and down in z -> crosses blob1
+    x0_2, y0_2, z0_2 = 90e3, 10e3, 46e3
+    vx_2, vy_2, vz_2 = -30.0, 14.0, -16.0  # m/s
+
+    # amplitudes
+    mag1, mag2 = 10.0, 10.0
+
+    # widths
+    sigma_xy = 5e3
+    sigma_z = 5e3
+
+    # precompute spatial mesh once
+    if not invert_xy:
+        zz, yy, xx = np.meshgrid(z, y, x, indexing="ij")  # (z,y,x)
+        data = np.zeros((t.shape[0], z.shape[0], y.shape[0], x.shape[0]), dtype=float)
+        dims = ("time", "z", "y", "x")
+    else:
+        zz, xx, yy = np.meshgrid(z, x, y, indexing="ij")  # (z,x,y)
+        data = np.zeros((t.shape[0], z.shape[0], x.shape[0], y.shape[0]), dtype=float)
+        dims = ("time", "z", "x", "y")
+
+    # fill
+    for i_t, t_i in enumerate(t):
+        # seconds since start
+        dt_s = float((t_i - np.datetime64(t_0)) / np.timedelta64(1, "s"))
+
+        x1 = x0_1 + vx_1 * dt_s
+        y1 = y0_1 + vy_1 * dt_s
+        z1 = z0_1 + vz_1 * dt_s
+
+        x2 = x0_2 + vx_2 * dt_s
+        y2 = y0_2 + vy_2 * dt_s
+        z2 = z0_2 + vz_2 * dt_s
+
+        blob1 = (
+            mag1
+            * np.exp(-np.power(xx - x1, 2.0) / (2 * sigma_xy**2))
+            * np.exp(-np.power(yy - y1, 2.0) / (2 * sigma_xy**2))
+            * np.exp(-np.power(zz - z1, 2.0) / (2 * sigma_z**2))
+        )
+
+        blob2 = (
+            mag2
+            * np.exp(-np.power(xx - x2, 2.0) / (2 * sigma_xy**2))
+            * np.exp(-np.power(yy - y2, 2.0) / (2 * sigma_xy**2))
+            * np.exp(-np.power(zz - z2, 2.0) / (2 * sigma_z**2))
+        )
+
+        # combine: max (like "crossing blobs" idealized case)
+        data[i_t] = np.maximum(blob1, blob2)
+
+    # coords dict depends on dims
+    if not invert_xy:
+        coords = {"time": t, "z": z, "y": y, "x": x}
+        # aux coords (2D) on (y,x) plane (pick z=0 slice)
+        lat2d = 24 + 1e-5 * xx[0]  # shape (y,x)
+        lon2d = 150 + 1e-5 * yy[0]  # shape (y,x)
+        aux_dims = ("y", "x")
+    else:
+        coords = {"time": t, "z": z, "x": x, "y": y}
+        # here xx[0] is shape (x,y) and yy[0] is shape (x,y)
+        lat2d = 24 + 1e-5 * xx[0]  # shape (x,y)
+        lon2d = 150 + 1e-5 * yy[0]  # shape (x,y)
+        aux_dims = ("x", "y")
+
+    da = DataArray(
+        data=data,
+        dims=dims,
+        coords=coords,
+        name="w",
+        attrs={"units": "m s-1"},
+    )
+
+    # add aux coords (2D)
+    da = da.assign_coords(latitude=(aux_dims, lat2d))
+    da = da.assign_coords(longitude=(aux_dims, lon2d))
+
+    return da
+
+
 def make_sample_data_3D_3blobs(data_type="iris", invert_xy=False):
     """Create a simple dataset to use in tests.
 
