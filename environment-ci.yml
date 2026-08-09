@@ -12,7 +12,7 @@ dependencies:
   - iris
   - xarray
   - cartopy
-  - trackpy
+  - trackpy>=0.6.1
   - pytest
   - typing_extensions
   - black
