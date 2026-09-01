@@ -787,3 +787,127 @@ def test_bulk_statistics_dask():
     )
 
     assert np.all(bulk_statistics_output["size"] == expected_size_result)
+
+
+def test_bulk_statistics_feature_detection_2d():
+    """
+    Test that statistics calculated during feature detection work correctly
+    """
+
+    test_data = np.zeros((20, 60), dtype=float)
+
+    test_data = tb_test.make_feature_blob(
+        test_data,
+        10,
+        10,
+        h1_size=10,
+        h2_size=10,
+        amplitude=10,
+    )
+    test_data = tb_test.make_feature_blob(
+        test_data,
+        10,
+        30,
+        h1_size=10,
+        h2_size=10,
+        amplitude=8,
+    )
+    test_data = tb_test.make_feature_blob(
+        test_data,
+        10,
+        50,
+        h1_size=10,
+        h2_size=10,
+        amplitude=6,
+    )
+
+    test_data = tb_test.make_dataset_from_arr(test_data, data_type="xarray")
+
+    stats = dict(max=np.max, mean=np.mean)
+
+    features = tobac.feature_detection.feature_detection_multithreshold_timestep(
+        test_data,
+        0,
+        [2],
+        sigma_threshold=0,
+        statistic=stats,
+    )
+
+    from skimage.measure import label
+
+    labels = label(test_data.data > 2)
+    features_max = [
+        test_data.data[labels == i].max() for i in np.unique(labels) if i != 0
+    ]
+    features_mean = [
+        test_data.data[labels == i].mean() for i in np.unique(labels) if i != 0
+    ]
+
+    assert np.allclose(features_max, features["max"].to_numpy(dtype=float))
+    assert np.allclose(features_mean, features["mean"].to_numpy(dtype=float))
+
+
+def test_bulk_statistics_feature_detection_3d():
+    """
+    Test that statistics calculated during feature detection work correctly for 3d data
+    """
+
+    test_data = np.zeros((20, 20, 60), dtype=float)
+
+    test_data = tb_test.make_feature_blob(
+        test_data,
+        10,
+        10,
+        v_loc=10,
+        h1_size=10,
+        h2_size=10,
+        amplitude=10,
+        v_size=10,
+    )
+    test_data = tb_test.make_feature_blob(
+        test_data,
+        10,
+        30,
+        v_loc=10,
+        h1_size=10,
+        h2_size=10,
+        v_size=10,
+        amplitude=8,
+    )
+    test_data = tb_test.make_feature_blob(
+        test_data,
+        10,
+        50,
+        v_loc=10,
+        h1_size=10,
+        h2_size=10,
+        v_size=10,
+        amplitude=6,
+    )
+
+    test_data = tb_test.make_dataset_from_arr(
+        test_data, data_type="xarray", z_dim_num=0, y_dim_num=1, x_dim_num=2
+    )
+
+    stats = dict(max=np.max, mean=np.mean)
+
+    features = tobac.feature_detection.feature_detection_multithreshold_timestep(
+        test_data,
+        0,
+        [2],
+        sigma_threshold=0,
+        statistic=stats,
+    )
+
+    from skimage.measure import label
+
+    labels = label(test_data.data > 2)
+    features_max = [
+        test_data.data[labels == i].max() for i in np.unique(labels) if i != 0
+    ]
+    features_mean = [
+        test_data.data[labels == i].mean() for i in np.unique(labels) if i != 0
+    ]
+
+    assert np.allclose(features_max, features["max"].to_numpy(dtype=float))
+    assert np.allclose(features_mean, features["mean"].to_numpy(dtype=float))
