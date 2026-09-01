@@ -67,7 +67,7 @@ dev = [
 examples = [
     "jupyter",
     "notebook",
-    "pytables",
+    "tables",
     "s3fs",
     "arm_pyart",
     "seaborn",
