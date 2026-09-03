@@ -124,15 +124,15 @@ def setup(app):
 
 # This should include all modules used in tobac. These are dummy imports,
 # but should include both required and optional dependencies.
+# NOTE: this should use the name of the package as it is imported into python, not the name on conda/pypi
 autodoc_mock_imports = [
     #    "numpy",
     "scipy",
-    "scikit-image",
     "pandas",
     "pytables",
     "matplotlib",
     "iris",
-    "cf-units",
+    "cf_units",
     "xarray",
     "cartopy",
     "trackpy",
@@ -140,6 +140,8 @@ autodoc_mock_imports = [
     "skimage",
     "sklearn",
     "cftime",
+    "dask",
+    "dask_image", 
 ]
 
 autodoc_default_options = {

@@ -10,3 +10,5 @@ xarray
 cartopy
 trackpy
 typing_extensions
+dask
+dask-image

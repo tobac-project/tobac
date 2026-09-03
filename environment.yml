@@ -14,3 +14,5 @@ dependencies:
   - cartopy
   - trackpy
   - typing_extensions
+  - dask
+  - dask-image
