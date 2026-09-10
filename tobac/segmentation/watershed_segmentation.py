@@ -285,7 +285,7 @@ def segmentation_3D(
     PBC_flag="none",
     seed_3D_flag="column",
     statistic=None,
-    suppress_warnings=False
+    suppress_warnings=False,
 ):
     """Wrapper for the segmentation()-function."""
 
@@ -317,7 +317,7 @@ def segmentation_2D(
     PBC_flag="none",
     seed_3D_flag="column",
     statistic=None,
-    suppress_warnings=False
+    suppress_warnings=False,
 ):
     """Wrapper for the segmentation()-function."""
     return segmentation(
