@@ -285,6 +285,7 @@ def segmentation_3D(
     PBC_flag="none",
     seed_3D_flag="column",
     statistic=None,
+    suppress_warnings=False,
 ):
     """Wrapper for the segmentation()-function."""
 
@@ -300,6 +301,7 @@ def segmentation_3D(
         PBC_flag=PBC_flag,
         seed_3D_flag=seed_3D_flag,
         statistic=statistic,
+        suppress_warnings=suppress_warnings,
     )
 
 
@@ -315,6 +317,7 @@ def segmentation_2D(
     PBC_flag="none",
     seed_3D_flag="column",
     statistic=None,
+    suppress_warnings=False,
 ):
     """Wrapper for the segmentation()-function."""
     return segmentation(
@@ -329,6 +332,7 @@ def segmentation_2D(
         PBC_flag=PBC_flag,
         seed_3D_flag=seed_3D_flag,
         statistic=statistic,
+        suppress_warnings=suppress_warnings,
     )
 
 
@@ -1135,6 +1139,7 @@ def segmentation(
     segment_number_unassigned: int = 0,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
     time_padding: Optional[datetime.timedelta] = datetime.timedelta(seconds=0.5),
+    suppress_warnings: Optional[bool] = False,
 ) -> tuple[xr.DataArray, pd.DataFrame]:
     """Use watershedding to determine region above a threshold
     value around initial seeding position for all time steps of
@@ -1212,6 +1217,8 @@ def segmentation(
         timestep that is time_padding off of the feature. Extremely useful when
         converting between micro- and nanoseconds, as is common when using Pandas
         dataframes.
+    suppress_warnings: bool, optional
+        If True, suppresses warnings. Default is False.
 
     Returns
     -------
@@ -1266,7 +1273,7 @@ def segmentation(
 
     features_out_list = []
 
-    if len(field.coords[time_var_name]) == 1:
+    if not suppress_warnings and len(field.coords[time_var_name]) == 1:
         warnings.warn(
             "As of v1.6.0, segmentation with time length 1 will return time as a coordinate"
             " instead of dropping it (i.e., output will now be 1xMxN instead of MxN). ",
