@@ -1,5 +1,7 @@
+import warnings
 import pytest
 import tobac.segmentation as seg
+import tobac.segmentation.watershed_segmentation as watershed_segmentation
 import numpy as np
 import xarray as xr
 import pandas as pd
@@ -1223,3 +1225,55 @@ def test_segmentation_returns_early_for_empty_features():
 
     assert np.all(sef_mask_none.data == 0)
     assert features_out_none is None
+
+
+@pytest.mark.parametrize(
+    "seg_func",
+    [
+        watershed_segmentation.segmentation,
+        watershed_segmentation.segmentation_2D,
+        watershed_segmentation.segmentation_3D,
+    ],
+)
+@pytest.mark.parametrize(
+    "suppress_warnings, expect_warning",
+    [
+        (False, True),
+        (True, False),
+        ("default", True),
+    ],
+)
+def test_segmentation_suppress_warnings(seg_func, suppress_warnings, expect_warning):
+    """Test that the 1xMxN warning is issued when suppress_warnings=False
+    and suppressed when suppress_warnings=True
+    """
+    test_dset_size = (1, 50, 50)
+    test_data = np.zeros(test_dset_size)
+    test_data_xarray = testing.make_dataset_from_arr(
+        test_data, data_type="xarray", time_dim_num=0, y_dim_num=1, x_dim_num=2
+    )
+    features = testing.generate_single_feature(
+        start_h1=10, start_h2=10, max_h1=50, max_h2=50
+    )
+
+    kwargs = {"dxy": 1000.0, "threshold": 1.5}
+    if suppress_warnings != "default":
+        kwargs["suppress_warnings"] = suppress_warnings
+
+    warning_msg = (
+        "As of v1.6.0, segmentation with time length 1 will return time as a coordinate"
+    )
+
+    if expect_warning:
+        with pytest.warns(UserWarning, match=warning_msg):
+            seg_func(features, test_data_xarray, **kwargs)
+    else:
+        with warnings.catch_warnings(record=True) as record:
+            warnings.simplefilter("always")
+            seg_func(features, test_data_xarray, **kwargs)
+            matching_warnings = [
+                w
+                for w in record
+                if issubclass(w.category, UserWarning) and warning_msg in str(w.message)
+            ]
+            assert len(matching_warnings) == 0
