@@ -119,37 +119,66 @@ class TestLinkingOverlap:
     def test_basic_linking_2d(self, simple_2d_data):
         """Test basic feature linking in 2D."""
         features, mask = simple_2d_data
+        features_copy, mask_copy = features.copy(), mask.copy()
         result = linking_overlap(features, mask)
 
         # Check output structure
         assert "cell" in result.columns
         assert "time_cell" in result.columns
         assert len(result) == len(features)
+        pd.testing.assert_index_equal(result.index, features.index)
 
-        # Features at same time step should have same cell ID
-        print(result)
+        # check input is not modified
+        pd.testing.assert_frame_equal(features, features_copy)
+        xr.testing.assert_equal(mask, mask_copy)
+
+        # Check that features at subsequent time steps have the same cell id
         assert (
-            result.loc[result["time"] == features["time"].iloc[0], "cell"].nunique()
-            == 2
+            result.cell[result.feature == 1].values
+            == result.cell[result.feature == 3].values
+        )
+        assert (
+            result.cell[result.feature == 2].values
+            == result.cell[result.feature == 4].values
         )
 
-        # Features at different time steps should maintain cell IDs
-        cell_ids_t0 = result.loc[
-            result["time"] == features["time"].iloc[0], "cell"
-        ].values
-        cell_ids_t1 = result.loc[
-            result["time"] == features["time"].iloc[1], "cell"
-        ].values
-        assert len(set(cell_ids_t0) & set(cell_ids_t1)) > 0
+        # Check that cells are different and have positive values
+        assert np.all(result.cell > 0)
+        assert (
+            result.cell[result.feature == 1].values
+            != result.cell[result.feature == 2].values
+        )
 
     def test_basic_linking_3d(self, simple_3d_data):
         """Test basic feature linking in 3D."""
         features, mask = simple_3d_data
+        features_copy, mask_copy = features.copy(), mask.copy()
         result = linking_overlap(features, mask, vertical_coord="vdim")
 
         assert "cell" in result.columns
         assert "time_cell" in result.columns
         assert len(result) == len(features)
+        pd.testing.assert_index_equal(result.index, features.index)
+
+        pd.testing.assert_frame_equal(features, features_copy)
+        xr.testing.assert_equal(mask, mask_copy)
+
+        # Check that features at subsequent time steps have the same cell id
+        assert (
+            result.cell[result.feature == 1].values
+            == result.cell[result.feature == 3].values
+        )
+        assert (
+            result.cell[result.feature == 2].values
+            == result.cell[result.feature == 4].values
+        )
+
+        # Check that cells are different and have positive values
+        assert np.all(result.cell > 0)
+        assert (
+            result.cell[result.feature == 1].values
+            != result.cell[result.feature == 2].values
+        )
 
     def test_non_overlapping_features(self, non_overlapping_data):
         """Test linking when features don't overlap."""
@@ -209,53 +238,74 @@ class TestLinkingOverlap:
             if cell_id == -1:
                 continue
             cell_mask = result["cell"] == cell_id
-            cell_times = result.loc[cell_mask, "time"].values
-            cell_time_cells = result.loc[cell_mask, "time_cell"].values
+            cell_times = result.loc[cell_mask, "time_cell"].values
 
             # Should be monotonically increasing
-            time_diffs = np.diff(cell_time_cells.astype("timedelta64[s]").astype(float))
-            assert np.all(time_diffs >= 0)
+            time_diffs = np.diff(cell_times.astype("timedelta64[s]").astype(float))
+            assert np.all(time_diffs > 0)
 
     def test_minimum_overlap_threshold(self, simple_2d_data):
         """Test minimum_overlap parameter."""
         features, mask = simple_2d_data
 
-        # With high minimum overlap, features might not link
-        result_high = linking_overlap(features, mask, minimum_overlap=100)
+        # With higher minimum overlap, features should not link
+        result = linking_overlap(features, mask, minimum_overlap=2)
 
-        # Should have fewer linked cells with higher threshold
-        assigned_high = (result_high["cell"] != -1).sum()
-
-        result_low = linking_overlap(features, mask, minimum_overlap=1)
-        assigned_low = (result_low["cell"] != -1).sum()
-
-        assert assigned_high <= assigned_low
+        assert np.all(result.cell == -1)
 
     def test_minimum_relative_overlap(self, simple_2d_data):
         """Test minimum_relative_overlap parameter."""
         features, mask = simple_2d_data
 
         # Test with different relative overlap thresholds
-        result_high = linking_overlap(features, mask, minimum_relative_overlap=0.9)
-        result_low = linking_overlap(features, mask, minimum_relative_overlap=0.1)
+        result_high = linking_overlap(features, mask, minimum_relative_overlap=0.26)
+        result_low = linking_overlap(features, mask, minimum_relative_overlap=0.25)
 
-        # At least one should execute without error
-        assert len(result_high) == len(features)
-        assert len(result_low) == len(features)
+        # With higher minimum relative overlap, features should not link
+        assert np.all(result_high.cell == -1)
+
+        # With lower minimum relative overlap, features should not link
+        assert np.all(result_low.cell > 0)
+        assert (
+            result_low.cell[result_low.feature == 1].values
+            == result_low.cell[result_low.feature == 3].values
+        )
+        assert (
+            result_low.cell[result_low.feature == 2].values
+            == result_low.cell[result_low.feature == 4].values
+        )
 
     def test_translate_method_constant(self, simple_2d_data):
         """Test constant velocity translation method."""
         features, mask = simple_2d_data
 
+        # test with zero velocity and minimum overlap, shouldn't link
         result = linking_overlap(
             features,
             mask,
             translate_method="constant",
-            velocity_constant=np.array([1.0, 1.0]),
+            velocity_constant=np.array([0, 0]),
+            minimum_overlap=2,
         )
+        assert np.all(result.cell == -1)
 
-        assert "cell" in result.columns
-        assert len(result) == len(features)
+        # test with non-zero velocity and minimum overlap, should link
+        result = linking_overlap(
+            features,
+            mask,
+            translate_method="constant",
+            velocity_constant=np.array([1.0 / 3600, 1.0 / 3600]),
+            minimum_overlap=2,
+        )
+        assert np.all(result.cell > 0)
+        assert (
+            result.cell[result.feature == 1].values
+            == result.cell[result.feature == 3].values
+        )
+        assert (
+            result.cell[result.feature == 2].values
+            == result.cell[result.feature == 4].values
+        )
 
     def test_translate_method_drift(self, simple_2d_data):
         """Test drift translation method."""

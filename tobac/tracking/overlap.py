@@ -407,9 +407,10 @@ def _update_predicted_velocities(
         elif velocity_method is None or wh_missing_vels.all():
             features.loc[wh_missing_vels, "_track_velocity"] = 0
         elif velocity_method == "mean":
-            features.loc[wh_missing_vels, "_track_velocity"] = (
-                features._track_velocity.mean()
-            )
+            mean_vel = features._track_velocity.mean()
+            features.loc[wh_missing_vels, "_track_velocity"] = {
+                k: mean_vel for k in features[wh_missing_vels].index
+            }
         elif velocity_method == "nearest":
             # create BallTree to find nearest velocity accounting for PBCs
             btree = FeatureBallTree(features[~wh_missing_vels])
@@ -731,8 +732,16 @@ def _assign_velocities(
         Modifies tracks DataFrame in place.
 
     """
-    end_locations = tracks.loc[matches.values(), ["hdim_1", "hdim_2"]].to_numpy()
-    start_locations = tracks.loc[matches.keys(), ["hdim_1", "hdim_2"]].to_numpy()
+    if "vdim" in tracks.columns:
+        end_locations = tracks.loc[
+            matches.values(), ["vdim", "hdim_1", "hdim_2"]
+        ].to_numpy()
+        start_locations = tracks.loc[
+            matches.keys(), ["vdim", "hdim_1", "hdim_2"]
+        ].to_numpy()
+    else:
+        end_locations = tracks.loc[matches.values(), ["hdim_1", "hdim_2"]].to_numpy()
+        start_locations = tracks.loc[matches.keys(), ["hdim_1", "hdim_2"]].to_numpy()
     velocities = (
         _calc_distances_pbcs(
             start_locations, end_locations, domain_size, PBC_flag=PBC_flag
