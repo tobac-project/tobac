@@ -80,7 +80,7 @@ def _get_indices_from_labels(
     counts : dict
         The number of points in the label number (key: label number).
     coordinates : dict
-        The coordinates in the label number. This is either a 2 or 3 | n array for each label
+        The coordinates in the label number. This is either a 2 or 3 x n array for each label
     """
 
     counts = {}
@@ -886,9 +886,9 @@ def linking_overlap(
     cell_number_unassigned: int = -1,
     minimum_overlap: int = 1,
     minimum_relative_overlap: float = 0,
-    translate_method: None | Literal["constant", "drift", "predict"] = None,
-    velocity_method: None | Literal["constant", "mean", "nearest"] = None,
-    velocity_constant: None | float | np.ndarray = None,
+    translate_method: Optional[Literal["constant", "drift", "predict"]] = None,
+    velocity_method: Optional[Literal["constant", "mean", "nearest"]] = None,
+    velocity_constant: Optional[Union[float, np.ndarray]] = None,
     PBC_flag: Optional[Literal["none", "hdim_1", "hdim_2", "both"]] = None,
     vertical_axis: Optional[int] = None,
     vertical_coord: Optional[str] = None,
