@@ -95,6 +95,32 @@ def _get_indices_from_labels(
     return counts, coordinates
 
 
+def _get_counts_from_labels(
+    labels: np.ndarray,
+) -> dict[int, int]:
+    """Function to get the x, y, and z indices (as well as point count) of all labeled regions.
+    Slightly less deranged than the version in internal utils.
+
+    Parameters
+    ----------
+    labels : np.ndarray
+        The array of labels to get the indices for.
+    Returns
+    -------
+    counts : dict
+        The number of points in the label number (key: label number).
+    """
+
+    counts = {}
+
+    # loop through all skimage identified regions
+    region_props = skimage.measure.regionprops(labels)
+    for region_prop in region_props:
+        counts[region_prop.label] = region_prop.coords.shape[0]
+
+    return counts
+
+
 def _unique_nonzero(arr: np.ndarray, **kwargs) -> np.ndarray:
     """Return unique nonzero elements of an array.
 
@@ -121,6 +147,7 @@ def _find_overlaps_for_label(
     coords: np.ndarray[int],
     counts: int,
     destination_labels: np.ndarray[int],
+    destination_counts: dict[int, int],
     min_count: int = 1,
     relative_count: float = 0,
 ) -> tuple[np.ndarray[int], np.ndarray[int]]:
@@ -154,8 +181,10 @@ def _find_overlaps_for_label(
         destination_labels.values[*coords], return_counts=True
     )
 
+    min_counts = np.minimum(counts, [destination_counts[k] for k in matched_labels])
+
     wh = np.logical_and(
-        matched_counts >= min_count, matched_counts / counts >= relative_count
+        matched_counts >= min_count, matched_counts / min_counts >= relative_count
     )
 
     return matched_labels[wh], matched_counts[wh]
@@ -611,6 +640,7 @@ def _find_overlaps(
 
     """
     label_counts, label_coords = _get_indices_from_labels(origin_labels.values)
+    destination_counts = _get_counts_from_labels(destination_labels.values)
     if translate_method is not None:
         label_coords = _translate_labels(
             tracks,
@@ -629,6 +659,7 @@ def _find_overlaps(
             label_coords[k],
             label_counts[k],
             destination_labels,
+            destination_counts,
             min_count=min_count,
             relative_count=relative_count,
         )
