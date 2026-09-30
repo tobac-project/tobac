@@ -775,8 +775,8 @@ def test_feature_detection_threshold_pbc(
         PBC_flag=PBC_flag,
     )
     assert len(fd_output_df) == 1
-    assert fd_output_df["hdim_1"].values[0] == expected_center[0]
-    assert fd_output_df["hdim_2"].values[0] == expected_center[1]
+    assert np.isclose(fd_output_df["hdim_1"].values[0], expected_center[0])
+    assert np.isclose(fd_output_df["hdim_2"].values[0], expected_center[1])
 
 
 def test_feature_detection_coords():
@@ -1172,7 +1172,6 @@ def test_feature_position_pbc(
     """
 
     in_data = np.zeros((max_h1 + 1, max_h2 + 1))
-    region = (0, 0, max_h1 + 1, max_h2 + 1)
 
     feat_pos_output = feat_detect.feature_position(
         h1_indices,
@@ -1182,9 +1181,8 @@ def test_feature_position_pbc(
         PBC_flag=PBC_flag,
         position_threshold=position_threshold,
         track_data=in_data,
-        region_bbox=region,
     )
-    assert feat_pos_output == expected_output
+    assert np.all(np.isclose(feat_pos_output, expected_output))
 
 
 def test_pbc_snake_feature_detection():
