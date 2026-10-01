@@ -8,6 +8,8 @@ from typing import Union
 import numpy as np
 import pandas as pd
 import xarray as xr
+
+from tobac.utils.datetime import to_timestamp
 from . import coordinates as tb_utils_gi
 
 
@@ -399,10 +401,10 @@ def add_coordinates_to_features(
     return_feat_df[time_dim_name] = variable_da[time_dim_name].values[
         return_feat_df["frame"]
     ]
-    return_feat_df[time_dim_name + "str"] = [
-        pd.to_datetime(str(x)).strftime("%Y-%m-%d %H:%M:%S")
-        for x in variable_da[time_dim_name].values[return_feat_df["frame"]]
-    ]
+    return_feat_df[time_dim_name + "str"] = to_timestamp(return_feat_df[time_dim_name])
+    return_feat_df[time_dim_name + "str"] = return_feat_df[
+        time_dim_name + "str"
+    ].dt.strftime("%Y-%m-%d %H:%M:%S")
 
     for interp_coord in renamed_dim_da.coords:
         # skip time coordinate because we dealt with that already
