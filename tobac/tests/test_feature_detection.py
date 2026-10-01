@@ -1226,7 +1226,17 @@ def test_feature_position_pbc(
             "center",
             (1, 10.5, 10.5),
         ),
-        ([1, 9], [1, 2], [1, 2], 10, 10, 10, "both", "center", (5, 1.5, 1.5)), # test that vdim is not treated as periodic
+        (
+            [1, 9],
+            [1, 2],
+            [1, 2],
+            10,
+            10,
+            10,
+            "both",
+            "center",
+            (5, 1.5, 1.5),
+        ),  # test that vdim is not treated as periodic
     ),
 )
 def test_feature_position_pbc_3d(
