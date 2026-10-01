@@ -120,7 +120,8 @@ def test_feature_detection_multithreshold_timestep(
 
 
 @pytest.mark.parametrize(
-    "position_threshold", [("center"), ("extreme"), ("weighted_diff"), ("weighted_abs")]
+    "position_threshold",
+    [("center"), ("extreme"), ("weighted_diff"), ("weighted_abs"), ("error")],
 )
 def test_feature_detection_position(position_threshold):
     """
@@ -139,15 +140,33 @@ def test_feature_detection_position(position_threshold):
 
     test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type="iris")
 
-    fd_output = feat_detect.feature_detection_multithreshold_timestep(
-        test_data_iris,
-        0,
-        threshold=test_threshs,
-        n_min_threshold=test_min_num,
-        position_threshold=position_threshold,
-    )
+    if position_threshold == "error":
+        with pytest.raises(ValueError):
+            feat_detect.feature_detection_multithreshold_timestep(
+                test_data_iris,
+                0,
+                threshold=test_threshs,
+                n_min_threshold=test_min_num,
+                position_threshold=position_threshold,
+            )
 
-    pass
+    else:
+        fd_output = feat_detect.feature_detection_multithreshold_timestep(
+            test_data_iris,
+            0,
+            threshold=test_threshs,
+            n_min_threshold=test_min_num,
+            position_threshold=position_threshold,
+        )
+
+        fd_output_minima = feat_detect.feature_detection_multithreshold_timestep(
+            -test_data_iris,
+            0,
+            threshold=test_threshs,
+            n_min_threshold=test_min_num,
+            position_threshold=position_threshold,
+            target="minimum",
+        )
 
 
 @pytest.mark.parametrize(
@@ -1176,6 +1195,61 @@ def test_feature_position_pbc(
     feat_pos_output = feat_detect.feature_position(
         h1_indices,
         h2_indices,
+        hdim1_max=max_h1,
+        hdim2_max=max_h2,
+        PBC_flag=PBC_flag,
+        position_threshold=position_threshold,
+        track_data=in_data,
+    )
+    assert np.all(np.isclose(feat_pos_output, expected_output))
+
+
+@pytest.mark.parametrize(
+    "v_indices, h1_indices, h2_indices, max_v, max_h1, max_h2, PBC_flag, position_threshold, expected_output",
+    (
+        ([1], [1], [1], 10, 10, 10, "both", "center", (1, 1, 1)),
+        ([1, 1], [1, 2], [1, 2], 10, 10, 10, "both", "center", (1, 1.5, 1.5)),
+        ([1, 1], [0, 1], [1, 2], 10, 10, 10, "both", "center", (1, 0.5, 1.5)),
+        ([1, 1], [0, 10], [1, 1], 10, 10, 10, "hdim_1", "center", (1, 10.5, 1)),
+        ([1, 1], [1, 1], [0, 10], 10, 10, 10, "hdim_2", "center", (1, 1, 10.5)),
+        ([1, 1], [0, 10], [1, 1], 10, 10, 10, "both", "center", (1, 10.5, 1)),
+        ([1, 1], [1, 1], [0, 10], 10, 10, 10, "both", "center", (1, 1, 10.5)),
+        ([1, 1], [0, 10], [0, 10], 10, 10, 10, "both", "center", (1, 10.5, 10.5)),
+        (
+            [1, 1],
+            [0, 1, 9, 10],
+            [0, 0, 10, 10],
+            10,
+            10,
+            10,
+            "both",
+            "center",
+            (1, 10.5, 10.5),
+        ),
+        ([1, 9], [1, 2], [1, 2], 10, 10, 10, "both", "center", (5, 1.5, 1.5)), # test that vdim is not treated as periodic
+    ),
+)
+def test_feature_position_pbc_3d(
+    v_indices,
+    h1_indices,
+    h2_indices,
+    max_v,
+    max_h1,
+    max_h2,
+    PBC_flag,
+    position_threshold,
+    expected_output,
+):
+    """Tests to make sure that tobac.feature_detection.feature_position
+    works properly with periodic boundaries.
+    """
+
+    in_data = np.zeros((max_v + 1, max_h1 + 1, max_h2 + 1))
+
+    feat_pos_output = feat_detect.feature_position(
+        h1_indices,
+        h2_indices,
+        vdim_indices=v_indices,
         hdim1_max=max_h1,
         hdim2_max=max_h2,
         PBC_flag=PBC_flag,
