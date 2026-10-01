@@ -42,13 +42,13 @@ from tobac.utils.generators import field_and_features_over_time
 def feature_position(
     hdim1_indices: list[int],
     hdim2_indices: list[int],
-    vdim_indices: Union[list[int], None] = None,
-    track_data: np.ndarray = None,
-    threshold_i: float = None,
+    vdim_indices: Optional[list[int]] = None,
+    track_data: Optional[np.ndarray] = None,
+    threshold_i: Optional[float] = None,
     position_threshold: Literal[
         "center", "extreme", "weighted_diff", "weighted abs"
     ] = "center",
-    target: Literal["maximum", "minimum"] = None,
+    target: Optional[Literal["maximum", "minimum"]] = None,
     PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
     hdim1_min: int = 0,
     hdim1_max: int = 0,
@@ -80,7 +80,7 @@ def feature_position(
     threshold_i : float
         The threshold value that we are testing against
 
-    position_threshold : {'center', 'extreme', 'weighted_diff', 'weighted abs'}
+    position_threshold : {'center', 'extreme', 'weighted_diff', 'weighted_abs'}
         How to select the single point position from our data.
         'center' picks the geometrical centre of the region,
         and is typically not recommended. 'extreme' picks the
@@ -145,12 +145,12 @@ def feature_position(
 
     if vdim_indices is not None:
         is_3D = True
-        assert (
+        assert ((position_threshold == "center") and track_data is None) or (
             len(track_data.shape) == 3
         ), "track_data must be 3D if vdim_indices provided"
     else:
         is_3D = False
-        assert (
+        assert ((position_threshold == "center") and track_data is None) or (
             len(track_data.shape) == 2
         ), "track_data must be 2D if vdim_indices not provided"
     if position_threshold == "center":
@@ -212,7 +212,7 @@ def feature_position(
 
     else:
         raise ValueError(
-            "position_threshold must be center,extreme,weighted_diff or weighted_abs"
+            "position_threshold must be center, extreme, weighted_diff or weighted_abs"
         )
 
     if PBC_flag in ("hdim_1", "both"):
