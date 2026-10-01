@@ -219,7 +219,7 @@ def feature_position(
         hdim1_index = pbc_utils.weighted_circmean(
             hdim1_indices, weights=hdim1_weights, high=hdim1_max + 1, low=hdim1_min
         )
-        hdim1_index = np.clip(hdim1_index, 0, hdim1_max + 1)
+        hdim1_index = hdim1_index % (hdim1_max + 1)
     else:
         hdim1_index = np.average(hdim1_indices, weights=hdim1_weights)
         hdim1_index = np.clip(hdim1_index, 0, hdim1_max)
@@ -227,7 +227,7 @@ def feature_position(
         hdim2_index = pbc_utils.weighted_circmean(
             hdim2_indices, weights=hdim2_weights, high=hdim2_max + 1, low=hdim2_min
         )
-        hdim2_index = np.clip(hdim2_index, 0, hdim2_max + 1)
+        hdim2_index = hdim2_index % (hdim2_max + 1)
     else:
         hdim2_index = np.average(hdim2_indices, weights=hdim2_weights)
         hdim2_index = np.clip(hdim2_index, 0, hdim2_max)
