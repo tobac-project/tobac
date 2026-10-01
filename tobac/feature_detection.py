@@ -1744,7 +1744,7 @@ def filter_min_distance(
                 origin_vals[:, 1]
                 < neighbour_vals[
                     :, 1
-                ],  # if threshold value is equal, and are is smaller, remove
+                ],  # if threshold value is equal, and area is smaller, remove
             ),
             np.logical_and.reduce(
                 [
