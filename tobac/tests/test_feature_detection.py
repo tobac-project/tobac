@@ -1429,8 +1429,8 @@ def test_banded_feature():
         PBC_flag="hdim_2",
     )
     assert len(fd_output) == 1
-    assert np.isclose(fd_output.iloc[0]["hdim_1"], 20.5)
-    assert np.isclose(fd_output.iloc[0]["hdim_2"], 24.5)
+    assert fd_output.iloc[0]["hdim_1"] == pytest.approx(20.5)
+    assert fd_output.iloc[0]["hdim_2"] == pytest.approx(24.5)
 
     test_data_iris = tbtest.make_dataset_from_arr(test_arr.T, data_type="iris")
     fd_output = feat_detect.feature_detection_multithreshold_timestep(
@@ -1443,8 +1443,8 @@ def test_banded_feature():
         PBC_flag="hdim_1",
     )
     assert len(fd_output) == 1
-    assert fd_output.iloc[0]["hdim_2"] == 20.5
-    assert fd_output.iloc[0]["hdim_1"] == 24.5
+    assert fd_output.iloc[0]["hdim_2"] == pytest.approx(20.5)
+    assert fd_output.iloc[0]["hdim_1"] == pytest.approx(24.5)
 
     # Test different options for position_threshold
     test_data_iris = tbtest.make_dataset_from_arr(test_arr, data_type="iris")
