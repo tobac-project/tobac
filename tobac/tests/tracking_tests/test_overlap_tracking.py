@@ -37,6 +37,7 @@ class TestLinkingOverlap:
         features = pd.DataFrame(
             {
                 "feature": [1, 2, 3, 4],
+                "frame": [0, 0, 1, 1],
                 "time": [time[0], time[0], time[1], time[1]],
                 "hdim_1": [2.5, 6.5, 3.5, 7.5],
                 "hdim_2": [2.5, 6.5, 3.5, 7.5],
@@ -74,6 +75,7 @@ class TestLinkingOverlap:
         features = pd.DataFrame(
             {
                 "feature": [1, 2, 3, 4],
+                "frame": [0, 0, 1, 1],
                 "time": [time[0], time[0], time[1], time[1]],
                 "vdim": [1.5, 2.5, 1.5, 2.5],
                 "hdim_1": [2.5, 6.5, 3.5, 7.5],
@@ -108,6 +110,7 @@ class TestLinkingOverlap:
         features = pd.DataFrame(
             {
                 "feature": [1, 2],
+                "frame": [0, 1],
                 "time": [time[0], time[1]],
                 "hdim_1": [3.0, 16.0],
                 "hdim_2": [3.0, 16.0],

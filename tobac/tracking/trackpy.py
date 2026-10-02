@@ -130,7 +130,7 @@ def linking_trackpy(
         be still considered tracked. Default is 0.
         .. warning :: This parameter should be used with caution, as it
                      can lead to erroneous trajectory linking,
-                     espacially for data with low time resolution.
+                     especially for data with low time resolution.
 
     stubs : int, optional
         Minimum number of timesteps of a tracked cell to be reported

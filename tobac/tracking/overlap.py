@@ -1,6 +1,7 @@
 """Provide overlap tracking methods"""
 
 import datetime
+from functools import partial
 from typing import Generator, Literal, Optional, Union
 
 import cftime
@@ -17,108 +18,7 @@ from tobac.utils.datetime import to_timestamp
 from tobac.utils.generators import field_and_features_over_time
 from tobac.utils.periodic_boundaries import build_distance_function
 
-
-def _get_paired_field_and_features_iterator(
-    Mask: xr.DataArray, Features: pd.DataFrame
-) -> Generator[
-    tuple[
-        tuple[
-            int,
-            Union[datetime.datetime, np.datetime64, cftime.datetime],
-            xr.DataArray,
-            pd.DataFrame,
-        ],
-        tuple[
-            int,
-            Union[datetime.datetime, np.datetime64, cftime.datetime],
-            xr.DataArray,
-            pd.DataFrame,
-        ],
-    ],
-    None,
-    None,
-]:
-    """Generator yielding mask and features for consecutive time step pairs.
-
-    Returns the output of field_and_features_over_time for timesteps t and t+1.
-
-    Parameters
-    ----------
-    Mask : xr.DataArray
-        The mask to iterate over.
-    Features : pd.DataFrame
-        The features dataframe to iterate through.
-
-    Yields
-    ------
-    tuple[tuple[int, Union[datetime.datetime, np.datetime64, cftime.datetime], xr.DataArray, pd.DataFrame], tuple[int, Union[datetime.datetime, np.datetime64, cftime.datetime], xr.DataArray, pd.DataFrame]]
-        Each iteration yields two tuples containing:
-        - Iteration index
-        - Time value
-        - Slice of field at that time
-        - Slice of features with times within the time padding tolerance
-    """
-
-    origin_iterator = field_and_features_over_time(Mask, Features)
-    destination_iterator = field_and_features_over_time(Mask, Features)
-    _ = next(destination_iterator)
-    return zip(origin_iterator, destination_iterator)
-
-
-def _get_indices_from_labels(
-    labels: np.ndarray,
-) -> tuple[dict[int, np.ndarray[int]], dict[int, int]]:
-    """Function to get the x, y, and z indices (as well as point count) of all labeled regions.
-    Slightly less deranged than the version in internal utils.
-
-    Parameters
-    ----------
-    labels : np.ndarray
-        The array of labels to get the indices for.
-    Returns
-    -------
-    counts : dict
-        The number of points in the label number (key: label number).
-    coordinates : dict
-        The coordinates in the label number. This is either a 2 or 3 x n array for each label
-    """
-
-    counts = {}
-    coordinates = {}
-
-    # loop through all skimage identified regions
-    region_props = skimage.measure.regionprops(labels)
-    for region_prop in region_props:
-        coordinates[region_prop.label] = region_prop.coords.T
-        counts[region_prop.label] = region_prop.coords.shape[0]
-
-    return counts, coordinates
-
-
-def _get_counts_from_labels(
-    labels: np.ndarray,
-) -> dict[int, int]:
-    """Function to get the x, y, and z indices (as well as point count) of all labeled regions.
-    Slightly less deranged than the version in internal utils.
-
-    Parameters
-    ----------
-    labels : np.ndarray
-        The array of labels to get the indices for.
-    Returns
-    -------
-    counts : dict
-        The number of points in the label number (key: label number).
-    """
-
-    counts = {}
-
-    # loop through all skimage identified regions
-    region_props = skimage.measure.regionprops(labels)
-    for region_prop in region_props:
-        counts[region_prop.label] = region_prop.coords.shape[0]
-
-    return counts
+from tobac.feature_detection import feature_position
 
 
 def _unique_nonzero(arr: np.ndarray, **kwargs) -> np.ndarray:
@@ -162,6 +62,8 @@ def _find_overlaps_for_label(
         Number of pixels in the search region.
     destination_labels : np.ndarray[int]
         Array of label values to search for overlaps within.
+    destination_counts : dict[int, int]
+        Number of pixels in each label within destination_labels.
     min_count : int, optional
         Minimum number of pixels for a label to be returned as an overlap.
         Default is 1.
@@ -247,9 +149,6 @@ def _maximise_matching_overlaps(
         wh_null = j_ind >= total_nodes
         i_ind = i_ind[~wh_null]
         j_ind = j_ind[~wh_null]
-        # sort_args = np.argsort(i_ind)
-        # i_ind = i_ind[sort_args]
-        # j_ind = j_ind[sort_args]
         return dict(zip(i_map[i_ind], j_map[j_ind]))
 
     # if no matches return empty dict
@@ -491,9 +390,8 @@ def _wrap_coords(
 
 
 def _translate_labels(
-    tracks: pd.DataFrame,
-    label_coords: dict[int, np.ndarray[int]],
-    delta_t: float,
+    features: pd.DataFrame,
+    timestep: pd.Timestamp,
     translate_method: Optional[Literal["constant", "drift", "predict"]] = None,
     velocity_method: Optional[Literal["constant", "mean", "nearest"]] = None,
     velocity_constant: Optional[Union[float, np.ndarray]] = None,
@@ -502,169 +400,163 @@ def _translate_labels(
     hdim2_size: Optional[int] = None,
     vdim_size: Optional[int] = None,
 ) -> dict[int, np.ndarray[int]]:
-    """Translate label coordinates based on velocity and time step.
-
-    Four translation methods are available:
-    - None: no translation applied
-    - constant: translate using a constant velocity specified by velocity_constant
-    - drift: translate all features using the average velocity of cells tracked at the previous timestep
-    - predict: translate cells individually according to their velocity at the previous time step. For newly initialised cells, one of the further 4 methods are used:
-        - None: initialise with 0 velocity
-        - constant: initialise with velocity_constant
-        - mean: initialise with the average velocity of cells tracked at the previous timestep
-        - nearest: initialise with the velocity of the nearest cell tracked at the previous timestep
+    """Translate feature coordinates to a future timestep.
 
     Parameters
     ----------
-    tracks : pd.DataFrame
-        Tracks dataframe containing velocity information.
-    label_coords : dict[int, np.ndarray[int]]
-        Dictionary of coordinate arrays for each label.
-    delta_t : float
-        Time step in seconds.
+    features : pd.DataFrame
+        Features dataframe containing position and velocity information.
+    timestep : pd.Timestamp
+        Timestamp for the target timestep.
     translate_method : {'constant', 'drift', 'predict'}, optional
-        Translation method to apply. Default is None (no translation).
+        Translation strategy to apply to coordinates. Defaults to None, which
+        leaves the coordinates unchanged.
     velocity_method : {'constant', 'mean', 'nearest'}, optional
-        Method for velocity estimation. Used with 'predict' method.
+        Velocity estimation method used when ``translate_method='predict'``.
     velocity_constant : float or np.ndarray, optional
-        Constant velocity value or array. Only used if translate_method=="constant" or velocity_method=="constant"
+        Constant velocity used when ``translate_method='constant'``.
     PBC_flag : {'none', 'hdim_1', 'hdim_2', 'both'}, optional
         Periodic boundary condition specification.
     hdim1_size : int, optional
-        Size of first horizontal dimension.
+        Size of the first horizontal dimension.
     hdim2_size : int, optional
-        Size of second horizontal dimension.
+        Size of the second horizontal dimension.
     vdim_size : int, optional
-        Size of vertical dimension.
+        Size of the vertical dimension for 3D data.
 
     Returns
     -------
     dict[int, np.ndarray[int]]
-        Dictionary of translated coordinate arrays for each label.
+        Mapping of feature indices to translated coordinate arrays. The arrays are
+        stored in the ``_translated_coords`` column of ``features`` in-place.
 
     """
+
+    wrap_coords = partial(
+        _wrap_coords,
+        hdim1_size=hdim1_size,
+        hdim2_size=hdim2_size,
+        vdim_size=vdim_size,
+        PBC_flag=PBC_flag,
+    )
     if translate_method == "predict":
         _update_predicted_velocities(
-            tracks, velocity_method=velocity_method, velocity_constant=velocity_constant
+            features,
+            velocity_method=velocity_method,
+            velocity_constant=velocity_constant,
         )
-        return {
-            k: _wrap_coords(
-                (
-                    label_coords[k].T
-                    + np.round(tracks._track_velocity[k] * delta_t).astype(int)
-                ).T,
-                hdim1_size=hdim1_size,
-                hdim2_size=hdim2_size,
-                vdim_size=vdim_size,
-                PBC_flag=PBC_flag,
+        features["_translated_coords"] = (
+            features._coords
+            + features._track_velocity
+            * (
+                to_timestamp(timestep.values) - to_timestamp(features.time)
+            ).dt.total_seconds()
+        ).apply(lambda a: wrap_coords(a.round().astype(int).T))
+    elif translate_method == "drift":
+        features["_translated_coords"] = (
+            features._coords
+            + pd.Series(
+                dict(
+                    zip(
+                        features.index,
+                        features._track_velocity.mean()
+                        * (to_timestamp(timestep.values) - to_timestamp(features.time))
+                        .dt.total_seconds()
+                        .to_numpy()[:, np.newaxis],
+                    )
+                )
             )
-            for k in label_coords
-        }
-    if translate_method == "drift":
-        translation = np.round(tracks._track_velocity.mean() * delta_t).astype(int)
-        return {
-            k: _wrap_coords(
-                (label_coords[k].T + translation).T,
-                hdim1_size=hdim1_size,
-                hdim2_size=hdim2_size,
-                vdim_size=vdim_size,
-                PBC_flag=PBC_flag,
+        ).apply(lambda a: wrap_coords(a.round().astype(int).T))
+    elif translate_method == "constant":
+        features["_translated_coords"] = (
+            features._coords
+            + pd.Series(
+                dict(
+                    zip(
+                        features.index,
+                        velocity_constant
+                        * (to_timestamp(timestep.values) - to_timestamp(features.time))
+                        .dt.total_seconds()
+                        .to_numpy()[:, np.newaxis],
+                    )
+                )
             )
-            for k in label_coords
-        }
-    if translate_method == "constant":
-        translation = np.round(velocity_constant * delta_t).astype(int)
-        return {
-            k: _wrap_coords(
-                (label_coords[k].T + translation).T,
-                hdim1_size=hdim1_size,
-                hdim2_size=hdim2_size,
-                vdim_size=vdim_size,
-                PBC_flag=PBC_flag,
-            )
-            for k in label_coords
-        }
-    return label_coords
+        ).apply(lambda a: wrap_coords(a.round().astype(int).T))
+    else:
+        features["_translated_coords"] = features._coords.apply(
+            lambda a: a.round().astype(int).T
+        )
 
 
 def _find_overlaps(
-    tracks: pd.DataFrame,
-    origin_labels: xr.DataArray,
+    origin_features: pd.DataFrame,
+    destination_features: pd.DataFrame,
     destination_labels: xr.DataArray,
+    timestep: pd.Timestamp,
     min_count: int = 1,
     relative_count: float = 0,
-    delta_t: int = 0,
     translate_method: Optional[Literal["constant", "drift", "predict"]] = None,
     velocity_method: Optional[Literal["constant", "mean", "nearest"]] = None,
     velocity_constant: Optional[Union[float, np.ndarray]] = None,
     PBC_flag: Optional[Literal["none", "hdim_1", "hdim_2", "both"]] = None,
-    hdim1_size: Optional[int] = None,
-    hdim2_size: Optional[int] = None,
-    vdim_size: Optional[int] = None,
 ) -> dict[int, int]:
-    """Find optimal one-to-one label overlaps between two time steps.
+    """Find overlap matches between origin and destination features.
 
     Parameters
     ----------
-    tracks : pd.DataFrame
-        Tracks dataframe from the origin time step.
-    origin_labels : xr.DataArray
-        Label array at origin time step.
+    origin_features : pd.DataFrame
+        Features in the current timestep to be linked forward.
+    destination_features : pd.DataFrame
+        Features in the destination timestep.
     destination_labels : xr.DataArray
-        Label array at destination time step.
+        Label mask for the destination timestep.
+    timestep : pd.Timestamp
+        Timestamp associated with the destination timestep.
     min_count : int, optional
-        Minimum overlap pixel count. Default is 1.
+        Minimum pixel overlap required for a match. Default is 1.
     relative_count : float, optional
-        Minimum relative overlap fraction. Default is 0.
-    delta_t : int, optional
-        Time difference between steps in seconds. Default is 0.
+        Minimum relative overlap fraction required for a match. Default is 0.
     translate_method : {'constant', 'drift', 'predict'}, optional
-        Label translation method before overlap calculation.
+        Translation method used to predict the next location of origin features.
     velocity_method : {'constant', 'mean', 'nearest'}, optional
-        Velocity estimation method for translation.
+        Velocity estimation method for ``translate_method='predict'``.
     velocity_constant : float or np.ndarray, optional
-        Constant velocity for translation.
+        Constant velocity used when ``translate_method='constant'``.
     PBC_flag : {'none', 'hdim_1', 'hdim_2', 'both'}, optional
         Periodic boundary condition specification.
-    hdim1_size : int, optional
-        Size of first horizontal dimension.
-    hdim2_size : int, optional
-        Size of second horizontal dimension.
-    vdim_size : int, optional
-        Size of vertical dimension.
 
     Returns
     -------
     dict[int, int]
-        One-to-one mapping of origin labels to destination labels.
+        Mapping of origin feature IDs to destination feature IDs for valid
+        overlapping matches.
 
     """
-    label_counts, label_coords = _get_indices_from_labels(origin_labels.values)
-    destination_counts = _get_counts_from_labels(destination_labels.values)
-    if translate_method is not None:
-        label_coords = _translate_labels(
-            tracks,
-            label_coords,
-            delta_t,
-            translate_method=translate_method,
-            velocity_method=velocity_method,
-            velocity_constant=velocity_constant,
-            PBC_flag=PBC_flag,
-            hdim1_size=hdim1_size,
-            hdim2_size=hdim2_size,
-            vdim_size=vdim_size,
-        )
-    overlap_candidates = {
-        k: _find_overlaps_for_label(
-            label_coords[k],
-            label_counts[k],
+
+    _translate_labels(
+        origin_features,
+        timestep,
+        translate_method=translate_method,
+        velocity_method=velocity_method,
+        velocity_constant=velocity_constant,
+        PBC_flag=PBC_flag,
+        hdim1_size=destination_labels.shape[-2],
+        hdim2_size=destination_labels.shape[-1],
+        vdim_size=(
+            destination_labels.shape[0] if len(destination_labels.shape) == 3 else None
+        ),
+    )
+    overlap_candidates = origin_features.apply(
+        lambda row: _find_overlaps_for_label(
+            row._translated_coords,
+            row._count,
             destination_labels,
-            destination_counts,
+            destination_features._count,
             min_count=min_count,
             relative_count=relative_count,
-        )
-        for k in label_coords.keys()
-    }
+        ),
+        axis=1,
+    )
     return _maximise_matching_overlaps(overlap_candidates)
 
 
@@ -735,106 +627,92 @@ def _calc_distances_pbcs(
 
 
 def _assign_velocities(
-    tracks: pd.DataFrame,
+    origin_features: pd.DataFrame,
+    destination_features: pd.DataFrame,
     matches: dict[int, int],
     domain_size: tuple[int],
     PBC_flag: Optional[Literal["none", "hdim_1", "hdim_2", "both"]] = None,
     prior: bool = False,
 ) -> None:
-    """Calculate and assign velocities from matched feature positions.
-
-    Parameters
-    ----------
-    tracks : pd.DataFrame
-        Tracks dataframe with position and time columns.
-    matches : dict[int, int]
-        Mapping of origin to destination feature IDs.
-    domain_size : tuple[int]
-        Size of domain in each dimension.
-    PBC_flag : {'none', 'hdim_1', 'hdim_2', 'both'}, optional
-        Periodic boundary condition specification.
-    prior : bool, optional
-        If True, assign velocity to origin features. If False, assign to
-        destination features. Default is False.
-
-    Returns
-    -------
-    None
-        Modifies tracks DataFrame in place.
-
-    """
-    if "vdim" in tracks.columns:
-        end_locations = tracks.loc[
-            matches.values(), ["vdim", "hdim_1", "hdim_2"]
-        ].to_numpy()
-        start_locations = tracks.loc[
-            matches.keys(), ["vdim", "hdim_1", "hdim_2"]
-        ].to_numpy()
+    if len(matches):
+        velocities = (
+            _calc_distances_pbcs(
+                np.stack(origin_features.loc[matches.keys(), "_centroid"]),
+                np.stack(destination_features.loc[matches.values(), "_centroid"]),
+                domain_size=domain_size,
+                PBC_flag=PBC_flag,
+            )
+            / np.stack(
+                (
+                    destination_features.loc[matches.values(), "time"]
+                    - origin_features.loc[matches.keys(), "time"].values
+                ).dt.total_seconds()
+            )[:, np.newaxis]
+        )
+        if prior:
+            origin_features.loc[matches.keys(), "_track_velocity"] = dict(
+                zip(matches.keys(), velocities)
+            )
+        else:
+            destination_features.loc[matches.values(), "_track_velocity"] = dict(
+                zip(matches.values(), velocities)
+            )
     else:
-        end_locations = tracks.loc[matches.values(), ["hdim_1", "hdim_2"]].to_numpy()
-        start_locations = tracks.loc[matches.keys(), ["hdim_1", "hdim_2"]].to_numpy()
-    velocities = (
-        _calc_distances_pbcs(
-            start_locations, end_locations, domain_size, PBC_flag=PBC_flag
-        )
-        / (
-            tracks.loc[matches.values(), ["time"]]
-            - tracks.loc[matches.keys(), ["time"]].values
-        )
-        .time.dt.total_seconds()
-        .to_numpy()[:, None]
-    )
-    if prior:
-        tracks.loc[matches.keys(), "_track_velocity"] = dict(
-            zip(matches.keys(), velocities)
-        )
-    else:
-        tracks.loc[matches.values(), "_track_velocity"] = dict(
-            zip(matches.values(), velocities)
-        )
+        if prior:
+            origin_features["_track_velocity"] = np.nan
+        else:
+            destination_features["_track_velocity"] = np.nan
 
 
 def _bootstrap_velocities(
-    tracks: pd.DataFrame,
-    mask: xr.DataArray,
+    origin_features: pd.DataFrame,
+    destination_features: pd.DataFrame,
+    destination_labels: xr.DataArray,
+    timestep: pd.Timestamp,
     min_count: int = 1,
     relative_count: float = 0,
     PBC_flag: Optional[Literal["none", "hdim_1", "hdim_2", "both"]] = None,
 ) -> None:
-    """Initialize velocities from first pair of time steps.
+    """Estimate initial feature velocities from overlap matches.
 
     Parameters
     ----------
-    tracks : pd.DataFrame
-        Tracks dataframe to populate with initial velocities.
-    mask : xr.DataArray
-        Label mask array over time.
+    origin_features : pd.DataFrame
+        Features in the current timestep.
+    destination_features : pd.DataFrame
+        Features in the destination timestep.
+    destination_labels : xr.DataArray
+        Label mask for the destination timestep.
+    timestep : pd.Timestamp
+        Timestamp associated with the destination timestep.
     min_count : int, optional
-        Minimum overlap pixel count. Default is 1.
+        Minimum pixel overlap required for a match. Default is 1.
     relative_count : float, optional
-        Minimum relative overlap fraction. Default is 0.
+        Minimum relative overlap fraction required for a match. Default is 0.
     PBC_flag : {'none', 'hdim_1', 'hdim_2', 'both'}, optional
         Periodic boundary condition specification.
 
     Returns
     -------
     None
-        Modifies tracks DataFrame in place.
+        Updates the ``_track_velocity`` column of the features dataframes in-place.
 
     """
-    [_, _, origin_labels, _], [_, _, destination_labels, _] = next(
-        _get_paired_field_and_features_iterator(mask, tracks)
-    )
     matched_overlaps = _find_overlaps(
-        tracks,
-        origin_labels,
+        origin_features,
+        destination_features,
         destination_labels,
+        timestep,
         min_count=min_count,
         relative_count=relative_count,
-        translate_method=None,
     )
     _assign_velocities(
-        tracks, matched_overlaps, origin_labels.shape, PBC_flag=PBC_flag, prior=True
+        origin_features,
+        destination_features,
+        matched_overlaps,
+        destination_labels.shape,
+        PBC_flag=PBC_flag,
+        prior=True,
     )
 
 
@@ -909,6 +787,68 @@ def _assign_cell_times(
     return tracks
 
 
+def _get_coords_and_centroids(
+    features: pd.DataFrame,
+    mask: xr.DataArray,
+    PBC_flag: Optional[Literal["none", "hdim_1", "hdim_2", "both"]] = None,
+) -> pd.DataFrame:
+    """Attach region counts and centroids to feature entries.
+
+    Parameters
+    ----------
+    features : pd.DataFrame
+        Features dataframe containing feature metadata.
+    mask : xr.DataArray
+        Labeled mask for the current timestep.
+    PBC_flag : {'none', 'hdim_1', 'hdim_2', 'both'}, optional
+        Periodic boundary condition specification.
+
+    Returns
+    -------
+    pd.DataFrame
+        Input features dataframe joined with ``_count``, ``_coords``, and
+        ``_centroid`` columns derived from the mask.
+
+    """
+    if len(features):
+        if len(mask.shape) == 3:  # is_3D
+            feature_position_partial = partial(
+                feature_position,
+                hdim1_max=mask.shape[1],
+                hdim2_max=mask.shape[2],
+                PBC_flag=PBC_flag,
+            )
+            fp_lambda = lambda row: np.array(
+                feature_position_partial(
+                    row._coords[:, 1], row._coords[:, 2], vdim_indices=row._coords[:, 0]
+                )
+            )
+        else:
+            feature_position_partial = partial(
+                feature_position,
+                hdim1_max=mask.shape[0],
+                hdim2_max=mask.shape[1],
+                PBC_flag=PBC_flag,
+            )
+            fp_lambda = lambda row: np.array(feature_position_partial(*row._coords.T))
+
+        props_df = (
+            pd.DataFrame(
+                skimage.measure.regionprops_table(
+                    mask.values, properties=("label", "area", "coords")
+                )
+            )
+            .rename(columns=dict(label="feature", area="_count", coords="_coords"))
+            .set_index("feature")
+        )
+
+        props_df["_centroid"] = props_df.apply(fp_lambda, axis=1)
+    else:
+        props_df = pd.DataFrame(columns=["_count", "_coords", "_centroid"])
+
+    return features.join(props_df)
+
+
 def linking_overlap(
     features: pd.DataFrame,
     mask: xr.DataArray,
@@ -923,6 +863,7 @@ def linking_overlap(
     PBC_flag: Optional[Literal["none", "hdim_1", "hdim_2", "both"]] = None,
     vertical_axis: Optional[int] = None,
     vertical_coord: Optional[str] = None,
+    memory: int = 0,
 ) -> pd.DataFrame:
     """Link features through time using spatial overlap tracking.
 
@@ -955,6 +896,19 @@ def linking_overlap(
         Constant velocity for translation. Used if translate_method is 'constant'.
     PBC_flag : {'none', 'hdim_1', 'hdim_2', 'both'}, optional
         Periodic boundary condition specification.
+    vertical_coord : str, optional
+        Name of the vertical coordinate. If None, tries to auto-detect.
+        It looks for the coordinate or the dimension name corresponding
+        to the string.
+    vertical_axis : int, optional
+        The vertical axis number of the data. If None, uses vertical_coord
+        to determine axis. This must be >=0.
+    memory : int, optional
+        Number of output timesteps features allowed to vanish for to
+        be still considered tracked. Default is 0.
+        .. warning :: This parameter should be used with caution, as it
+                        can lead to erroneous trajectory linking,
+                        especially for data with low time resolution.
 
     Returns
     -------
@@ -967,10 +921,6 @@ def linking_overlap(
     """
     tracks = features.copy().set_index("feature")
     tracks["cell"] = 0
-
-    hdim1_size = mask.shape[-2]
-    hdim2_size = mask.shape[-1]
-    vdim_size = mask.shape[-3] if "vdim" in features else None
 
     time_axis = internal_utils.find_axis_from_coord(mask, "time")
     if len(mask.shape) == 4:
@@ -1002,41 +952,92 @@ def linking_overlap(
             ]
         )
 
-    if translate_method in ["drift", "predict"]:
-        _bootstrap_velocities(tracks, mask)
+    field_and_features = iter(field_and_features_over_time(mask, tracks))
 
-    paired_iterator = _get_paired_field_and_features_iterator(mask, tracks)
+    _, _, labels, features_t = next(field_and_features)
+    origin_features = _get_coords_and_centroids(features_t, labels)
 
-    for [_, origin_timestep, origin_labels, origin_features], [
-        _,
-        destination_timestep,
-        destination_labels,
-        _,
-    ] in paired_iterator:
-        delta_t = (
-            to_timestamp(destination_timestep.values)
-            - to_timestamp(origin_timestep.values)
-        ).total_seconds()
-        matches = _find_overlaps(
-            origin_features,
-            origin_labels,
-            destination_labels,
-            min_count=minimum_overlap,
-            relative_count=minimum_relative_overlap,
-            translate_method=translate_method,
-            velocity_method=velocity_method,
-            velocity_constant=velocity_constant,
-            delta_t=delta_t,
-            hdim1_size=hdim1_size,
-            hdim2_size=hdim2_size,
-            vdim_size=vdim_size,
+    try:
+        frame, timestep, labels, features_t = next(field_and_features)
+    except StopIteration:  # Only one timestep
+        tracks = _assign_cell_times(
+            tracks, cell_number_unassigned=cell_number_unassigned
         )
-        _assign_cells_to_matches(tracks, matches)
-        if translate_method in ["drift", "predict"]:
-            _assign_velocities(tracks, matches, origin_labels.shape, PBC_flag=PBC_flag)
+        # Reset index to match features input and replace features column in the correct location
+        tracks = tracks.set_index(features.index)
+        tracks.insert(features.columns.get_loc("feature"), "feature", features.feature)
+        return tracks
 
-    if "_track_velocity" in tracks.columns:
-        tracks = tracks.drop("_track_velocity", axis=1)
+    destination_features = _get_coords_and_centroids(features_t, labels)
+
+    bootstrap = True if translate_method in ["drift", "predict"] else False
+
+    while True:
+        if len(origin_features) and len(destination_features):
+            if bootstrap:
+                _bootstrap_velocities(
+                    origin_features,
+                    destination_features,
+                    labels,
+                    timestep,
+                    min_count=minimum_overlap,
+                    relative_count=minimum_relative_overlap,
+                    PBC_flag=PBC_flag,
+                )
+                bootstrap = False
+
+            matched_overlaps = _find_overlaps(
+                origin_features,
+                destination_features,
+                labels,
+                timestep,
+                min_count=minimum_overlap,
+                relative_count=minimum_relative_overlap,
+                translate_method=translate_method,
+                velocity_method=velocity_method,
+                velocity_constant=velocity_constant,
+                PBC_flag=PBC_flag,
+            )
+            _assign_cells_to_matches(tracks, matched_overlaps)
+            if translate_method in ["drift", "predict"]:
+                _assign_velocities(
+                    origin_features,
+                    destination_features,
+                    matched_overlaps,
+                    labels.shape,
+                    PBC_flag=PBC_flag,
+                )
+        else:
+            if not len(origin_features):
+                bootstrap = True  # if no features, we need to bootstrap next time we have features
+
+        # construct new origin_features
+
+        if (memory > 0) and len(origin_features):
+            origin_features = pd.concat(
+                [
+                    origin_features[
+                        np.logical_and(
+                            (frame - origin_features.frame) <= memory,
+                            np.logical_not(
+                                np.isin(
+                                    origin_features.index.values,
+                                    list(matched_overlaps.keys()),
+                                )
+                            ),
+                        )
+                    ],
+                    destination_features,
+                ],
+            )
+        else:
+            origin_features = destination_features
+
+        try:
+            frame, timestep, labels, features_t = next(field_and_features)
+        except StopIteration:
+            break
+        destination_features = _get_coords_and_centroids(features_t, labels)
 
     tracks = _filter_stub_cells(
         tracks,
