@@ -451,20 +451,28 @@ def _translate_labels(
             ).dt.total_seconds()
         ).apply(lambda a: wrap_coords(a.round().astype(int).T))
     elif translate_method == "drift":
-        features["_translated_coords"] = (
-            features._coords
-            + pd.Series(
-                dict(
-                    zip(
-                        features.index,
-                        features._track_velocity.mean()
-                        * (to_timestamp(timestep.values) - to_timestamp(features.time))
-                        .dt.total_seconds()
-                        .to_numpy()[:, np.newaxis],
+        if (~features._track_velocity.isna()).any():
+            features["_translated_coords"] = (
+                features._coords
+                + pd.Series(
+                    dict(
+                        zip(
+                            features.index,
+                            features._track_velocity.mean()
+                            * (
+                                to_timestamp(timestep.values)
+                                - to_timestamp(features.time)
+                            )
+                            .dt.total_seconds()
+                            .to_numpy()[:, np.newaxis],
+                        )
                     )
                 )
+            ).apply(lambda a: wrap_coords(a.round().astype(int).T))
+        else:  # If no valid velocities
+            features["_translated_coords"] = features._coords.apply(
+                lambda a: a.round().astype(int).T
             )
-        ).apply(lambda a: wrap_coords(a.round().astype(int).T))
     elif translate_method == "constant":
         features["_translated_coords"] = (
             features._coords

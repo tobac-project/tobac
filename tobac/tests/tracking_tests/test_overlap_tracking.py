@@ -2,6 +2,8 @@ import pytest
 import numpy as np
 import pandas as pd
 import xarray as xr
+import tobac
+import tobac.testing
 from tobac.tracking.overlap import linking_overlap
 
 
@@ -437,3 +439,152 @@ class TestLinkingOverlap:
 
         assert len(result) == 1
         assert "cell" in result.columns
+
+
+def test_simple_data_2D():
+    data = tobac.testing.make_simple_sample_data_2D(data_type="xarray")
+    labels, features = tobac.feature_detection_multithreshold(
+        data,
+        dxy=1000,
+        threshold=7.5,
+        position_threshold="weighted_abs",
+        return_labels=True,
+    )
+
+    tracks = tobac.tracking.linking_overlap(
+        features, labels, minimum_relative_overlap=0.75, translate_method=None
+    )
+
+    assert np.all(tracks.cell == 1)
+
+    # Test it fails if minimum_overlap and minimum_relative_overlap are set too high
+    tracks = tobac.tracking.linking_overlap(
+        features,
+        labels,
+        minimum_overlap=100,
+        minimum_relative_overlap=1.0,
+        translate_method=None,
+    )
+
+    assert np.all(tracks.cell == -1)
+
+
+def test_simple_data_2D_gap():
+    """Test a case of a single cell with a large time gap mid way through"""
+    data = tobac.testing.make_simple_sample_data_2D(data_type="xarray")
+    labels, features = tobac.feature_detection_multithreshold(
+        data,
+        dxy=1000,
+        threshold=7.5,
+        position_threshold="weighted_abs",
+        return_labels=True,
+    )
+
+    labels = xr.concat([labels[:10], labels[20:]], dim="time")
+    features = features[(features.frame < 10) | (features.frame >= 20)]
+
+    # Without predictive tracking should have two cells
+    tracks = tobac.tracking.linking_overlap(
+        features, labels, minimum_relative_overlap=0.75, translate_method=None
+    )
+
+    assert np.all(tracks.cell[:10] == 1)
+    assert np.all(tracks.cell[20:] == 2)
+
+    # With predictive tracking, should be a single cell
+    tracks = tobac.tracking.linking_overlap(
+        features, labels, minimum_relative_overlap=0.75, translate_method="predict"
+    )
+
+    assert np.all(tracks.cell == 1)
+
+    # As with drift tracking
+    tracks = tobac.tracking.linking_overlap(
+        features, labels, minimum_relative_overlap=0.75, translate_method="drift"
+    )
+
+    assert np.all(tracks.cell == 1)
+
+    # And for constant velocity if velocity_constant is set correctly
+    tracks = tobac.tracking.linking_overlap(
+        features,
+        labels,
+        minimum_relative_overlap=0.75,
+        translate_method="constant",
+        velocity_constant=np.array([8 / 600, 18 / 600]),
+    )
+
+    assert np.all(tracks.cell == 1)
+
+    # But not if it is set too small
+    tracks = tobac.tracking.linking_overlap(
+        features,
+        labels,
+        minimum_relative_overlap=0.75,
+        translate_method="constant",
+        velocity_constant=0,
+    )
+
+    assert np.all(tracks.cell[:10] == 1)
+    assert np.all(tracks.cell[20:] == 2)
+
+
+def test_simple_data_2D_multiple_gaps():
+    """Test a case of a single cell with large time gaps throughout"""
+    data = tobac.testing.make_simple_sample_data_2D(data_type="xarray")
+    labels, features = tobac.feature_detection_multithreshold(
+        data,
+        dxy=1000,
+        threshold=7.5,
+        position_threshold="weighted_abs",
+        return_labels=True,
+    )
+
+    labels = labels[::10]
+    features = features[::10]
+
+    # Even with predictive tracking, this should fail to track anything
+    tracks = tobac.tracking.linking_overlap(
+        features,
+        labels,
+        minimum_relative_overlap=0.75,
+        translate_method="predict",
+    )
+    assert np.all(tracks.cell == -1)
+
+    tracks = tobac.tracking.linking_overlap(
+        features,
+        labels,
+        minimum_relative_overlap=0.75,
+        translate_method="drift",
+    )
+    assert np.all(tracks.cell == -1)
+
+    tracks = tobac.tracking.linking_overlap(
+        features,
+        labels,
+        minimum_relative_overlap=0.75,
+        translate_method="constant",
+        velocity_constant=0,
+    )
+    assert np.all(tracks.cell == -1)
+
+    # But if velocity_constant is set correctly it should work
+    tracks = tobac.tracking.linking_overlap(
+        features,
+        labels,
+        minimum_relative_overlap=0.75,
+        translate_method="predict",
+        velocity_method="constant",
+        velocity_constant=np.array([8 / 600, 18 / 600]),
+    )
+    assert np.all(tracks.cell == 1)
+
+    tracks = tobac.tracking.linking_overlap(
+        features,
+        labels,
+        minimum_relative_overlap=0.75,
+        translate_method="constant",
+        velocity_constant=np.array([8 / 600, 18 / 600]),
+    )
+    assert np.all(tracks.cell == 1)
