@@ -616,20 +616,22 @@ def _calc_distances_pbcs(
         Distance vectors accounting for periodic boundaries.
         Shape is (n_points, n_dims).
 
-    """
+    #"""
+    if PBC_flag in [None, "none"]:
+        return end_coords - start_coords
     domain_size = np.array(domain_size) + 1
     pos_neg_offset = np.where(start_coords < end_coords, 1, -1)
     if len(domain_size) == 3:
         domain_size[0] = 0
-    if PBC_flag in [None, "none", "hdim1"]:
+    if PBC_flag == "hdim1":
         domain_size[-1] = 0
-    if PBC_flag in [None, "none", "hdim2"]:
+    if PBC_flag == "hdim2":
         domain_size[-2] = 0
 
-    return pos_neg_offset * np.minimum(
-        np.abs(end_coords - start_coords),
-        np.abs(end_coords - pos_neg_offset * domain_size - start_coords),
-    )
+    non_pbc_dist = np.abs(end_coords - start_coords)
+    pbc_dist = np.abs(end_coords - pos_neg_offset * domain_size - start_coords)
+
+    return pos_neg_offset * np.where(non_pbc_dist <= pbc_dist, non_pbc_dist, -pbc_dist)
 
 
 def _assign_velocities(
@@ -961,7 +963,7 @@ def linking_overlap(
     field_and_features = iter(field_and_features_over_time(mask, tracks))
 
     _, _, labels, features_t = next(field_and_features)
-    origin_features = _get_coords_and_centroids(features_t, labels)
+    origin_features = _get_coords_and_centroids(features_t, labels, PBC_flag=PBC_flag)
 
     try:
         frame, timestep, labels, features_t = next(field_and_features)
@@ -974,7 +976,9 @@ def linking_overlap(
         tracks.insert(features.columns.get_loc("feature"), "feature", features.feature)
         return tracks
 
-    destination_features = _get_coords_and_centroids(features_t, labels)
+    destination_features = _get_coords_and_centroids(
+        features_t, labels, PBC_flag=PBC_flag
+    )
 
     bootstrap = True if translate_method in ["drift", "predict"] else False
 
@@ -1043,7 +1047,9 @@ def linking_overlap(
             frame, timestep, labels, features_t = next(field_and_features)
         except StopIteration:
             break
-        destination_features = _get_coords_and_centroids(features_t, labels)
+        destination_features = _get_coords_and_centroids(
+            features_t, labels, PBC_flag=PBC_flag
+        )
 
     tracks = _filter_stub_cells(
         tracks,
