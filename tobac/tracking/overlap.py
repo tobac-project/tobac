@@ -1,10 +1,8 @@
 """Provide overlap tracking methods"""
 
-import datetime
 from functools import partial
-from typing import Generator, Literal, Optional, Union
+from typing import Literal, Optional, Union
 
-import cftime
 import numpy as np
 import pandas as pd
 import xarray as xr
