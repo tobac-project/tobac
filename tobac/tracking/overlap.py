@@ -659,9 +659,9 @@ def _assign_velocities(
             )
     else:
         if prior:
-            origin_features["_track_velocity"] = np.nan
+            origin_features["_track_velocity"] = None
         else:
-            destination_features["_track_velocity"] = np.nan
+            destination_features["_track_velocity"] = None
 
 
 def _bootstrap_velocities(
