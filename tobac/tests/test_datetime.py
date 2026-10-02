@@ -2,6 +2,7 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 import cftime
 import pytest
 
@@ -232,3 +233,12 @@ def test_match_datetime_format_error():
 def test_detect_str_precision(date_in: str, precision: str):
     """test that detect_str_precision returns the right precision"""
     assert datetime_utils.detect_str_precision(date_in) == precision
+
+
+def test_xarray_single_date():
+    """xarray dataarrays of a single date have __iter__ but no length, test we handle this correctly"""
+    test_time = xr.DataArray(np.datetime64("2020-01-01 00:00:00", "ns"))
+
+    assert datetime_utils.to_timestamp(test_time) == datetime_utils.to_timestamp(
+        test_time.values
+    )
