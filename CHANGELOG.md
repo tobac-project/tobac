@@ -1,5 +1,11 @@
 ### Tobac Changelog
 
+_**Unreleased Changes:**_
+
+**Bug fixes**
+
+- Update internals to allow for pandas 3 compatibility [#568](https://github.com/tobac-project/tobac/pull/568)
+
 _**Version 1.6.3:**_
 
 **Enhancements for Users**

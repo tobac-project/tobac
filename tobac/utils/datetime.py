@@ -1,11 +1,12 @@
 """Functions for converting between and working with different datetime formats"""
 
-from typing import Union
+from typing import Union, Optional, Literal
 import datetime
 import numpy as np
 import pandas as pd
 import xarray as xr
 import cftime
+import re
 
 
 def to_cftime(
@@ -51,6 +52,7 @@ def to_cftime(
 
 def to_timestamp(
     dates: Union[str, datetime.datetime, np.datetime64, pd.Timestamp, cftime.datetime],
+    precision: Optional[Literal["ns", "us", "s", "ms"]] = None,
 ) -> pd.Timestamp:
     """Converts a provided datetime-like object to a pandas timestamp
 
@@ -58,6 +60,13 @@ def to_timestamp(
     ----------
     dates : Union[str, datetime.datetime, np.datetime64, pd.Timestamp, cftime.datetime]
         A datetime-like object or array of datetime-like objects to be converted
+    precision : Optional[Literal["ns", "us", "s", "ms"]]
+        The precision of the timestamp. If None, the default precision is used.
+        The default precision is ns for Pandas 2 and before; us for Pandas 3
+        - "ns": nanoseconds
+        - "us": microseconds
+        - "ms": milliseconds
+        - "s": seconds
 
     Returns
     -------
@@ -73,6 +82,9 @@ def to_timestamp(
         pd_dates = xr.CFTimeIndex(dates).to_datetimeindex()
     else:
         pd_dates = pd.to_datetime(dates)
+
+    if precision is not None:
+        pd_dates = pd_dates.astype(f"datetime64[{precision}]")
 
     if squeeze_output:
         return next(iter(pd_dates))
@@ -99,6 +111,7 @@ def to_datetime(
 
 def to_datetime64(
     dates: Union[str, datetime.datetime, np.datetime64, pd.Timestamp, cftime.datetime],
+    precision: Optional[Literal["ns", "us", "s", "ms"]] = None,
 ) -> np.datetime64:
     """Converts a provided datetime-like object to numpy datetime64 objects
 
@@ -106,17 +119,25 @@ def to_datetime64(
     ----------
     dates : Union[str, datetime.datetime, np.datetime64, pd.Timestamp, cftime.datetime]
         A datetime-like object or array of datetime-like objects to be converted
+    precision : Optional[Literal["ns", "us", "s", "ms"]]
+        The precision of the timestamp. If None, the default precision is used.
+        The default precision is ns for Pandas 2 and before; us for Pandas 3
+        - "ns": nanoseconds
+        - "us": microseconds
+        - "ms": milliseconds
+        - "s": seconds
 
     Returns
     -------
     np.datetime64
         A numpy datetime64 or array of numpy datetime64s
     """
-    return to_timestamp(dates).to_numpy()
+    return to_timestamp(dates, precision).to_numpy()
 
 
 def to_datestr(
     dates: Union[str, datetime.datetime, np.datetime64, pd.Timestamp, cftime.datetime],
+    precision: Optional[Literal["ns", "us", "s", "ms"]] = None,
 ) -> str:
     """Converts a provided datetime-like object to ISO format date strings
 
@@ -124,16 +145,56 @@ def to_datestr(
     ----------
     dates : Union[str, datetime.datetime, np.datetime64, pd.Timestamp, cftime.datetime]
         A datetime-like object or array of datetime-like objects to be converted
+    precision : Optional[Literal["ns", "us", "s", "ms"]]
+        The precision of the timestamp. If None, the default precision is used.
+        The default precision is ns for Pandas 2 and before; us for Pandas 3
+        - "ns": nanoseconds
+        - "us": microseconds
+        - "ms": milliseconds
+        - "s": seconds
 
     Returns
     -------
     str
         A string or array of strings in ISO date format
     """
-    dates = to_datetime64(dates)
+    dates = to_datetime64(dates, precision)
     if hasattr(dates, "__iter__"):
         return dates.astype(str)
     return str(dates)
+
+
+def detect_str_precision(datestr: str) -> Literal["s", "ms", "us", "ns"]:
+    """Detects the precision of a datetime str by counting the number of digits after .
+    Parameters
+    ----------
+    datestr : str
+        Input string
+
+    Returns
+    -------
+    Literal['s', 'ms', 'us', 'ns']
+        The precision of the string based on the number of digits after .
+
+    Raises
+    ------
+    ValueError
+        Raises a ValueError if the input string is not a datetime string or if
+        the number of digits after . is not evenly divisible by 3
+    """
+
+    digits_matching = re.search(r"\.(\d+)", datestr)
+    if not digits_matching:
+        return "s"
+    n = len(digits_matching.group(1))
+    if n <= 3:
+        return "ms"
+    elif n <= 6:
+        return "us"
+    elif n <= 9:
+        return "ns"
+    else:
+        raise ValueError("Finer than ns precision.")
 
 
 def match_datetime_format(
@@ -141,7 +202,7 @@ def match_datetime_format(
     target: Union[str, datetime.datetime, np.datetime64, pd.Timestamp, cftime.datetime],
 ) -> Union[str, datetime.datetime, np.datetime64, pd.Timestamp, cftime.datetime]:
     """Converts the provided datetime-like objects to the same datetime format
-    as the provided target
+    as the provided target, ensuring that the precisions match
 
     Parameters
     ----------
@@ -164,7 +225,8 @@ def match_datetime_format(
         of datetime-like objects
     """
     if isinstance(target, str):
-        return to_datestr(dates)
+        precision = detect_str_precision(target)
+        return to_datestr(dates, precision)
     if isinstance(target, xr.DataArray):
         target = target.values
     if isinstance(target, pd.Series):
@@ -172,13 +234,16 @@ def match_datetime_format(
     if hasattr(target, "__iter__"):
         target = target[0]
     if isinstance(target, str):
-        return to_datestr(dates)
+        precision = detect_str_precision(target)
+        return to_datestr(dates, precision)
     if isinstance(target, cftime.datetime):
         return to_cftime(dates, target.calendar)
     if isinstance(target, pd.Timestamp):
-        return to_timestamp(dates)
+        precision = target.unit
+        return to_timestamp(dates, precision=precision)
     if isinstance(target, np.datetime64):
-        return to_datetime64(dates)
+        precision = np.datetime_data(target)[0]
+        return to_datetime64(dates, precision=precision)
     if isinstance(target, datetime.datetime):
         return to_datetime(dates)
     raise ValueError("Target is not a valid datetime format")

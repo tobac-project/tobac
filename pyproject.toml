@@ -45,7 +45,7 @@ dependencies = [
     "scipy",
     "scikit-image",
     "scikit-learn",
-    "pandas<3",
+    "pandas",
     "matplotlib",
     "scitools-iris",
     "xarray",

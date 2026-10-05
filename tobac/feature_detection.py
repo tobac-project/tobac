@@ -1539,7 +1539,6 @@ def feature_detection_multithreshold(
 
         # we map the feature index to the original index
         if return_labels:
-
             for i, time_i, label_field_i, features_i in field_and_features_over_time(
                 label_fields, features
             ):
@@ -1684,9 +1683,11 @@ def filter_min_distance(
 
     # Calculate feature locations in cartesian coordinates
     if is_3D:
-        feature_locations = features[
-            [z_coordinate_name, y_coordinate_name, x_coordinate_name]
-        ].to_numpy()
+        feature_locations = (
+            features[[z_coordinate_name, y_coordinate_name, x_coordinate_name]]
+            .to_numpy()
+            .copy()
+        )
         feature_locations[:, 0] *= dz
         feature_locations[:, 1:] *= dxy
     else:
