@@ -503,12 +503,21 @@ def test_append_tracking_single_track_predict_memory(
         (10032, 1000, 1000, 20, 20),
     ],
 )
+@pytest.mark.parametrize(
+    "method_linking, time_cell_min",
+    [
+        ("random", 1200),
+        ("predict", 300),
+    ],
+)
 def test_append_tracks_random(
     seed: int,
     hdim1_max: int,
     hdim2_max: int,
     n_features: int,
     n_times: int,
+    method_linking: str,
+    time_cell_min: float,
 ):
     """
     Function to test that append and regular tracking work with
@@ -556,8 +565,8 @@ def test_append_tracks_random(
         "dxy": 500,
         "v_max": 30,
         "memory": 0,
-        "time_cell_min": 300,
-        "method_linking": "predict",
+        "time_cell_min": time_cell_min,
+        "method_linking": method_linking,
         "subnetwork_size": 15,
     }
 
@@ -608,3 +617,52 @@ def test_append_tracks_random(
             curr_tracking_append, curr_times_df, **tracking_params
         )
     assert tobac.testing.check_tracking_identical(curr_tracking_append, orig_tracking)
+
+
+@pytest.mark.parametrize(
+    "time_cell_min, should_raise",
+    [
+        (300, False),
+        (600, True),
+    ],
+)
+def test_append_tracks_predict_stubs_error(time_cell_min: float, should_raise: bool):
+    """
+    Test that appending with predict linking raises an error when stubs
+    is greater than 2 frames.
+    """
+    features = tobac.testing.generate_single_feature(
+        start_h1=1,
+        start_h2=1,
+        min_h1=0,
+        max_h1=100,
+        min_h2=0,
+        max_h2=100,
+        frame_start=0,
+        num_frames=4,
+        spd_h1=1,
+        spd_h2=1,
+        PBC_flag="none",
+    )
+
+    tracking_params = {
+        "dt": 300,
+        "dxy": 500,
+        "v_max": 30,
+        "memory": 0,
+        "time_cell_min": time_cell_min,
+        "method_linking": "predict",
+    }
+
+    initial_tracking = tobac.tracking.linking_trackpy(
+        features[features["frame"] < 2], None, **tracking_params
+    )
+    if should_raise:
+        with pytest.raises(ValueError):
+            tobac.tracking.append_tracks_trackpy(
+                initial_tracking, features, **tracking_params
+            )
+    else:
+        tobac.tracking.append_tracks_trackpy(
+            initial_tracking, features, **tracking_params
+        )

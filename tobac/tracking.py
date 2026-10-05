@@ -954,7 +954,11 @@ def append_tracks_trackpy(
     Raises
     ------
     ValueError
-        If method_linking is neither 'random' nor 'predict'.
+        If method_linking is neither 'random' nor 'predict', or if method_linking
+        is 'predict' and stubs (or time_cell_min converted to frames) is greater
+        than 2.
+    NotImplementedError
+        If memory > 0.
 
     """
     if pkgvsn.parse(tp.__version__) < pkgvsn.parse("0.6.0"):
@@ -990,6 +994,15 @@ def append_tracks_trackpy(
 
     logging.debug("stubs: " + str(stubs))
 
+    # Stubs of 2+ frames have their cell set to cell_number_unassigned, so their
+    # velocities at the start of the retracking window can't be recovered. The
+    # predictor would then use a different velocity field than the original tracking.
+    if method_linking == "predict" and stubs > 2:
+        raise ValueError(
+            "Append tracks with method_linking='predict' and more than 2 frames for "
+            "stubs (time_cell_min > dt) will not work."
+        )
+
     logging.debug("start linking features into trajectories")
 
     (
@@ -998,7 +1011,7 @@ def append_tracks_trackpy(
         tracks_vel,
         new_features_cleaned,
     ) = _clean_track_dfs_for_append(
-        tracks_orig, new_features, memory, span, cell_number_unassigned
+        tracks_orig, new_features, memory, span, cell_number_unassigned, stubs=stubs
     )
     # drop time_cell if it's there.
     # TODO: do we really need to drop time_cell? can we recalculate?
@@ -1308,6 +1321,7 @@ def _clean_track_dfs_for_append(
     memory: int,
     span: int,
     cell_number_unassigned: int,
+    stubs: int = 1,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Split up the input tracks and new features into three dataframes:
     tracks_orig_cut, the input tracks up to (exclusive) of the new dataframe to be tracked,
@@ -1327,6 +1341,10 @@ def _clean_track_dfs_for_append(
         Span parameter for trackpy
     cell_number_unassigned: int
         Unassigned cell number
+    stubs: int
+        Minimum number of frames for a cell to be kept. Cells shorter than this
+        were set to cell_number_unassigned in tracks_orig, so the last stubs - 1
+        frames are retracked to allow those cells to grow into valid cells.
 
     Returns
     -------
@@ -1340,8 +1358,11 @@ def _clean_track_dfs_for_append(
     """
 
     # need to cut down the existing track array to just the parts we are interested in
-    # for preserving
-    min_frame_orig_needed = max(max(tracks_orig["frame"]) - memory, 0)
+    # for preserving. Stubs that end at the last frame have already lost their
+    # linking (cell == cell_number_unassigned), so retrack far enough back to
+    # cover any stub that could still become a valid cell.
+    retrack_frames = max(memory, int(stubs) - 1)
+    min_frame_orig_needed = max(max(tracks_orig["frame"]) - retrack_frames, 0)
     max_frame_orig_needed = max(tracks_orig["frame"])
     frames_orig_cut = np.arange(min_frame_orig_needed, max_frame_orig_needed + 1, 1)
 
@@ -1353,7 +1374,8 @@ def _clean_track_dfs_for_append(
     )
 
     # Now, let's figure out what frames we need to calculate velocity
-    max_frame_vel_needed = max(max(tracks_orig["frame"]) - memory, 0)
+    # (at the start of the retracking window)
+    max_frame_vel_needed = min_frame_orig_needed
     min_frame_vel_needed = max_frame_vel_needed - span
     frames_vel = np.arange(min_frame_vel_needed, max_frame_vel_needed + 1, 1)
 
@@ -1367,12 +1389,19 @@ def _clean_track_dfs_for_append(
     # we need to cut or otherwise combine the new features.
     # check to see if the dataframes have been combined
     # if we have the last frame of the old one, we will assume the features are just combined.
+    # tracking reorders rows and changes the index, so compare ignoring both.
     vars_of_interest = ["hdim_1", "hdim_2", "frame", "idx"]
-    if tracks_orig[tracks_orig["frame"] == max_frame_orig_needed][
-        vars_of_interest
-    ].equals(
+    last_frame_orig = (
+        tracks_orig[tracks_orig["frame"] == max_frame_orig_needed][vars_of_interest]
+        .sort_values(vars_of_interest)
+        .reset_index(drop=True)
+    )
+    last_frame_new = (
         new_features[new_features["frame"] == max_frame_orig_needed][vars_of_interest]
-    ):
+        .sort_values(vars_of_interest)
+        .reset_index(drop=True)
+    )
+    if last_frame_orig.equals(last_frame_new):
         new_feats_cut = copy.deepcopy(
             new_features[new_features["frame"] > max_frame_orig_needed]
         )
