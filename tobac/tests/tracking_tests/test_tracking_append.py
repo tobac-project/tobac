@@ -558,6 +558,7 @@ def test_append_tracks_random(
         "memory": 0,
         "time_cell_min": 300,
         "method_linking": "predict",
+        "subnetwork_size": 15,
     }
 
     # Standard tracking
