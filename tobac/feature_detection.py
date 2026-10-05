@@ -1539,7 +1539,6 @@ def feature_detection_multithreshold(
 
         # we map the feature index to the original index
         if return_labels:
-
             for i, time_i, label_field_i, features_i in field_and_features_over_time(
                 label_fields, features
             ):
@@ -1555,9 +1554,8 @@ def feature_detection_multithreshold(
                 label_fields[i].data[~wh_all_labels] = 0
 
     else:
-        features = None
-        label_fields = None
-        logging.debug("No features detected")
+        features = internal_utils.coordinates.make_empty_features_dataframe(is_3D=is_3D)
+        logging.debug("No features detected; returning empty features DataFrame")
 
     logging.debug("feature detection completed")
 
@@ -1685,9 +1683,11 @@ def filter_min_distance(
 
     # Calculate feature locations in cartesian coordinates
     if is_3D:
-        feature_locations = features[
-            [z_coordinate_name, y_coordinate_name, x_coordinate_name]
-        ].to_numpy()
+        feature_locations = (
+            features[[z_coordinate_name, y_coordinate_name, x_coordinate_name]]
+            .to_numpy()
+            .copy()
+        )
         feature_locations[:, 0] *= dz
         feature_locations[:, 1:] *= dxy
     else:

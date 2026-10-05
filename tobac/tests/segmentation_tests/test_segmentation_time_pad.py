@@ -74,7 +74,6 @@ def test_watershed_segmentation_time_pad(
     # detect both features
     fd_output = feature_detection.feature_detection_multithreshold(
         test_data_xarray,
-        i_time=0,
         dxy=1,
         threshold=[1, 2, 3],
         n_min_threshold=test_min_num,
