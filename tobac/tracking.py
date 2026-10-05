@@ -70,6 +70,7 @@ def linking_trackpy(
     max_h2: Optional[int] = None,
     PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
     features_append: Union[None, pd.DataFrame] = None,
+    save_unfiltered_cell: bool = False,
 ) -> pd.DataFrame:
     """Perform Linking of features in trajectories.
 
@@ -213,13 +214,32 @@ def linking_trackpy(
     field_in : None
         Input field. Not currently used; can be set to `None`.
 
+    save_unfiltered_cell : bool, optional
+        If True, adds a 'cell_unfiltered' column to the output containing the
+        cell number of every feature before short tracks (stubs) are removed.
+        For tracks that are kept, 'cell_unfiltered' is identical to 'cell'.
+        Features belonging to stubs have 'cell' set to `cell_number_unassigned`
+        but keep their track number in 'cell_unfiltered'.
+        Default is False.
+
+        .. note:: If you are using ``method_linking='predict'`` and plan to
+                  append to these tracks later with
+                  :func:`tobac.tracking.append_tracks_trackpy` using
+                  ``stubs`` greater than 2 (or a ``time_cell_min`` equivalent
+                  to more than 2 frames, i.e., ``time_cell_min >= 2*dt``),
+                  set this option to True. Without the unfiltered cell
+                  numbers, the velocities of stubs at the end of the original
+                  tracks are lost, so append tracking cannot reproduce the
+                  original predictive tracking and will raise an error.
+
     Returns
     -------
     trajectories_final : pandas.DataFrame
         Dataframe of the linked features, containing the variable 'cell',
         with integers indicating the affiliation of a feature to a specific
         track, and the variable 'time_cell' with the time the cell has
-        already existed.
+        already existed. If `save_unfiltered_cell` is True, also contains
+        the variable 'cell_unfiltered'.
 
     Raises
     ------
@@ -378,6 +398,7 @@ def linking_trackpy(
         cell_number_start=cell_number_start,
         cell_number_unassigned=cell_number_unassigned,
         stubs=stubs,
+        save_unfiltered_cell=save_unfiltered_cell,
     )
 
     # add coordinate to raw features identified:
@@ -406,6 +427,7 @@ def linking_trackpy_latlon(
     cell_number_start=1,
     cell_number_unassigned=-1,
     planet_radius: float = 6378137.0,
+    save_unfiltered_cell: bool = False,
 ):
     """Perform Linking of features in trajectories using latitude/longitue values.
 
@@ -518,6 +540,11 @@ def linking_trackpy_latlon(
     planet_radius: float
         Radius of the planet of interest in meters. By default, an average earth
         radius value.
+    save_unfiltered_cell : bool, optional
+        If True, adds a 'cell_unfiltered' column to the output containing the
+        cell number of every feature before short tracks (stubs) are removed.
+        See :func:`tobac.tracking.linking_trackpy` for details.
+        Default is False.
 
 
     Returns
@@ -715,6 +742,7 @@ def linking_trackpy_latlon(
         cell_number_start=cell_number_start,
         cell_number_unassigned=cell_number_unassigned,
         stubs=stubs,
+        save_unfiltered_cell=save_unfiltered_cell,
     )
     return filtered_trajectories
 
@@ -724,6 +752,7 @@ def _filter_trajectories(
     cell_number_start: int,
     cell_number_unassigned: int,
     stubs: int,
+    save_unfiltered_cell: bool = False,
 ) -> pd.DataFrame:
     """Internal function to postprocess and filter trajectories from Trackpy
     to a form usable by tobac down the line.
@@ -740,6 +769,8 @@ def _filter_trajectories(
         What number to assign untracked cells
     stubs: int
         Number of frames that a cell must be tracked for to be included (vs filtered out)
+    save_unfiltered_cell: bool
+        If True, save the cell number before stub filtering as 'cell_unfiltered'
 
     Returns
     -------
@@ -760,6 +791,8 @@ def _filter_trajectories(
     )
     trajectories_unfiltered["cell"] = trajectories_unfiltered["cell"].astype(int)
     trajectories_unfiltered.drop(columns=["particle"], inplace=True)
+    if save_unfiltered_cell:
+        trajectories_unfiltered["cell_unfiltered"] = trajectories_unfiltered["cell"]
 
     trajectories_bycell = trajectories_unfiltered.groupby("cell")
     stub_cell_nums = list()
@@ -828,7 +861,12 @@ def append_tracks_trackpy(
     Parameters
     ----------
     tracks_orig: pd.DataFrame
-        Original tracked file. Must contain a 'cell' column.
+        Original tracked file. Must contain a 'cell' column. If it also contains
+        a 'cell_unfiltered' column (see the `save_unfiltered_cell` option of
+        :func:`tobac.tracking.linking_trackpy`), the unfiltered cell numbers are
+        used to link the new features, and the output will also contain a
+        'cell_unfiltered' column. This is required to append with
+        ``method_linking='predict'`` when stubs is greater than 2.
     new_features: pd.DataFrame
         New features to be tracked. This dataframe can overlap with the tracks_orig dataframe
         features, but only times where there is no cell information (either `cell` column for that
@@ -949,14 +987,15 @@ def append_tracks_trackpy(
         Dataframe of the linked features, containing the variable 'cell',
         with integers indicating the affiliation of a feature to a specific
         track, and the variable 'time_cell' with the time the cell has
-        already existed.
+        already existed. If `tracks_orig` contains 'cell_unfiltered', also
+        contains the variable 'cell_unfiltered'.
 
     Raises
     ------
     ValueError
         If method_linking is neither 'random' nor 'predict', or if method_linking
-        is 'predict' and stubs (or time_cell_min converted to frames) is greater
-        than 2.
+        is 'predict', stubs (or time_cell_min converted to frames) is greater
+        than 2, and `tracks_orig` does not contain a 'cell_unfiltered' column.
     NotImplementedError
         If memory > 0.
 
@@ -994,13 +1033,24 @@ def append_tracks_trackpy(
 
     logging.debug("stubs: " + str(stubs))
 
+    # If we have the unfiltered cell numbers, link on those instead of the
+    # filtered cell numbers. Stubs then keep their identity, so we don't need to
+    # retrack them and their velocities are available for prediction.
+    has_unfiltered_cell = "cell_unfiltered" in tracks_orig
+    if has_unfiltered_cell:
+        tracks_orig = tracks_orig.drop(columns=["cell"]).rename(
+            columns={"cell_unfiltered": "cell"}
+        )
+        new_features = new_features.drop(columns=["cell_unfiltered"], errors="ignore")
+
     # Stubs of 2+ frames have their cell set to cell_number_unassigned, so their
     # velocities at the start of the retracking window can't be recovered. The
     # predictor would then use a different velocity field than the original tracking.
-    if method_linking == "predict" and stubs > 2:
+    if method_linking == "predict" and stubs > 2 and not has_unfiltered_cell:
         raise ValueError(
             "Append tracks with method_linking='predict' and more than 2 frames for "
-            "stubs (time_cell_min > dt) will not work."
+            "stubs (time_cell_min >= 2*dt) requires the unfiltered cell numbers. "
+            "Track the original features with save_unfiltered_cell=True."
         )
 
     logging.debug("start linking features into trajectories")
@@ -1011,7 +1061,12 @@ def append_tracks_trackpy(
         tracks_vel,
         new_features_cleaned,
     ) = _clean_track_dfs_for_append(
-        tracks_orig, new_features, memory, span, cell_number_unassigned, stubs=stubs
+        tracks_orig,
+        new_features,
+        memory,
+        span,
+        cell_number_unassigned,
+        stubs=1 if has_unfiltered_cell else stubs,
     )
     # drop time_cell if it's there.
     # TODO: do we really need to drop time_cell? can we recalculate?
@@ -1276,6 +1331,8 @@ def append_tracks_trackpy(
     trajectories_unfiltered.drop(columns=["particle"], inplace=True)
 
     trajectories_unfiltered = pd.concat([tracks_cut, trajectories_unfiltered])
+    if has_unfiltered_cell:
+        trajectories_unfiltered["cell_unfiltered"] = trajectories_unfiltered["cell"]
 
     trajectories_bycell = trajectories_unfiltered.groupby("cell")
     stub_cell_nums = list()

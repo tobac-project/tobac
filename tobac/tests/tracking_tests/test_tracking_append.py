@@ -666,3 +666,191 @@ def test_append_tracks_predict_stubs_error(time_cell_min: float, should_raise: b
         tobac.tracking.append_tracks_trackpy(
             initial_tracking, features, **tracking_params
         )
+
+    # with the unfiltered cell numbers saved, appending should always work
+    initial_tracking = tobac.tracking.linking_trackpy(
+        features[features["frame"] < 2],
+        None,
+        save_unfiltered_cell=True,
+        **tracking_params,
+    )
+    tobac.tracking.append_tracks_trackpy(initial_tracking, features, **tracking_params)
+
+
+def _generate_random_features(
+    seed: int, hdim1_max: int, hdim2_max: int, n_features: int, n_times: int
+) -> pd.DataFrame:
+    """Generate a dataframe of randomly placed features for testing."""
+    rng = np.random.default_rng(seed)
+    curr_time = datetime.datetime(2026, 1, 1)
+    delta_time = datetime.timedelta(seconds=300)
+    all_features = list()
+
+    feature_id = 1
+    for time_number in range(n_times):
+        hdim_1_vals = rng.integers(0, hdim1_max, size=n_features)
+        hdim_2_vals = rng.integers(0, hdim2_max, size=n_features)
+        for i in range(n_features):
+            all_features.append(
+                {
+                    "feature": feature_id,
+                    "frame": time_number,
+                    "idx": i,
+                    "time": np.datetime64(curr_time),
+                    "hdim_1": hdim_1_vals[i],
+                    "hdim_2": hdim_2_vals[i],
+                    "num": 40,
+                    "threshold_value": 50.0,
+                }
+            )
+            feature_id += 1
+        curr_time = curr_time + delta_time
+
+    return pd.DataFrame(all_features)
+
+
+@pytest.mark.parametrize("save_unfiltered_cell", [True, False])
+def test_linking_trackpy_save_unfiltered_cell(save_unfiltered_cell: bool):
+    """
+    Test that linking_trackpy saves the unfiltered cell numbers only when requested
+    and that they match the filtered cell numbers for non-stub cells.
+    """
+    features = _generate_random_features(201532, 100, 100, 20, 10)
+    tracking_params = {
+        "dt": 300,
+        "dxy": 500,
+        "v_max": 30,
+        "time_cell_min": 900,
+        "method_linking": "predict",
+        "subnetwork_size": 15,
+    }
+    tracks = tobac.tracking.linking_trackpy(
+        features, None, save_unfiltered_cell=save_unfiltered_cell, **tracking_params
+    )
+    if not save_unfiltered_cell:
+        assert "cell_unfiltered" not in tracks
+        return
+
+    assert "cell_unfiltered" in tracks
+    assert (tracks["cell_unfiltered"] != -1).all()
+    kept = tracks["cell"] != -1
+    # there should be both stubs and kept cells for this test to be meaningful
+    assert kept.any() and (~kept).any()
+    assert (tracks.loc[kept, "cell"] == tracks.loc[kept, "cell_unfiltered"]).all()
+    # stubs should all be shorter than 4 frames
+    assert (tracks.loc[~kept].groupby("cell_unfiltered").size() < 4).all()
+    # filtered tracking should be the same as without the unfiltered column
+    tracks_no_unfilt = tobac.tracking.linking_trackpy(features, None, **tracking_params)
+    assert tobac.testing.check_tracking_identical(tracks, tracks_no_unfilt)
+
+
+@pytest.mark.parametrize(
+    "seed, hdim1_max, hdim2_max, n_features, n_times",
+    [
+        (2032, 200, 200, 3, 4),
+        (201532, 100, 100, 20, 6),
+        (201532, 100, 100, 20, 10),
+        (10032, 1000, 1000, 20, 20),
+    ],
+)
+@pytest.mark.parametrize(
+    "method_linking, time_cell_min",
+    [
+        ("random", 1200),
+        ("predict", 300),
+        ("predict", 600),
+        ("predict", 1200),
+    ],
+)
+def test_append_tracks_unfiltered_cell(
+    seed: int,
+    hdim1_max: int,
+    hdim2_max: int,
+    n_features: int,
+    n_times: int,
+    method_linking: str,
+    time_cell_min: float,
+):
+    """
+    Test that append tracking with unfiltered cell numbers reproduces regular tracking,
+    including predictive tracking with stubs > 2, and that the output keeps
+    the unfiltered cell numbers.
+    """
+    features = _generate_random_features(
+        seed, hdim1_max, hdim2_max, n_features, n_times
+    )
+
+    tracking_params = {
+        "dt": 300,
+        "dxy": 500,
+        "v_max": 30,
+        "memory": 0,
+        "time_cell_min": time_cell_min,
+        "method_linking": method_linking,
+        "subnetwork_size": 15,
+    }
+
+    orig_tracking = tobac.tracking.linking_trackpy(
+        features, None, save_unfiltered_cell=True, **tracking_params
+    )
+
+    def check_identical(appended):
+        assert "cell_unfiltered" in appended
+        assert tobac.testing.check_tracking_identical(orig_tracking, appended)
+        assert tobac.testing.check_tracking_identical(
+            orig_tracking, appended, cell_column="cell_unfiltered"
+        )
+        kept = appended["cell"] != -1
+        assert (
+            appended.loc[kept, "cell"] == appended.loc[kept, "cell_unfiltered"]
+        ).all()
+
+    first_two_times_df = features[features["frame"] < 2]
+    initial_tracking_append = tobac.tracking.linking_trackpy(
+        first_two_times_df, None, save_unfiltered_cell=True, **tracking_params
+    )
+
+    # append everything at once
+    check_identical(
+        tobac.tracking.append_tracks_trackpy(
+            initial_tracking_append, features, **tracking_params
+        )
+    )
+
+    # append one at a time with the full dataframe
+    curr_tracking_append = initial_tracking_append
+    for i in range(3, max(features["frame"]) + 2):
+        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+            curr_tracking_append, features[features["frame"] < i], **tracking_params
+        )
+    check_identical(curr_tracking_append)
+
+    # append one at a time with only individual times
+    curr_tracking_append = initial_tracking_append
+    for i in range(2, max(features["frame"]) + 1):
+        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+            curr_tracking_append, features[features["frame"] == i], **tracking_params
+        )
+    check_identical(curr_tracking_append)
+
+
+def test_append_tracks_no_unfiltered_cell_output():
+    """
+    Test that append tracking does not add the unfiltered cell column when
+    the input tracks do not have it.
+    """
+    features = _generate_random_features(2032, 200, 200, 3, 4)
+    tracking_params = {
+        "dt": 300,
+        "dxy": 500,
+        "v_max": 30,
+        "time_cell_min": 300,
+        "method_linking": "predict",
+    }
+    initial_tracking = tobac.tracking.linking_trackpy(
+        features[features["frame"] < 2], None, **tracking_params
+    )
+    appended = tobac.tracking.append_tracks_trackpy(
+        initial_tracking, features, **tracking_params
+    )
+    assert "cell_unfiltered" not in appended
