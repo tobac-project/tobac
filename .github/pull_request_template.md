@@ -10,3 +10,9 @@
 * [ ] Have you kept your pull request small and limited so that it is easy to review? 
 * [ ] Have the newest changes from this branch been merged? 
 
+## AI Use
+
+<!-- 
+Per our AI policy, please state how you used AI/LLMs in your pull request.
+-->
+
