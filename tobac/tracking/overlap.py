@@ -625,9 +625,9 @@ def _calc_distances_pbcs(
     pos_neg_offset = np.where(start_coords < end_coords, 1, -1)
     if len(domain_size) == 3:
         domain_size[0] = 0
-    if PBC_flag == "hdim1":
+    if PBC_flag == "hdim_1":
         domain_size[-1] = 0
-    if PBC_flag == "hdim2":
+    if PBC_flag == "hdim_2":
         domain_size[-2] = 0
 
     non_pbc_dist = np.abs(end_coords - start_coords)

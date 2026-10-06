@@ -662,6 +662,19 @@ class TestLinkingOverlap:
 
         assert (tracks.cell == 1).all()
 
+        # And that the wrong PBC doesn't work
+        tracks = tobac.tracking.linking_overlap(
+            features_pbc,
+            labels_pbc,
+            minimum_relative_overlap=0.75,
+            translate_method="predict",
+            velocity_method="constant",
+            velocity_constant=np.array([8 / 600, 18 / 600]),
+            PBC_flag="hdim_1",
+        )
+
+        assert not (tracks.cell == 1).all()
+
     def test_simple_data_2D_pbc_y(self):
         data = tobac.testing.make_simple_sample_data_2D(data_type="xarray")
         data_rolled_y = data.roll(y=25)
@@ -737,6 +750,19 @@ class TestLinkingOverlap:
         )
 
         assert (tracks.cell == 1).all()
+
+        # And that the wrong PBC doesn't work
+        tracks = tobac.tracking.linking_overlap(
+            features_pbc,
+            labels_pbc,
+            minimum_relative_overlap=0.75,
+            translate_method="predict",
+            velocity_method="constant",
+            velocity_constant=np.array([8 / 600, 18 / 600]),
+            PBC_flag="hdim_2",
+        )
+
+        assert not (tracks.cell == 1).all()
 
     def test_simple_data_2D_pbc_both(self):
         data = tobac.testing.make_simple_sample_data_2D(data_type="xarray")
@@ -863,3 +889,37 @@ class TestLinkingOverlap:
             velocity_method="none",
         )
         assert np.unique(tracks.cell).tolist() == [1, 2, 3]
+
+    def test_sample_data_2D_3blobs_pbc(self):
+        data_pbc = tobac.testing.make_sample_data_2D_3blobs(data_type="xarray").roll(
+            x=50
+        )
+        dxy, dt = 1000, 60
+        labels_pbc, features_pbc = tobac.feature_detection_multithreshold(
+            data_pbc,
+            dxy,
+            threshold=5,
+            position_threshold="weighted_abs",
+            return_labels=True,
+            PBC_flag="hdim_2",
+        )
+
+        tracks_pbc = tobac.tracking.linking_overlap(
+            features_pbc,
+            labels_pbc,
+            minimum_relative_overlap=0.5,
+            translate_method="predict",
+            velocity_method="nearest",
+            PBC_flag="hdim_2",
+        )
+        assert np.unique(tracks_pbc.cell).tolist() == [1, 2, 3]
+
+        tracks_no_pbc = tobac.tracking.linking_overlap(
+            features_pbc,
+            labels_pbc,
+            minimum_relative_overlap=0.5,
+            translate_method="predict",
+            velocity_method="nearest",
+            PBC_flag="none",
+        )
+        assert np.unique(tracks_no_pbc.cell).tolist() != [1, 2, 3]
