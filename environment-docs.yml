@@ -1,0 +1,17 @@
+name: tobac-docs
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.9,<3.14
+  - numpy
+  - pandoc
+  - sphinx<8.2
+  - ipykernel
+  - nbsphinx
+  - sphinx-gallery
+  - pydata-sphinx-theme
+  - myst-parser
+  - sphinx-design
+  - sphinx-toolbox
+  - linkify-it-py
+  - sphinxcontrib-mermaid
