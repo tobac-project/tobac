@@ -657,7 +657,7 @@ class TestLinkingOverlap:
             translate_method="predict",
             velocity_method="constant",
             velocity_constant=np.array([8 / 600, 18 / 600]),
-            PBC_flag="both",
+            PBC_flag="hdim_2",
         )
 
         assert (tracks.cell == 1).all()
@@ -733,7 +733,7 @@ class TestLinkingOverlap:
             translate_method="predict",
             velocity_method="constant",
             velocity_constant=np.array([8 / 600, 18 / 600]),
-            PBC_flag="both",
+            PBC_flag="hdim_1",
         )
 
         assert (tracks.cell == 1).all()
@@ -814,3 +814,52 @@ class TestLinkingOverlap:
         )
 
         assert (tracks.cell == 1).all()
+
+    def test_sample_data_2D_3blobs(self):
+        data = tobac.testing.make_sample_data_2D_3blobs(data_type="xarray")
+        dxy, dt = 1000, 60
+        labels, features = tobac.feature_detection_multithreshold(
+            data,
+            dxy,
+            threshold=5,
+            position_threshold="weighted_abs",
+            return_labels=True,
+        )
+
+        # Test all predicitive tracking methods work
+        tracks = tobac.tracking.linking_overlap(
+            features,
+            labels,
+            minimum_relative_overlap=0.5,
+            translate_method="predict",
+            velocity_method="nearest",
+        )
+        assert np.unique(tracks.cell).tolist() == [1, 2, 3]
+
+        tracks = tobac.tracking.linking_overlap(
+            features,
+            labels,
+            minimum_relative_overlap=0.5,
+            translate_method="predict",
+            velocity_method="mean",
+        )
+        assert np.unique(tracks.cell).tolist() == [1, 2, 3]
+
+        tracks = tobac.tracking.linking_overlap(
+            features,
+            labels,
+            minimum_relative_overlap=0.5,
+            translate_method="predict",
+            velocity_method="constant",
+            velocity_constant=0,
+        )
+        assert np.unique(tracks.cell).tolist() == [1, 2, 3]
+
+        tracks = tobac.tracking.linking_overlap(
+            features,
+            labels,
+            minimum_relative_overlap=0.5,
+            translate_method="predict",
+            velocity_method="none",
+        )
+        assert np.unique(tracks.cell).tolist() == [1, 2, 3]

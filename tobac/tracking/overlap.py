@@ -330,7 +330,7 @@ def _update_predicted_velocities(
                 if hasattr(velocity_constant, "__iter__")
                 else velocity_constant
             )
-        elif velocity_method is None or wh_missing_vels.all():
+        elif wh_missing_vels.all():
             features.loc[wh_missing_vels, "_track_velocity"] = 0
         elif velocity_method == "mean":
             mean_vel = features._track_velocity.mean()
@@ -345,6 +345,8 @@ def _update_predicted_velocities(
             ][
                 btree.query(features[wh_missing_vels], return_distance=False).ravel()
             ].values
+        else:
+            features.loc[wh_missing_vels, "_track_velocity"] = 0
 
 
 def _wrap_coords(
