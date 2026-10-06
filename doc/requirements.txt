@@ -1,7 +1,9 @@
+# Python dependencies to build the documentation
+# keep in sync with the "docs" extra in pyproject.toml
+numpy
+sphinx
 ipykernel
 nbsphinx
-numpy
-sphinx_rtd_theme
 sphinx-gallery
 pydata_sphinx_theme
 myst-parser
