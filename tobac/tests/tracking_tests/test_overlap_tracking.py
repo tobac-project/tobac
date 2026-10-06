@@ -923,3 +923,91 @@ class TestLinkingOverlap:
             PBC_flag="none",
         )
         assert np.unique(tracks_no_pbc.cell).tolist() != [1, 2, 3]
+
+    def test_sample_data_3D_1blob(self):
+        data = tobac.testing.make_sample_data_3D_1blob(data_type="xarray")
+        features = tobac.feature_detection_multithreshold(
+            data, 1000, threshold=5, position_threshold="weighted_abs"
+        )
+        labels, features = tobac.segmentation.watershed_segmentation.segmentation(
+            features,
+            data,
+            1000,
+            threshold=5,
+        )
+
+        # Test no translate_method, final feature should not be linked as insufficient overlap
+        tracks = tobac.tracking.linking_overlap(
+            features, labels, minimum_overlap=125, translate_method="none"
+        )
+
+        assert np.all(tracks.cell.iloc[:-1] == 1)
+        assert np.all(tracks.cell.iloc[-1] == -1)
+
+        # Test that with predictive tracking, the final feature is linked
+        tracks = tobac.tracking.linking_overlap(
+            features,
+            labels,
+            minimum_overlap=125,
+            translate_method="predict",
+            velocity_method="mean",
+        )
+        assert np.all(tracks.cell == 1)
+
+    def test_sample_data_3D_1blob_pbc(self):
+        data = tobac.testing.make_sample_data_3D_1blob(data_type="xarray").roll(
+            y=25, x=50
+        )
+        features = tobac.feature_detection_multithreshold(
+            data, 1000, threshold=5, position_threshold="weighted_abs", PBC_flag="both"
+        )
+        labels, features = tobac.segmentation.watershed_segmentation.segmentation(
+            features, data, 1000, threshold=5, PBC_flag="both"
+        )
+
+        tracks_no_pbc = tobac.tracking.linking_overlap(
+            features,
+            labels,
+            minimum_overlap=125,
+            translate_method="predict",
+            velocity_method="mean",
+        )
+        assert not np.all(tracks_no_pbc.cell == 1)
+
+        tracks_pbc = tobac.tracking.linking_overlap(
+            features,
+            labels,
+            minimum_overlap=125,
+            translate_method="predict",
+            velocity_method="mean",
+            PBC_flag="both",
+        )
+        assert np.all(tracks_pbc.cell == 1)
+
+    def test_sample_data_3D_3blobs(self):
+        data = tobac.testing.make_sample_data_3D_3blobs(data_type="xarray")
+        dxy, dt = 1000, 120
+        features = tobac.feature_detection_multithreshold(
+            data, dxy, threshold=5, position_threshold="weighted_abs"
+        )
+        labels, features = tobac.segmentation.watershed_segmentation.segmentation(
+            features, data, dxy, threshold=5
+        )
+
+        tracks = tobac.tracking.linking_overlap(
+            features,
+            labels,
+            minimum_overlap=125,
+            translate_method="predict",
+            velocity_method="mean",
+        )
+        assert np.unique(tracks.cell).tolist() == [1, 2, 3]
+
+        tracks = tobac.tracking.linking_overlap(
+            features,
+            labels,
+            minimum_overlap=125,
+            translate_method="predict",
+            velocity_method="nearest",
+        )
+        assert np.unique(tracks.cell).tolist() == [1, 2, 3]
