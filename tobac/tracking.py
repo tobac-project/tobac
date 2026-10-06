@@ -229,8 +229,7 @@ def linking_trackpy(
                   to more than 2 frames, i.e., ``time_cell_min >= 2*dt``),
                   set this option to True. Without the unfiltered cell
                   numbers, the velocities of stubs at the end of the original
-                  tracks are lost, so append tracking cannot reproduce the
-                  original predictive tracking and will raise an error.
+                  tracks are lost, so append tracking will raise an error.
 
     Returns
     -------
@@ -543,9 +542,19 @@ def linking_trackpy_latlon(
     save_unfiltered_cell : bool, optional
         If True, adds a 'cell_unfiltered' column to the output containing the
         cell number of every feature before short tracks (stubs) are removed.
-        See :func:`tobac.tracking.linking_trackpy` for details.
+        For tracks that are kept, 'cell_unfiltered' is identical to 'cell'.
+        Features belonging to stubs have 'cell' set to `cell_number_unassigned`
+        but keep their track number in 'cell_unfiltered'.
         Default is False.
 
+        .. note:: If you are using ``method_linking='predict'`` and plan to
+                  append to these tracks later with
+                  :func:`tobac.tracking.append_tracks_trackpy` using
+                  ``stubs`` greater than 2 (or a ``time_cell_min`` equivalent
+                  to more than 2 frames, i.e., ``time_cell_min >= 2*dt``),
+                  set this option to True. Without the unfiltered cell
+                  numbers, the velocities of stubs at the end of the original
+                  tracks are lost, so append tracking will raise an error.
 
     Returns
     -------
