@@ -854,3 +854,203 @@ def test_append_tracks_no_unfiltered_cell_output():
         initial_tracking, features, **tracking_params
     )
     assert "cell_unfiltered" not in appended
+
+
+def _add_latlon_to_features(
+    features: pd.DataFrame, base_lat: float, base_lon: float, dxy: float
+) -> pd.DataFrame:
+    """Add latitude/longitude columns to a feature dataframe, treating hdim_1/hdim_2 as
+    north/east offsets of dxy meters from a base latitude/longitude."""
+    planet_radius = 6378137.0
+    features = features.copy()
+    features["latitude"] = base_lat + np.rad2deg(
+        features["hdim_1"] * dxy / planet_radius
+    )
+    lon = base_lon + np.rad2deg(features["hdim_2"] * dxy / planet_radius) / np.cos(
+        np.deg2rad(base_lat)
+    )
+    # wrap to [-180, 180)
+    features["longitude"] = (lon + 180) % 360 - 180
+    return features
+
+
+@pytest.mark.parametrize(
+    "seed, hdim1_max, hdim2_max, n_features, n_times, base_lat, base_lon",
+    [
+        (2032, 200, 200, 3, 4, 40, -90),
+        (201532, 100, 100, 20, 6, -30, 20),
+        (201532, 100, 100, 20, 10, 60, 179.8),
+    ],
+)
+@pytest.mark.parametrize(
+    "method_linking, time_cell_min",
+    [
+        ("random", 1200),
+        ("predict", 300),
+        ("predict", 1200),
+    ],
+)
+@pytest.mark.parametrize(
+    "adaptive_step, adaptive_stop_multiplier", [(None, None), (0.9, 0.1)]
+)
+def test_append_tracks_latlon(
+    seed: int,
+    hdim1_max: int,
+    hdim2_max: int,
+    n_features: int,
+    n_times: int,
+    base_lat: float,
+    base_lon: float,
+    method_linking: str,
+    time_cell_min: float,
+    adaptive_step: float,
+    adaptive_stop_multiplier: float,
+):
+    """
+    Test that append tracking with use_latlon reproduces linking_trackpy_latlon,
+    including across the dateline and with adaptive search.
+    """
+    features = _add_latlon_to_features(
+        _generate_random_features(seed, hdim1_max, hdim2_max, n_features, n_times),
+        base_lat,
+        base_lon,
+        dxy=500,
+    )
+    tracking_params = {
+        "dt": 300,
+        "v_max": 30,
+        "memory": 0,
+        "time_cell_min": time_cell_min,
+        "method_linking": method_linking,
+        "subnetwork_size": 15,
+        "adaptive_step": adaptive_step,
+        "adaptive_stop_multiplier": adaptive_stop_multiplier,
+    }
+
+    orig_tracking = tobac.tracking.linking_trackpy_latlon(
+        features, stubs=None, save_unfiltered_cell=True, **tracking_params
+    )
+    # lat/lon tracking should not leave behind any temporary columns
+    assert set(orig_tracking.columns) == set(features.columns) | {
+        "cell",
+        "time_cell",
+        "cell_unfiltered",
+    }
+
+    initial_tracking = tobac.tracking.linking_trackpy_latlon(
+        features[features["frame"] < 2],
+        stubs=None,
+        save_unfiltered_cell=True,
+        **tracking_params,
+    )
+
+    # append everything at once
+    appended = tobac.tracking.append_tracks_trackpy(
+        initial_tracking, features, use_latlon=True, **tracking_params
+    )
+    assert set(appended.columns) == set(orig_tracking.columns)
+    assert tobac.testing.check_tracking_identical(orig_tracking, appended)
+
+    # append one time at a time
+    curr_tracking_append = initial_tracking
+    for i in range(2, max(features["frame"]) + 1):
+        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+            curr_tracking_append,
+            features[features["frame"] == i],
+            use_latlon=True,
+            **tracking_params,
+        )
+    assert tobac.testing.check_tracking_identical(orig_tracking, curr_tracking_append)
+    assert tobac.testing.check_tracking_identical(
+        orig_tracking, curr_tracking_append, cell_column="cell_unfiltered"
+    )
+
+
+def test_append_tracks_latlon_errors():
+    """Test that append tracking with use_latlon raises appropriate errors."""
+    features = _add_latlon_to_features(
+        _generate_random_features(2032, 200, 200, 3, 4), 40, -90, dxy=500
+    )
+    initial_tracking = tobac.tracking.linking_trackpy_latlon(
+        features[features["frame"] < 2], dt=300, v_max=30
+    )
+
+    # need exactly one of v_max and d_max
+    with pytest.raises(ValueError):
+        tobac.tracking.append_tracks_trackpy(
+            initial_tracking, features, dt=300, v_max=30, d_max=30, use_latlon=True
+        )
+    # PBCs are not used with lat/lon
+    with pytest.raises(ValueError):
+        tobac.tracking.append_tracks_trackpy(
+            initial_tracking,
+            features,
+            dt=300,
+            v_max=30,
+            use_latlon=True,
+            PBC_flag="hdim_2",
+            min_h2=0,
+            max_h2=200,
+        )
+    # d_min is not supported
+    with pytest.raises(ValueError):
+        tobac.tracking.append_tracks_trackpy(
+            initial_tracking, features, dt=300, d_min=30, use_latlon=True
+        )
+    # new features need lat/lon too
+    with pytest.raises(ValueError):
+        tobac.tracking.append_tracks_trackpy(
+            initial_tracking,
+            features.drop(columns=["latitude"]),
+            dt=300,
+            v_max=30,
+            use_latlon=True,
+        )
+    # adaptive_stop is not supported with lat/lon
+    with pytest.raises(ValueError):
+        tobac.tracking.append_tracks_trackpy(
+            initial_tracking,
+            features,
+            dt=300,
+            v_max=30,
+            use_latlon=True,
+            adaptive_step=0.9,
+            adaptive_stop=0.1,
+        )
+    # adaptive_step and adaptive_stop_multiplier must both be set
+    with pytest.raises(ValueError):
+        tobac.tracking.append_tracks_trackpy(
+            initial_tracking,
+            features,
+            dt=300,
+            v_max=30,
+            use_latlon=True,
+            adaptive_step=0.9,
+        )
+    # adaptive_stop_multiplier must be between 0 and 1
+    with pytest.raises(ValueError):
+        tobac.tracking.append_tracks_trackpy(
+            initial_tracking,
+            features,
+            dt=300,
+            v_max=30,
+            use_latlon=True,
+            adaptive_step=0.9,
+            adaptive_stop_multiplier=1.4,
+        )
+    # adaptive_stop_multiplier is only for lat/lon
+    with pytest.raises(ValueError):
+        tobac.tracking.append_tracks_trackpy(
+            initial_tracking,
+            features,
+            dt=300,
+            dxy=500,
+            v_max=30,
+            adaptive_step=0.9,
+            adaptive_stop_multiplier=0.1,
+        )
+    # dxy is required without lat/lon
+    with pytest.raises(ValueError):
+        tobac.tracking.append_tracks_trackpy(
+            initial_tracking, features, dt=300, v_max=30
+        )

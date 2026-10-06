@@ -608,43 +608,11 @@ def linking_trackpy_latlon(
             "Exactly one of 'time_cell_min' or 'stubs' should be specified."
         )
 
-    # in case of adaptive search, check whether both parameters are specified
-    if adaptive_stop_multiplier is not None:
-        if adaptive_step is None:
-            raise ValueError(
-                "Adaptive search requires values for adaptive_step and adaptive_stop_multiplier. "
-                "Please specify adaptive_step."
-            )
+    _check_adaptive_params_latlon(adaptive_step, adaptive_stop_multiplier)
 
-    if adaptive_step is not None:
-        if adaptive_stop_multiplier is None:
-            raise ValueError(
-                "Adaptive search requires values for adaptive_step and "
-                "adaptive_stop_multiplier. Please specify adaptive_stop_multiplier."
-            )
-
-    if adaptive_stop_multiplier is not None:
-        if adaptive_stop_multiplier < 0 or adaptive_stop_multiplier > 1:
-            raise ValueError(
-                "Adaptive search requires values for adaptive_stop_multiplier between 0 and 1."
-            )
-
-    if adaptive_step is not None:
-        if adaptive_step < 0 or adaptive_step > 1:
-            raise ValueError(
-                "Adaptive search requires values for adaptive_step between 0 and 1."
-            )
-
-    # calculate search range. Because the haversine DistanceMetric is
-    # in units of radians, we need to divide these by the planet radius.
-
-    # calculate search range based on timestep and grid spacing
-    if v_max is not None:
-        search_range = (dt * v_max) / planet_radius
-
-    # using d_max
-    else:
-        search_range = d_max / planet_radius
+    search_range = _calc_search_range_latlon(
+        dt, v_max=v_max, d_max=d_max, planet_radius=planet_radius
+    )
 
     if time_cell_min:
         stubs = np.floor(time_cell_min / dt) + 1
@@ -671,22 +639,7 @@ def linking_trackpy_latlon(
         features, longitude_name, coord_utils.COMMON_LON_COORDS
     )
 
-    # deep copy to preserve features field:
-    features_linking = copy.deepcopy(features)
-
-    # avoid setting pos_columns by renaming to default values to avoid trackpy bug
-    features_linking.rename(
-        columns={
-            "y": "__temp_y_coord",
-            "x": "__temp_x_coord",
-            "z": "__temp_z_coord",
-        },
-        inplace=True,
-    )
-
-    # need to convert input lat/lon into radians from degrees
-    features_linking["x"] = np.deg2rad(features_linking[lon_col])
-    features_linking["y"] = np.deg2rad(features_linking[lat_col])
+    features_linking = _latlon_to_trackpy_coords(features, lat_col, lon_col)
 
     # must use btree for custom distance metric as we will use here
     neighbor_strategy = "BTree"
@@ -728,16 +681,10 @@ def linking_trackpy_latlon(
         # recreate a single dataframe from the list
         trajectories_unfiltered = pd.concat(trajectories_unfiltered)
 
-        trajectories_unfiltered.drop(columns=["x", "y"], inplace=True)
+    else:
+        raise ValueError("method_linking unknown")
 
-        trajectories_unfiltered.rename(
-            columns={
-                "__temp_y_coord": "y",
-                "__temp_x_coord": "x",
-                "__temp_z_coord": "z",
-            },
-            inplace=True,
-        )
+    trajectories_unfiltered = _trackpy_coords_to_latlon(trajectories_unfiltered)
 
     # Reset trackpy parameters to previously set values
     if subnetwork_size is not None:
@@ -841,7 +788,7 @@ def append_tracks_trackpy(
     tracks_orig: pd.DataFrame,
     new_features: pd.DataFrame,
     dt: float,
-    dxy: float,
+    dxy: Optional[float] = None,
     dz: Optional[float] = None,
     v_max: Optional[float] = None,
     d_max: Optional[float] = None,
@@ -863,9 +810,14 @@ def append_tracks_trackpy(
     min_h2: Optional[int] = None,
     max_h2: Optional[int] = None,
     PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
+    use_latlon: bool = False,
+    latitude_name: Optional[str] = None,
+    longitude_name: Optional[str] = None,
+    planet_radius: float = 6378137.0,
+    adaptive_stop_multiplier: Optional[float] = None,
 ) -> pd.DataFrame:
     """Append a new feature dataframe onto an existing tracked dataframe using the same logic as
-    tracking.linking_trackpy.
+    tracking.linking_trackpy, or, if `use_latlon` is True, tracking.linking_trackpy_latlon.
 
     Parameters
     ----------
@@ -884,8 +836,9 @@ def append_tracks_trackpy(
     dt : float
         Time resolution of tracked features in seconds.
 
-    dxy : float
-        Horizontal grid spacing of the input data in meters.
+    dxy : float, optional
+        Horizontal grid spacing of the input data in meters. Required unless
+        `use_latlon` is True, in which case it is ignored.
 
     dz : float
         Constant vertical grid spacing (meters), optional. If not specified
@@ -905,6 +858,7 @@ def append_tracks_trackpy(
 
     d_min : float, optional
         Deprecated. Only one of `d_max`, `d_min`, or `v_max` can be set.
+        Not supported when `use_latlon` is True.
         Default is None.
 
     subnetwork_size : int, optional
@@ -954,7 +908,9 @@ def append_tracks_trackpy(
         reducing search_range by multiplying with adaptive_step until the subnet
         is solvable. If search_range becomes <= adaptive_stop, give up and raise
         a SubnetOversizeException. Needs to be used in combination with
-        adaptive_step. Default is None.
+        adaptive_step. Not supported when `use_latlon` is True; use
+        `adaptive_stop_multiplier` instead.
+        Default is None.
 
     cell_number_start : int, optional
         Cell number for first tracked cell.
@@ -989,6 +945,35 @@ def append_tracks_trackpy(
         'hdim_1' means that we are periodic along hdim1
         'hdim_2' means that we are periodic along hdim2
         'both' means that we are periodic along both horizontal dimensions
+        Must be 'none' if `use_latlon` is True, as the haversine distance
+        already accounts for the periodicity of the globe.
+
+    use_latlon : bool, optional
+        If True, link using latitude/longitude and the haversine distance, as in
+        :func:`tobac.tracking.linking_trackpy_latlon`. Use this to append to
+        tracks created by :func:`tobac.tracking.linking_trackpy_latlon`. Only
+        2D tracking is supported. Default is False.
+
+    latitude_name : str, optional
+        Name of latitude column, used if `use_latlon` is True. If not set,
+        tries to guess from a list.
+
+    longitude_name : str, optional
+        Name of longitude column, used if `use_latlon` is True. If not set,
+        tries to guess from a list.
+
+    planet_radius : float, optional
+        Radius of the planet of interest in meters, used if `use_latlon` is
+        True. By default, an average earth radius value.
+
+    adaptive_stop_multiplier : float, optional
+        Only used if `use_latlon` is True, in place of `adaptive_stop`, matching
+        :func:`tobac.tracking.linking_trackpy_latlon`. If not None, enables adaptive
+        tracking when adaptive_step is set. When encountering too many (as set by
+        subnetwork_size) candidate points for linking, multiply the search radius
+        (controlled by v_max or d_max) by adaptive_step continuously to try to reduce
+        the size of the problem, until (new_radius < (old_radius*adaptive_stop_multiplier)).
+        Must be between 0 and 1. Default is None.
 
     Returns
     -------
@@ -1005,6 +990,9 @@ def append_tracks_trackpy(
         If method_linking is neither 'random' nor 'predict', or if method_linking
         is 'predict', stubs (or time_cell_min converted to frames) is greater
         than 2, and `tracks_orig` does not contain a 'cell_unfiltered' column.
+        Also raised if `use_latlon` is True and the input is 3D, `PBC_flag`
+        is not 'none', or `adaptive_stop` is set, or if `use_latlon` is False and
+        `dxy` is not set or `adaptive_stop_multiplier` is set.
     NotImplementedError
         If memory > 0.
 
@@ -1021,11 +1009,54 @@ def append_tracks_trackpy(
     if memory > 0:
         raise NotImplementedError("Append tracks with memory not yet implemented.")
 
-    search_range = _calc_search_range(dt, dxy, v_max=v_max, d_max=d_max, d_min=d_min)
-
     if ("vdim" in tracks_orig) is not ("vdim" in new_features):
         raise ValueError(
             "One track is 3D, new track is 2D. Need to both have the same dimensions."
+        )
+
+    if use_latlon:
+        if "vdim" in tracks_orig:
+            raise ValueError("Append tracks with use_latlon only supports 2D tracking.")
+        if PBC_flag != "none":
+            raise ValueError(
+                "PBC_flag must be 'none' with use_latlon, as the haversine distance "
+                "already accounts for periodicity."
+            )
+        if d_min is not None:
+            raise ValueError(
+                "d_min is not supported with use_latlon. Use d_max or v_max."
+            )
+        if adaptive_stop is not None:
+            raise ValueError(
+                "adaptive_stop is not supported with use_latlon. "
+                "Use adaptive_stop_multiplier."
+            )
+        _check_adaptive_params_latlon(adaptive_step, adaptive_stop_multiplier)
+        search_range = _calc_search_range_latlon(
+            dt, v_max=v_max, d_max=d_max, planet_radius=planet_radius
+        )
+        if adaptive_stop_multiplier is not None:
+            adaptive_stop = search_range * adaptive_stop_multiplier
+        lat_col = coord_utils.find_coord_in_dataframe(
+            tracks_orig, latitude_name, coord_utils.COMMON_LAT_COORDS
+        )
+        lon_col = coord_utils.find_coord_in_dataframe(
+            tracks_orig, longitude_name, coord_utils.COMMON_LON_COORDS
+        )
+        # make sure the new features have the same lat/lon columns
+        coord_utils.find_coord_in_dataframe(new_features, lat_col)
+        coord_utils.find_coord_in_dataframe(new_features, lon_col)
+    # standard tracking (dx-based)
+    else:
+        if dxy is None:
+            raise ValueError("dxy must be set unless use_latlon is True.")
+        if adaptive_stop_multiplier is not None:
+            raise ValueError(
+                "adaptive_stop_multiplier is only supported with use_latlon. "
+                "Use adaptive_stop."
+            )
+        search_range = _calc_search_range(
+            dt, dxy, v_max=v_max, d_max=d_max, d_min=d_min
         )
 
     is_3D, found_vertical_coord = _get_vertical_coord(
@@ -1082,7 +1113,9 @@ def append_tracks_trackpy(
     tracks_vel.drop("time_cell", axis=1, inplace=True)
     tracks_cut.drop("time_cell", axis=1, inplace=True)
     old_tracks_retrack.drop("time_cell", axis=1, inplace=True)
-    if is_3D:
+    if use_latlon:
+        pos_columns_tp = ["y", "x"]
+    elif is_3D:
         pos_columns_tp = ["vdim_adj", "hdim_1", "hdim_2"]
     else:
         pos_columns_tp = ["hdim_1", "hdim_2"]
@@ -1106,8 +1139,21 @@ def append_tracks_trackpy(
                 old_tracks_retrack[found_vertical_coord] / dxy
             )
 
+    if use_latlon:
+        # trackpy links on y/x, which we set to latitude/longitude in radians
+        tracks_vel = _latlon_to_trackpy_coords(tracks_vel, lat_col, lon_col)
+        old_tracks_retrack = _latlon_to_trackpy_coords(
+            old_tracks_retrack, lat_col, lon_col
+        )
+        new_features_cleaned = _latlon_to_trackpy_coords(
+            new_features_cleaned, lat_col, lon_col
+        )
+        # must use btree for custom distance metric as we will use here
+        neighbor_strategy = "BTree"
+        dist_func = sklearn.metrics.DistanceMetric.get_metric("haversine")
+
     # Check if we have PBCs.
-    if PBC_flag in ["hdim_1", "hdim_2", "both"]:
+    elif PBC_flag in ["hdim_1", "hdim_2", "both"]:
         # Per the trackpy docs, to specify a custom distance function
         # which we need for PBCs, neighbor_strategy must be 'BTree'.
         # I think this shouldn't change results, but it will degrade performance.
@@ -1120,7 +1166,7 @@ def append_tracks_trackpy(
         neighbor_strategy = "KDTree"
         dist_func = None
 
-    if method_linking == "predict":
+    if method_linking == "predict" and not use_latlon:
         if is_3D and pkgvsn.parse(tp.__version__) < pkgvsn.parse("0.6.0"):
             raise ValueError(
                 "3D Predictive Tracking Only Supported with trackpy versions newer than 0.6.0."
@@ -1240,21 +1286,25 @@ def append_tracks_trackpy(
             dist_func=dist_func,
         )
 
-        # change to column names back
-        trajectories_unfiltered.rename(
-            columns={"y": "hdim_1", "x": "hdim_2", "z": "vdim_adj"}, inplace=True
-        )
-        trajectories_unfiltered.rename(
-            columns={
-                "__temp_y_coord": "y",
-                "__temp_x_coord": "x",
-                "__temp_z_coord": "z",
-            },
-            inplace=True,
-        )
+        if not use_latlon:
+            # change to column names back
+            trajectories_unfiltered.rename(
+                columns={"y": "hdim_1", "x": "hdim_2", "z": "vdim_adj"}, inplace=True
+            )
+            trajectories_unfiltered.rename(
+                columns={
+                    "__temp_y_coord": "y",
+                    "__temp_x_coord": "x",
+                    "__temp_z_coord": "z",
+                },
+                inplace=True,
+            )
 
     else:
         raise ValueError("method_linking unknown")
+
+    if use_latlon:
+        trajectories_unfiltered = _trackpy_coords_to_latlon(trajectories_unfiltered)
 
     # Reset trackpy parameters to previously set values
     if subnetwork_size is not None:
@@ -1734,6 +1784,156 @@ def remap_particle_to_cell_nv(particle_cell_map, input_particle):
 
     """
     return particle_cell_map[input_particle]
+
+
+def _calc_search_range_latlon(
+    dt: float,
+    v_max: Optional[float] = None,
+    d_max: Optional[float] = None,
+    planet_radius: float = 6378137.0,
+) -> float:
+    """Internal function to calculate the trackpy search_range in radians for
+    latitude/longitude tracking.
+
+    Parameters
+    ----------
+    dt: float
+        Time resolution (in seconds)
+    v_max: float, optional
+        Speed at which features are allowed to move in meters per second.
+        Only one of `d_max` or `v_max` can be set.
+    d_max: float, optional
+        Maximum search range in meters. Only one of `d_max` or `v_max` can be set.
+    planet_radius: float
+        Radius of the planet of interest in meters.
+
+    Returns
+    -------
+    search_range: float
+        search_range in radians
+
+    Raises
+    ------
+    ValueError:
+        Raises ValueError if not exactly one of v_max or d_max is set.
+
+    """
+    if not ((v_max is None) != (d_max is None)):
+        raise ValueError("Exactly one of 'v_max' or 'd_max' should be specified.")
+
+    # Because the haversine DistanceMetric is in units of radians,
+    # we need to divide these by the planet radius.
+    if v_max is not None:
+        return (dt * v_max) / planet_radius
+    return d_max / planet_radius
+
+
+def _check_adaptive_params_latlon(
+    adaptive_step: Optional[float], adaptive_stop_multiplier: Optional[float]
+) -> None:
+    """Internal function to check the adaptive search parameters for
+    latitude/longitude tracking.
+
+    Parameters
+    ----------
+    adaptive_step: float
+        adaptive_step value for trackpy
+    adaptive_stop_multiplier: float
+        Multiplier of the search range to get adaptive_stop for trackpy
+
+    Raises
+    ------
+    ValueError if only one is set or either is not between 0 and 1.
+
+    """
+    # in case of adaptive search, check whether both parameters are specified
+    if adaptive_stop_multiplier is not None:
+        if adaptive_step is None:
+            raise ValueError(
+                "Adaptive search requires values for adaptive_step and adaptive_stop_multiplier. "
+                "Please specify adaptive_step."
+            )
+
+    if adaptive_step is not None:
+        if adaptive_stop_multiplier is None:
+            raise ValueError(
+                "Adaptive search requires values for adaptive_step and "
+                "adaptive_stop_multiplier. Please specify adaptive_stop_multiplier."
+            )
+
+    if adaptive_stop_multiplier is not None:
+        if adaptive_stop_multiplier < 0 or adaptive_stop_multiplier > 1:
+            raise ValueError(
+                "Adaptive search requires values for adaptive_stop_multiplier between 0 and 1."
+            )
+
+    if adaptive_step is not None:
+        if adaptive_step < 0 or adaptive_step > 1:
+            raise ValueError(
+                "Adaptive search requires values for adaptive_step between 0 and 1."
+            )
+
+
+def _latlon_to_trackpy_coords(
+    features: pd.DataFrame, lat_col: str, lon_col: str
+) -> pd.DataFrame:
+    """Internal function to prepare a dataframe for latitude/longitude tracking with
+    trackpy. Moves any existing x/y/z columns out of the way and sets
+    y and x to latitude and longitude in radians.
+
+    Parameters
+    ----------
+    features: pd.DataFrame
+        Input features
+    lat_col: str
+        Name of the latitude column (in degrees)
+    lon_col: str
+        Name of the longitude column (in degrees)
+
+    Returns
+    -------
+    pd.DataFrame
+        Copy of the input with y/x set to latitude/longitude in radians.
+    """
+    # deep copy to preserve features field:
+    features_linking = copy.deepcopy(features)
+
+    # avoid setting pos_columns by renaming to default values to avoid trackpy bug
+    features_linking.rename(
+        columns={
+            "y": "__temp_y_coord",
+            "x": "__temp_x_coord",
+            "z": "__temp_z_coord",
+        },
+        inplace=True,
+    )
+
+    # need to convert input lat/lon into radians from degrees
+    features_linking["x"] = np.deg2rad(features_linking[lon_col])
+    features_linking["y"] = np.deg2rad(features_linking[lat_col])
+    return features_linking
+
+
+def _trackpy_coords_to_latlon(trajectories: pd.DataFrame) -> pd.DataFrame:
+    """Internal function to undo :func:`_latlon_to_trackpy_coords` after linking.
+
+    Parameters
+    ----------
+    trajectories: pd.DataFrame
+        Linked trajectories with y/x in radians
+
+    Returns
+    -------
+    pd.DataFrame
+        Trajectories with the original x/y/z columns restored.
+    """
+    return trajectories.drop(columns=["x", "y"]).rename(
+        columns={
+            "__temp_y_coord": "y",
+            "__temp_x_coord": "x",
+            "__temp_z_coord": "z",
+        },
+    )
 
 
 def _get_vertical_coord(
