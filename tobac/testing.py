@@ -588,7 +588,7 @@ def make_sample_data_3D_3blobs(data_type="iris", invert_xy=False):
     y = np.arange(0, 200e3, 1000)
     z = np.arange(0, 20e3, 1000)
 
-    t = t_0 + np.arange(0, 50, 2) * datetime.timedelta(minutes=1)
+    t = t_0 + np.arange(0, 100, 2) * datetime.timedelta(minutes=1)
 
     t_temp = np.arange(0, 60, 1)
     track1_t = t_0 + t_temp * datetime.timedelta(minutes=1)
