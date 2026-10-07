@@ -301,6 +301,7 @@ def _update_predicted_velocities(
     features: pd.DataFrame,
     velocity_method: Union[None, Literal["constant", "mean", "nearest"]] = "constant",
     velocity_constant: Union[None, float, np.ndarray] = 0,
+    PBC_flag: Optional[Literal["none", "hdim_1", "hdim_2", "both"]] = None,
 ) -> None:
     """Update predicted velocities for features with missing velocity values.
 
@@ -315,6 +316,9 @@ def _update_predicted_velocities(
         - 'nearest': Use nearest neighbor velocity (accounting for PBCs)
     velocity_constant : None, float, or np.ndarray, optional
         Constant velocity value or array of values. Default is 0.
+    PBC_flag : {'none', 'hdim_1', 'hdim_2', 'both'}, optional
+        Specification of which dimensions have periodic boundaries.
+        Default is None.
 
     Returns
     -------
@@ -339,7 +343,7 @@ def _update_predicted_velocities(
             }
         elif velocity_method == "nearest":
             # create BallTree to find nearest velocity accounting for PBCs
-            btree = FeatureBallTree(features[~wh_missing_vels])
+            btree = FeatureBallTree(features[~wh_missing_vels], PBC_flag=PBC_flag)
             features.loc[wh_missing_vels, "_track_velocity"] = features._track_velocity[
                 ~wh_missing_vels
             ][
@@ -444,6 +448,7 @@ def _translate_labels(
             features,
             velocity_method=velocity_method,
             velocity_constant=velocity_constant,
+            PBC_flag=PBC_flag,
         )
         features["_translated_coords"] = (
             features._coords
