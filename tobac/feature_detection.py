@@ -156,12 +156,16 @@ def feature_position(
     if position_threshold == "center":
         # get position as geometrical centre of identified region:
         if PBC_flag in ("hdim_1", "both"):
-            hdim1_index = circmean(hdim1_indices, high=hdim1_max + 0.5, low=hdim1_min-0.5)
+            hdim1_index = circmean(
+                hdim1_indices, high=hdim1_max + 0.5, low=hdim1_min - 0.5
+            )
             # hdim1_index = hdim1_index % (hdim1_max + 1)
         else:
             hdim1_index = np.mean(hdim1_indices)
         if PBC_flag in ("hdim_2", "both"):
-            hdim2_index = circmean(hdim2_indices, high=hdim2_max + 0.5, low=hdim2_min-0.5)
+            hdim2_index = circmean(
+                hdim2_indices, high=hdim2_max + 0.5, low=hdim2_min - 0.5
+            )
             # hdim2_index = hdim2_index % (hdim2_max + 1)
         else:
             hdim2_index = np.mean(hdim2_indices)
@@ -217,7 +221,10 @@ def feature_position(
 
     if PBC_flag in ("hdim_1", "both"):
         hdim1_index = pbc_utils.weighted_circmean(
-            hdim1_indices, weights=hdim1_weights, high=hdim1_max + 0.5, low=hdim1_min-0.5
+            hdim1_indices,
+            weights=hdim1_weights,
+            high=hdim1_max + 0.5,
+            low=hdim1_min - 0.5,
         )
         # hdim1_index = hdim1_index % (hdim1_max + 1)
     else:
@@ -225,7 +232,10 @@ def feature_position(
         hdim1_index = np.clip(hdim1_index, 0, hdim1_max)
     if PBC_flag in ("hdim_2", "both"):
         hdim2_index = pbc_utils.weighted_circmean(
-            hdim2_indices, weights=hdim2_weights, high=hdim2_max + 0.5, low=hdim2_min-0.5
+            hdim2_indices,
+            weights=hdim2_weights,
+            high=hdim2_max + 0.5,
+            low=hdim2_min - 0.5,
         )
         # hdim2_index = hdim2_index % (hdim2_max + 1)
     else:

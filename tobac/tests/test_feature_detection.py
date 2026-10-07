@@ -1371,7 +1371,7 @@ def test_feature_position_pbc_3d(
     assert feat_pos_output[0] == pytest.approx(expected_output[0])
     assert feat_pos_output[1] % (max_h1 + 1) == pytest.approx(expected_output[1])
     assert feat_pos_output[2] % (max_h2 + 1) == pytest.approx(expected_output[2])
-    
+
 
 def test_pbc_snake_feature_detection():
     """
