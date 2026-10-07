@@ -9,6 +9,7 @@ import pytest
 import numpy as np
 import xarray as xr
 
+import tobac
 import tobac.utils.internal.xarray_utils as xr_utils
 import tobac.testing as tbtest
 import datetime
@@ -230,3 +231,15 @@ def test_add_coordinates_to_features_interpolate_along_other_dims(
         assert coord in resulting_df
         if coord != "time":
             assert np.all(resulting_df[coord].values == expected_vals[coord])
+
+
+def test_pbc_coordinate_extrapolation():
+    data = tbtest.make_sample_data_3D_1blob(data_type="xarray").roll(y=25, x=50)
+    features = tobac.feature_detection_multithreshold(
+        data, 1000, threshold=5, position_threshold="weighted_abs", PBC_flag="both"
+    )
+
+    assert not np.any(features.x.isna())
+    assert not np.any(features.y.isna())
+    assert not np.any(features.latitude.isna())
+    assert not np.any(features.longitude.isna())
