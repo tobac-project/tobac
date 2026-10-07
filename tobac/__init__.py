@@ -21,6 +21,14 @@ from .centerofgravity import (
     calculate_cog_untracked,
     calculate_cog_domain,
 )
+from .eroded_contiguity import (
+    track_using_contiguity,
+    apply_periodic_boundary,
+    track_using_eroded_contiguity,
+    erode_mask,
+    calculate_object_topography,
+    calculate_mask_topography,
+)
 from .plotting import (
     plot_tracks_mask_field,
     plot_tracks_mask_field_loop,
