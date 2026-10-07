@@ -120,7 +120,8 @@ def test_feature_detection_multithreshold_timestep(
 
 
 @pytest.mark.parametrize(
-    "position_threshold", [("center"), ("extreme"), ("weighted_diff"), ("weighted_abs")]
+    "position_threshold",
+    [("center"), ("extreme"), ("weighted_diff"), ("weighted_abs"), ("error")],
 )
 def test_feature_detection_position(position_threshold):
     """
@@ -139,15 +140,33 @@ def test_feature_detection_position(position_threshold):
 
     test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type="iris")
 
-    fd_output = feat_detect.feature_detection_multithreshold_timestep(
-        test_data_iris,
-        0,
-        threshold=test_threshs,
-        n_min_threshold=test_min_num,
-        position_threshold=position_threshold,
-    )
+    if position_threshold == "error":
+        with pytest.raises(ValueError):
+            feat_detect.feature_detection_multithreshold_timestep(
+                test_data_iris,
+                0,
+                threshold=test_threshs,
+                n_min_threshold=test_min_num,
+                position_threshold=position_threshold,
+            )
 
-    pass
+    else:
+        fd_output = feat_detect.feature_detection_multithreshold_timestep(
+            test_data_iris,
+            0,
+            threshold=test_threshs,
+            n_min_threshold=test_min_num,
+            position_threshold=position_threshold,
+        )
+
+        fd_output_minima = feat_detect.feature_detection_multithreshold_timestep(
+            -test_data_iris,
+            0,
+            threshold=test_threshs,
+            n_min_threshold=test_min_num,
+            position_threshold=position_threshold,
+            target="minimum",
+        )
 
 
 @pytest.mark.parametrize(
@@ -775,8 +794,8 @@ def test_feature_detection_threshold_pbc(
         PBC_flag=PBC_flag,
     )
     assert len(fd_output_df) == 1
-    assert fd_output_df["hdim_1"].values[0] == expected_center[0]
-    assert fd_output_df["hdim_2"].values[0] == expected_center[1]
+    assert np.isclose(fd_output_df["hdim_1"].values[0], expected_center[0])
+    assert np.isclose(fd_output_df["hdim_2"].values[0], expected_center[1])
 
 
 def test_feature_detection_coords():
@@ -1144,6 +1163,106 @@ def test_strict_thresholding():
     assert features_demo.iloc[0]["hdim_2"] == pytest.approx(49.5)
 
 
+def test_feature_position():
+    """Test feature position for different position methods with 3D data"""
+
+    test_data = np.arange(24).reshape((2, 3, 4))
+    test_data = np.pad(test_data, 1)
+
+    _, max_h1, max_h2 = test_data.shape
+    max_h1 -= 1
+    max_h2 -= 1
+
+    vdim_inds, hdim1_inds, hdim2_inds = np.where(test_data > 0)
+
+    # center position
+    expected_output = (np.mean(vdim_inds), np.mean(hdim1_inds), np.mean(hdim2_inds))
+
+    feat_pos_output = feat_detect.feature_position(
+        hdim1_inds,
+        hdim2_inds,
+        vdim_indices=vdim_inds,
+        hdim1_max=max_h1,
+        hdim2_max=max_h2,
+        position_threshold="center",
+    )
+
+    assert np.all(np.isclose(feat_pos_output, expected_output))
+
+    # extreme position
+    expected_output = np.unravel_index(np.argmax(test_data), test_data.shape)
+
+    feat_pos_output = feat_detect.feature_position(
+        hdim1_inds,
+        hdim2_inds,
+        vdim_indices=vdim_inds,
+        hdim1_max=max_h1,
+        hdim2_max=max_h2,
+        position_threshold="extreme",
+        track_data=test_data,
+        target="maximum",
+    )
+
+    assert np.all(np.isclose(feat_pos_output, expected_output))
+
+    # weighted_abs position
+    weights = test_data[test_data > 0]
+    expected_output = (
+        np.average(vdim_inds, weights=weights),
+        np.average(hdim1_inds, weights=weights),
+        np.average(hdim2_inds, weights=weights),
+    )
+
+    feat_pos_output = feat_detect.feature_position(
+        hdim1_inds,
+        hdim2_inds,
+        vdim_indices=vdim_inds,
+        hdim1_max=max_h1,
+        hdim2_max=max_h2,
+        position_threshold="weighted_abs",
+        track_data=test_data,
+        target="maximum",
+    )
+
+    assert np.all(np.isclose(feat_pos_output, expected_output))
+
+    # weighted_diff position
+    weights = test_data[test_data > 0] - 1
+    expected_output = (
+        np.average(vdim_inds, weights=weights),
+        np.average(hdim1_inds, weights=weights),
+        np.average(hdim2_inds, weights=weights),
+    )
+
+    feat_pos_output = feat_detect.feature_position(
+        hdim1_inds,
+        hdim2_inds,
+        vdim_indices=vdim_inds,
+        hdim1_max=max_h1,
+        hdim2_max=max_h2,
+        position_threshold="weighted_diff",
+        track_data=test_data,
+        target="maximum",
+        threshold_i=1,
+    )
+
+    assert np.all(np.isclose(feat_pos_output, expected_output))
+
+    # test invalid input for position_threshold
+    with pytest.raises(ValueError):
+        feat_pos_output = feat_detect.feature_position(
+            hdim1_inds,
+            hdim2_inds,
+            vdim_indices=vdim_inds,
+            hdim1_max=max_h1,
+            hdim2_max=max_h2,
+            position_threshold="invalid_option",
+            track_data=test_data,
+            target="maximum",
+            threshold_i=1,
+        )
+
+
 @pytest.mark.parametrize(
     "h1_indices, h2_indices, max_h1, max_h2, PBC_flag, position_threshold, expected_output",
     (
@@ -1172,7 +1291,6 @@ def test_feature_position_pbc(
     """
 
     in_data = np.zeros((max_h1 + 1, max_h2 + 1))
-    region = (0, 0, max_h1 + 1, max_h2 + 1)
 
     feat_pos_output = feat_detect.feature_position(
         h1_indices,
@@ -1182,9 +1300,73 @@ def test_feature_position_pbc(
         PBC_flag=PBC_flag,
         position_threshold=position_threshold,
         track_data=in_data,
-        region_bbox=region,
     )
-    assert feat_pos_output == expected_output
+    assert np.all(np.isclose(feat_pos_output, expected_output))
+
+
+@pytest.mark.parametrize(
+    "v_indices, h1_indices, h2_indices, max_v, max_h1, max_h2, PBC_flag, position_threshold, expected_output",
+    (
+        ([1], [1], [1], 10, 10, 10, "both", "center", (1, 1, 1)),
+        ([1, 1], [1, 2], [1, 2], 10, 10, 10, "both", "center", (1, 1.5, 1.5)),
+        ([1, 1], [0, 1], [1, 2], 10, 10, 10, "both", "center", (1, 0.5, 1.5)),
+        ([1, 1], [0, 10], [1, 1], 10, 10, 10, "hdim_1", "center", (1, 10.5, 1)),
+        ([1, 1], [1, 1], [0, 10], 10, 10, 10, "hdim_2", "center", (1, 1, 10.5)),
+        ([1, 1], [0, 10], [1, 1], 10, 10, 10, "both", "center", (1, 10.5, 1)),
+        ([1, 1], [1, 1], [0, 10], 10, 10, 10, "both", "center", (1, 1, 10.5)),
+        ([1, 1], [0, 10], [0, 10], 10, 10, 10, "both", "center", (1, 10.5, 10.5)),
+        (
+            [1, 1],
+            [0, 1, 9, 10],
+            [0, 0, 10, 10],
+            10,
+            10,
+            10,
+            "both",
+            "center",
+            (1, 10.5, 10.5),
+        ),
+        (
+            [1, 9],
+            [1, 2],
+            [1, 2],
+            10,
+            10,
+            10,
+            "both",
+            "center",
+            (5, 1.5, 1.5),
+        ),  # test that vdim is not treated as periodic
+    ),
+)
+def test_feature_position_pbc_3d(
+    v_indices,
+    h1_indices,
+    h2_indices,
+    max_v,
+    max_h1,
+    max_h2,
+    PBC_flag,
+    position_threshold,
+    expected_output,
+):
+    """Tests to make sure that tobac.feature_detection.feature_position
+    works properly with periodic boundaries.
+    """
+
+    in_data = np.zeros((max_v + 1, max_h1 + 1, max_h2 + 1))
+
+    feat_pos_output = feat_detect.feature_position(
+        h1_indices,
+        h2_indices,
+        vdim_indices=v_indices,
+        hdim1_max=max_h1,
+        hdim2_max=max_h2,
+        PBC_flag=PBC_flag,
+        position_threshold=position_threshold,
+        track_data=in_data,
+    )
+    assert np.all(np.isclose(feat_pos_output, expected_output))
 
 
 def test_pbc_snake_feature_detection():
@@ -1247,8 +1429,8 @@ def test_banded_feature():
         PBC_flag="hdim_2",
     )
     assert len(fd_output) == 1
-    assert fd_output.iloc[0]["hdim_1"] == 20.5
-    assert fd_output.iloc[0]["hdim_2"] == 24.5
+    assert fd_output.iloc[0]["hdim_1"] == pytest.approx(20.5)
+    assert fd_output.iloc[0]["hdim_2"] == pytest.approx(24.5)
 
     test_data_iris = tbtest.make_dataset_from_arr(test_arr.T, data_type="iris")
     fd_output = feat_detect.feature_detection_multithreshold_timestep(
@@ -1261,8 +1443,8 @@ def test_banded_feature():
         PBC_flag="hdim_1",
     )
     assert len(fd_output) == 1
-    assert fd_output.iloc[0]["hdim_2"] == 20.5
-    assert fd_output.iloc[0]["hdim_1"] == 24.5
+    assert fd_output.iloc[0]["hdim_2"] == pytest.approx(20.5)
+    assert fd_output.iloc[0]["hdim_1"] == pytest.approx(24.5)
 
     # Test different options for position_threshold
     test_data_iris = tbtest.make_dataset_from_arr(test_arr, data_type="iris")

@@ -776,7 +776,7 @@ def segmentation_timestep(
                 )
 
             # Get features that are needed for the buddy box
-            buddy_features = deepcopy(features_in.iloc[feat_inds])
+            buddy_features = features_in.iloc[feat_inds].copy()
 
             # create arrays to contain points of all buddies
             # and their transpositions/transformations
@@ -824,15 +824,15 @@ def segmentation_timestep(
                 )
 
                 # edit value in buddy_features dataframe
-                buddy_features.hdim_1.values[buddy_looper] = (
-                    pbc_utils.transfm_pbc_point(
-                        float(buddy_feat.hdim_1), hdim1_min, hdim1_max
-                    )
+                buddy_features.iloc[
+                    buddy_looper, buddy_features.columns.get_loc("hdim_1")
+                ] = pbc_utils.transfm_pbc_point(
+                    float(buddy_feat.hdim_1), hdim1_min, hdim1_max
                 )
-                buddy_features.hdim_2.values[buddy_looper] = (
-                    pbc_utils.transfm_pbc_point(
-                        float(buddy_feat.hdim_2), hdim2_min, hdim2_max
-                    )
+                buddy_features.iloc[
+                    buddy_looper, buddy_features.columns.get_loc("hdim_2")
+                ] = pbc_utils.transfm_pbc_point(
+                    float(buddy_feat.hdim_2), hdim2_min, hdim2_max
                 )
 
                 buddy_looper = buddy_looper + 1
@@ -903,16 +903,16 @@ def segmentation_timestep(
             if "vdim" not in buddy_features:
                 buddy_features["vdim"] = np.zeros(len(buddy_features), dtype=int)
             for buddy_looper in range(0, len(buddy_features)):
-                buddy_features.vdim.values[buddy_looper] = (
-                    buddy_features.vdim.values[buddy_looper] - bbox_zstart
-                )
+                buddy_features.iloc[
+                    buddy_looper, buddy_features.columns.get_loc("vdim")
+                ] = (buddy_features.vdim.values[buddy_looper] - bbox_zstart)
 
-                buddy_features.hdim_1.values[buddy_looper] = (
-                    buddy_features.hdim_1.values[buddy_looper] - bbox_ystart
-                )
-                buddy_features.hdim_2.values[buddy_looper] = (
-                    buddy_features.hdim_2.values[buddy_looper] - bbox_xstart
-                )
+                buddy_features.iloc[
+                    buddy_looper, buddy_features.columns.get_loc("hdim_1")
+                ] = (buddy_features.hdim_1.values[buddy_looper] - bbox_ystart)
+                buddy_features.iloc[
+                    buddy_looper, buddy_features.columns.get_loc("hdim_2")
+                ] = (buddy_features.hdim_2.values[buddy_looper] - bbox_xstart)
 
             # Create dask array from input data:
             buddy_data = buddy_rgn
