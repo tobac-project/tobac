@@ -232,6 +232,14 @@ def test_family_id_data_features_unlinked():
         families_fd["feature_family_id"].values == -1
     ), f'families: Expected all families to be -1, but got {np.unique(families_fd["feature_family_id"].values)}.'
 
+    # a feature on a background point must not keep the background in the grid
+    _, _, family_grid = tb_fam.identify_feature_families_from_data(
+        fd_output, test_data_xr, threshold=1.5, return_grid=True
+    )
+    assert np.all(
+        family_grid.values == 0
+    ), f"grid: Expected all background (0), but got {np.unique(family_grid.values)}"
+
     families_fd, stats_fd = tb_fam.identify_feature_families_from_data(
         fd_output, test_data_xr, threshold=1.5, unlinked_family_id=None
     )
@@ -241,3 +249,37 @@ def test_family_id_data_features_unlinked():
     assert (
         len(stats_fd) == 0
     ), f"family stats: Expected 0 families, but got {len(fd_output)}"
+
+
+def test_family_id_data_numbering_multi_time():
+    """
+    tests identify_feature_families_from_data
+    Ensures that family IDs at later times are numbered from the families at
+    earlier times, not from the raw data values at times not yet processed.
+    """
+
+    test_dset_size = (2, 100, 100)
+    test_data = np.zeros(test_dset_size)
+    for i in range(test_data.shape[0]):
+        test_data[i] = tbtest.make_feature_blob(
+            test_data[i], 50, 50, h1_size=10, h2_size=10, amplitude=100
+        )
+    test_data_xr = tbtest.make_dataset_from_arr(
+        test_data, data_type="xarray", time_dim_num=0
+    )
+
+    fd_output = feat_detect.feature_detection_multithreshold(
+        test_data_xr, dxy=100, threshold=[10], n_min_threshold=1
+    )
+    assert (
+        len(fd_output) == test_data.shape[0]
+    ), f"Expected {test_data.shape[0]} feature(s), but got {len(fd_output)}"
+
+    families_fd, stats_fd, family_grid = tb_fam.identify_feature_families_from_data(
+        fd_output, test_data_xr, threshold=10, return_grid=True
+    )
+    assert np.all(
+        families_fd.sort_values("frame")["feature_family_id"].values == [1, 2]
+    ), f'families: Expected [1, 2], but got {families_fd["feature_family_id"].values}'
+    assert np.all(np.unique(family_grid.values[0]) == [0, 1])
+    assert np.all(np.unique(family_grid.values[1]) == [0, 2])

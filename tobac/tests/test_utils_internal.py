@@ -183,3 +183,82 @@ def test_make_empty_features_dataframe_3d_schema_and_dtypes():
     assert ptypes.is_float_dtype(df["x"].dtype)
     assert ptypes.is_float_dtype(df["latitude"].dtype)
     assert ptypes.is_float_dtype(df["longitude"].dtype)
+
+
+def _brute_force_pbc_labels(mask, PBC_flag, connectivity):
+    """Label a 2D mask pixel by pixel, linking points across periodic walls in the
+    same row/column, and opposite corners when doubly periodic."""
+    import scipy.sparse
+    import scipy.sparse.csgraph
+    import skimage.measure
+
+    in_domain = skimage.measure.label(mask, connectivity=connectivity)
+    ny, nx = mask.shape
+    idx = np.arange(ny * nx).reshape(ny, nx)
+    links = [(idx[mask], idx[mask])]
+    for label in np.unique(in_domain[in_domain > 0]):
+        points = idx[in_domain == label]
+        links.append((points, np.full_like(points, points[0])))
+    if PBC_flag in ("hdim_1", "both"):
+        links.append((idx[0, :], idx[-1, :]))
+    if PBC_flag in ("hdim_2", "both"):
+        links.append((idx[:, 0], idx[:, -1]))
+    if PBC_flag == "both":
+        links.append((idx[[0, 0], [0, -1]], idx[[-1, -1], [-1, 0]]))
+    side_1 = np.concatenate([link[0] for link in links])
+    side_2 = np.concatenate([link[1] for link in links])
+    both_set = mask.ravel()[side_1] & mask.ravel()[side_2]
+    graph = scipy.sparse.coo_matrix(
+        (np.ones(both_set.sum()), (side_1[both_set], side_2[both_set])),
+        shape=(ny * nx, ny * nx),
+    )
+    _, component = scipy.sparse.csgraph.connected_components(graph, directed=False)
+    return np.where(mask, component.reshape(ny, nx) + 1, 0)
+
+
+@pytest.mark.parametrize("PBC_flag", ["none", "hdim_1", "hdim_2", "both"])
+@pytest.mark.parametrize("connectivity", [1, 2])
+@pytest.mark.parametrize("seed", range(5))
+def test_label_with_pbcs_matches_brute_force(PBC_flag, connectivity, seed):
+    """
+    Tests that label_with_pbcs merges labels across periodic boundaries, including
+    chains of labels that are only connected through several boundary crossings.
+    """
+    from tobac.utils.internal.label_functions import label_with_pbcs
+
+    rng = np.random.default_rng(seed)
+    mask = rng.random((30, 40)) < 0.45
+
+    labels, num_labels = label_with_pbcs(
+        mask, PBC_flag=PBC_flag, connectivity=connectivity
+    )
+    labels = labels[0]
+    expected = _brute_force_pbc_labels(mask, PBC_flag, connectivity)
+
+    assert num_labels == len(np.unique(expected)) - 1
+    assert np.array_equal(labels > 0, mask)
+    # same partition of points into labels
+    pairs = np.unique(np.stack([labels[mask], expected[mask]]), axis=1)
+    assert len(np.unique(pairs[0])) == len(np.unique(pairs[1])) == pairs.shape[1]
+
+
+def test_label_with_pbcs_chain():
+    """
+    Tests that labels linked through a chain of boundary crossings are merged, and
+    that the merged label is the lowest label in the chain.
+    """
+    from tobac.utils.internal.label_functions import label_with_pbcs
+
+    mask = np.zeros((10, 10), dtype=bool)
+    # two separate areas on the west wall, joined by one area on the east wall
+    mask[1:3, 0:2] = True
+    mask[5:7, 0:2] = True
+    mask[1:7, 8:10] = True
+    # an area that doesn't touch any wall
+    mask[4, 4] = True
+
+    labels, num_labels = label_with_pbcs(mask, PBC_flag="hdim_2", connectivity=1)
+    labels = labels[0]
+    assert num_labels == 2
+    assert np.all(labels[mask & (np.arange(10) != 4)[np.newaxis, :]] == 1)
+    assert labels[4, 4] not in (0, 1)
