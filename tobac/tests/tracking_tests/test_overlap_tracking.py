@@ -1011,3 +1011,49 @@ class TestLinkingOverlap:
             velocity_method="nearest",
         )
         assert np.unique(tracks.cell).tolist() == [1, 2, 3]
+
+    def test_crossing_blobs_memory(self):
+        """Test the case of two crossing blobs, with memory and predictive tracking"""
+        data = tobac.testing.make_sample_data_3D_2crossing_blobs_xarray()
+        dxy, dt = 1000, 120
+        features = tobac.feature_detection_multithreshold(
+            data, dxy, threshold=8, position_threshold="weighted_abs"
+        )
+        labels, features = tobac.segmentation.watershed_segmentation.segmentation(
+            features,
+            data,
+            dxy,
+            threshold=8,
+        )
+
+        tracks_no_memory = tobac.tracking.linking_overlap(
+            features,
+            labels,
+        )
+        # Should produce 3 cells as one stops tracking when they cross
+        assert np.unique(tracks_no_memory.cell).tolist() == [1, 2, 3]
+        assert tracks_no_memory.cell.iloc[0] == 1
+        assert tracks_no_memory.cell.iloc[1] == 2
+        assert tracks_no_memory.cell.iloc[-1] == 3
+
+        tracks_memory = tobac.tracking.linking_overlap(features, labels, memory=1)
+        # With memory, but no predictive tracking, both blobs should be tracked continuously but not cross
+        assert np.unique(tracks_memory.cell).tolist() == [1, 2]
+        assert tracks_memory.cell.iloc[0] == 1
+        assert tracks_memory.cell.iloc[1] == 2
+        assert tracks_memory.cell.iloc[-2] == 1
+        assert tracks_memory.cell.iloc[-1] == 2
+
+        tracks_memory_predictive = tobac.tracking.linking_overlap(
+            features,
+            labels,
+            memory=1,
+            translate_method="predict",
+            velocity_method="nearest",
+        )
+        # With memory and predictive tracking both blobs should be tracked continuously and cross over
+        assert np.unique(tracks_memory_predictive.cell).tolist() == [1, 2]
+        assert tracks_memory_predictive.cell.iloc[0] == 1
+        assert tracks_memory_predictive.cell.iloc[1] == 2
+        assert tracks_memory_predictive.cell.iloc[-2] == 2
+        assert tracks_memory_predictive.cell.iloc[-1] == 1
