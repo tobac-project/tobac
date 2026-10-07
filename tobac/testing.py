@@ -6,6 +6,7 @@ from xarray import DataArray
 import pandas as pd
 from collections import Counter
 from .utils import periodic_boundaries as pbc_utils
+from typing import Union, Optional, Literal, Iterable
 
 
 def make_simple_sample_data_2D(data_type="iris"):
@@ -435,6 +436,121 @@ def make_sample_data_3D_1blob(data_type="iris", invert_xy=False):
         sample_data = DataArray.from_iris(sample_data)
 
     return sample_data
+
+
+def make_sample_data_3D_2crossing_blobs_xarray(invert_xy: bool = False):
+    """
+    Create a simple 3D xarray dataset with two Gaussian blobs crossing in x-y while evolving in z.
+
+    Grid:
+      - dx=dy=dz=1 km
+      - x: 0..99 km (100 points)
+      - y: 0..49 km (50 points)
+      - z: 0..49 km (50 points)
+    Time:
+      - every 2 minutes
+      - total length 50 minutes starting at 2000-01-01 12:00
+
+    Returns
+    -------
+    sample_data : xarray.DataArray
+        dims are ("time","z","y","x") if invert_xy=False, else ("time","z","x","y")
+        coords are in meters for x/y/z, time is datetime64.
+    """
+    t_0 = datetime.datetime(2000, 1, 1, 12, 0, 0)
+
+    x = np.arange(0, 100e3, 1000)  # 100 points
+    y = np.arange(0, 50e3, 1000)  # 50 points
+    z = np.arange(0, 50e3, 1000)  # 50 points
+
+    # output times (every 2 minutes)
+    t = np.array(
+        [np.datetime64(t_0 + i * datetime.timedelta(minutes=2)) for i in range(25)]
+    )
+
+    # define tracks on the SAME output times (no iris/time conversion needed)
+    # Blob 1: from (10km,10km,4km) moving up-right and up in z
+    x0_1, y0_1, z0_1 = 10e3, 10e3, 4e3
+    vx_1, vy_1, vz_1 = 30.0, 14.0, 16.0  # m/s
+
+    # Blob 2: from (90km,10km,46km) moving up-left and down in z -> crosses blob1
+    x0_2, y0_2, z0_2 = 90e3, 10e3, 46e3
+    vx_2, vy_2, vz_2 = -30.0, 14.0, -16.0  # m/s
+
+    # amplitudes
+    mag1, mag2 = 10.0, 10.0
+
+    # widths
+    sigma_xy = 5e3
+    sigma_z = 5e3
+
+    # precompute spatial mesh once
+    if not invert_xy:
+        zz, yy, xx = np.meshgrid(z, y, x, indexing="ij")  # (z,y,x)
+        data = np.zeros((t.shape[0], z.shape[0], y.shape[0], x.shape[0]), dtype=float)
+        dims = ("time", "z", "y", "x")
+    else:
+        zz, xx, yy = np.meshgrid(z, x, y, indexing="ij")  # (z,x,y)
+        data = np.zeros((t.shape[0], z.shape[0], x.shape[0], y.shape[0]), dtype=float)
+        dims = ("time", "z", "x", "y")
+
+    # fill
+    for i_t, t_i in enumerate(t):
+        # seconds since start
+        dt_s = float((t_i - np.datetime64(t_0)) / np.timedelta64(1, "s"))
+
+        x1 = x0_1 + vx_1 * dt_s
+        y1 = y0_1 + vy_1 * dt_s
+        z1 = z0_1 + vz_1 * dt_s
+
+        x2 = x0_2 + vx_2 * dt_s
+        y2 = y0_2 + vy_2 * dt_s
+        z2 = z0_2 + vz_2 * dt_s
+
+        blob1 = (
+            mag1
+            * np.exp(-np.power(xx - x1, 2.0) / (2 * sigma_xy**2))
+            * np.exp(-np.power(yy - y1, 2.0) / (2 * sigma_xy**2))
+            * np.exp(-np.power(zz - z1, 2.0) / (2 * sigma_z**2))
+        )
+
+        blob2 = (
+            mag2
+            * np.exp(-np.power(xx - x2, 2.0) / (2 * sigma_xy**2))
+            * np.exp(-np.power(yy - y2, 2.0) / (2 * sigma_xy**2))
+            * np.exp(-np.power(zz - z2, 2.0) / (2 * sigma_z**2))
+        )
+
+        # combine: max (like "crossing blobs" idealized case)
+        data[i_t] = np.maximum(blob1, blob2)
+
+    # coords dict depends on dims
+    if not invert_xy:
+        coords = {"time": t, "z": z, "y": y, "x": x}
+        # aux coords (2D) on (y,x) plane (pick z=0 slice)
+        lat2d = 24 + 1e-5 * xx[0]  # shape (y,x)
+        lon2d = 150 + 1e-5 * yy[0]  # shape (y,x)
+        aux_dims = ("y", "x")
+    else:
+        coords = {"time": t, "z": z, "x": x, "y": y}
+        # here xx[0] is shape (x,y) and yy[0] is shape (x,y)
+        lat2d = 24 + 1e-5 * xx[0]  # shape (x,y)
+        lon2d = 150 + 1e-5 * yy[0]  # shape (x,y)
+        aux_dims = ("x", "y")
+
+    da = DataArray(
+        data=data,
+        dims=dims,
+        coords=coords,
+        name="w",
+        attrs={"units": "m s-1"},
+    )
+
+    # add aux coords (2D)
+    da = da.assign_coords(latitude=(aux_dims, lat2d))
+    da = da.assign_coords(longitude=(aux_dims, lon2d))
+
+    return da
 
 
 def make_sample_data_3D_3blobs(data_type="iris", invert_xy=False):
@@ -949,37 +1065,42 @@ def get_single_pbc_coordinate(
 
 
 def generate_single_feature(
-    start_h1,
-    start_h2,
-    start_v=None,
-    spd_h1=1,
-    spd_h2=1,
-    spd_v=1,
-    min_h1=0,
-    max_h1=None,
-    min_h2=0,
-    max_h2=None,
-    num_frames=1,
-    dt=datetime.timedelta(minutes=5),
-    start_date=datetime.datetime(2022, 1, 1, 0),
-    PBC_flag="none",
-    frame_start=0,
-    feature_num=1,
-    feature_size=None,
-    threshold_val=None,
+    start_h1: Union[float, Iterable[float]],
+    start_h2: Union[float, Iterable[float]],
+    start_v: Optional[Union[float, Iterable[float]]] = None,
+    spd_h1: float = 1,
+    spd_h2: float = 1,
+    spd_v: float = 1,
+    min_h1: float = 0,
+    max_h1: Optional[float] = None,
+    min_h2: float = 0,
+    max_h2: Optional[float] = None,
+    num_frames: int = 1,
+    dt: datetime.timedelta = datetime.timedelta(minutes=5),
+    start_date: datetime.datetime = datetime.datetime(2022, 1, 1, 0),
+    PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
+    frame_start: int = 0,
+    feature_num: int = 1,
+    feature_size: Optional[int] = None,
+    threshold_val: Optional[float] = None,
 ):
     """Function to generate a dummy feature dataframe to test the tracking functionality
 
     Parameters
     ----------
-    start_h1: float
-        Starting point of the feature in hdim_1 space
+    start_h1: float or iterable of floats
+        Starting point of the feature in hdim_1 space if float
+        or all h1 points if iterable. If iterable is passed,
+        all other parameters are ignored.
 
-    start_h2: float
-        Starting point of the feature in hdim_2 space
+    start_h2: float or iterable of floats
+        Starting point of the feature in hdim_2 space if float
+        or all h2 points if iterable
 
     start_v: float, optional
-        Starting point of the feature in vdim space (if 3D). For 2D, set to None.
+        Starting point of the feature in vdim space (if 3D) if float
+        or all vertical points if iterable.
+        For 2D, set to None.
         Default is None
 
     spd_h1: float, optional
@@ -1048,23 +1169,57 @@ def generate_single_feature(
     if max_h1 is None or max_h2 is None:
         raise ValueError("Max coords must be specified.")
 
-    out_list_of_dicts = list()
-    curr_h1 = start_h1
-    curr_h2 = start_h2
-    curr_v = start_v
+    h1_list = []
+    h2_list = []
+    v_list = []
+
+    # check if start_h1, start_h2, and start_v are all arrays
+    if not np.isscalar(start_h1) and not np.isscalar(start_h2):
+        if start_v is not None and np.isscalar(start_h2):
+            raise ValueError(
+                "Must specify all start_h1, start_h2, and start_v as arrays."
+            )
+        h1_list = start_h1
+        h2_list = start_h2
+        if start_v is not None:
+            v_list = start_v
+    # we need to make the list of points.
+    else:
+        curr_h1 = start_h1
+        curr_h2 = start_h2
+        curr_v = start_v
+
+        for i in range(num_frames):
+            curr_h1, curr_h2 = get_single_pbc_coordinate(
+                min_h1, max_h1, min_h2, max_h2, curr_h1, curr_h2, PBC_flag
+            )
+
+            h1_list.append(curr_h1)
+            h2_list.append(curr_h2)
+            curr_h1 += spd_h1
+            curr_h2 += spd_h2
+
+            if start_v is not None:
+                v_list.append(curr_v)
+                curr_v += spd_v
+
+    out_list_of_dicts = []
     curr_dt = start_date
-    is_3D = not (start_v is None)
-    for i in range(num_frames):
+    for i in range(len(h1_list)):
+        if h1_list[i] < 0 or h2_list[i] < 0:
+            curr_dt += dt
+            continue
+        if len(v_list) > 0:
+            if v_list[i] < 0:
+                curr_dt += dt
+                continue
         curr_dict = dict()
-        curr_h1, curr_h2 = get_single_pbc_coordinate(
-            min_h1, max_h1, min_h2, max_h2, curr_h1, curr_h2, PBC_flag
-        )
-        curr_dict["hdim_1"] = curr_h1
-        curr_dict["hdim_2"] = curr_h2
+        curr_dict["hdim_1"] = h1_list[i]
+        curr_dict["hdim_2"] = h2_list[i]
         curr_dict["frame"] = frame_start + i
         curr_dict["idx"] = 0
-        if curr_v is not None:
-            curr_dict["vdim"] = curr_v
+        if len(v_list) > 0:
+            curr_dict["vdim"] = v_list[i]
             curr_v += spd_v
         curr_dict["time"] = curr_dt
         curr_dict["feature"] = feature_num + i
@@ -1072,12 +1227,41 @@ def generate_single_feature(
             curr_dict["num"] = feature_size
         if threshold_val is not None:
             curr_dict["threshold_value"] = threshold_val
-        curr_h1 += spd_h1
-        curr_h2 += spd_h2
         curr_dt += dt
         out_list_of_dicts.append(curr_dict)
 
     return pd.DataFrame.from_dict(out_list_of_dicts)
+
+
+def combine_single_features(
+    feat_list: list[pd.DataFrame], begin_feat_num: int = 1
+) -> pd.DataFrame:
+    """Combines multiple generate_single_feature outputs into one
+    coherent output
+
+    Parameters
+    ----------
+    feat_list
+
+    Returns
+    -------
+
+    """
+
+    time_col_name: str = "time"
+
+    comb_output = pd.concat(feat_list)
+
+    all_times = comb_output[time_col_name].unique()
+    all_times = sorted(all_times)
+    frame_nums = {str(np.datetime64(x, "ns")): i for i, x in enumerate(all_times)}
+    vec_frame_func = np.vectorize(lambda x: frame_nums[str(np.datetime64(x, "ns"))])
+    comb_output["frame"] = vec_frame_func(comb_output[time_col_name])
+    comb_output["idx"] = comb_output.groupby("frame").transform("cumcount")
+    comb_output = comb_output.sort_values(["frame", "idx"], axis=0)
+    feat_col = np.arange(begin_feat_num, begin_feat_num + len(comb_output))
+    comb_output["feature"] = feat_col
+    return comb_output
 
 
 def get_start_end_of_feat(center_point, size, axis_min, axis_max, is_pbc=False):
@@ -1177,3 +1361,38 @@ def lists_equal_without_order(a, b):
         if not any(Counter(l2) == check_counter for l2 in b):
             return False
     return True
+
+
+def check_tracking_identical(
+    a: pd.DataFrame, b: pd.DataFrame, cell_column: str = "cell"
+) -> bool:
+    """Checks that tracks between a and b are identical, allowing for the
+    cell values to differ as long as the same features are linked together.
+
+    Parameters
+    ----------
+    a: pd.DataFrame
+        first tracking dataframe
+    b: pd.DataFrame
+        second tracking dataframe
+    cell_column: str
+        Column name of the tracking ID (cell by default)
+
+    Returns
+    -------
+    bool
+        True if identical, false if not.
+
+    """
+
+    def cell_signatures(df):
+        return {
+            frozenset(
+                zip(group["frame"], group["hdim_1"], group["hdim_2"], group["feature"])
+            )
+            for _, group in df.groupby(cell_column)
+        }
+
+    orig_sigs = cell_signatures(a)
+    app_sigs = cell_signatures(b)
+    return np.all(orig_sigs == app_sigs)

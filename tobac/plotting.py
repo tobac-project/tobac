@@ -2018,7 +2018,7 @@ def plot_mask_cell_track_static_timeseries(
 
 
 def map_tracks(
-    track, axis_extent=None, figsize=None, axes=None, untracked_cell_value=-1
+    track, axis_extent=None, figsize=None, axes=None, untracked_cell_value=-1, color=""
 ):
     """Plot the trajectories of the cells on a map.
 
@@ -2044,6 +2044,10 @@ def map_tracks(
     untracked_cell_value : int or np.nan, optional
         Value of untracked cells in track['cell'].
         Default is -1.
+
+    color : str, optional
+        Color of all lines. Default is "", which MatPlotLib
+        defaults as the T10 color cycle.
 
     Returns
     -------
@@ -2072,7 +2076,7 @@ def map_tracks(
         if cell == untracked_cell_value:
             continue
         track_i = track[track["cell"] == cell]
-        axes.plot(track_i[lon_dim], track_i[lat_dim], "-")
+        axes.plot(track_i[lon_dim], track_i[lat_dim], color + "-")
         if axis_extent:
             axes.set_extent(axis_extent)
         axes = make_map(axes)
