@@ -29,3 +29,5 @@ ipywidgets
 trame
 trame-vtk
 trame-vuetify
+SimpleITK
+mahotas

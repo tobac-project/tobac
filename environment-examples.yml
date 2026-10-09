@@ -37,3 +37,4 @@ dependencies:
   - trame-vuetify
   - ipywidgets
   - vtk>=9.4.2
+  - SimpleITK

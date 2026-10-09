@@ -8,3 +8,5 @@ from .watershed_segmentation import (
     watershedding_2D,
     watershedding_3D,
 )
+
+from .geometric_subsegmentation import clustering as subsegmentation
