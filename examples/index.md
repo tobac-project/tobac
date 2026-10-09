@@ -24,6 +24,8 @@ tobac is provided with a set of Jupyter notebooks that show examples of the appl
 
    OLR from GOES-13 Satellite <./Example_OLR_Tracking_satellite/Example_OLR_Tracking_satellite>
    Combine Radar & Satellite <./Example_Track_on_Radar_Segment_on_Satellite/Example_Track_on_Radar_Segment_on_Satellite>
+  Append Tracks with Radar Data <./Example_Append_Tracking_Radar/Example_Append_Tracking_Radar>
+
 ```
 
 ## Examples of Using _tobac_ with Model Data
