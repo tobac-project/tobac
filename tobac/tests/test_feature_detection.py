@@ -120,6 +120,107 @@ def test_feature_detection_multithreshold_timestep(
 
 
 @pytest.mark.parametrize(
+    "z_dim_num",
+    [0, 1, 2],
+)
+def test_feature_detection_multithreshold_timestep_3d(z_dim_num):
+    """
+    Tests ```tobac.feature_detection.feature_detection_multithreshold_timestep``` for 3d data
+    """
+
+    # start by building a simple dataset with a single feature and seeing
+    # if we identify it
+
+    test_dset_size = (20, 40, 50)
+    test_hdim_1_pt = 15.0
+    test_hdim_2_pt = 20.0
+    test_vdim_pt = 8
+    test_hdim_1_sz = 5
+    test_hdim_2_sz = 5
+    test_vdim_sz = 5
+    test_amp = 2
+
+    test_data = np.zeros(test_dset_size)
+    test_data = tbtest.make_feature_blob(
+        test_data,
+        test_hdim_1_pt,
+        test_hdim_2_pt,
+        test_vdim_pt,
+        h1_size=test_hdim_1_sz,
+        h2_size=test_hdim_2_sz,
+        v_size=test_vdim_sz,
+        amplitude=test_amp,
+    )
+    if z_dim_num == 1:
+        test_data = test_data.transpose(1, 0, 2)
+    if z_dim_num == 2:
+        test_data = test_data.transpose(1, 2, 0)
+
+    test_data_xr = tbtest.make_dataset_from_arr(
+        test_data, z_dim_num=z_dim_num, data_type="xarray"
+    )
+
+    labels, features = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_xr,
+        0,
+        threshold=[1],
+        n_min_threshold=[1],
+        dxy=1,
+        vertical_axis=z_dim_num,
+        return_labels=True,
+    )
+
+    # Make sure we have only one feature
+    assert (
+        len(features.index) == 1
+    ), f"Expected 1 feature, but got {len(features.index)}"
+
+    # Check if labels are returned
+    assert isinstance(
+        labels, xr.DataArray
+    ), "Expected label fields to be a xarray.DataArray"
+
+    # Check if labels have the correct shape
+    assert labels.shape == (
+        test_data_xr.shape[0],
+        test_data_xr.shape[1],
+        test_data_xr.shape[2],
+    ), f"Expected labels shape to be {test_data_xr.shape}, but got {labels.shape}"
+
+    # Ensure labels have at least one non-zero entry
+    assert (labels > 0).any(), "No labels detected in the labels array"
+
+    # Optionally check for the threshold attribute
+    assert hasattr(labels, "threshold"), "Expected 'threshold' attribute in labels"
+    assert labels.attrs["threshold"] == [
+        1
+    ], f"Expected threshold to be {[1]}, but got {labels.attrs['threshold']}"
+
+    # All non-zero labels must match the feature IDs in the returned dataframe
+    nonzero_labels = labels.values[labels.values > 0]
+    unique_label_value = np.unique(nonzero_labels)[0]
+    feature_label_value = features["idx"].iloc[0]
+
+    assert (
+        unique_label_value == feature_label_value
+    ), f"Label field contains {unique_label_value}, but features dataframe idx is {feature_label_value}"
+
+    # All labeled points are <= the threshold value in the input field
+    mask = labels.values > 0
+    labeled_values = test_data_xr.values[mask]
+    feature_threshold = features["threshold_value"].iloc[0]
+    print(labeled_values)
+    assert np.all(labeled_values > feature_threshold), (
+        f"Found labeled pixels below threshold {feature_threshold}. "
+        f"Minimum labeled value is {labeled_values.min()}"
+    )
+    assert np.all(test_data_xr.values[~mask] <= feature_threshold), (
+        f"Found unlabeled pixels above threshold {feature_threshold}. "
+        f"Maximum unlabeled value is {test_data_xr.values[~mask].max()}"
+    )
+
+
+@pytest.mark.parametrize(
     "position_threshold", [("center"), ("extreme"), ("weighted_diff"), ("weighted_abs")]
 )
 def test_feature_detection_position(position_threshold):

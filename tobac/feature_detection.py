@@ -823,8 +823,8 @@ def feature_detection_threshold(
             """
             if is_3D:
                 region_i = np.ravel_multi_index(
-                    (hdim1_indices, hdim2_indices, vdim_indices),
-                    (y_max + 1, x_max + 1, z_max + 1),
+                    (vdim_indices, hdim1_indices, hdim2_indices),
+                    (z_max + 1, y_max + 1, x_max + 1),
                 )
             else:
                 region_i = np.ravel_multi_index(
@@ -1156,12 +1156,23 @@ def feature_detection_multithreshold_timestep(
 
     if return_labels or statistic:
         # reconstruct the labeled regions based on the regions dict
-        labels = np.zeros(track_data.shape)
-        labels = labels.astype(int)
+        labels = np.zeros(track_data.shape, dtype=int)
+        # We need to transpose the input data
+        if vertical_axis is not None:
+            if vertical_axis == 1:
+                labels = np.transpose(labels, axes=(1, 0, 2)).copy()
+            elif vertical_axis == 2:
+                labels = np.transpose(labels, axes=(2, 0, 1)).copy()
         for key in regions_old.keys():
             labels.ravel()[regions_old[key]] = key
             # apply function to get statistics based on labeled regions and functions provided by the user
             # the feature dataframe is updated by appending a column for each metric
+        # Now revert the transpose
+        if vertical_axis is not None:
+            if vertical_axis == 1:
+                labels = np.transpose(labels, axes=(1, 0, 2))
+            elif vertical_axis == 2:
+                labels = np.transpose(labels, axes=(1, 2, 0))
 
     if statistic:
         # select which data to use according to statistics_unsmoothed option
