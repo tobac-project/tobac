@@ -81,6 +81,20 @@ examples = [
     "easygems",
 ]
 
+# required to build the documentation
+docs = [
+    "sphinx",
+    "nbsphinx",
+    "ipykernel",
+    "sphinx-gallery",
+    "pydata-sphinx-theme",
+    "myst-parser",
+    "sphinx-design",
+    "sphinx-toolbox",
+    "linkify-it-py",
+    "sphinxcontrib-mermaid",
+]
+
 # All extras combined
 all = [
     "pre-commit",
@@ -101,6 +115,16 @@ all = [
     "intake-xarray==0.7.0",
     "healpix",
     "easygems==0.1.2",
+    "sphinx<8.2",
+    "nbsphinx",
+    "ipykernel",
+    "sphinx-gallery",
+    "pydata-sphinx-theme",
+    "myst-parser",
+    "sphinx-design",
+    "sphinx-toolbox",
+    "linkify-it-py",
+    "sphinxcontrib-mermaid",
 ]
 
 
