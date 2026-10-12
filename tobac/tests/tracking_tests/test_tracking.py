@@ -739,8 +739,34 @@ def test_linking_missing_frame():
     )
     assert np.all(tracks_random.cell == -1)
 
+    # random tracking with memory, linked:
+    tracks_random_memory = tobac.linking_trackpy(
+        features,
+        None,
+        300,
+        1000,
+        d_max=1000,
+        stubs=2,
+        method_linking="random",
+        memory=1,
+    )
+    assert np.all(tracks_random_memory.cell == 1)
+
     # predictive tracking, cells are linked despite time gap because trackpy interprets "frame" as the time gap between subsequent observations, and is unaware of the missing frame
     tracks_predict = tobac.linking_trackpy(
         features, None, 300, 1000, d_max=1000, stubs=2, method_linking="predict"
     )
     assert np.all(tracks_predict.cell == -1)
+
+    # predictive tracking with memory, should still be linked
+    tracks_predict_memory = tobac.linking_trackpy(
+        features,
+        None,
+        300,
+        1000,
+        d_max=1000,
+        stubs=2,
+        method_linking="predict",
+        memory=1,
+    )
+    assert np.all(tracks_predict_memory.cell == 1)
