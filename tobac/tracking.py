@@ -407,11 +407,9 @@ def linking_trackpy(
 
         trajectories_unfiltered = []
         # generate list of features as input for df_link_iter to avoid bug in df_link
-        print(memory + 1)
-        for i, features_linking_list in enumerate(
-            link_df_generator(features_linking, memory=memory + 1)
+        for features_linking_list in link_df_generator(
+            features_linking, memory=memory + 1
         ):
-            print(i)
             pred = tp.predict.NearestVelocityPredict(span=1)
             trajectories_unfiltered_step = pd.concat(
                 pred.link_df_iter(
