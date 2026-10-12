@@ -38,6 +38,36 @@ from typing import Optional
 import sklearn
 
 
+def link_df_generator(features: pd.DataFrame, memory: int = 0):
+    """Generator that yields the features dataframe in chunks of contiguous frames, providing empty dataframes if no features are present at a given frame.
+
+    Parameters
+    ----------
+    features : pandas.DataFrame
+        Detected features to be linked.
+
+    Yields
+    ------
+    pandas.DataFrame
+        Dataframe containing features for the current frame, or an empty dataframe if no features are present for that frame.
+    """
+    features_groupby = features.groupby("frame", sort=True)
+    features_list = []
+    previous_frame = features.frame.min()
+    for frame, features_frame in features_groupby:
+        if (frame - previous_frame) > memory:
+            features_list_old = features_list
+            features_list = []
+            features_list.append(features_frame)
+            previous_frame = frame
+            yield features_list_old
+        else:
+            features_list.append(features_frame)
+            previous_frame = frame
+    if len(features_list):
+        yield features_list
+
+
 def linking_trackpy(
     features,
     field_in,
@@ -375,27 +405,34 @@ def linking_trackpy(
             columns={"hdim_1": "y", "hdim_2": "x", "vdim_adj": "z"}, inplace=True
         )
 
+        trajectories_unfiltered = []
         # generate list of features as input for df_link_iter to avoid bug in df_link
-        features_linking_list = [
-            frame for i, frame in features_linking.groupby("frame", sort=True)
-        ]
+        print(memory + 1)
+        for i, features_linking_list in enumerate(
+            link_df_generator(features_linking, memory=memory + 1)
+        ):
+            print(i)
+            pred = tp.predict.NearestVelocityPredict(span=1)
+            trajectories_unfiltered_step = pd.concat(
+                pred.link_df_iter(
+                    features_linking_list,
+                    search_range=search_range,
+                    memory=memory,
+                    # pos_columns=["hdim_1", "hdim_2"], # not working atm
+                    t_column="frame",
+                    neighbor_strategy=neighbor_strategy,
+                    link_strategy="auto",
+                    adaptive_step=adaptive_step,
+                    adaptive_stop=adaptive_stop,
+                    dist_func=dist_func,
+                )
+            )
+            if len(trajectories_unfiltered):
+                trajectories_unfiltered_step["particle"] += (
+                    trajectories_unfiltered[-1].particle.max() + 1
+                )
 
-        pred = tp.predict.NearestVelocityPredict(span=1)
-        trajectories_unfiltered = pred.link_df_iter(
-            features_linking_list,
-            search_range=search_range,
-            memory=memory,
-            # pos_columns=["hdim_1", "hdim_2"], # not working atm
-            t_column="frame",
-            neighbor_strategy=neighbor_strategy,
-            link_strategy="auto",
-            adaptive_step=adaptive_step,
-            adaptive_stop=adaptive_stop,
-            dist_func=dist_func,
-            #                                 copy_features=False, diagnostics=False,
-            #                                 hash_size=None, box_size=None, verify_integrity=True,
-            #                                 retain_index=False
-        )
+            trajectories_unfiltered.append(trajectories_unfiltered_step)
         # recreate a single dataframe from the list
 
         trajectories_unfiltered = pd.concat(trajectories_unfiltered)
