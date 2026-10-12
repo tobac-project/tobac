@@ -46,6 +46,10 @@ def link_df_generator(features: pd.DataFrame, memory: int = 0):
     features : pandas.DataFrame
         Detected features to be linked.
 
+    memory : int, optional
+        Number of output timesteps features allowed to vanish for to
+        be still considered tracked. Default is 0.
+
     Yields
     ------
     pandas.DataFrame
@@ -55,7 +59,7 @@ def link_df_generator(features: pd.DataFrame, memory: int = 0):
     features_list = []
     previous_frame = features.frame.min()
     for frame, features_frame in features_groupby:
-        if (frame - previous_frame) > memory:
+        if (frame - previous_frame - 1) > memory:
             features_list_old = features_list
             features_list = []
             features_list.append(features_frame)
@@ -407,9 +411,7 @@ def linking_trackpy(
 
         trajectories_unfiltered = []
         # generate list of features as input for df_link_iter to avoid bug in df_link
-        for features_linking_list in link_df_generator(
-            features_linking, memory=memory + 1
-        ):
+        for features_linking_list in link_df_generator(features_linking, memory=memory):
             pred = tp.predict.NearestVelocityPredict(span=1)
             trajectories_unfiltered_step = pd.concat(
                 pred.link_df_iter(
