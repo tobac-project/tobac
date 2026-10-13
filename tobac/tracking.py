@@ -129,6 +129,7 @@ def linking_trackpy(
     memory : int, optional
         Number of output timesteps features allowed to vanish for to
         be still considered tracked. Default is 0.
+
         .. warning :: This parameter should be used with caution, as it
                      can lead to erroneous trajectory linking,
                      espacially for data with low time resolution.
@@ -526,6 +527,7 @@ def linking_trackpy_latlon(
     memory : int, optional
         Number of output timesteps features allowed to vanish for to
         be still considered tracked. Default is 0.
+
         .. warning :: This parameter should be used with caution, as it
                      can lead to erroneous trajectory linking,
                      especially for data with low time resolution.
