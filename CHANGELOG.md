@@ -7,7 +7,7 @@
 - Added 2D latitude/longitude based tracking with `tobac.tracking.linking_trackpy_latlon`. Rather than relying on `dxy`, `hdim_1`, and `hdim_2`, we calculate distances using latitude and longitude. This runs 5-10 times faster than an equivalent approach with periodic boundaries for global data. A new documentation page and example notebook have been added for this functionality [#542](https://github.com/tobac-project/tobac/pull/542)
 - Added functions to convert segmentation feature masks to cell masks and vice versa (`convert_feature_mask_to_cells` and `convert_cell_mask_to_features`), and added optional cell mask output from segmentation using the `return_cells` parameter, when running segmentation after tracking [#512](https://github.com/tobac-project/tobac/pull/512)
 - Added a `color` parameter to `tobac.plotting.map_tracks` to set the color of all track lines (from new contributor @ecaldon) [#564](https://github.com/tobac-project/tobac/pull/564)
-- Added a `suppress_warnings` option to segmentation to suppress the `UserWarning` raised when a 1xMxN array is given [#582](https://github.com/tobac-project/tobac/pull/582)
+- Added a `suppress_warnings` option to segmentation to suppress the `UserWarning` raised when a 1xMxN array is given (from new contributor @EliusSolis) [#582](https://github.com/tobac-project/tobac/pull/582)
 - The `filter_min_distance` function in feature detection has been vectorised, reducing its runtime by ~80% and the runtime of feature detection with minimum distance filtering by ~20-25% [#588](https://github.com/tobac-project/tobac/pull/588)
 
 **Bug fixes**
