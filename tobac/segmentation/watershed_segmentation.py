@@ -63,7 +63,9 @@ def add_markers(
 ) -> np.array:
     """Adds markers for watershedding using the `features` dataframe
     to the marker_arr.
+
     :hidden:
+
     Parameters
     ----------
     features: pandas.DataFrame
@@ -356,8 +358,10 @@ def segmentation_timestep(
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
 ) -> tuple[iris.cube.Cube, pd.DataFrame]:
     """Perform watershedding for an individual time step of the data. Works
-    for both 2D and 3D data
+    for both 2D and 3D data.
+
     :hidden:
+
     Parameters
     ----------
     field_in : xr.DataArray
@@ -419,8 +423,11 @@ def segmentation_timestep(
     segment_number_unassigned: int
         the marker to use to indicate a segmentation point is above the threshold but unsegmented.
         This can be the same as `segment_number_below_threshold`, but can also be set separately.
-    statistics: boolean, optional
-        Default is None. If True, bulk statistics for the data points assigned to each feature are saved in output.
+    statistic : dict, optional
+        Default is None. Optional parameter to calculate bulk statistics within segmentation.
+        Dictionary with callable function(s) to apply over the region of each segmented feature and
+        the name of the statistics to appear in the feature output dataframe.
+        The functions should be the values and the names of the metric the keys (e.g. {'mean': np.mean})
 
     Returns
     -------
@@ -510,7 +517,7 @@ def segmentation_timestep(
             transposed_data = True
 
     # Set level at which to create "Seed" for each feature in the case of 3D watershedding:
-    # If none, use all levels (later reduced to the ones fulfilling the theshold conditions)
+    # If none, use all levels (later reduced to the ones fulfilling the threshold conditions)
     if level is None:
         level = slice(None)
 
@@ -1075,7 +1082,7 @@ def check_add_unseeded_across_bdrys(
     dim_to_run:  {'hdim_1', 'hdim_2'}
         what dimension to run
     segmentation_mask: np.array
-        the incomming segmentation mask
+        the incoming segmentation mask
     unseeded_labels: np.array
         The list of labels that are unseeded
     border_min: int
@@ -1150,7 +1157,7 @@ def segmentation(
     point) and 3D and returns a mask with zeros everywhere around
     the identified regions and the feature id inside the regions.
 
-    Calls segmentation_timestep at each individal timestep of the
+    Calls segmentation_timestep at each individual timestep of the
     input data.
 
     Parameters
@@ -1169,7 +1176,7 @@ def segmentation(
         Default is 3e-3.
 
     target : {'maximum', 'minimum'}, optional
-        Flag to determine if tracking is targetting minima or maxima in
+        Flag to determine if tracking is targeting minima or maxima in
         the data. Default is 'maximum'.
 
     level : slice of iris.cube.Cube, optional
