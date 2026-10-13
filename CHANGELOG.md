@@ -1,10 +1,33 @@
 # Tobac Changelog
 
-## Unreleased Changes
+## Version 1.6.4
+
+**Enhancements for Users**
+
+- Added 2D latitude/longitude based tracking with `tobac.tracking.linking_trackpy_latlon`. Rather than relying on `dxy`, `hdim_1`, and `hdim_2`, we calculate distances using latitude and longitude. This runs 5-10 times faster than an equivalent approach with periodic boundaries for global data. A new documentation page and example notebook have been added for this functionality [#542](https://github.com/tobac-project/tobac/pull/542)
+- Added functions to convert segmentation feature masks to cell masks and vice versa (`convert_feature_mask_to_cells` and `convert_cell_mask_to_features`), and added optional cell mask output from segmentation using the `return_cells` parameter, when running segmentation after tracking [#512](https://github.com/tobac-project/tobac/pull/512)
+- Added a `color` parameter to `tobac.plotting.map_tracks` to set the color of all track lines (from new contributor @ecaldon) [#564](https://github.com/tobac-project/tobac/pull/564)
+- Added a `suppress_warnings` option to segmentation to suppress the `UserWarning` raised when a 1xMxN array is given [#582](https://github.com/tobac-project/tobac/pull/582)
+- The `filter_min_distance` function in feature detection has been vectorised, reducing its runtime by ~80% and the runtime of feature detection with minimum distance filtering by ~20-25% [#588](https://github.com/tobac-project/tobac/pull/588)
 
 **Bug fixes**
 
-- Update internals to allow for pandas 3 compatibility [#568](https://github.com/tobac-project/tobac/pull/568)
+- Update internals to allow for Pandas 3 compatibility [#568](https://github.com/tobac-project/tobac/pull/568)
+- Fixed feature detection label output for 3D data, including cases where the vertical dimension is not the first spatial dimension, which caused incorrect statistics to be calculated during feature detection [#580](https://github.com/tobac-project/tobac/pull/580)
+- Renamed the `pytables` requirement to `tables` in `pyproject.toml` to match the PyPI listing [#583](https://github.com/tobac-project/tobac/pull/583)
+
+**Documentation**
+
+- All documentation pages (other than the API docs) have been migrated from RST to Markdown, enabling easier editing [#549](https://github.com/tobac-project/tobac/pull/549)
+- Added a "What's New" page to the documentation that pulls from the changelog [#545](https://github.com/tobac-project/tobac/pull/545)
+- Updated the readthedocs build to use Python 3.14 [#592](https://github.com/tobac-project/tobac/pull/592)
+- Fixed the `to_hdf` call in the radar/satellite example notebook to be compatible with pandas >=2.2 [#574](https://github.com/tobac-project/tobac/pull/574)
+
+**Internal Enhancements**
+
+- Fixed the segmentation time padding test [#569](https://github.com/tobac-project/tobac/pull/569)
+- Added a new utility function `features_to_interest_field` to construct artificial interest fields from detected features [#578](https://github.com/tobac-project/tobac/pull/578)
+
 
 ## Version 1.6.3
 
