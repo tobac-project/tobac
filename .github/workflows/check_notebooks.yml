@@ -1,5 +1,17 @@
 name: Jupyter Notebooks CI
-on: [push, pull_request]
+on:
+  push:
+    branches: [main, RC_*]
+  pull_request:
+    paths:
+      - "tobac/**"
+      - "examples/**"
+      - "environment-examples.yml"
+      - ".github/workflows/check_notebooks.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   Check-Notebooks:
     runs-on: ubuntu-latest
