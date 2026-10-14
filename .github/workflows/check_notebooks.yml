@@ -33,13 +33,48 @@ jobs:
       - name: Install tobac
         run: |
           pip install .
-      - name: Find all notebook files
+      - name: Download shared example data
+        # Most notebooks fetch and unpack this same archive into examples/ if
+        # it is missing; do it once up front so parallel runs don't race on it.
         run: |
-          find . -type f -name '*.ipynb' > nbfiles.txt
-          cat nbfiles.txt
-      - name: Execute all notebook files
+          curl -sSL --retry 3 -o tobac_example_data.zip \
+            https://zenodo.org/records/3195910/files/climate-processes/tobac_example_data-v1.0.1.zip
+          unzip -q tobac_example_data.zip -d examples
+          rm tobac_example_data.zip
+      - name: Execute all notebook files in parallel
+        # Notebooks are grouped by directory: directories run in parallel, while
+        # notebooks sharing a directory run sequentially since they can write
+        # to the same output files (e.g. Save/, Plot/).
         run: |
-          while IFS= read -r nbpath; do
-            jupyter nbconvert --inplace --ClearMetadataPreprocessor.enabled=True --clear-output $nbpath
-            jupyter nbconvert --to notebook --inplace --execute $nbpath
-          done < nbfiles.txt
+          mkdir -p nb_logs
+          run_dir() {
+            dir="$1"
+            log="nb_logs/$(echo "$dir" | tr '/' '_').log"
+            status=0
+            for nbpath in $(find "$dir" -maxdepth 1 -type f -name '*.ipynb' | sort); do
+              echo "==> $nbpath" >> "$log"
+              start=$SECONDS
+              if jupyter nbconvert --inplace --ClearMetadataPreprocessor.enabled=True --clear-output "$nbpath" >> "$log" 2>&1 \
+                 && jupyter nbconvert --to notebook --inplace --execute "$nbpath" >> "$log" 2>&1; then
+                echo "    OK ($((SECONDS - start))s)" >> "$log"
+              else
+                echo "    FAILED ($((SECONDS - start))s)" >> "$log"
+                echo "$nbpath" >> nb_logs/failed.txt
+                status=1
+              fi
+            done
+            cat "$log"
+            return $status
+          }
+          export -f run_dir
+          find . -type f -name '*.ipynb' -not -path '*/.ipynb_checkpoints/*' -exec dirname {} \; \
+            | sort -u > nbdirs.txt
+          cat nbdirs.txt
+          echo "Running with $(nproc) parallel jobs"
+          rc=0
+          xargs -P "$(nproc)" -I {} bash -c 'run_dir "$1"' _ {} < nbdirs.txt || rc=$?
+          if [ -s nb_logs/failed.txt ]; then
+            echo "Failed notebooks:"
+            cat nb_logs/failed.txt
+          fi
+          exit $rc
