@@ -57,6 +57,10 @@ website out of the documentation material present in `tobac`.
     ```
 
     `pip`-based installation takes a bit of time, but is much faster than `conda`.
+
+    Alternatively, the documentation dependencies can be installed alongside tobac with
+    `pip install -e "tobac[docs]"`, or as a conda environment with
+    `conda env create -f tobac/environment-docs.yml`.
    
 
 If the installation runs without problems, you are ready to build the website.
