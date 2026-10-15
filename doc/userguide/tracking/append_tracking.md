@@ -6,20 +6,22 @@ In some *tobac* workflows, you may need to *incrementally* grow your dataset (e.
 
 {func}`tobac.tracking.append_tracks_trackpy` enables, effectively, incremental tracking. It takes a previously tracked DataFrame (i.e., one that already contains a `cell` column) and a DataFrame of new untracked features, and extends the existing tracked features forward in time. {func}`tobac.tracking.append_tracks_trackpy` produces **identical** output (caveat: precise cell numbers may differ, but all tracks are identical) to running tracking on the full dataset simultaneously. Existing `cell` IDs are preserved.
 
+Append tracking works with both `dxy`-based tracking from {func}`tobac.tracking.linking_trackpy` and latitude/longitude based tracking from {func}`tobac.tracking.linking_trackpy_latlon`. To append to tracks created with lat/lon tracking, set `use_latlon=True` (see {ref}`append-tracking-latlon` below).
+
 ---
 
 ## When to Use `append_tracks_trackpy`
 
 Use {func}`tobac.tracking.append_tracks_trackpy` when **all** of the following are true:
 
-- You have already called {func}`tobac.tracking.linking_trackpy` on an earlier portion of your data and have a tracked DataFrame with a `cell` column.
+- You have already called {func}`tobac.tracking.linking_trackpy` (or {func}`tobac.tracking.linking_trackpy_latlon`) on an earlier portion of your data and have a tracked DataFrame with a `cell` column.
 - You have a new set of detected features from {py:func}`tobac.feature_detection.feature_detection_multithreshold`. Note: these features *can overlap* with the existing tracked feature DataFrame, but should not include tracked `cell` values. 
 
 ### Situations where you should *not* use append tracking
 
 - **Inserting features into the middle of an existing track.** Only extending the track forward in time is supported.
 - **Tracking with `memory > 0`.** This is not yet implemented and will raise a `NotImplementedError`.
-- **Lat/lon data with lat/lon tracking.** Append tracking is not yet implemented for lat/lon tracking.
+- **3D data with lat/lon tracking.** Like {func}`tobac.tracking.linking_trackpy_latlon`, append tracking (`use_latlon=True`) only supports 2D data.
 
 ---
 
@@ -102,6 +104,44 @@ previously assigned identifiers remain stable across iterations.
 
 ---
 
+(append-tracking-latlon)=
+### Appending to Lat/Lon Tracks
+
+If your original tracks were created with {func}`tobac.tracking.linking_trackpy_latlon` (see {doc}`lat_lon_tracking`), pass `use_latlon=True` to {func}`tobac.tracking.append_tracks_trackpy`. Linking then uses the haversine distance between feature latitudes and longitudes, exactly as in {func}`tobac.tracking.linking_trackpy_latlon`, so the appended result is identical to lat/lon tracking of the full dataset at once.
+
+```python
+import tobac
+
+# --- Step 1: initial lat/lon tracking run ---
+tracks_batch1 = tobac.tracking.linking_trackpy_latlon(
+    features=features_batch1,
+    dt=dt,
+    v_max=30,
+    stubs=2,
+    method_linking='predict',
+)
+
+# --- Step 2: append new features using lat/lon linking ---
+tracks_extended = tobac.tracking.append_tracks_trackpy(
+    tracks_orig=tracks_batch1,
+    new_features=features_batch2,
+    dt=dt,
+    v_max=30,
+    stubs=2,
+    method_linking='predict',
+    use_latlon=True,
+)
+```
+
+When `use_latlon=True`, a few parameters are slightly different than when `use_latlon=False`, matching {func}`tobac.tracking.linking_trackpy_latlon`:
+
+- `dxy` is not required and is ignored.
+- `planet_radius` sets the radius (in meters) used in the haversine distance calculation. It defaults to an average Earth radius, but should be changed when using *tobac* on datasets from other planets.
+- `d_min` is not supported; use `v_max` or `d_max` instead.
+- For adaptive search, use `adaptive_step` together with `adaptive_stop_multiplier` instead of `adaptive_stop`. A `ValueError` will be raised if you use the wrong parameters.
+
+---
+
 
 ## Common Errors and How to Fix Them
 
@@ -115,6 +155,15 @@ previously assigned identifiers remain stable across iterations.
 - **`ValueError: One track is 3D, new track is 2D.`**  
   - Both `tracks_orig` and `new_features` must be either both 2D or both 3D. Check that feature detection was run with consistent settings for both batches.
 
+- **`ValueError: Append tracks with use_latlon only supports 2D tracking.`**
+  - Lat/lon append tracking only works for 2D features. For 3D data, use standard append tracking (`use_latlon=False`) with `dxy`.
+
+- **`ValueError: dxy must be set unless use_latlon is True.`**
+  - Either pass `dxy` for standard tracking, or set `use_latlon=True` if your original tracks came from {func}`tobac.tracking.linking_trackpy_latlon`.
+
+- **`ValueError: PBC_flag must be 'none' with use_latlon ...`**, **`d_min is not supported with use_latlon ...`**, **`adaptive_stop is not supported with use_latlon ...`**, or **`adaptive_stop_multiplier is only supported with use_latlon ...`**
+  - These parameters are specific to one tracking mode. See {ref}`append-tracking-latlon` for which parameters to use with `use_latlon=True`.
+
 - **`ValueError: Error in appending tracks. Multiple pairs of cell:particle found.`**  
   - This is an internal consistency error that can occur. Fall back to a full `linking_trackpy` call. Please also  file a bug report on the tobac GitHub repository, as this should not occur. 
 
@@ -124,3 +173,4 @@ previously assigned identifiers remain stable across iterations.
 
 - {func}`tobac.tracking.linking_trackpy` — the standard (non-append) trajectory linker
 - {func}`tobac.tracking.linking_trackpy_latlon` — trajectory linker for lat/lon data
+- {doc}`lat_lon_tracking` — user guide page on latitude/longitude tracking
