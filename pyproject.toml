@@ -67,7 +67,7 @@ dev = [
 examples = [
     "jupyter",
     "notebook",
-    "tables",
+    "pyarrow",
     "s3fs",
     "arm_pyart",
     "seaborn",
@@ -103,7 +103,7 @@ all = [
     "nbconvert",
     "jupyter",
     "notebook",
-    "pytables",
+    "pyarrow",
     "s3fs",
     "arm_pyart",
     "seaborn",
