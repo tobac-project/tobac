@@ -873,13 +873,14 @@ def append_tracks_trackpy(
         If None, 30 is used for regular search and 15 for adaptive search.
         Default is None.
 
-
     memory : int, optional
         Number of output timesteps features allowed to vanish for to
         be still considered tracked. Default is 0.
-        .. warning :: This parameter should be used with caution, as it
-                     can lead to erroneous trajectory linking,
-                     espacially for data with low time resolution.
+
+        .. warning::
+            This parameter should be used with caution, as it
+            can lead to erroneous trajectory linking,
+            especially for data with low time resolution.
 
     stubs : int, optional
         Minimum number of timesteps of a tracked cell to be reported
