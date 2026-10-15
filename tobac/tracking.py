@@ -1715,7 +1715,7 @@ def _calc_velocity_to_most_recent_point(
     max_frame = in_track["frame"].max()
     speed_tracks = in_track[in_track["frame"] >= max_frame - span]
 
-    if "vdim_adj" in speed_tracks:
+    if "z" in speed_tracks:
         # 3D case
         pos_cols = ["y", "x", "z"]
         spd_cols = ["hdim_1_spd", "hdim_2_spd", "vdim_spd"]
@@ -1743,7 +1743,7 @@ def _calc_velocity_to_most_recent_point(
         calculated_speeds,
     )
     mean_speed_df = all_speeds[all_speeds["frame"] == all_speeds["frame"].max()].join(
-        all_speeds.groupby("cell")[["hdim_1_spd", "hdim_2_spd"]].mean(),
+        all_speeds.groupby("cell")[spd_cols].mean(),
         on="cell",
         rsuffix="_mean",
     )
