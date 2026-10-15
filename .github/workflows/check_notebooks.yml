@@ -89,4 +89,4 @@ jobs:
             echo "Failed notebooks:"
             cat nb_logs/failed.txt
           fi
-          exit $rc
+          [ "$rc" -eq 0 ]
