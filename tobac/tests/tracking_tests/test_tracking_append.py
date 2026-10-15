@@ -1054,3 +1054,335 @@ def test_append_tracks_latlon_errors():
         tobac.tracking.append_tracks_trackpy(
             initial_tracking, features, dt=300, v_max=30
         )
+
+
+def _generate_random_features_3d(
+    seed: int,
+    hdim1_max: int,
+    hdim2_max: int,
+    vdim_max: int,
+    n_features: int,
+    n_times: int,
+    dz: float = 500,
+) -> pd.DataFrame:
+    """Generate a dataframe of randomly placed 3D features for testing.
+    Includes a `z` column of vdim * dz meters. Positions are continuous rather
+    than integers, as integer positions in 3D readily give exactly equidistant
+    candidates, which trackpy links nondeterministically."""
+    features = _generate_random_features(
+        seed, hdim1_max, hdim2_max, n_features, n_times
+    )
+    rng = np.random.default_rng(seed + 1)
+    features["hdim_1"] = features["hdim_1"] + rng.uniform(0, 1, size=len(features))
+    features["hdim_2"] = features["hdim_2"] + rng.uniform(0, 1, size=len(features))
+    features["vdim"] = rng.uniform(0, vdim_max, size=len(features))
+    features["z"] = features["vdim"] * dz
+    return features
+
+
+@pytest.mark.parametrize(
+    "seed, hdim1_max, hdim2_max, vdim_max, n_features, n_times",
+    [
+        (2032, 200, 200, 20, 3, 4),
+        (201532, 100, 100, 10, 20, 6),
+        (201532, 100, 100, 10, 20, 10),
+        (10032, 1000, 1000, 50, 20, 20),
+    ],
+)
+@pytest.mark.parametrize(
+    "method_linking, time_cell_min",
+    [
+        ("random", 0),
+        ("random", 1200),
+        ("predict", 0),
+        ("predict", 300),
+    ],
+)
+@pytest.mark.parametrize("use_dz", [True, False])
+def test_append_tracks_3d_random(
+    seed: int,
+    hdim1_max: int,
+    hdim2_max: int,
+    vdim_max: int,
+    n_features: int,
+    n_times: int,
+    method_linking: str,
+    time_cell_min: float,
+    use_dz: bool,
+):
+    """
+    Test that append tracking reproduces regular tracking for randomly placed
+    3D features, using either a constant dz or a vertical coordinate column.
+    """
+    dz = 500
+    features = _generate_random_features_3d(
+        seed, hdim1_max, hdim2_max, vdim_max, n_features, n_times, dz=dz
+    )
+
+    tracking_params = {
+        "dt": 300,
+        "dxy": 500,
+        "v_max": 30,
+        "memory": 0,
+        "time_cell_min": time_cell_min,
+        "method_linking": method_linking,
+        "subnetwork_size": 15,
+    }
+    if use_dz:
+        tracking_params["dz"] = dz
+        tracking_params["vertical_coord"] = None
+    else:
+        tracking_params["vertical_coord"] = "z"
+
+    orig_tracking = tobac.tracking.linking_trackpy(features, None, **tracking_params)
+
+    first_two_times_df = features[features["frame"] < 2]
+    initial_tracking_append = tobac.tracking.linking_trackpy(
+        first_two_times_df, None, **tracking_params
+    )
+
+    # append everything at once
+    append_all_tracking = tobac.tracking.append_tracks_trackpy(
+        initial_tracking_append, features, **tracking_params
+    )
+    assert "vdim" in append_all_tracking
+    assert "vdim_adj" not in append_all_tracking
+    assert tobac.testing.check_tracking_identical(orig_tracking, append_all_tracking)
+
+    # append one at a time with the full dataframe
+    curr_tracking_append = initial_tracking_append
+    for i in range(3, max(features["frame"]) + 2):
+        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+            curr_tracking_append, features[features["frame"] < i], **tracking_params
+        )
+    assert tobac.testing.check_tracking_identical(curr_tracking_append, orig_tracking)
+
+    # append one at a time with only individual times
+    curr_tracking_append = initial_tracking_append
+    for i in range(2, max(features["frame"]) + 1):
+        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+            curr_tracking_append, features[features["frame"] == i], **tracking_params
+        )
+    assert tobac.testing.check_tracking_identical(curr_tracking_append, orig_tracking)
+
+
+@pytest.mark.parametrize(
+    "seed, n_features, n_times",
+    [
+        (201532, 20, 6),
+        (201532, 20, 10),
+    ],
+)
+@pytest.mark.parametrize(
+    "method_linking, time_cell_min",
+    [
+        ("random", 1200),
+        ("predict", 600),
+        ("predict", 1200),
+    ],
+)
+def test_append_tracks_3d_unfiltered_cell(
+    seed: int,
+    n_features: int,
+    n_times: int,
+    method_linking: str,
+    time_cell_min: float,
+):
+    """
+    Test that 3D append tracking with unfiltered cell numbers reproduces regular
+    tracking, including predictive tracking with stubs > 2.
+    """
+    features = _generate_random_features_3d(seed, 100, 100, 10, n_features, n_times)
+
+    tracking_params = {
+        "dt": 300,
+        "dxy": 500,
+        "dz": 500,
+        "vertical_coord": None,
+        "v_max": 30,
+        "memory": 0,
+        "time_cell_min": time_cell_min,
+        "method_linking": method_linking,
+        "subnetwork_size": 15,
+    }
+
+    orig_tracking = tobac.tracking.linking_trackpy(
+        features, None, save_unfiltered_cell=True, **tracking_params
+    )
+
+    initial_tracking_append = tobac.tracking.linking_trackpy(
+        features[features["frame"] < 2],
+        None,
+        save_unfiltered_cell=True,
+        **tracking_params,
+    )
+
+    appended = tobac.tracking.append_tracks_trackpy(
+        initial_tracking_append, features, **tracking_params
+    )
+    assert "cell_unfiltered" in appended
+    assert tobac.testing.check_tracking_identical(orig_tracking, appended)
+    assert tobac.testing.check_tracking_identical(
+        orig_tracking, appended, cell_column="cell_unfiltered"
+    )
+
+    curr_tracking_append = initial_tracking_append
+    for i in range(2, max(features["frame"]) + 1):
+        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+            curr_tracking_append, features[features["frame"] == i], **tracking_params
+        )
+    assert tobac.testing.check_tracking_identical(orig_tracking, curr_tracking_append)
+    assert tobac.testing.check_tracking_identical(
+        orig_tracking, curr_tracking_append, cell_column="cell_unfiltered"
+    )
+
+
+def test_trackpy_predict_append_3d():
+    """Test that append_tracks_trackpy() with method='predict' correctly links two
+    3D features at constant speeds crossing each other, including in the vertical.
+    """
+    cell_1 = tobac.testing.generate_single_feature(
+        1,
+        1,
+        start_v=1,
+        min_h1=0,
+        max_h1=101,
+        min_h2=0,
+        max_h2=101,
+        frame_start=0,
+        num_frames=5,
+        spd_h1=20,
+        spd_h2=20,
+        spd_v=20,
+    )
+
+    cell_2 = tobac.testing.generate_single_feature(
+        1,
+        100,
+        start_v=100,
+        min_h1=0,
+        max_h1=101,
+        min_h2=0,
+        max_h2=101,
+        frame_start=0,
+        num_frames=5,
+        spd_h1=20,
+        spd_h2=-20,
+        spd_v=-20,
+    )
+    cell_2["idx"] = 1
+    cell_2["feature"] += len(cell_1)
+
+    features = pd.concat([cell_1, cell_2], ignore_index=True, verify_integrity=True)
+
+    tracking_params = {
+        "dt": 1,
+        "dxy": 1,
+        "dz": 1,
+        "vertical_coord": None,
+        "d_max": 100,
+        "method_linking": "predict",
+    }
+
+    output_correct = tobac.linking_trackpy(features, None, **tracking_params)
+    # make sure the crossing features are correctly tracked as two cells
+    assert output_correct["cell"].nunique() == 2
+
+    first_two_times_df = features[features["frame"] < 2]
+    initial_tracking_append = tobac.tracking.linking_trackpy(
+        first_two_times_df, None, **tracking_params
+    )
+
+    append_all_tracking = tobac.tracking.append_tracks_trackpy(
+        initial_tracking_append, features, **tracking_params
+    )
+    assert tobac.testing.check_tracking_identical(output_correct, append_all_tracking)
+
+    curr_tracking_append = initial_tracking_append
+    for i in range(2, max(features["frame"]) + 1):
+        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+            curr_tracking_append, features[features["frame"] == i], **tracking_params
+        )
+    assert tobac.testing.check_tracking_identical(curr_tracking_append, output_correct)
+
+
+@pytest.mark.parametrize("PBC_flag", ["hdim_1", "hdim_2", "both"])
+@pytest.mark.parametrize("method_linking", ["random", "predict"])
+def test_append_tracks_3d_pbc(PBC_flag: str, method_linking: str):
+    """Test that 3D append tracking with periodic boundaries reproduces regular
+    tracking."""
+    features = _generate_random_features_3d(201532, 100, 100, 10, 10, 8)
+    tracking_params = {
+        "dt": 300,
+        "dxy": 500,
+        "dz": 500,
+        "vertical_coord": None,
+        "v_max": 30,
+        "time_cell_min": 300,
+        "method_linking": method_linking,
+        "subnetwork_size": 15,
+        "PBC_flag": PBC_flag,
+        "min_h1": 0,
+        "max_h1": 100,
+        "min_h2": 0,
+        "max_h2": 100,
+    }
+
+    orig_tracking = tobac.tracking.linking_trackpy(features, None, **tracking_params)
+
+    curr_tracking_append = tobac.tracking.linking_trackpy(
+        features[features["frame"] < 2], None, **tracking_params
+    )
+    for i in range(2, max(features["frame"]) + 1):
+        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+            curr_tracking_append, features[features["frame"] == i], **tracking_params
+        )
+    assert tobac.testing.check_tracking_identical(orig_tracking, curr_tracking_append)
+
+
+def test_append_tracks_3d_errors():
+    """Test that 3D append tracking raises appropriate errors."""
+    features_3d = _generate_random_features_3d(2032, 200, 200, 20, 3, 4)
+    features_2d = features_3d.drop(columns=["vdim", "z"])
+    tracking_params = {"dt": 300, "dxy": 500, "v_max": 30}
+
+    tracks_3d = tobac.tracking.linking_trackpy(
+        features_3d[features_3d["frame"] < 2],
+        None,
+        dz=500,
+        vertical_coord=None,
+        **tracking_params,
+    )
+    tracks_2d = tobac.tracking.linking_trackpy(
+        features_2d[features_2d["frame"] < 2], None, **tracking_params
+    )
+
+    # 3D tracks with 2D new features
+    with pytest.raises(ValueError):
+        tobac.tracking.append_tracks_trackpy(
+            tracks_3d, features_2d, dz=500, vertical_coord=None, **tracking_params
+        )
+    # 2D tracks with 3D new features
+    with pytest.raises(ValueError):
+        tobac.tracking.append_tracks_trackpy(
+            tracks_2d, features_3d, dz=500, vertical_coord=None, **tracking_params
+        )
+    # dz and vertical_coord both set
+    with pytest.raises(ValueError):
+        tobac.tracking.append_tracks_trackpy(
+            tracks_3d, features_3d, dz=500, vertical_coord="z", **tracking_params
+        )
+    # neither dz nor vertical_coord set
+    with pytest.raises(ValueError):
+        tobac.tracking.append_tracks_trackpy(
+            tracks_3d, features_3d, dz=None, vertical_coord=None, **tracking_params
+        )
+    # lat/lon append only supports 2D
+    with pytest.raises(ValueError):
+        tobac.tracking.append_tracks_trackpy(
+            _add_latlon_to_features(tracks_3d, 40, -90, dxy=500),
+            _add_latlon_to_features(features_3d, 40, -90, dxy=500),
+            dt=300,
+            v_max=30,
+            use_latlon=True,
+        )
