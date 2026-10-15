@@ -38,7 +38,7 @@ def merge_split_MEST(
 ) -> xr.Dataset:
     """
     Search for merging splitting cells  in tobac tracking data using a minimum
-    euclidian spanning tree, and combine the merged cells into unique tracks.
+    euclidean spanning tree, and combine the merged cells into unique tracks.
 
     Parameters
     ----------
@@ -65,7 +65,7 @@ def merge_split_MEST(
         cell and the start of a related cell, by default 5 frames.
 
     cell_number_unassigned: int, optional
-        Value given tp unassigned/non-tracked cells by tracking, by default -1.
+        Value given to unassigned/non-tracked cells by tracking, by default -1.
 
     vertical_coord: str, optional
         Name of the vertical coordinate, default None. The vertical coordinate
@@ -96,18 +96,21 @@ def merge_split_MEST(
 
     Returns
     -------
-
     d : xarray.core.dataset.Dataset
         xarray dataset of tobac merge/split cells with parent and child designations.
 
-                Parent/child variables include:
+        Parent/child variables include:
+
         - cell_parent_track_id: The associated track id for each cell. All cells that have merged or split will have the same parent track id. If a cell never merges/splits, only one cell will have a particular track id.
         - feature_parent_cell_id: The associated parent cell id for each feature. All features in a given cell will have the same cell id. This is the original TRACK cell_id.
         - feature_parent_track_id: The associated parent track id for each feature. This is not the same as the cell id number.
         - track_child_cell_count: The total number of features belonging to all child cells of a given track id.
         - cell_child_feature_count: The total number of features for each cell.
 
-    Example usage:
+    Examples
+    --------
+    ::
+
         d = merge_split_MEST(Track)
         ds = tobac.utils.standardize_track_dataset(Track, refl_mask)
         both_ds = xr.merge([ds, d],compat ='override')
