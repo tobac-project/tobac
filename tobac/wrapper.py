@@ -101,7 +101,7 @@ def maketrack(
     from .tracking import linking_trackpy
 
     """
-    Function identifiying features  andlinking them into trajectories
+    Function identifying features  andlinking them into trajectories
     
     Parameters:
     field_in:     iris.cube.Cube 
@@ -115,11 +115,11 @@ def maketrack(
     v_max:        float
                   Assumed maximum speed of tracked objects (m/s)
     memory:       int
-                  Number of timesteps for which objects can be missed by the algorithm to still give a constistent track
+                  Number of timesteps for which objects can be missed by the algorithm to still give a consistent track
     stubs:        float
-                  Minumum number of timesteps for which objects have to be detected to not be filtered out as spurious
+                  Minimum number of timesteps for which objects have to be detected to not be filtered out as spurious
     min_num:      int
-                  Minumum number of cells above threshold in the feature to be tracked
+                  Minimum number of cells above threshold in the feature to be tracked
     order:        int
                   order if interpolation spline to fill gaps in tracking(from allowing memory to be larger than 0)
     extrapolate   int
@@ -129,7 +129,7 @@ def maketrack(
     position_threshold: str('extreme', 'weighted_diff', 'weighted_abs' or 'center')
                       flag choosing method used for the position of the tracked feature
     sigma_threshold: float
-                     standard deviation for intial filtering step
+                     standard deviation for initial filtering step
                      
     n_erosion_threshold: int
                          number of pixel by which to erode the identified features
@@ -143,7 +143,7 @@ def maketrack(
     Output:
     trajectories_final: pandas.DataFrame
                  Tracked updrafts, one row per timestep and updraft, includes dimensions 'time','latitude','longitude','projection_x_variable', 'projection_y_variable' based on w cube. 
-                 'hdim_1' and 'hdim_2' are used for segementation step.
+                 'hdim_1' and 'hdim_2' are used for segmentation step.
     
     Optional output:             
     features_filtered: pandas.DataFrame
@@ -167,7 +167,7 @@ def maketrack(
     ### Prepare Tracking
 
     # set horizontal grid spacing of input data
-    # If cartesian x and y corrdinates are present, use these to determine dxy (vertical grid spacing used to transfer pixel distances to real distances):
+    # If cartesian x and y coordinates are present, use these to determine dxy (vertical grid spacing used to transfer pixel distances to real distances):
     coord_names = [coord.name() for coord in field_in.coords()]
 
     if (

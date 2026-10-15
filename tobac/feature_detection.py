@@ -47,7 +47,7 @@ def feature_position(
     track_data: np.ndarray = None,
     threshold_i: float = None,
     position_threshold: Literal[
-        "center", "extreme", "weighted_diff", "weighted abs"
+        "center", "extreme", "weighted_diff", "weighted_abs"
     ] = "center",
     target: Literal["maximum", "minimum"] = None,
     PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
@@ -95,13 +95,13 @@ def feature_position(
     threshold_i : float
         The threshold value that we are testing against
 
-    position_threshold : {'center', 'extreme', 'weighted_diff', 'weighted abs'}
+    position_threshold : {'center', 'extreme', 'weighted_diff', 'weighted_abs'}
         How to select the single point position from our data.
         'center' picks the geometrical centre of the region,
         and is typically not recommended. 'extreme' picks the
         maximum or minimum value inside the region (max/min set by
-         ```target```) 'weighted_diff' picks the centre of the
-         region weighted by the distance from the threshold value
+        ```target```) 'weighted_diff' picks the centre of the
+        region weighted by the distance from the threshold value
         'weighted_abs' picks the centre of the region weighted by
         the absolute values of the field
 
@@ -125,10 +125,10 @@ def feature_position(
         the maximum coordinate value, and it is not a length.
 
     hdim2_min : int
-        Minimum real array index of the first horizontal dimension (for PBCs)
+        Minimum real array index of the second horizontal dimension (for PBCs)
 
     hdim2_max : int
-        Maximum real array index of the first horizontal dimension (for PBCs)
+        Maximum real array index of the second horizontal dimension (for PBCs)
         Note that this coordinate is INCLUSIVE, meaning that this is
         the maximum coordinate value, and it is not a length.
 
@@ -261,11 +261,11 @@ def test_overlap(
 
     Parameters
     ----------
-    region_1 : list
+    region_inner : list
         list of 2-element tuples defining the indices of
         all cell in the region
 
-    region_2 : list
+    region_outer : list
         list of 2-element tuples defining the indices of
         all cell in the region
 
@@ -419,10 +419,9 @@ def feature_detection_threshold(
         Number of the current timestep.
 
     threshold : float, optional
-        Threshold value used to select target regions to track.  The feature detection is inclusive of the
-        threshold value(s), i.e. values greater/less than or equal are included in the target region. The
-        feature detection is inclusive of the threshold value(s), i.e. values greater/less than or equal are
-        included in the target region. Default is None.
+        Threshold value used to select target regions to track. The feature detection is inclusive of the
+        threshold value(s), i.e. values greater/less than or equal are included in the target region.
+        Default is None.
 
     target : {'maximum', 'minimum'}, optional
         Flag to determine if tracking is targeting minima or maxima
@@ -911,7 +910,7 @@ def feature_detection_multithreshold_timestep(
     min_num: int = 0,
     target: Literal["maximum", "minimum"] = "maximum",
     position_threshold: Literal[
-        "center", "extreme", "weighted_diff", "weighted abs"
+        "center", "extreme", "weighted_diff", "weighted_abs"
     ] = "center",
     sigma_threshold: float = 0.5,
     n_erosion_threshold: int = 0,
@@ -951,8 +950,8 @@ def feature_detection_multithreshold_timestep(
     min_num : int, optional
         This parameter is not used in the function. Default is 0.
 
-    target : {'maximum', 'minimum'}, optinal
-        Flag to determine if tracking is targetting minima or maxima
+    target : {'maximum', 'minimum'}, optional
+        Flag to determine if tracking is targeting minima or maxima
         in the data. Default is 'maximum'.
 
     position_threshold : {'center', 'extreme', 'weighted_diff',
@@ -961,7 +960,7 @@ def feature_detection_multithreshold_timestep(
         feature. Default is 'center'.
 
     sigma_threshold: float, optional
-        Standard deviation for intial filtering step. Default is 0.5.
+        Standard deviation for initial filtering step. Default is 0.5.
 
     n_erosion_threshold: int, optional
         Number of pixels by which to erode the identified features.
@@ -1210,7 +1209,7 @@ def feature_detection_multithreshold(
     min_num: int = 0,
     target: Literal["maximum", "minimum"] = "maximum",
     position_threshold: Literal[
-        "center", "extreme", "weighted_diff", "weighted abs"
+        "center", "extreme", "weighted_diff", "weighted_abs"
     ] = "center",
     sigma_threshold: float = 0.5,
     n_erosion_threshold: int = 0,
@@ -1245,11 +1244,14 @@ def feature_detection_multithreshold(
     dxy : float
         Grid spacing of the input data (in meter).
 
-    thresholds : list of floats, optional
+    threshold : list of floats, optional
         Threshold values used to select target regions to track. The feature detection is inclusive of the threshold value(s), i.e. values greater/less than or equal are included in the target region. Default is None.
 
+    min_num : int, optional
+        This parameter has no effect and will be deprecated in a future version of tobac. Default is 0.
+
     target : {'maximum', 'minimum'}, optional
-        Flag to determine if tracking is targetting minima or maxima in
+        Flag to determine if tracking is targeting minima or maxima in
         the data. Default is 'maximum'.
 
     position_threshold : {'center', 'extreme', 'weighted_diff',
@@ -1258,7 +1260,7 @@ def feature_detection_multithreshold(
         feature. Default is 'center'.
 
     sigma_threshold: float, optional
-        Standard deviation for intial filtering step. Default is 0.5.
+        Standard deviation for initial filtering step. Default is 0.5.
 
     n_erosion_threshold: int, optional
         Number of pixels by which to erode the identified features.
@@ -1604,7 +1606,7 @@ def filter_min_distance(
     features:      pandas DataFrame
                    features
     dxy:           float
-        Constant horzontal grid spacing (meters).
+        Constant horizontal grid spacing (meters).
     dz: float
         Constant vertical grid spacing (meters), optional. If not specified
         and the input is 3D, this function requires that `z_coordinate_name` is available
