@@ -327,39 +327,46 @@ def test_spectral_filtering():
     with np.errstate(divide="ignore", invalid="ignore"):
         lambda_mn = 2 * dxy / alpha
 
-    # seed wave signal that lies within wavelength range for filtering
-    signal_min = np.where(lambda_mn[0] < lambda_min)[0].min()
-    signal_idx = np.random.randint(signal_min, matrix.shape[-1])
-    matrix[0, signal_idx] = 1
-    wave_data = fft.idctn(matrix)
+    # seed wave signal that lies well outside of the wavelength range for filtering
+    # (at least an octave below lambda_min), where the filter damps the signal by more
+    # than an order of magnitude. We will test all candidate modes.
+    signal_min = np.where(lambda_mn[0] < lambda_min / 2)[0].min()
+    for signal_idx in range(signal_min, matrix.shape[-1]):
+        matrix = np.zeros((Ni, Nj))
+        matrix[0, signal_idx] = 1
+        wave_data = fft.idctn(matrix)
 
-    # use spectral filtering function on random wave data
-    transfer_function, filtered_data = tb_utils.general.spectral_filtering(
-        dxy, wave_data, lambda_min, lambda_max, return_transfer_function=True
-    )
-
-    # a few checks on the output
-    wavelengths = transfer_function[0]
-    # first element in wavelengths-space is inf because normalized wavelengths are 0 here
-    assert wavelengths[0, 0] == np.inf
-    # the first elements should correspond to twice the distance of the corresponding axis (in m)
-    # this is because the maximum spatial scale is half a wavelength through the domain
-    assert wavelengths[1, 0] == (dxy) * wave_data.shape[-2] * 2
-    assert wavelengths[0, 1] == (dxy) * wave_data.shape[-1] * 2
-
-    # check that filtered/ smoothed field exhibits smaller range of values
-    assert (filtered_data.max() - filtered_data.min()) < (
-        wave_data.max() - wave_data.min()
-    )
-    # because the randomly generated wave lies outside of range that is set for filtering,
-    # make sure that the filtering results in the disappearance of this signal
-    assert (
-        abs(
-            np.floor(np.log10(abs(filtered_data.mean())))
-            - np.floor(np.log10(abs(wave_data.mean())))
+        # use spectral filtering function on wave data
+        (wavelengths, transfer_function), filtered_data = (
+            tb_utils.general.spectral_filtering(
+                dxy, wave_data, lambda_min, lambda_max, return_transfer_function=True
+            )
         )
-        >= 1
-    )
+
+        # a few checks on the output
+        # first element in wavelengths-space is inf because normalized wavelengths are 0 here
+        assert wavelengths[0, 0] == np.inf
+        # the first elements should correspond to twice the distance of the corresponding axis (in m)
+        # this is because the maximum spatial scale is half a wavelength through the domain
+        assert wavelengths[1, 0] == (dxy) * wave_data.shape[-2] * 2
+        assert wavelengths[0, 1] == (dxy) * wave_data.shape[-1] * 2
+
+        # check that filtered/ smoothed field exhibits smaller range of values
+        assert (filtered_data.max() - filtered_data.min()) < (
+            wave_data.max() - wave_data.min()
+        )
+
+        # because the wave lies outside of range that is set for filtering,
+        # make sure that the filtering results in the disappearance of this signal.
+        # Note: std is used rather than mean, because the mean of a single cosine
+        # mode is analytically zero and would only compare floating point round-off.
+        assert (
+            abs(
+                np.floor(np.log10(filtered_data.std()))
+                - np.floor(np.log10(wave_data.std()))
+            )
+            >= 1
+        )
 
 
 def test_combine_tobac_feats():
