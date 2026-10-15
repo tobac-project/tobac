@@ -33,14 +33,26 @@ jobs:
       - name: Install tobac
         run: |
           pip install .
-      - name: Download shared example data
-        # Most notebooks fetch and unpack this same archive into examples/ if
-        # it is missing; do it once up front so parallel runs don't race on it.
+      - name: Restore example data cache
+        id: restore-data
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/tobac-notebook-data
+          key: notebook-data-${{ hashFiles('.github/scripts/fetch_notebook_data.py') }}
+      - name: Fetch and verify example data
+        # Most notebooks download this data themselves if it is missing; fetch
+        # it once up front so parallel runs don't race on it. Cached files are
+        # re-verified against their pinned hashes.
         run: |
-          curl -sSL --retry 3 -o tobac_example_data.zip \
-            https://zenodo.org/records/3195910/files/climate-processes/tobac_example_data-v1.0.1.zip
-          unzip -q tobac_example_data.zip -d examples
-          rm tobac_example_data.zip
+          python .github/scripts/fetch_notebook_data.py ~/.cache/tobac-notebook-data
+      - name: Save example data cache
+        # Saved here rather than at the end of the job so the cache is kept
+        # even when a notebook fails.
+        if: steps.restore-data.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/tobac-notebook-data
+          key: ${{ steps.restore-data.outputs.cache-primary-key }}
       - name: Execute all notebook files in parallel
         # Notebooks are grouped by directory: directories run in parallel, while
         # notebooks sharing a directory run sequentially since they can write
