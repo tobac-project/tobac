@@ -1,5 +1,17 @@
 name: Jupyter Notebooks CI
-on: [push, pull_request]
+on:
+  push:
+    branches: [main, RC_*]
+  pull_request:
+    paths:
+      - "tobac/**"
+      - "examples/**"
+      - "environment-examples.yml"
+      - ".github/workflows/check_notebooks.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   Check-Notebooks:
     runs-on: ubuntu-latest
@@ -21,13 +33,60 @@ jobs:
       - name: Install tobac
         run: |
           pip install .
-      - name: Find all notebook files
+      - name: Restore example data cache
+        id: restore-data
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/tobac-notebook-data
+          key: notebook-data-${{ hashFiles('.github/scripts/fetch_notebook_data.py') }}
+      - name: Fetch and verify example data
+        # Most notebooks download this data themselves if it is missing; fetch
+        # it once up front so parallel runs don't race on it. Cached files are
+        # re-verified against their pinned hashes.
         run: |
-          find . -type f -name '*.ipynb' > nbfiles.txt
-          cat nbfiles.txt
-      - name: Execute all notebook files
+          python .github/scripts/fetch_notebook_data.py ~/.cache/tobac-notebook-data
+      - name: Save example data cache
+        # Saved here rather than at the end of the job so the cache is kept
+        # even when a notebook fails.
+        if: steps.restore-data.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/tobac-notebook-data
+          key: ${{ steps.restore-data.outputs.cache-primary-key }}
+      - name: Execute all notebook files in parallel
+        # Notebooks are grouped by directory: directories run in parallel, while
+        # notebooks sharing a directory run sequentially since they can write
+        # to the same output files (e.g. Save/, Plot/).
         run: |
-          while IFS= read -r nbpath; do
-            jupyter nbconvert --inplace --ClearMetadataPreprocessor.enabled=True --clear-output $nbpath
-            jupyter nbconvert --to notebook --inplace --execute $nbpath
-          done < nbfiles.txt
+          mkdir -p nb_logs
+          run_dir() {
+            dir="$1"
+            log="nb_logs/$(echo "$dir" | tr '/' '_').log"
+            status=0
+            for nbpath in $(find "$dir" -maxdepth 1 -type f -name '*.ipynb' | sort); do
+              echo "==> $nbpath" >> "$log"
+              start=$SECONDS
+              if jupyter nbconvert --inplace --ClearMetadataPreprocessor.enabled=True --clear-output "$nbpath" >> "$log" 2>&1 \
+                 && jupyter nbconvert --to notebook --inplace --execute "$nbpath" >> "$log" 2>&1; then
+                echo "    OK ($((SECONDS - start))s)" >> "$log"
+              else
+                echo "    FAILED ($((SECONDS - start))s)" >> "$log"
+                echo "$nbpath" >> nb_logs/failed.txt
+                status=1
+              fi
+            done
+            cat "$log"
+            return $status
+          }
+          export -f run_dir
+          find . -type f -name '*.ipynb' -not -path '*/.ipynb_checkpoints/*' -exec dirname {} \; \
+            | sort -u > nbdirs.txt
+          cat nbdirs.txt
+          echo "Running with $(nproc) parallel jobs"
+          rc=0
+          xargs -P "$(nproc)" -I {} bash -c 'run_dir "$1"' _ {} < nbdirs.txt || rc=$?
+          if [ -s nb_logs/failed.txt ]; then
+            echo "Failed notebooks:"
+            cat nb_logs/failed.txt
+          fi
+          [ "$rc" -eq 0 ]
