@@ -18,7 +18,7 @@ jobs:
       - name: Set up mamba environment
         uses: mamba-org/setup-micromamba@v1
         with:
-          environment-file: environment-ci.yml
+          environment-file: environment.yml
           generate-run-shell: true
           cache-environment: true
           cache-downloads: true
