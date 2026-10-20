@@ -18,6 +18,7 @@ dependencies:
   - jupyter
   - notebook
   - pyarrow
+  - pooch
   - s3fs
   - arm_pyart
   - seaborn
