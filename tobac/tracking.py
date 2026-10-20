@@ -753,17 +753,19 @@ def linking_trackpy_latlon(
         )
         # recreate a single dataframe from the list
         trajectories_unfiltered = pd.concat(trajectories_unfiltered)
+    else:
+        raise ValueError("method linking must be one of 'random' or 'predict'")
 
-        trajectories_unfiltered.drop(columns=["x", "y"], inplace=True)
+    trajectories_unfiltered.drop(columns=["x", "y"], inplace=True)
 
-        trajectories_unfiltered.rename(
-            columns={
-                "__temp_y_coord": "y",
-                "__temp_x_coord": "x",
-                "__temp_z_coord": "z",
-            },
-            inplace=True,
-        )
+    trajectories_unfiltered.rename(
+        columns={
+            "__temp_y_coord": "y",
+            "__temp_x_coord": "x",
+            "__temp_z_coord": "z",
+        },
+        inplace=True,
+    )
 
     # Reset trackpy parameters to previously set values
     if subnetwork_size is not None:
