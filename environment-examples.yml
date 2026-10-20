@@ -1,8 +1,4 @@
-# conda environment matching the "examples" pixi environment in pixi.toml;
-# keep in sync with pixi.toml and pyproject.toml (checked by
-# .github/scripts/check_requirements.py).
-# After creating the environment, install tobac with `pip install -e . --no-deps`
-
+# conda environment matching the "examples" pixi environment in pixi.toml
 name: tobac-examples
 channels:
   - conda-forge
