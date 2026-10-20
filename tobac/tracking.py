@@ -460,7 +460,7 @@ def linking_trackpy_latlon(
     time_cell_min=None,
     order=1,
     extrapolate=0,
-    method_linking="random",
+    method_linking="predict",
     adaptive_step=None,
     adaptive_stop_multiplier=None,
     cell_number_start=1,
