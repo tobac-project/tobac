@@ -45,7 +45,7 @@ def feature_position(
     track_data: Optional[np.ndarray] = None,
     threshold_i: Optional[float] = None,
     position_threshold: Literal[
-        "center", "extreme", "weighted_diff", "weighted abs"
+        "center", "extreme", "weighted_diff", "weighted_abs"
     ] = "center",
     target: Optional[Literal["maximum", "minimum"]] = None,
     PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
@@ -861,7 +861,7 @@ def feature_detection_multithreshold_timestep(
     min_num: int = 0,
     target: Literal["maximum", "minimum"] = "maximum",
     position_threshold: Literal[
-        "center", "extreme", "weighted_diff", "weighted abs"
+        "center", "extreme", "weighted_diff", "weighted_abs"
     ] = "center",
     sigma_threshold: float = 0.5,
     n_erosion_threshold: int = 0,
@@ -1149,7 +1149,7 @@ def feature_detection_multithreshold(
     min_num: int = 0,
     target: Literal["maximum", "minimum"] = "maximum",
     position_threshold: Literal[
-        "center", "extreme", "weighted_diff", "weighted abs"
+        "center", "extreme", "weighted_diff", "weighted_abs"
     ] = "center",
     sigma_threshold: float = 0.5,
     n_erosion_threshold: int = 0,
