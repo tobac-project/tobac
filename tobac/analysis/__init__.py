@@ -15,15 +15,12 @@ for individual convective cells and their properties. [1]_
 
 References
 ----------
-.. Heikenfeld, M., Marinescu, P. J., Christensen, M.,
+.. [1] Heikenfeld, M., Marinescu, P. J., Christensen, M.,
    Watson-Parris, D., Senf, F., van den Heever, S. C.
    & Stier, P. (2019). tobac 1.2: towards a flexible
    framework for tracking and analysis of clouds in
    diverse datasets. Geoscientific Model Development,
    12(11), 4551-4570.
-
-Notes
------
 """
 
 from tobac.analysis.cell_analysis import *
