@@ -9,6 +9,7 @@ Thank you for your eagerness to contribute to *tobac*. We have a step-by-step ov
 :maxdepth: 3
 
 code_of_conduct
+ai_policy
 git_basics
 documentation
 code_reviews

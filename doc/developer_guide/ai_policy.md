@@ -1,3 +1,5 @@
+(ai-policy)=
+
 # AI Policy
 "AI" in this document refers to generative AI tools, such as large language models (LLMs; e.g., Claude, ChatGPT, Gemini, etc.) that can generate, edit, and review  code, create and manipulate images, or generate human-like communication.
 
