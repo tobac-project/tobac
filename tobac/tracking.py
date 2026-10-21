@@ -69,7 +69,6 @@ def linking_trackpy(
     min_h2: Optional[int] = None,
     max_h2: Optional[int] = None,
     PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
-    features_append: Union[None, pd.DataFrame] = None,
     save_unfiltered_cell: bool = False,
 ) -> pd.DataFrame:
     """Perform Linking of features in trajectories.
@@ -95,13 +94,6 @@ def linking_trackpy(
     ----------
     features : pandas.DataFrame
         Detected features to be linked.
-
-    features_append : pandas.DataFrame
-        New features to be tracked. This dataframe can overlap with the features dataframe
-        features, but only times where there is no cell information (either `cell` column for that
-        time are all equal to cell_number_unassigned or there is no cell column) for the
-        *whole time* are considered.
-        If this is not None, features must have a cell column.
 
     dt : float
         Time resolution of tracked features in seconds.
