@@ -429,7 +429,7 @@ def add_coordinates_to_features(
                     dim: dim_interp_coords[dim]
                     for dim in renamed_dim_da[interp_coord].dims
                 }
-            )
+            ).values
         else:
             # If non-numeric, we should instead just index the nearest values:
             return_feat_df[interp_coord_name] = renamed_dim_da[interp_coord].isel(
@@ -437,5 +437,5 @@ def add_coordinates_to_features(
                     dim: np.round(dim_interp_coords[dim]).astype(int)
                     for dim in renamed_dim_da[interp_coord].dims
                 }
-            )
+            ).values
     return return_feat_df
