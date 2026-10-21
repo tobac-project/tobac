@@ -422,7 +422,7 @@ def linking_trackpy_latlon(
     time_cell_min=None,
     order=1,
     extrapolate=0,
-    method_linking="random",
+    method_linking="predict",
     adaptive_step=None,
     adaptive_stop_multiplier=None,
     cell_number_start=1,
@@ -684,9 +684,8 @@ def linking_trackpy_latlon(
         )
         # recreate a single dataframe from the list
         trajectories_unfiltered = pd.concat(trajectories_unfiltered)
-
     else:
-        raise ValueError("method_linking unknown")
+        raise ValueError("method linking must be one of 'random' or 'predict'")
 
     trajectories_unfiltered = _trackpy_coords_to_latlon(trajectories_unfiltered)
 
