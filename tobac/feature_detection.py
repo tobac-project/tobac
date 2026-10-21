@@ -84,8 +84,8 @@ def feature_position(
         'center' picks the geometrical centre of the region,
         and is typically not recommended. 'extreme' picks the
         maximum or minimum value inside the region (max/min set by
-         ```target```) 'weighted_diff' picks the centre of the
-         region weighted by the distance from the threshold value
+        ```target```) 'weighted_diff' picks the centre of the
+        region weighted by the distance from the threshold value
         'weighted_abs' picks the centre of the region weighted by
         the absolute values of the field
 
@@ -109,10 +109,10 @@ def feature_position(
         the maximum coordinate value, and it is not a length.
 
     hdim2_min : int
-        Minimum real array index of the first horizontal dimension (for PBCs)
+        Minimum real array index of the second horizontal dimension (for PBCs)
 
     hdim2_max : int
-        Maximum real array index of the first horizontal dimension (for PBCs)
+        Maximum real array index of the second horizontal dimension (for PBCs)
         Note that this coordinate is INCLUSIVE, meaning that this is
         the maximum coordinate value, and it is not a length.
 
@@ -249,11 +249,11 @@ def test_overlap(
 
     Parameters
     ----------
-    region_1 : list
+    region_inner : list
         list of 2-element tuples defining the indices of
         all cell in the region
 
-    region_2 : list
+    region_outer : list
         list of 2-element tuples defining the indices of
         all cell in the region
 
@@ -407,10 +407,9 @@ def feature_detection_threshold(
         Number of the current timestep.
 
     threshold : float, optional
-        Threshold value used to select target regions to track.  The feature detection is inclusive of the
-        threshold value(s), i.e. values greater/less than or equal are included in the target region. The
-        feature detection is inclusive of the threshold value(s), i.e. values greater/less than or equal are
-        included in the target region. Default is None.
+        Threshold value used to select target regions to track. The feature detection is inclusive of the
+        threshold value(s), i.e. values greater/less than or equal are included in the target region.
+        Default is None.
 
     target : {'maximum', 'minimum'}, optional
         Flag to determine if tracking is targeting minima or maxima
@@ -772,8 +771,8 @@ def feature_detection_threshold(
             """
             if is_3D:
                 region_i = np.ravel_multi_index(
-                    (hdim1_indices, hdim2_indices, vdim_indices),
-                    (y_max + 1, x_max + 1, z_max + 1),
+                    (vdim_indices, hdim1_indices, hdim2_indices),
+                    (z_max + 1, y_max + 1, x_max + 1),
                 )
             else:
                 region_i = np.ravel_multi_index(
@@ -901,8 +900,8 @@ def feature_detection_multithreshold_timestep(
     min_num : int, optional
         This parameter is not used in the function. Default is 0.
 
-    target : {'maximum', 'minimum'}, optinal
-        Flag to determine if tracking is targetting minima or maxima
+    target : {'maximum', 'minimum'}, optional
+        Flag to determine if tracking is targeting minima or maxima
         in the data. Default is 'maximum'.
 
     position_threshold : {'center', 'extreme', 'weighted_diff',
@@ -911,7 +910,7 @@ def feature_detection_multithreshold_timestep(
         feature. Default is 'center'.
 
     sigma_threshold: float, optional
-        Standard deviation for intial filtering step. Default is 0.5.
+        Standard deviation for initial filtering step. Default is 0.5.
 
     n_erosion_threshold: int, optional
         Number of pixels by which to erode the identified features.
@@ -1106,12 +1105,23 @@ def feature_detection_multithreshold_timestep(
 
     if return_labels or statistic:
         # reconstruct the labeled regions based on the regions dict
-        labels = np.zeros(track_data.shape)
-        labels = labels.astype(int)
+        labels = np.zeros(track_data.shape, dtype=int)
+        # We need to transpose the input data
+        if vertical_axis is not None:
+            if vertical_axis == 1:
+                labels = np.transpose(labels, axes=(1, 0, 2)).copy()
+            elif vertical_axis == 2:
+                labels = np.transpose(labels, axes=(2, 0, 1)).copy()
         for key in regions_old.keys():
             labels.ravel()[regions_old[key]] = key
             # apply function to get statistics based on labeled regions and functions provided by the user
             # the feature dataframe is updated by appending a column for each metric
+        # Now revert the transpose
+        if vertical_axis is not None:
+            if vertical_axis == 1:
+                labels = np.transpose(labels, axes=(1, 0, 2))
+            elif vertical_axis == 2:
+                labels = np.transpose(labels, axes=(1, 2, 0))
 
     if statistic:
         # select which data to use according to statistics_unsmoothed option
@@ -1184,11 +1194,14 @@ def feature_detection_multithreshold(
     dxy : float
         Grid spacing of the input data (in meter).
 
-    thresholds : list of floats, optional
+    threshold : list of floats, optional
         Threshold values used to select target regions to track. The feature detection is inclusive of the threshold value(s), i.e. values greater/less than or equal are included in the target region. Default is None.
 
+    min_num : int, optional
+        This parameter has no effect and will be deprecated in a future version of tobac. Default is 0.
+
     target : {'maximum', 'minimum'}, optional
-        Flag to determine if tracking is targetting minima or maxima in
+        Flag to determine if tracking is targeting minima or maxima in
         the data. Default is 'maximum'.
 
     position_threshold : {'center', 'extreme', 'weighted_diff',
@@ -1197,7 +1210,7 @@ def feature_detection_multithreshold(
         feature. Default is 'center'.
 
     sigma_threshold: float, optional
-        Standard deviation for intial filtering step. Default is 0.5.
+        Standard deviation for initial filtering step. Default is 0.5.
 
     n_erosion_threshold: int, optional
         Number of pixels by which to erode the identified features.
@@ -1543,7 +1556,7 @@ def filter_min_distance(
     features:      pandas DataFrame
                    features
     dxy:           float
-        Constant horzontal grid spacing (meters).
+        Constant horizontal grid spacing (meters).
     dz: float
         Constant vertical grid spacing (meters), optional. If not specified
         and the input is 3D, this function requires that `z_coordinate_name` is available
@@ -1663,46 +1676,52 @@ def filter_min_distance(
         # Find neighbours for each point
         neighbours = features_tree.query_ball_tree(features_tree, r=min_distance)
 
-    # Iterate over list of neighbours to find which features to remove
-    for i, neighbour_list in enumerate(neighbours):
-        if len(neighbour_list) > 1:
-            # Remove the feature we're interested in as it's always included
-            neighbour_list = list(neighbour_list)
-            neighbour_list.remove(i)
-            # If maximum target check if any neighbours have a larger threshold value
-            if target == "maximum" and np.any(
-                features["threshold_value"].iloc[neighbour_list]
-                > features["threshold_value"].iloc[i]
-            ):
-                removal_flag[i] = True
-            # If minimum target check if any neighbours have a smaller threshold value
-            elif target == "minimum" and np.any(
-                features["threshold_value"].iloc[neighbour_list]
-                < features["threshold_value"].iloc[i]
-            ):
-                removal_flag[i] = True
-            # Else check if any neighbours have an equal threshold value
-            else:
-                wh_equal_threshold = (
-                    features["threshold_value"].iloc[neighbour_list]
-                    == features["threshold_value"].iloc[i]
-                )
-                if np.any(wh_equal_threshold):
-                    # Check if any have a larger number of points
-                    if np.any(
-                        features["num"].iloc[neighbour_list][wh_equal_threshold]
-                        > features["num"].iloc[i]
-                    ):
-                        removal_flag[i] = True
-                    # Check if any have the same number of points and a lower index value
-                    else:
-                        wh_equal_area = (
-                            features["num"].iloc[neighbour_list][wh_equal_threshold]
-                            == features["num"].iloc[i]
-                        )
-                        if np.any(wh_equal_area):
-                            if np.any(wh_equal_area.index[wh_equal_area] < i):
-                                removal_flag[i] = True
+    origin_inds = np.repeat(np.arange(len(neighbours)), [len(n) for n in neighbours])
+    neighbour_inds = np.concatenate(neighbours)
 
-    # Return the features that are not flagged for removal
+    # Remove elements where origin and neighbours match
+    wh_different = origin_inds != neighbour_inds
+    if not np.any(wh_different):
+        return features
+    origin_inds = origin_inds[wh_different]
+    neighbour_inds = neighbour_inds[wh_different]
+
+    # Now get arrays from dataframe to perform logic on
+    origin_vals = (
+        features[["threshold_value", "num", "feature"]].iloc[origin_inds].to_numpy()
+    )
+    neighbour_vals = (
+        features[["threshold_value", "num", "feature"]].iloc[neighbour_inds].to_numpy()
+    )
+
+    # Perform vectorised logic
+    to_remove = np.logical_or.reduce(
+        [
+            (
+                (origin_vals[:, 0] < neighbour_vals[:, 0])
+                if target == "maximum"
+                else (origin_vals[:, 0] > neighbour_vals[:, 0])
+            ),  # if threshold values is smaller (or larger if target == minimum), remove
+            np.logical_and(
+                origin_vals[:, 0] == neighbour_vals[:, 0],
+                origin_vals[:, 1]
+                < neighbour_vals[
+                    :, 1
+                ],  # if threshold value is equal, and area is smaller, remove
+            ),
+            np.logical_and.reduce(
+                [
+                    origin_vals[:, 0] == neighbour_vals[:, 0],
+                    origin_vals[:, 1] == neighbour_vals[:, 1],
+                    origin_vals[:, 2]
+                    >= neighbour_vals[
+                        :, 2
+                    ],  # if threshold value and area are equal but feature number is larger, remove
+                ]
+            ),
+        ]
+    )
+
+    # Remove flagged features
+    removal_flag[origin_inds[to_remove]] = True
     return features.iloc[~removal_flag]
