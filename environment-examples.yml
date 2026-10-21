@@ -28,10 +28,10 @@ dependencies:
   - numba
   - dask
   - ffmpeg
-  - intake
+  - intake!=2.0.0,!=2.0.1,!=2.0.3,!=2.0.4,!=2.0.5
   - intake-xarray
   - jinja2
-  - healpix
+  - healpix>=2024.2
   - easygems
   - pyvista>=0.46
   - trame
