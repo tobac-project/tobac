@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 import functools
+from typing import Optional
 
 import numpy as np
 
@@ -349,10 +350,10 @@ class PBCLimitError(ValueError):
 
 def weighted_circmean(
     values: np.ndarray,
-    weights: np.ndarray,
+    weights: Optional[np.ndarray] = None,
     high: float = 2 * np.pi,
     low: float = 0,
-    axis: int | None = None,
+    axis: Optional[int] = None,
 ) -> np.ndarray:
     """
     Calculate the weighted circular mean over a set of values. If all the
@@ -362,13 +363,13 @@ def weighted_circmean(
     ----------
     values: array-like
         Array of values to calculate the mean over
-    weights: array-like
-        Array of weights corresponding to each value
+    weights: array-like, optional
+        Array of weights corresponding to each value. Defaults to None (all weights equal)
     high: float, optional
         Upper bound of the range of values. Defaults to 2*pi
     low: float, optional
         Lower bound of the range of values. Defaults to 0
-    axis: int | None, optional
+    axis: int, optional
         Axis over which to take the average. If None, the average will be taken
         over the entire array. Defaults to None
 
