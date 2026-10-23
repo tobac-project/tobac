@@ -94,6 +94,7 @@ docs = [
     "sphinx-toolbox",
     "linkify-it-py",
     "sphinxcontrib-mermaid",
+    "sphinx-codeautolink",
 ]
 
 # All extras combined
@@ -127,6 +128,7 @@ all = [
     "sphinx-toolbox",
     "linkify-it-py",
     "sphinxcontrib-mermaid",
+    "sphinx-codeautolink",
 ]
 
 
