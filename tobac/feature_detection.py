@@ -98,7 +98,10 @@ def feature_position(
         'none' means that we do not have periodic boundaries
         'hdim_1' means that we are periodic along hdim1
         'hdim_2' means that we are periodic along hdim2
-        'both' means that we are periodic along both horizontal dimensions
+        'both' means that we are periodic along both horizontal dimensions.
+        On dimensions where periodic boundaries are enabled, the feature position will
+        be placed in the range [-0.5, dimension.size-0.5], to better represent the
+        physical ranges of dimensions where PBCs are appropriate (e.g. longitude).
 
     hdim1_min : int
         Minimum real array index of the first horizontal dimension (for PBCs)
@@ -132,6 +135,7 @@ def feature_position(
         lies exactly between hdim1_max and hdim1_min, the output could be
         between hdim1_max and hdim1_max+1. While a value between hdim1_min-1
         and hdim1_min would also be valid, we choose to overflow on the max side of things.
+
     Notes
     -----
     """
@@ -301,6 +305,7 @@ def remove_parents(
     strict_thresholding: Bool, optional
         If True, a feature can only be detected if all previous thresholds have been met.
         Default is False.
+
     Returns
     -------
     features_thresholds : pandas.DataFrame
@@ -446,6 +451,7 @@ def feature_detection_threshold(
          'hdim_1' means that we are periodic along hdim1
          'hdim_2' means that we are periodic along hdim2
          'both' means that we are periodic along both horizontal dimensions
+
     vertical_axis: int
         The vertical axis number of the data.
 
@@ -897,7 +903,9 @@ def feature_detection_multithreshold_timestep(
         Number of the current timestep.
 
     threshold : list of floats, optional
-        Threshold value used to select target regions to track. The feature detection is inclusive of the threshold value(s), i.e. values greater/less than or equal are included in the target region. Default is None.
+        Threshold value used to select target regions to track. The feature detection is inclusive of
+        the threshold value(s), i.e. values greater/less than or equal are included in the target region.
+        Default is None.
 
     min_num : int, optional
         This parameter is not used in the function. Default is 0.
@@ -921,7 +929,8 @@ def feature_detection_multithreshold_timestep(
     n_min_threshold :  int, dict of float to int, or list of int, optional
         Minimum number of identified contiguous pixels for a feature to be detected. Default is 0.
         If given as a list, the number of elements must match number of thresholds.
-        If given as a dict, the keys need to match the thresholds and the values are the minimum number of identified contiguous pixels for a feature using that specific threshold.
+        If given as a dict, the keys need to match the thresholds and the values are the minimum
+        number of identified contiguous pixels for a feature using that specific threshold.
 
     min_distance : float, optional
         Minimum distance between detected features (in meters). Default is 0.
@@ -949,11 +958,13 @@ def feature_detection_multithreshold_timestep(
         Default is False.
 
     statistic : dict, optional
-            Default is None. Optional parameter to calculate bulk statistics within feature detection.
-            Dictionary with callable function(s) to apply over the region of each detected feature and the name of the statistics to appear in the feature ou            tput dataframe. The functions should be the values and the names of the metric the keys (e.g. {'mean': np.mean})
+        Default is None. Optional parameter to calculate bulk statistics within feature detection.
+        Dictionary with callable function(s) to apply over the region of each detected feature and
+        the name of the statistics to appear in the feature output dataframe. The functions should
+        be the values and the names of the metric the keys (e.g. {'mean': np.mean})
 
     statistics_unsmoothed: bool, optional
-            Default is False. If True, calculate the statistics on the raw data instead of the smoothed input data.
+        Default is False. If True, calculate the statistics on the raw data instead of the smoothed input data.
 
     return_labels: bool, optional
         Default is False. If True, return the label fields.
@@ -1197,7 +1208,9 @@ def feature_detection_multithreshold(
         Grid spacing of the input data (in meter).
 
     threshold : list of floats, optional
-        Threshold values used to select target regions to track. The feature detection is inclusive of the threshold value(s), i.e. values greater/less than or equal are included in the target region. Default is None.
+        Threshold values used to select target regions to track. The feature detection is inclusive
+        of the threshold value(s), i.e. values greater/less than or equal are included in the target
+        region. Default is None.
 
     min_num : int, optional
         This parameter has no effect and will be deprecated in a future version of tobac. Default is 0.
@@ -1221,7 +1234,9 @@ def feature_detection_multithreshold(
     n_min_threshold :  int, dict of float to int, or list of int, optional
         Minimum number of identified contiguous pixels for a feature to be detected. Default is 0.
         If given as a list, the number of elements must match number of thresholds.
-        If given as a dict, the keys need to match the thresholds and the values are the minimum number of identified contiguous pixels for a feature using that specific threshold.
+        If given as a dict, the keys need to match the thresholds and the values are
+        the minimum number of identified contiguous pixels for a feature using that
+        specific threshold.
 
     min_distance : float, optional
         Minimum distance between detected features (in meters). Default is 0.
@@ -1235,13 +1250,21 @@ def feature_detection_multithreshold(
         'hdim_1' means that we are periodic along hdim1
         'hdim_2' means that we are periodic along hdim2
         'both' means that we are periodic along both horizontal dimensions
+        On dimensions where periodic boundaries are enabled, the feature position will
+        be placed in the range [-0.5, dimension.size-0.5], to better represent the
+        physical ranges of dimensions where PBCs are appropriate (e.g. longitude).
+        Coordinates values will be extrapolated for PBC features which are placed
+        outside of the domain (e.g. between the first and last points on a dimension).
+
     vertical_coord: str
         Name of the vertical coordinate. If None, tries to auto-detect.
         It looks for the coordinate or the dimension name corresponding
         to the string.
+
     vertical_axis: int or None.
         The vertical axis number of the data. If None, uses vertical_coord
         to determine axis. This must be >=0.
+
     detect_subset: dict-like or None
         Whether to run feature detection on only a subset of the data.
         If this is not None, it will subset the grid that we run feature detection
@@ -1251,6 +1274,7 @@ def feature_detection_multithreshold(
         For example, if your data are oriented as (time, z, y, x) and you want to
         only detect on values between z levels 10 and 29, you would set:
         {1: (10, 30)}.
+
     wavelength_filtering: tuple, optional
        Minimum and maximum wavelength for horizontal spectral filtering in meter.
        Default is None.
@@ -1555,42 +1579,54 @@ def filter_min_distance(
 
     Parameters
     ----------
-    features:      pandas DataFrame
-                   features
-    dxy:           float
+    features: pandas DataFrame
+        Input features to filter
+
+    dxy:  float
         Constant horizontal grid spacing (meters).
+
     dz: float
         Constant vertical grid spacing (meters), optional. If not specified
         and the input is 3D, this function requires that `z_coordinate_name` is available
         in the `features` input. If you specify a value here, this function assumes
         that it is the constant z spacing between points, even if ```z_coordinate_name```
         is specified.
+
     min_distance:  float
         minimum distance between detected features (meters)
+
     x_coordinate_name: str
         The name of the x coordinate to calculate distance based on in meters.
         This is typically `projection_x_coordinate`. Currently unused.
+
     y_coordinate_name: str
         The name of the y coordinate to calculate distance based on in meters.
         This is typically `projection_y_coordinate`. Currently unused.
+
     z_coordinate_name: str or None
         The name of the z coordinate to calculate distance based on in meters.
         This is typically `altitude`. If None, tries to auto-detect.
+
     target: {'maximum', 'minimum'}, optional
         Flag to determine if tracking is targeting minima or maxima in
         the data. Default is 'maximum'.
+
     PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both'), optional
         Sets whether to use periodic boundaries, and if so in which directions.
         'none' means that we do not have periodic boundaries
         'hdim_1' means that we are periodic along hdim1
         'hdim_2' means that we are periodic along hdim2
         'both' means that we are periodic along both horizontal dimensions
+
     min_h1: int, optional
         Minimum real point in hdim_1, for use with periodic boundaries.
+
     max_h1: int, optional
         Maximum point in hdim_1, exclusive. max_h1-min_h1 should be the size.
+
     min_h2: int, optional
         Minimum real point in hdim_2, for use with periodic boundaries.
+
     max_h2: int, optional
         Maximum point in hdim_2, exclusive. max_h2-min_h2 should be the size.
 
