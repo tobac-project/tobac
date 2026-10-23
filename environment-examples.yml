@@ -6,7 +6,7 @@ dependencies:
   - scipy
   - scikit-image
   - scikit-learn
-  - pandas<3
+  - pandas
   - matplotlib
   - iris
   - xarray<2024.10.0
@@ -17,7 +17,8 @@ dependencies:
   - black
   - jupyter
   - notebook
-  - pytables
+  - pyarrow
+  - pooch
   - s3fs
   - arm_pyart
   - seaborn
@@ -27,10 +28,11 @@ dependencies:
   - numba
   - dask
   - ffmpeg
-  - intake==0.7.0
-  - intake-xarray==0.7.0
-  - healpix
-  - easygems==0.1.2
+  - intake!=2.0.0,!=2.0.1,!=2.0.3,!=2.0.4,!=2.0.5
+  - intake-xarray
+  - jinja2
+  - healpix>=2024.2
+  - easygems
   - pyvista>=0.46
   - trame
   - trame-vtk

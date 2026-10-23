@@ -58,6 +58,9 @@ def _conv_kwargs_iris_to_xarray(
     ----------
     conv_kwargs : dict
         Input kwargs to convert
+    preserve_iris_datetime_types : bool, optional
+        If True, preserve the original iris datetime types where possible.
+        Default is True.
 
     Returns
     -------
@@ -86,6 +89,9 @@ def _conv_kwargs_irispandas_to_xarray(
     ----------
     conv_kwargs : dict
         Input kwargs to convert
+    preserve_iris_datetime_types : bool, optional
+        If True, preserve the original iris datetime types where possible.
+        Default is True.
 
     Returns
     -------

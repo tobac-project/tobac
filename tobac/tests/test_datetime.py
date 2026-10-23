@@ -143,6 +143,7 @@ def test_to_datestr():
         assert (
             datetime_utils.to_datestr(date) == "2000-01-01T00:00:00.000000000"
             or datetime_utils.to_datestr(date) == "2000-01-01T00:00:00"
+            or datetime_utils.to_datestr(date) == "2000-01-01T00:00:00.000000"
         )
 
 
@@ -163,9 +164,11 @@ def test_to_datestr_array():
         cftime.DatetimeNoLeap(2000, 1, 1),
     ]
     for date in test_dates:
-        assert datetime_utils.to_datestr([date]) == [
-            "2000-01-01T00:00:00.000000000"
-        ] or datetime_utils.to_datestr([date]) == ["2000-01-01T00:00:00"]
+        assert (
+            datetime_utils.to_datestr([date]) == ["2000-01-01T00:00:00.000000000"]
+            or datetime_utils.to_datestr([date]) == ["2000-01-01T00:00:00"]
+            or (datetime_utils.to_datestr([date]) == ["2000-01-01T00:00:00.000000"])
+        )
 
 
 def test_match_datetime_format():
@@ -214,3 +217,18 @@ def test_match_datetime_format_error():
     """
     with pytest.raises(ValueError, match="Target is not a valid datetime*"):
         datetime_utils.match_datetime_format(datetime(2000, 1, 1), 1.5)
+
+
+@pytest.mark.parametrize(
+    ["date_in", "precision"],
+    [
+        ("2000-02-04T00:00:00", "s"),
+        ("2000-02-04T00:00:00.000", "ms"),
+        ("2000-02-04T00:00:00.000000", "us"),
+        ("2000-02-04T00:00:00.000000000", "ns"),
+        ("00:00:00", "s"),
+    ],
+)
+def test_detect_str_precision(date_in: str, precision: str):
+    """test that detect_str_precision returns the right precision"""
+    assert datetime_utils.detect_str_precision(date_in) == precision

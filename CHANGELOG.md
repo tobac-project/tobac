@@ -1,6 +1,35 @@
-### Tobac Changelog
+# Tobac Changelog
 
-_**Version 1.6.3:**_
+## Version 1.6.4
+
+**Enhancements for Users**
+
+- Added 2D latitude/longitude based tracking with `tobac.tracking.linking_trackpy_latlon`. Rather than relying on `dxy`, `hdim_1`, and `hdim_2`, we calculate distances using latitude and longitude. This runs 5-10 times faster than an equivalent approach with periodic boundaries for global data. A new documentation page and example notebook have been added for this functionality [#542](https://github.com/tobac-project/tobac/pull/542)
+- Added functions to convert segmentation feature masks to cell masks and vice versa (`convert_feature_mask_to_cells` and `convert_cell_mask_to_features`), and added optional cell mask output from segmentation using the `return_cells` parameter, when running segmentation after tracking [#512](https://github.com/tobac-project/tobac/pull/512)
+- Added a `color` parameter to `tobac.plotting.map_tracks` to set the color of all track lines (from new contributor @ecaldon) [#564](https://github.com/tobac-project/tobac/pull/564)
+- Added a `suppress_warnings` option to segmentation to suppress the `UserWarning` raised when a 1xMxN array is given (from new contributor @EliusSolis) [#582](https://github.com/tobac-project/tobac/pull/582)
+- The `filter_min_distance` function in feature detection has been vectorised, reducing its runtime by ~80% and the runtime of feature detection with minimum distance filtering by ~20-25% [#588](https://github.com/tobac-project/tobac/pull/588)
+
+**Bug fixes**
+
+- Update internals to allow for Pandas 3 compatibility [#568](https://github.com/tobac-project/tobac/pull/568)
+- Fixed feature detection label output for 3D data, including cases where the vertical dimension is not the first spatial dimension, which caused incorrect statistics to be calculated during feature detection [#580](https://github.com/tobac-project/tobac/pull/580)
+- Renamed the `pytables` requirement to `tables` in `pyproject.toml` to match the PyPI listing [#583](https://github.com/tobac-project/tobac/pull/583)
+
+**Documentation**
+
+- All documentation pages (other than the API docs) have been migrated from RST to Markdown, enabling easier editing [#549](https://github.com/tobac-project/tobac/pull/549)
+- Added a "What's New" page to the documentation that pulls from the changelog [#545](https://github.com/tobac-project/tobac/pull/545)
+- Updated the readthedocs build to use Python 3.14 [#592](https://github.com/tobac-project/tobac/pull/592)
+- Fixed the `to_hdf` call in the radar/satellite example notebook to be compatible with pandas >=2.2 [#574](https://github.com/tobac-project/tobac/pull/574)
+
+**Internal Enhancements**
+
+- Fixed the segmentation time padding test [#569](https://github.com/tobac-project/tobac/pull/569)
+- Added a new utility function `features_to_interest_field` to construct artificial interest fields from detected features [#578](https://github.com/tobac-project/tobac/pull/578)
+
+
+## Version 1.6.3
 
 **Enhancements for Users**
 
@@ -16,7 +45,7 @@ _**Version 1.6.3:**_
 - Added continuous deployment file to deploy to PyPI/TestPyPI automatically [#548](https://github.com/tobac-project/tobac/pull/548)
 
 
-_**Version 1.6.2:**_
+## Version 1.6.2
 
 **Enhancements for Users**
 
@@ -34,14 +63,14 @@ _**Version 1.6.2:**_
 - Updated pyproject.toml and removed setup.py to support eventual release on PyPi [#537](https://github.com/tobac-project/tobac/pull/537)
 
 
-_**Version 1.6.1:**_
+## Version 1.6.1
 
 **Bug fixes**
 
 - An bug in the `field_and_features_over_time` generator, used to loop through mask `DataArrays` and feature `Dataframes` simultaneously which caused an error in the dataframe had no 0 index value has been fixed [#506](https://github.com/tobac-project/tobac/pull/506)
 - Interpolation of non-numeric coordinates (such as datetime) now works, and chooses the nearest element [#509](https://github.com/tobac-project/tobac/pull/509)
 
-_**Version 1.6.0:**_
+## Version 1.6.0
 
 **Enhancements for Users**
 
@@ -60,7 +89,7 @@ _**Version 1.6.0:**_
 
 - `tobac.utils.internal.basic` was restructured into `coordinates` and `label_props` utils, and new `datetime` and `generators` utils were added [#489](https://github.com/tobac-project/tobac/pull/489)
 
-_**Version 1.5.5:**_
+## Version 1.5.5
 
 **Bug fixes**
 
@@ -72,7 +101,7 @@ _**Version 1.5.5:**_
 - Fix matrix testing to use the specified python versions [#468](https://github.com/tobac-project/tobac/pull/468)
 
 
-_**Version 1.5.4:**_
+## Version 1.5.4
 
 **Enhancements for Users**
 
@@ -102,7 +131,7 @@ _**Version 1.5.4:**_
 - Resolved issues around updating dependencies in `black` formatting checks and Zenodo JSON checks [#457](https://github.com/tobac-project/tobac/pull/457)
 
 
-_**Version 1.5.3:**_
+## Version 1.5.3
 
 **Enhancements for Users**
 
@@ -123,7 +152,7 @@ _**Version 1.5.3:**_
 - Reorganisation of analysis tools into analysis package [#378](https://github.com/tobac-project/tobac/pull/378)
 
 
-_**Version 1.5.2:**_
+## Version 1.5.2
 
 **Enhancements for Users**
 
@@ -158,7 +187,7 @@ _**Version 1.5.2:**_
 - Pylint CI workflow added to assess code quality and compare to base branch [#373](https://github.com/tobac-project/tobac/pull/373)
 
 
-_**Version 1.5.1:**_
+## Version 1.5.1
 
 **Bug fixes**
 
@@ -173,7 +202,7 @@ _**Version 1.5.1:**_
 - Fix to Jupyter Notebook CI that was timing out due to installing packages with `conda`, switched to `mamba` to resolve. [#340](https://github.com/tobac-project/tobac/pull/340)
 
 
-_**Version 1.5.0:**_
+## Version 1.5.0
 
 **Enhancements for Users**
 
@@ -228,7 +257,7 @@ _**Version 1.5.0:**_
 
 
 
-_**Version 1.4.2:**_
+## Version 1.4.2
 
 
 **Bug fixes**
@@ -240,7 +269,7 @@ _**Version 1.4.2:**_
 - Fixed an issue in the 2D coordinate interpolation that produced object dtypes in feature detection and made the feature input data frame incompatible with the merge and split function [#251](https://github.com/tobac-project/tobac/pull/251)
 
 
-_**Version 1.4.1:**_
+## Version 1.4.1
 
 **Bug fixes**
 
@@ -251,7 +280,7 @@ _**Version 1.4.1:**_
 
 - Regenerated example notebooks so that they are up to date for the present version [#233](https://github.com/tobac-project/tobac/pull/233)
 
-_**Version 1.4.0:**_
+## Version 1.4.0
 
 **Enhancements**
 
@@ -288,13 +317,13 @@ _**Version 1.4.0:**_
 
 - Support for Python 3.6 and earlier is now deprecated and will be removed in v1.5.0 ([#193](https://github.com/tobac-project/tobac/pull/193))
 
-_**Version 1.3.3:**_
+## Version 1.3.3
 
 **Bug fixes**
 
 - Added a workaround to a bug in trackpy that fixes predictive tracking [#170](https://github.com/tobac-project/tobac/pull/170)
 
-_**Version 1.3.2:**_
+## Version 1.3.2
 
 **Bug fixes**
 
@@ -306,7 +335,7 @@ _**Version 1.3.2:**_
 - Added automatic code coverage reports [#124](https://github.com/tobac-project/tobac/pull/124)
 - Added automatic building of readthedocs documentation on pull requests
 
-_**Version 1.3.1:**_
+## Version 1.3.1
 
 **Enhancements**
 
@@ -320,7 +349,7 @@ _**Version 1.3.1:**_
 
 - New pull request template for the repository, including a checklist to be completed for each pull request [#120](https://github.com/tobac-project/tobac/pull/120)
 
-_**Version 1.3:**_
+## Version 1.3
 
 **Enhancements**
 
