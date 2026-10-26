@@ -37,6 +37,7 @@ import datetime
 import warnings
 
 import iris.cube
+from skimage.measure import regionprops
 import xarray as xr
 from typing_extensions import Literal
 from typing import Union, Callable, Optional
@@ -123,13 +124,11 @@ def add_markers(
         marker_arr = marker_arr[np.newaxis, :, :]
 
     if seed_3D_flag == "column":
-        for _, row in features.iterrows():
-            # Offset marker locations by 0.5 to find nearest pixel
-            marker_arr[
-                level,
-                int(row["hdim_1"] + 0.5) % h1_len,
-                int(row["hdim_2"] + 0.5) % h2_len,
-            ] = row["feature"]
+        marker_arr[
+            level,
+            features.hdim_1.to_numpy().round().astype(int),
+            features.hdim_2.to_numpy().round().astype(int),
+        ] = features.feature
 
     elif seed_3D_flag == "box":
         # Get the size of the seed box from the input parameter
@@ -1044,14 +1043,12 @@ def segmentation_timestep(
     segmentation_mask[wh_below_threshold] = segment_number_below_threshold
     segmentation_out.data = segmentation_mask
 
-    # add ncells to feature dataframe with new statistic method
-    features_out = get_statistics(
-        features_out,
-        np.array(segmentation_out.data.copy()),
-        np.array(field_in.data.copy()),
-        statistic={"ncells": np.count_nonzero},
-        default=0,
-    )
+    # add ncells to feature dataframe
+    if len(features_out):
+        features_out["ncells"] = np.bincount(
+            np.maximum(segmentation_out.values.ravel(), 0),
+            minlength=int(features_out.feature.max() + 1),
+        )[features_out.feature.astype(int)]
 
     # compute additional statistics, if requested
     if statistic:
