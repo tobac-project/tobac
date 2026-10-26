@@ -430,7 +430,15 @@ def add_coordinates_to_features(
                     coords={
                         dim: dim_interp_coords[dim]
                         for dim in renamed_dim_da[interp_coord].dims
-                    }
+                    },
+                    method="linear",
+                    kwargs={
+                        "fill_value": (
+                            "extrapolate"
+                            if len(renamed_dim_da[interp_coord].dims) == 1
+                            else None
+                        )
+                    },
                 )
                 .values
             )

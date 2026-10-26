@@ -11,7 +11,7 @@ cartopy
 trackpy
 jupyter
 notebook
-pytables
+pyarrow
 s3fs
 arm_pyart
 seaborn
