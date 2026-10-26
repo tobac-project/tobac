@@ -133,7 +133,7 @@ def add_markers(
     elif seed_3D_flag == "box":
         # Get the size of the seed box from the input parameter
         try:
-            seed_z = seed_3D_size[0] if is_3D else 0
+            seed_z = seed_3D_size[0] if is_3D else 1
             seed_h1 = seed_3D_size[-2]
             seed_h2 = seed_3D_size[-1]
         except TypeError:
@@ -143,34 +143,29 @@ def add_markers(
             seed_h2 = seed_3D_size
 
         seed_box_offsets = np.meshgrid(
-            np.arange(-seed_z / 2, (seed_z / 2) + 1),
-            np.arange(-seed_h1 / 2, (seed_h1 / 2) + 1),
-            np.arange(-seed_h2 / 2, (seed_h2 / 2) + 1),
+            np.arange(-seed_z / 2, seed_z / 2),
+            np.arange(-seed_h1 / 2, seed_h1 / 2),
+            np.arange(-seed_h2 / 2, seed_h2 / 2),
             indexing="ij",
         )
         seed_box_offset_z, seed_box_offset_h1, seed_box_offset_h2 = (
-            sbo.ravel() for sbo in seed_box_offsets
+            sbo.ravel()[:, np.newaxis] for sbo in seed_box_offsets
         )
-
-        ordering = np.argsort(
-            seed_box_offset_z**2 + seed_box_offset_h1**2 + seed_box_offset_h2**2
-        )[::-1]
-        seed_box_offset_z = seed_box_offset_z[ordering, np.newaxis]
-        seed_box_offset_h1 = seed_box_offset_h1[ordering, np.newaxis]
-        seed_box_offset_h2 = seed_box_offset_h2[ordering, np.newaxis]
+        if not is_3D:
+            seed_box_offset_z[:] = 0
 
         # Now we can create a big list of points to assign seed boxes
         seed_box_locs_z = (
-            (seed_box_offset_z + features.vdim.to_numpy()).round().astype(int)
+            np.ceil((seed_box_offset_z + features.vdim.to_numpy())).astype(int)
             if is_3D
             else np.zeros([seed_box_offset_z.shape[0], len(features)], dtype=int)
         )
-        seed_box_locs_h1 = (
-            (seed_box_offset_h1 + features.hdim_1.to_numpy()).round().astype(int)
-        )
-        seed_box_locs_h2 = (
-            (seed_box_offset_h2 + features.hdim_2.to_numpy()).round().astype(int)
-        )
+        seed_box_locs_h1 = np.ceil(
+            (seed_box_offset_h1 + features.hdim_1.to_numpy())
+        ).astype(int)
+        seed_box_locs_h2 = np.ceil(
+            (seed_box_offset_h2 + features.hdim_2.to_numpy())
+        ).astype(int)
 
         # Reorder to furthest first, closest last - this assigns preferring the closest features
         ordering = np.argsort(
