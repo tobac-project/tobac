@@ -37,7 +37,6 @@ import datetime
 import warnings
 
 import iris.cube
-from skimage.measure import regionprops
 import xarray as xr
 from typing_extensions import Literal
 from typing import Union, Callable, Optional
@@ -102,9 +101,6 @@ def add_markers(
     """
     if seed_3D_flag not in ["column", "box"]:
         raise ValueError('seed_3D_flag must be either "column" or "box"')
-
-    # What marker number is the background? Assumed 0.
-    bg_marker = 0
 
     if level is None:
         level = slice(None)
