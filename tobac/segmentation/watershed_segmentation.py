@@ -126,8 +126,8 @@ def add_markers(
     if seed_3D_flag == "column":
         marker_arr[
             level,
-            features.hdim_1.to_numpy().round().astype(int),
-            features.hdim_2.to_numpy().round().astype(int),
+            features.hdim_1.to_numpy().round().astype(int) % h1_len,
+            features.hdim_2.to_numpy().round().astype(int) % h2_len,
         ] = features.feature
 
     elif seed_3D_flag == "box":
