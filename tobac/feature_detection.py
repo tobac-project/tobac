@@ -769,8 +769,8 @@ def feature_detection_threshold(
             """
             if is_3D:
                 region_i = np.ravel_multi_index(
-                    (hdim1_indices, hdim2_indices, vdim_indices),
-                    (y_max + 1, x_max + 1, z_max + 1),
+                    (vdim_indices, hdim1_indices, hdim2_indices),
+                    (z_max + 1, y_max + 1, x_max + 1),
                 )
             else:
                 region_i = np.ravel_multi_index(
@@ -1103,12 +1103,23 @@ def feature_detection_multithreshold_timestep(
 
     if return_labels or statistic:
         # reconstruct the labeled regions based on the regions dict
-        labels = np.zeros(track_data.shape)
-        labels = labels.astype(int)
+        labels = np.zeros(track_data.shape, dtype=int)
+        # We need to transpose the input data
+        if vertical_axis is not None:
+            if vertical_axis == 1:
+                labels = np.transpose(labels, axes=(1, 0, 2)).copy()
+            elif vertical_axis == 2:
+                labels = np.transpose(labels, axes=(2, 0, 1)).copy()
         for key in regions_old.keys():
             labels.ravel()[regions_old[key]] = key
             # apply function to get statistics based on labeled regions and functions provided by the user
             # the feature dataframe is updated by appending a column for each metric
+        # Now revert the transpose
+        if vertical_axis is not None:
+            if vertical_axis == 1:
+                labels = np.transpose(labels, axes=(1, 0, 2))
+            elif vertical_axis == 2:
+                labels = np.transpose(labels, axes=(1, 2, 0))
 
     if statistic:
         # select which data to use according to statistics_unsmoothed option
@@ -1660,46 +1671,52 @@ def filter_min_distance(
         # Find neighbours for each point
         neighbours = features_tree.query_ball_tree(features_tree, r=min_distance)
 
-    # Iterate over list of neighbours to find which features to remove
-    for i, neighbour_list in enumerate(neighbours):
-        if len(neighbour_list) > 1:
-            # Remove the feature we're interested in as it's always included
-            neighbour_list = list(neighbour_list)
-            neighbour_list.remove(i)
-            # If maximum target check if any neighbours have a larger threshold value
-            if target == "maximum" and np.any(
-                features["threshold_value"].iloc[neighbour_list]
-                > features["threshold_value"].iloc[i]
-            ):
-                removal_flag[i] = True
-            # If minimum target check if any neighbours have a smaller threshold value
-            elif target == "minimum" and np.any(
-                features["threshold_value"].iloc[neighbour_list]
-                < features["threshold_value"].iloc[i]
-            ):
-                removal_flag[i] = True
-            # Else check if any neighbours have an equal threshold value
-            else:
-                wh_equal_threshold = (
-                    features["threshold_value"].iloc[neighbour_list]
-                    == features["threshold_value"].iloc[i]
-                )
-                if np.any(wh_equal_threshold):
-                    # Check if any have a larger number of points
-                    if np.any(
-                        features["num"].iloc[neighbour_list][wh_equal_threshold]
-                        > features["num"].iloc[i]
-                    ):
-                        removal_flag[i] = True
-                    # Check if any have the same number of points and a lower index value
-                    else:
-                        wh_equal_area = (
-                            features["num"].iloc[neighbour_list][wh_equal_threshold]
-                            == features["num"].iloc[i]
-                        )
-                        if np.any(wh_equal_area):
-                            if np.any(wh_equal_area.index[wh_equal_area] < i):
-                                removal_flag[i] = True
+    origin_inds = np.repeat(np.arange(len(neighbours)), [len(n) for n in neighbours])
+    neighbour_inds = np.concatenate(neighbours)
 
-    # Return the features that are not flagged for removal
+    # Remove elements where origin and neighbours match
+    wh_different = origin_inds != neighbour_inds
+    if not np.any(wh_different):
+        return features
+    origin_inds = origin_inds[wh_different]
+    neighbour_inds = neighbour_inds[wh_different]
+
+    # Now get arrays from dataframe to perform logic on
+    origin_vals = (
+        features[["threshold_value", "num", "feature"]].iloc[origin_inds].to_numpy()
+    )
+    neighbour_vals = (
+        features[["threshold_value", "num", "feature"]].iloc[neighbour_inds].to_numpy()
+    )
+
+    # Perform vectorised logic
+    to_remove = np.logical_or.reduce(
+        [
+            (
+                (origin_vals[:, 0] < neighbour_vals[:, 0])
+                if target == "maximum"
+                else (origin_vals[:, 0] > neighbour_vals[:, 0])
+            ),  # if threshold values is smaller (or larger if target == minimum), remove
+            np.logical_and(
+                origin_vals[:, 0] == neighbour_vals[:, 0],
+                origin_vals[:, 1]
+                < neighbour_vals[
+                    :, 1
+                ],  # if threshold value is equal, and area is smaller, remove
+            ),
+            np.logical_and.reduce(
+                [
+                    origin_vals[:, 0] == neighbour_vals[:, 0],
+                    origin_vals[:, 1] == neighbour_vals[:, 1],
+                    origin_vals[:, 2]
+                    >= neighbour_vals[
+                        :, 2
+                    ],  # if threshold value and area are equal but feature number is larger, remove
+                ]
+            ),
+        ]
+    )
+
+    # Remove flagged features
+    removal_flag[origin_inds[to_remove]] = True
     return features.iloc[~removal_flag]
