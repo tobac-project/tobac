@@ -152,7 +152,6 @@ def add_markers(
             sbo.ravel() for sbo in seed_box_offsets
         )
 
-        # Reorder to furthest first, closest last - this assigns preferring the closest features
         ordering = np.argsort(
             seed_box_offset_z**2 + seed_box_offset_h1**2 + seed_box_offset_h2**2
         )[::-1]
@@ -162,157 +161,53 @@ def add_markers(
 
         # Now we can create a big list of points to assign seed boxes
         seed_box_locs_z = (
-            (seed_box_offset_z + features.vdim.to_numpy()).round().astype(int) % z_len
+            (seed_box_offset_z + features.vdim.to_numpy()).round().astype(int)
             if is_3D
             else np.zeros([seed_box_offset_z.shape[0], len(features)], dtype=int)
         )
         seed_box_locs_h1 = (
             (seed_box_offset_h1 + features.hdim_1.to_numpy()).round().astype(int)
         )
+        seed_box_locs_h2 = (
+            (seed_box_offset_h2 + features.hdim_2.to_numpy()).round().astype(int)
+        )
+
+        # Reorder to furthest first, closest last - this assigns preferring the closest features
+        ordering = np.argsort(
+            (
+                (seed_box_locs_z - features.vdim.to_numpy()) ** 2
+                if is_3D
+                else 0
+                + (seed_box_locs_h1 - features.hdim_1.to_numpy()) ** 2
+                + (seed_box_locs_h2 - features.hdim_2.to_numpy()) ** 2
+            ).ravel()
+        )[::-1]
+
+        seed_box_locs_z = seed_box_locs_z.flatten()[ordering]
+        seed_box_locs_h1 = seed_box_locs_h1.flatten()[ordering]
+        seed_box_locs_h2 = seed_box_locs_h2.flatten()[ordering]
+        marker_values = np.tile(
+            features.feature.to_numpy()[np.newaxis, :], (seed_box_offset_z.shape[0], 1)
+        ).flatten()[ordering]
+
+        seed_box_locs_z = np.clip(seed_box_locs_z, 0, z_len - 1)
+
         if PBC_flag in ["hdim_1", "both"]:
             seed_box_locs_h1 = seed_box_locs_h1 % h1_len
         else:
             seed_box_locs_h1 = np.clip(seed_box_locs_h1, 0, h1_len - 1)
-        seed_box_locs_h2 = (
-            (seed_box_offset_h2 + features.hdim_2.to_numpy()).round().astype(int)
-        )
+
         if PBC_flag in ["hdim_2", "both"]:
             seed_box_locs_h2 = seed_box_locs_h2 % h2_len
         else:
             seed_box_locs_h2 = np.clip(seed_box_locs_h2, 0, h2_len - 1)
 
-        marker_values = np.tile(
-            features.feature.to_numpy()[np.newaxis, :], (seed_box_offset_z.shape[0], 1)
-        )
-
         # Now assign to the marker array:
         marker_arr[
-            seed_box_locs_z.flatten(),
-            seed_box_locs_h1.flatten(),
-            seed_box_locs_h2.flatten(),
-        ] = marker_values.flatten()
-
-        # for _, row in features.iterrows():
-        #     if is_3D:
-        #         # If we have a 3D input and we need to do box seeding
-        #         # we need to have 3D features.
-        #         try:
-        #             row["vdim"]
-        #         except KeyError:
-        #             raise ValueError(
-        #                 "For Box seeding on 3D segmentation,"
-        #                 " you must have a 3D input source."
-        #             )
-
-        #     # Because we don't support PBCs on the vertical axis,
-        #     # this is simple- just go in the seed_z/2 points around the
-        #     # vdim of the feature, up to the limits of the array.
-        #     if is_3D:
-        #         z_seed_start = int(np.max([0, np.ceil(row["vdim"] - seed_z / 2)]))
-        #         z_seed_end = int(np.min([z_len, np.ceil(row["vdim"] + seed_z / 2)]))
-        #     else:
-        #         z_seed_start = 0
-        #         z_seed_end = 1
-        #     # For the horizontal dimensions, it's more complicated if we have
-        #     # PBCs.
-        #     hdim_1_min = int(np.ceil(row["hdim_1"] - seed_h1 / 2))
-        #     hdim_1_max = int(np.ceil(row["hdim_1"] + seed_h1 / 2))
-        #     hdim_2_min = int(np.ceil(row["hdim_2"] - seed_h2 / 2))
-        #     hdim_2_max = int(np.ceil(row["hdim_2"] + seed_h2 / 2))
-
-        #     all_seed_boxes = pbc_utils.get_pbc_coordinates(
-        #         h1_min=0,
-        #         h1_max=h1_len,
-        #         h2_min=0,
-        #         h2_max=h2_len,
-        #         h1_start_coord=hdim_1_min,
-        #         h1_end_coord=hdim_1_max,
-        #         h2_start_coord=hdim_2_min,
-        #         h2_end_coord=hdim_2_max,
-        #         PBC_flag=PBC_flag,
-        #     )
-        #     # Build distance function ahead of time, 3D always true as we then reduce
-        #     dist_func = pbc_utils.build_distance_function(
-        #         0, h1_len, 0, h2_len, PBC_flag, True
-        #     )
-        #     for seed_box in all_seed_boxes:
-        #         # Need to see if there are any other points seeded
-        #         # in this seed box first.
-        #         curr_box_markers = marker_arr[
-        #             z_seed_start:z_seed_end,
-        #             seed_box[0] : seed_box[1],
-        #             seed_box[2] : seed_box[3],
-        #         ]
-        #         all_feats_in_box = np.unique(curr_box_markers)
-        #         if np.any(curr_box_markers != bg_marker):
-        #             # If we have non-background points already seeded,
-        #             # we need to find the best way to seed them.
-        #             # Currently seeding with the closest point.
-        #             # Loop through all points in the box
-        #             with np.nditer(curr_box_markers, flags=["multi_index"]) as it:
-        #                 for curr_box_pt in it:
-        #                     # Get its global index so that we can calculate
-        #                     # distance and set the array.
-        #                     local_index = it.multi_index
-        #                     global_index = (
-        #                         local_index[0] + z_seed_start,
-        #                         local_index[1] + seed_box[0],
-        #                         local_index[2] + seed_box[2],
-        #                     )
-
-        #                     # If it's a background marker, we can just set it
-        #                     # with the feature we're working on.
-        #                     if curr_box_pt == bg_marker:
-        #                         marker_arr[global_index] = row["feature"]
-        #                         continue
-        #                     # it has another feature in it. Calculate the distance
-        #                     # from its current set feature and the new feature.
-        #                     if is_3D:
-        #                         curr_coord = np.array(
-        #                             (row["vdim"], row["hdim_1"], row["hdim_2"])
-        #                         )
-        #                     else:
-        #                         curr_coord = np.array((0, row["hdim_1"], row["hdim_2"]))
-
-        #                     dist_from_curr_pt = dist_func(
-        #                         np.array(global_index), curr_coord
-        #                     )
-
-        #                     # This is technically an O(N^2) operation, but
-        #                     # hopefully performance isn't too bad as this should
-        #                     # be rare.
-        #                     orig_row = features[
-        #                         features["feature"] == curr_box_pt
-        #                     ].iloc[0]
-        #                     if is_3D:
-        #                         orig_coord = np.array(
-        #                             (
-        #                                 orig_row["vdim"],
-        #                                 orig_row["hdim_1"],
-        #                                 orig_row["hdim_2"],
-        #                             )
-        #                         )
-        #                     else:
-        #                         orig_coord = np.array(
-        #                             (0, orig_row["hdim_1"], orig_row["hdim_2"])
-        #                         )
-        #                     dist_from_orig_pt = dist_func(
-        #                         np.array(global_index), orig_coord
-        #                     )
-        #                     # The current point center is further away
-        #                     # than the original point center, so do nothing
-        #                     if dist_from_curr_pt > dist_from_orig_pt:
-        #                         continue
-        #                     else:
-        #                         # the current point center is closer.
-        #                         marker_arr[global_index] = row["feature"]
-        #         # completely unseeded region so far.
-        #         else:
-        #             marker_arr[
-        #                 z_seed_start:z_seed_end,
-        #                 seed_box[0] : seed_box[1],
-        #                 seed_box[2] : seed_box[3],
-        #             ] = row["feature"]
+            seed_box_locs_z,
+            seed_box_locs_h1,
+            seed_box_locs_h2,
+        ] = marker_values
 
     # If we aren't 3D, transpose back.
     if not is_3D:
