@@ -117,11 +117,11 @@ def add_markers(
         h1_len = marker_arr.shape[0]
         h2_len = marker_arr.shape[1]
         # transpose to 3D array to make things easier.
-        marker_arr = marker_arr[np.newaxis, :, :]
+        # marker_arr = marker_arr[np.newaxis, :, :]
 
     if seed_3D_flag == "column":
         marker_arr[
-            level,
+            level if is_3D else None,
             features.hdim_1.to_numpy().round().astype(int) % h1_len,
             features.hdim_2.to_numpy().round().astype(int) % h2_len,
         ] = features.feature
@@ -138,24 +138,30 @@ def add_markers(
             seed_h1 = seed_3D_size
             seed_h2 = seed_3D_size
 
-        seed_box_offsets = np.meshgrid(
-            np.arange(-seed_z / 2, seed_z / 2),
-            np.arange(-seed_h1 / 2, seed_h1 / 2),
-            np.arange(-seed_h2 / 2, seed_h2 / 2),
-            indexing="ij",
-        )
-        seed_box_offset_z, seed_box_offset_h1, seed_box_offset_h2 = (
-            sbo.ravel()[:, np.newaxis] for sbo in seed_box_offsets
-        )
-        if not is_3D:
-            seed_box_offset_z[:] = 0
+        # Now we create a big list of points to assign seed boxes
+        if is_3D:
+            seed_box_offsets = np.meshgrid(
+                np.arange(-seed_z / 2, seed_z / 2),
+                np.arange(-seed_h1 / 2, seed_h1 / 2),
+                np.arange(-seed_h2 / 2, seed_h2 / 2),
+                indexing="ij",
+            )
+            seed_box_offset_z, seed_box_offset_h1, seed_box_offset_h2 = (
+                sbo.ravel()[:, np.newaxis] for sbo in seed_box_offsets
+            )
+            seed_box_locs_z = np.ceil(
+                (seed_box_offset_z + features.vdim.to_numpy())
+            ).astype(int)
+        else:
+            seed_box_offsets = np.meshgrid(
+                np.arange(-seed_h1 / 2, seed_h1 / 2),
+                np.arange(-seed_h2 / 2, seed_h2 / 2),
+                indexing="ij",
+            )
+            seed_box_offset_h1, seed_box_offset_h2 = (
+                sbo.ravel()[:, np.newaxis] for sbo in seed_box_offsets
+            )
 
-        # Now we can create a big list of points to assign seed boxes
-        seed_box_locs_z = (
-            np.ceil((seed_box_offset_z + features.vdim.to_numpy())).astype(int)
-            if is_3D
-            else np.zeros([seed_box_offset_z.shape[0], len(features)], dtype=int)
-        )
         seed_box_locs_h1 = np.ceil(
             (seed_box_offset_h1 + features.hdim_1.to_numpy())
         ).astype(int)
@@ -174,14 +180,14 @@ def add_markers(
             ).ravel()
         )[::-1]
 
-        seed_box_locs_z = seed_box_locs_z.flatten()[ordering]
+        if is_3D:
+            seed_box_locs_z = seed_box_locs_z.flatten()[ordering]
+            seed_box_locs_z = np.clip(seed_box_locs_z, 0, z_len - 1)
         seed_box_locs_h1 = seed_box_locs_h1.flatten()[ordering]
         seed_box_locs_h2 = seed_box_locs_h2.flatten()[ordering]
         marker_values = np.tile(
-            features.feature.to_numpy()[np.newaxis, :], (seed_box_offset_z.shape[0], 1)
+            features.feature.to_numpy()[np.newaxis, :], (seed_box_offset_h1.shape[0], 1)
         ).flatten()[ordering]
-
-        seed_box_locs_z = np.clip(seed_box_locs_z, 0, z_len - 1)
 
         if PBC_flag in ["hdim_1", "both"]:
             seed_box_locs_h1 = seed_box_locs_h1 % h1_len
@@ -195,14 +201,10 @@ def add_markers(
 
         # Now assign to the marker array:
         marker_arr[
-            seed_box_locs_z,
+            seed_box_locs_z if is_3D else None,
             seed_box_locs_h1,
             seed_box_locs_h2,
         ] = marker_values
-
-    # If we aren't 3D, transpose back.
-    if not is_3D:
-        marker_arr = marker_arr[0, :, :]
 
     return marker_arr
 
