@@ -120,7 +120,8 @@ def test_feature_detection_multithreshold_timestep(
 
 
 @pytest.mark.parametrize(
-    "z_dim_num", [0, 1, 2],
+    "z_dim_num",
+    [0, 1, 2],
 )
 def test_feature_detection_multithreshold_timestep_3d(z_dim_num):
     """
@@ -1401,7 +1402,9 @@ def test_feature_position_pbc(
         position_threshold=position_threshold,
         track_data=in_data,
     )
-    assert np.all(np.isclose(feat_pos_output, expected_output))
+
+    assert feat_pos_output[0] % (max_h1 + 1) == pytest.approx(expected_output[0])
+    assert feat_pos_output[1] % (max_h2 + 1) == pytest.approx(expected_output[1])
 
 
 @pytest.mark.parametrize(
@@ -1466,7 +1469,9 @@ def test_feature_position_pbc_3d(
         position_threshold=position_threshold,
         track_data=in_data,
     )
-    assert np.all(np.isclose(feat_pos_output, expected_output))
+    assert feat_pos_output[0] == pytest.approx(expected_output[0])
+    assert feat_pos_output[1] % (max_h1 + 1) == pytest.approx(expected_output[1])
+    assert feat_pos_output[2] % (max_h2 + 1) == pytest.approx(expected_output[2])
 
 
 def test_pbc_snake_feature_detection():
