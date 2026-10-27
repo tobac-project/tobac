@@ -807,51 +807,34 @@ def _filter_trajectories(
 
     Returns
     -------
+    pd.DataFrame
+        Filtered trajectories dataframe with `cell` and `time_cell` columns
 
     """
     # Reset particle numbers from the arbitrary numbers at the end of the feature detection and
-    # linking to consecutive cell number; keep 'particle' for reference to the feature detection step.
-    trajectories_unfiltered["cell"] = None
-    particle_num_to_cell_num = {}
-    for i_particle, particle in enumerate(
-        pd.Series.unique(trajectories_unfiltered["particle"])
-    ):
-        cell = int(i_particle + cell_number_start)
-        particle_num_to_cell_num[particle] = int(cell)
-    remap_particle_to_cell_vec = np.vectorize(remap_particle_to_cell_nv)
-    trajectories_unfiltered["cell"] = remap_particle_to_cell_vec(
-        particle_num_to_cell_num, trajectories_unfiltered["particle"]
+    # linking to consecutive cell number.
+    trajectories_final = trajectories_unfiltered.rename(columns={"particle": "cell"})
+    trajectories_final["cell"] = (
+        trajectories_final["cell"] - trajectories_final["cell"].min() + 1
     )
-    trajectories_unfiltered["cell"] = trajectories_unfiltered["cell"].astype(int)
-    trajectories_unfiltered.drop(columns=["particle"], inplace=True)
 
-    trajectories_bycell = trajectories_unfiltered.groupby("cell")
-    stub_cell_nums = list()
-    for cell, trajectories_cell in trajectories_bycell:
+    if stubs > 1:
+        cell_count = trajectories_final.groupby("cell").cell.count()
+        stub_cells = cell_count.index[cell_count < stubs].values
+        trajectories_final.loc[np.isin(trajectories_final.cell, stub_cells), "cell"] = 0
 
-        if trajectories_cell.shape[0] < stubs:
-            logging.debug(
-                "cell"
-                + str(cell)
-                + "  is a stub ("
-                + str(trajectories_cell.shape[0])
-                + "), setting cell number to "
-                + str(cell_number_unassigned)
-            )
-            stub_cell_nums.append(cell)
+    new_cells = np.unique(trajectories_final.cell, return_inverse=True)[1]
+    if (trajectories_final.cell == 0).any():
+        new_cells = np.where(
+            new_cells > 0, new_cells + cell_number_start - 1, cell_number_unassigned
+        )
+    else:
+        new_cells = new_cells + cell_number_start
 
-    trajectories_unfiltered.loc[
-        trajectories_unfiltered["cell"].isin(stub_cell_nums), "cell"
-    ] = cell_number_unassigned
+    trajectories_final["cell"] = new_cells
 
-    trajectories_filtered = trajectories_unfiltered
-
-    # Interpolate to fill the gaps in the trajectories (left from allowing memory in the linking)
-    trajectories_filtered_unfilled = copy.deepcopy(trajectories_filtered)
-
-    trajectories_filtered_filled = trajectories_filtered_unfilled
     trajectories_final = add_cell_time(
-        trajectories_filtered_filled, cell_number_unassigned=cell_number_unassigned
+        trajectories_final, cell_number_unassigned=cell_number_unassigned
     )
     # Add metadata
     trajectories_final.attrs["cell_number_unassigned"] = cell_number_unassigned
@@ -943,7 +926,7 @@ def fill_gaps(
     return t_out
 
 
-def add_cell_time(t: pd.DataFrame, cell_number_unassigned: int):
+def add_cell_time(tracks: pd.DataFrame, cell_number_unassigned: int):
     """add cell time as time since the initiation of each cell
     :hidden:
     Parameters
@@ -959,13 +942,14 @@ def add_cell_time(t: pd.DataFrame, cell_number_unassigned: int):
         trajectories with added cell time
     """
 
-    # logging.debug('start adding time relative to cell initiation')
-    t_grouped = t.groupby("cell")
-
-    t["time_cell"] = t["time"] - t.groupby("cell")["time"].transform("min")
-    t["time_cell"] = pd.to_timedelta(t["time_cell"])
-    t.loc[t["cell"] == cell_number_unassigned, "time_cell"] = pd.Timedelta("nat")
-    return t
+    tracks["time_cell"] = tracks["time"] - tracks.groupby("cell")["time"].transform(
+        "min"
+    )
+    tracks["time_cell"] = pd.to_timedelta(tracks["time_cell"])
+    tracks.loc[tracks["cell"] == cell_number_unassigned, "time_cell"] = pd.Timedelta(
+        "nat"
+    )
+    return tracks
 
 
 def remap_particle_to_cell_nv(particle_cell_map, input_particle):
