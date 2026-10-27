@@ -116,8 +116,6 @@ def add_markers(
         z_len = 0
         h1_len = marker_arr.shape[0]
         h2_len = marker_arr.shape[1]
-        # transpose to 3D array to make things easier.
-        # marker_arr = marker_arr[np.newaxis, :, :]
 
     if seed_3D_flag == "column":
         marker_arr[
@@ -393,7 +391,6 @@ def segmentation_timestep(
         from skimage.segmentation import watershed
     except ImportError:
         from skimage.morphology import watershed
-    # from skimage.segmentation import random_walker
     from scipy.ndimage import distance_transform_edt
     from copy import deepcopy
 
@@ -758,14 +755,8 @@ def segmentation_timestep(
             bbox_yend = int(np.max(buddy_y2) + 1)
             bbox_xend = int(np.max(buddy_x2) + 1)
 
-            bbox_zsize = bbox_zend - bbox_zstart
-            bbox_ysize = bbox_yend - bbox_ystart
-            bbox_xsize = bbox_xend - bbox_xstart
-
             # Creation of actual Buddy Box space for transposition
             # of data in domain and re-seeding with Buddy feature markers
-            buddy_rgn = np.zeros((bbox_zsize, bbox_ysize, bbox_xsize))
-
             buddy_locs = np.meshgrid(
                 np.arange(bbox_zstart, bbox_zend, dtype=int),
                 np.arange(bbox_ystart, bbox_yend, dtype=int) % (hdim1_max + 1),
@@ -778,11 +769,9 @@ def segmentation_timestep(
             ]
 
             unmasked_buddies = unmasked[buddy_locs[0], buddy_locs[1], buddy_locs[2]]
-            # unmasked_buddies = np.isin(segmentation_mask_3[buddy_locs[0], buddy_locs[1], buddy_locs[2]], buddy_features.feature)
 
             buddy_markers = markers[buddy_locs[0], buddy_locs[1], buddy_locs[2]]
             buddy_markers = np.where(np.isin(buddy_markers, buddies), buddy_markers, 0)
-            # buddy_markers_new = np.where(np.isin(buddy_markers_new, buddy_features.feature) & unmasked_buddies, buddy_markers_new, 0)
 
             # perform segmentation:
             if method == "watershed":
