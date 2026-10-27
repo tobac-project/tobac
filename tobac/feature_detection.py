@@ -41,15 +41,13 @@ from tobac.utils.generators import field_and_features_over_time
 def feature_position(
     hdim1_indices: list[int],
     hdim2_indices: list[int],
-    vdim_indices: Union[list[int], None] = None,
-    region_small: np.ndarray = None,
-    region_bbox: Union[list[int], tuple[int]] = None,
-    track_data: np.ndarray = None,
-    threshold_i: float = None,
+    vdim_indices: Optional[list[int]] = None,
+    track_data: Optional[np.ndarray] = None,
+    threshold_i: Optional[float] = None,
     position_threshold: Literal[
         "center", "extreme", "weighted_diff", "weighted_abs"
     ] = "center",
-    target: Literal["maximum", "minimum"] = None,
+    target: Optional[Literal["maximum", "minimum"]] = None,
     PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
     hdim1_min: int = 0,
     hdim1_max: int = 0,
@@ -74,20 +72,6 @@ def feature_position(
 
     vdim_indices : list, optional
         List of indices of feature along optional vdim (typically ```z```)
-
-    region_small : 2D or 3D array-like
-        A true/false array containing True where the threshold
-        is met and false where the threshold isn't met. This
-        array should be the the size specified by region_bbox,
-        and can be a subset of the overall input array
-        (i.e., ```track_data```).
-
-    region_bbox : list or tuple with length of 4 or 6
-        The coordinates that region_small occupies within the total track_data
-        array. This is in the order that the coordinates come from the
-        ```get_label_props_in_dict``` function. For 2D data, this should be:
-        (hdim1 start, hdim 2 start, hdim 1 end, hdim 2 end). For 3D data, this
-        is: (vdim start, hdim1 start, hdim 2 start, vdim end, hdim 1 end, hdim 2 end).
 
     track_data : 2D or 3D array-like
         2D or 3D array containing the data
@@ -114,7 +98,10 @@ def feature_position(
         'none' means that we do not have periodic boundaries
         'hdim_1' means that we are periodic along hdim1
         'hdim_2' means that we are periodic along hdim2
-        'both' means that we are periodic along both horizontal dimensions
+        'both' means that we are periodic along both horizontal dimensions.
+        On dimensions where periodic boundaries are enabled, the feature position will
+        be placed in the range [-0.5, dimension.size-0.5], to better represent the
+        physical ranges of dimensions where PBCs are appropriate (e.g. longitude).
 
     hdim1_min : int
         Minimum real array index of the first horizontal dimension (for PBCs)
@@ -148,6 +135,7 @@ def feature_position(
         lies exactly between hdim1_max and hdim1_min, the output could be
         between hdim1_max and hdim1_max+1. While a value between hdim1_min-1
         and hdim1_min would also be valid, we choose to overflow on the max side of things.
+
     Notes
     -----
     """
@@ -157,99 +145,105 @@ def feature_position(
     # checks to see if minimum and maximum values are present in dimensional array
     # then if true, adds max value to any indices past the halfway point of their
     # respective dimension. this, in essence, shifts the set of points to the high side.
-    pbc_options = ["hdim_1", "hdim_2", "both"]
 
-    if len(region_bbox) == 4:
-        # 2D case
-        is_3D = False
-        track_data_region = track_data[
-            region_bbox[0] : region_bbox[2], region_bbox[1] : region_bbox[3]
-        ]
-    elif len(region_bbox) == 6:
-        # 3D case
+    if vdim_indices is not None:
         is_3D = True
-        track_data_region = track_data[
-            region_bbox[0] : region_bbox[3],
-            region_bbox[1] : region_bbox[4],
-            region_bbox[2] : region_bbox[5],
-        ]
+        assert ((position_threshold == "center") and track_data is None) or (
+            len(track_data.shape) == 3
+        ), "track_data must be 3D if vdim_indices provided"
     else:
-        raise ValueError("region_bbox must have 4 or 6 elements.")
-    # whether or not to run the means at the end
-    run_mean = False
+        is_3D = False
+        assert ((position_threshold == "center") and track_data is None) or (
+            len(track_data.shape) == 2
+        ), "track_data must be 2D if vdim_indices not provided"
     if position_threshold == "center":
         # get position as geometrical centre of identified region:
-
-        hdim1_weights = np.ones(np.size(hdim1_indices))
-        hdim2_weights = np.ones(np.size(hdim2_indices))
+        if PBC_flag in ("hdim_1", "both"):
+            hdim1_index = pbc_utils.weighted_circmean(
+                hdim1_indices, high=hdim1_max + 0.5, low=hdim1_min - 0.5
+            )
+        else:
+            hdim1_index = np.mean(hdim1_indices)
+        if PBC_flag in ("hdim_2", "both"):
+            hdim2_index = pbc_utils.weighted_circmean(
+                hdim2_indices, high=hdim2_max + 0.5, low=hdim2_min - 0.5
+            )
+        else:
+            hdim2_index = np.mean(hdim2_indices)
+            hdim2_index = np.clip(hdim2_index, 0, hdim2_max)
         if is_3D:
-            vdim_weights = np.ones(np.size(hdim2_indices))
+            vdim_index = np.mean(vdim_indices)
+            return vdim_index, hdim1_index, hdim2_index
+        return hdim1_index, hdim2_index
 
-        run_mean = True
+    track_data_label = (
+        track_data[vdim_indices, hdim1_indices, hdim2_indices]
+        if is_3D
+        else track_data[hdim1_indices, hdim2_indices]
+    )
 
-    elif position_threshold == "extreme":
+    if position_threshold == "extreme":
         # get position as max/min position inside the identified region:
         if target == "maximum":
-            index = np.argmax(track_data_region[region_small])
-        if target == "minimum":
-            index = np.argmin(track_data_region[region_small])
+            index = np.argmax(track_data_label)
+        elif target == "minimum":
+            index = np.argmin(track_data_label)
         hdim1_index = hdim1_indices[index]
         hdim2_index = hdim2_indices[index]
         if is_3D:
             vdim_index = vdim_indices[index]
+            return vdim_index, hdim1_index, hdim2_index
+        return hdim1_index, hdim2_index
 
-    elif position_threshold == "weighted_diff":
+    if position_threshold == "weighted_diff":
         # get position as centre of identified region, weighted by difference from the threshold:
-        weights = np.abs(track_data_region[region_small] - threshold_i)
+        weights = np.abs(track_data_label - threshold_i)
         if np.sum(weights) == 0:
             weights = None
         hdim1_weights = weights
         hdim2_weights = weights
         if is_3D:
             vdim_weights = weights
-
-        run_mean = True
 
     elif position_threshold == "weighted_abs":
         # get position as centre of identified region, weighted by absolute values if the field:
-        weights = np.abs(track_data_region[region_small])
+        weights = np.abs(track_data_label)
         if np.sum(weights) == 0:
             weights = None
         hdim1_weights = weights
         hdim2_weights = weights
         if is_3D:
             vdim_weights = weights
-        run_mean = True
 
     else:
         raise ValueError(
-            "position_threshold must be center,extreme,weighted_diff or weighted_abs"
+            "position_threshold must be center, extreme, weighted_diff or weighted_abs"
         )
 
-    if run_mean:
-        if PBC_flag in ("hdim_1", "both"):
-            hdim1_index = pbc_utils.weighted_circmean(
-                hdim1_indices, weights=hdim1_weights, high=hdim1_max + 1, low=hdim1_min
-            )
-            hdim1_index = np.clip(hdim1_index, 0, hdim1_max + 1)
-        else:
-            hdim1_index = np.average(hdim1_indices, weights=hdim1_weights)
-            hdim1_index = np.clip(hdim1_index, 0, hdim1_max)
-        if PBC_flag in ("hdim_2", "both"):
-            hdim2_index = pbc_utils.weighted_circmean(
-                hdim2_indices, weights=hdim2_weights, high=hdim2_max + 1, low=hdim2_min
-            )
-            hdim2_index = np.clip(hdim2_index, 0, hdim2_max + 1)
-        else:
-            hdim2_index = np.average(hdim2_indices, weights=hdim2_weights)
-            hdim2_index = np.clip(hdim2_index, 0, hdim2_max)
-        if is_3D:
-            vdim_index = np.average(vdim_indices, weights=vdim_weights)
-
-    if is_3D:
-        return vdim_index, hdim1_index, hdim2_index
+    if PBC_flag in ("hdim_1", "both"):
+        hdim1_index = pbc_utils.weighted_circmean(
+            hdim1_indices,
+            weights=hdim1_weights,
+            high=hdim1_max + 0.5,
+            low=hdim1_min - 0.5,
+        )
     else:
-        return hdim1_index, hdim2_index
+        hdim1_index = np.average(hdim1_indices, weights=hdim1_weights)
+        hdim1_index = np.clip(hdim1_index, 0, hdim1_max)
+    if PBC_flag in ("hdim_2", "both"):
+        hdim2_index = pbc_utils.weighted_circmean(
+            hdim2_indices,
+            weights=hdim2_weights,
+            high=hdim2_max + 0.5,
+            low=hdim2_min - 0.5,
+        )
+    else:
+        hdim2_index = np.average(hdim2_indices, weights=hdim2_weights)
+        hdim2_index = np.clip(hdim2_index, 0, hdim2_max)
+    if is_3D:
+        vdim_index = np.average(vdim_indices, weights=vdim_weights)
+        return vdim_index, hdim1_index, hdim2_index
+    return hdim1_index, hdim2_index
 
 
 def test_overlap(
@@ -311,6 +305,7 @@ def remove_parents(
     strict_thresholding: Bool, optional
         If True, a feature can only be detected if all previous thresholds have been met.
         Default is False.
+
     Returns
     -------
     features_thresholds : pandas.DataFrame
@@ -456,6 +451,7 @@ def feature_detection_threshold(
          'hdim_1' means that we are periodic along hdim1
          'hdim_2' means that we are periodic along hdim2
          'both' means that we are periodic along both horizontal dimensions
+
     vertical_axis: int
         The vertical axis number of the data.
 
@@ -759,9 +755,7 @@ def feature_detection_threshold(
         list_features_threshold = list()
         # create empty dict to store regions for individual features for this threshold
         regions = dict()
-        # create empty list of features to remove from parent threshold value
 
-        region = np.empty(mask.shape, dtype=bool)
         # loop over individual regions:
         for cur_idx in total_indices_all:
             # skip this if there aren't enough points to be considered a real feature
@@ -775,43 +769,6 @@ def feature_detection_threshold(
                 vdim_indices = None
             hdim1_indices = hdim1_indices_all[cur_idx]
             hdim2_indices = hdim2_indices_all[cur_idx]
-
-            label_bbox = label_props[cur_idx].bbox
-            (
-                bbox_zstart,
-                bbox_ystart,
-                bbox_xstart,
-                bbox_zend,
-                bbox_yend,
-                bbox_xend,
-            ) = label_bbox
-            bbox_zsize = bbox_zend - bbox_zstart
-            bbox_xsize = bbox_xend - bbox_xstart
-            bbox_ysize = bbox_yend - bbox_ystart
-            # build small region box
-            if is_3D:
-                region_small = np.full((bbox_zsize, bbox_ysize, bbox_xsize), False)
-                region_small[
-                    vdim_indices - bbox_zstart,
-                    hdim1_indices - bbox_ystart,
-                    hdim2_indices - bbox_xstart,
-                ] = True
-
-            else:
-                region_small = np.full((bbox_ysize, bbox_xsize), False)
-                region_small[
-                    hdim1_indices - bbox_ystart, hdim2_indices - bbox_xstart
-                ] = True
-                # we are 2D and need to remove the dummy 3D coordinate.
-                label_bbox = (
-                    label_bbox[1],
-                    label_bbox[2],
-                    label_bbox[4],
-                    label_bbox[5],
-                )
-
-            # [hdim1_indices,hdim2_indices]= np.nonzero(region)
-            # write region for individual threshold and feature to dict
 
             """
             This block of code creates 1D coordinates from the input 
@@ -836,8 +793,6 @@ def feature_detection_threshold(
                 hdim1_indices,
                 hdim2_indices,
                 vdim_indices=vdim_indices,
-                region_small=region_small,
-                region_bbox=label_bbox,
                 track_data=data_i,
                 threshold_i=threshold,
                 position_threshold=position_threshold,
@@ -861,25 +816,8 @@ def feature_detection_threshold(
                 "num": curr_count,
                 "threshold_value": threshold,
             }
-            column_names = [
-                "frame",
-                "idx",
-                "hdim_1",
-                "hdim_2",
-                "num",
-                "threshold_value",
-            ]
             if is_3D:
                 appending_dict["vdim"] = vdim_index
-                column_names = [
-                    "frame",
-                    "idx",
-                    "vdim",
-                    "hdim_1",
-                    "hdim_2",
-                    "num",
-                    "threshold_value",
-                ]
             list_features_threshold.append(appending_dict)
         # after looping thru proto-features, check if any exceed num threshold
         # if they do not, provide a blank pandas df and regions dict
@@ -891,6 +829,26 @@ def feature_detection_threshold(
         else:
             # print("at least one feature above num value at threshold: ",threshold)
             # print("column_names, after cur_idx loop: ",column_names)
+            column_names = (
+                [
+                    "frame",
+                    "idx",
+                    "vdim",
+                    "hdim_1",
+                    "hdim_2",
+                    "num",
+                    "threshold_value",
+                ]
+                if is_3D
+                else [
+                    "frame",
+                    "idx",
+                    "hdim_1",
+                    "hdim_2",
+                    "num",
+                    "threshold_value",
+                ]
+            )
             features_threshold = pd.DataFrame(
                 list_features_threshold, columns=column_names
             )
@@ -945,7 +903,9 @@ def feature_detection_multithreshold_timestep(
         Number of the current timestep.
 
     threshold : list of floats, optional
-        Threshold value used to select target regions to track. The feature detection is inclusive of the threshold value(s), i.e. values greater/less than or equal are included in the target region. Default is None.
+        Threshold value used to select target regions to track. The feature detection is inclusive of
+        the threshold value(s), i.e. values greater/less than or equal are included in the target region.
+        Default is None.
 
     min_num : int, optional
         This parameter is not used in the function. Default is 0.
@@ -969,7 +929,8 @@ def feature_detection_multithreshold_timestep(
     n_min_threshold :  int, dict of float to int, or list of int, optional
         Minimum number of identified contiguous pixels for a feature to be detected. Default is 0.
         If given as a list, the number of elements must match number of thresholds.
-        If given as a dict, the keys need to match the thresholds and the values are the minimum number of identified contiguous pixels for a feature using that specific threshold.
+        If given as a dict, the keys need to match the thresholds and the values are the minimum
+        number of identified contiguous pixels for a feature using that specific threshold.
 
     min_distance : float, optional
         Minimum distance between detected features (in meters). Default is 0.
@@ -997,11 +958,13 @@ def feature_detection_multithreshold_timestep(
         Default is False.
 
     statistic : dict, optional
-            Default is None. Optional parameter to calculate bulk statistics within feature detection.
-            Dictionary with callable function(s) to apply over the region of each detected feature and the name of the statistics to appear in the feature ou            tput dataframe. The functions should be the values and the names of the metric the keys (e.g. {'mean': np.mean})
+        Default is None. Optional parameter to calculate bulk statistics within feature detection.
+        Dictionary with callable function(s) to apply over the region of each detected feature and
+        the name of the statistics to appear in the feature output dataframe. The functions should
+        be the values and the names of the metric the keys (e.g. {'mean': np.mean})
 
     statistics_unsmoothed: bool, optional
-            Default is False. If True, calculate the statistics on the raw data instead of the smoothed input data.
+        Default is False. If True, calculate the statistics on the raw data instead of the smoothed input data.
 
     return_labels: bool, optional
         Default is False. If True, return the label fields.
@@ -1245,7 +1208,9 @@ def feature_detection_multithreshold(
         Grid spacing of the input data (in meter).
 
     threshold : list of floats, optional
-        Threshold values used to select target regions to track. The feature detection is inclusive of the threshold value(s), i.e. values greater/less than or equal are included in the target region. Default is None.
+        Threshold values used to select target regions to track. The feature detection is inclusive
+        of the threshold value(s), i.e. values greater/less than or equal are included in the target
+        region. Default is None.
 
     min_num : int, optional
         This parameter has no effect and will be deprecated in a future version of tobac. Default is 0.
@@ -1269,7 +1234,9 @@ def feature_detection_multithreshold(
     n_min_threshold :  int, dict of float to int, or list of int, optional
         Minimum number of identified contiguous pixels for a feature to be detected. Default is 0.
         If given as a list, the number of elements must match number of thresholds.
-        If given as a dict, the keys need to match the thresholds and the values are the minimum number of identified contiguous pixels for a feature using that specific threshold.
+        If given as a dict, the keys need to match the thresholds and the values are
+        the minimum number of identified contiguous pixels for a feature using that
+        specific threshold.
 
     min_distance : float, optional
         Minimum distance between detected features (in meters). Default is 0.
@@ -1283,13 +1250,21 @@ def feature_detection_multithreshold(
         'hdim_1' means that we are periodic along hdim1
         'hdim_2' means that we are periodic along hdim2
         'both' means that we are periodic along both horizontal dimensions
+        On dimensions where periodic boundaries are enabled, the feature position will
+        be placed in the range [-0.5, dimension.size-0.5], to better represent the
+        physical ranges of dimensions where PBCs are appropriate (e.g. longitude).
+        Coordinates values will be extrapolated for PBC features which are placed
+        outside of the domain (e.g. between the first and last points on a dimension).
+
     vertical_coord: str
         Name of the vertical coordinate. If None, tries to auto-detect.
         It looks for the coordinate or the dimension name corresponding
         to the string.
+
     vertical_axis: int or None.
         The vertical axis number of the data. If None, uses vertical_coord
         to determine axis. This must be >=0.
+
     detect_subset: dict-like or None
         Whether to run feature detection on only a subset of the data.
         If this is not None, it will subset the grid that we run feature detection
@@ -1299,6 +1274,7 @@ def feature_detection_multithreshold(
         For example, if your data are oriented as (time, z, y, x) and you want to
         only detect on values between z levels 10 and 29, you would set:
         {1: (10, 30)}.
+
     wavelength_filtering: tuple, optional
        Minimum and maximum wavelength for horizontal spectral filtering in meter.
        Default is None.
@@ -1603,42 +1579,54 @@ def filter_min_distance(
 
     Parameters
     ----------
-    features:      pandas DataFrame
-                   features
-    dxy:           float
+    features: pandas DataFrame
+        Input features to filter
+
+    dxy:  float
         Constant horizontal grid spacing (meters).
+
     dz: float
         Constant vertical grid spacing (meters), optional. If not specified
         and the input is 3D, this function requires that `z_coordinate_name` is available
         in the `features` input. If you specify a value here, this function assumes
         that it is the constant z spacing between points, even if ```z_coordinate_name```
         is specified.
+
     min_distance:  float
         minimum distance between detected features (meters)
+
     x_coordinate_name: str
         The name of the x coordinate to calculate distance based on in meters.
         This is typically `projection_x_coordinate`. Currently unused.
+
     y_coordinate_name: str
         The name of the y coordinate to calculate distance based on in meters.
         This is typically `projection_y_coordinate`. Currently unused.
+
     z_coordinate_name: str or None
         The name of the z coordinate to calculate distance based on in meters.
         This is typically `altitude`. If None, tries to auto-detect.
+
     target: {'maximum', 'minimum'}, optional
         Flag to determine if tracking is targeting minima or maxima in
         the data. Default is 'maximum'.
+
     PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both'), optional
         Sets whether to use periodic boundaries, and if so in which directions.
         'none' means that we do not have periodic boundaries
         'hdim_1' means that we are periodic along hdim1
         'hdim_2' means that we are periodic along hdim2
         'both' means that we are periodic along both horizontal dimensions
+
     min_h1: int, optional
         Minimum real point in hdim_1, for use with periodic boundaries.
+
     max_h1: int, optional
         Maximum point in hdim_1, exclusive. max_h1-min_h1 should be the size.
+
     min_h2: int, optional
         Minimum real point in hdim_2, for use with periodic boundaries.
+
     max_h2: int, optional
         Maximum point in hdim_2, exclusive. max_h2-min_h2 should be the size.
 

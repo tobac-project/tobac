@@ -1,4 +1,3 @@
-# conda environment matching the "examples" pixi environment in pixi.toml
 name: tobac-examples
 channels:
   - conda-forge
@@ -18,8 +17,9 @@ dependencies:
   - pip
   - jupyter
   - notebook
+  - pyarrow
+  - pooch
   - nbconvert
-  - pytables
   - s3fs
   - arm_pyart
   - seaborn
@@ -27,10 +27,11 @@ dependencies:
   - rioxarray
   - numba
   - dask
-  - intake==0.7.0
-  - intake-xarray==0.7.0
-  - healpix
-  - easygems==0.1.2
+  - intake!=2.0.0,!=2.0.1,!=2.0.3,!=2.0.4,!=2.0.5
+  - intake-xarray
+  - jinja2
+  - healpix>=2024.2
+  - easygems
   - pyvista>=0.46
   - vtk>=9.4.2
   - trame

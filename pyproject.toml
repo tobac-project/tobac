@@ -40,13 +40,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Atmospheric Science",
 ]
 
-# Requirements are stated with PyPI names here ([project] dependencies /
-# optional-dependencies and [dependency-groups], used by pip and uv), and with
-# conda-forge names in pixi.toml, environment.yml and environment-examples.yml.
-# Keep them in sync; .github/scripts/check_requirements.py checks this in CI.
-
 # always required
-# lower bounds are tested by the pixi `min-versions` environment
 dependencies = [
     "numpy>=1.23",
     "scipy>=1.8",
@@ -62,14 +56,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+
 # required to run example notebooks
-# (the animations additionally need ffmpeg, which is not on PyPI)
 examples = [
     "trackpy>=0.6.1",
     "jupyter",
     "notebook",
     "nbconvert",
-    "tables",
+    "pyarrow",
     "s3fs",
     "arm_pyart",
     "seaborn",
@@ -77,16 +71,32 @@ examples = [
     "rioxarray",
     "numba",
     "dask",
-    "intake==0.7.0",
-    "intake-xarray==0.7.0",
-    "healpix",
-    "easygems==0.1.2; python_version >= '3.10'",
+    "intake!=2.0.0,!=2.0.1,!=2.0.3,!=2.0.4,!=2.0.5",
+    "intake-xarray",
+    "jinja2",
+    "healpix>=2024.2",
+    "easygems",
     "pyvista>=0.46",
     "vtk>=9.4.2",
     "trame",
     "trame-vtk",
     "trame-vuetify",
     "ipywidgets",
+
+]
+
+# required to build the documentation
+docs = [
+    "sphinx",
+    "nbsphinx",
+    "ipykernel",
+    "sphinx-gallery",
+    "pydata-sphinx-theme",
+    "myst-parser",
+    "sphinx-design",
+    "sphinx-toolbox",
+    "linkify-it-py",
+    "sphinxcontrib-mermaid",
 ]
 
 # All extras combined
@@ -115,6 +125,22 @@ dev = [
     {include-group = "test"},
     {include-group = "lint"},
     "nbconvert",
+    "jupyter",
+    "notebook",
+    "pyarrow",
+    "s3fs",
+    "arm_pyart",
+    "seaborn",
+    "h5netcdf",
+    "rioxarray",
+    "numba",
+    "dask",
+    "intake!=2.0.0,!=2.0.1,!=2.0.3,!=2.0.4,!=2.0.5",
+    "intake-xarray",
+    "jinja2",
+    "healpix>=2024.2",
+    "easygems",
+    "sphinx<8.2",
 ]
 
 # required to build the documentation (installed on Read the Docs without
