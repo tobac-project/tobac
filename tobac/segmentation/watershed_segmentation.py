@@ -714,35 +714,32 @@ def segmentation_timestep(
 
             buddies = np.unique(buddies)
 
-            if np.all(buddies == cur_idx):
-                continue
-            else:
-                inter_buddies, feat_inds, buddy_inds = np.intersect1d(
-                    features_in.feature.values[:], buddies, return_indices=True
-                )
-
-            # Get features that are needed for the buddy box
-            buddy_features = features_in.iloc[feat_inds].copy()
-
-            # create arrays to contain points of all buddies
-            # and their transpositions/transformations
-            # for use in Buddy Box space
-
             # z,y,x points in the grid domain with no transformations
-            # NOTE: when I think about it, not sure if these are really needed
-            # as we use the y_a1/x_a1 points for the data transposition
-            # to the buddy box rather than these and their z2/y2/x2 counterparts
-            buddy_z = np.array([], dtype=int)
-            buddy_y = np.array([], dtype=int)
-            buddy_x = np.array([], dtype=int)
+            buddy_z = np.concatenate(
+                [z_reg_inds[buddy] for buddy in buddies if buddy != 0]
+            )
+            buddy_y = np.concatenate(
+                [y_reg_inds[buddy] for buddy in buddies if buddy != 0]
+            )
+            buddy_x = np.concatenate(
+                [x_reg_inds[buddy] for buddy in buddies if buddy != 0]
+            )
 
             # z,y,x points from the grid domain WHICH MAY OR MAY NOT BE TRANSFORMED
             # so as to be continuous/contiguous across a grid boundary for that dimension
             # (e.g., instead of [1496,1497,0,1,2,3] it would be [1496,1497,1498,1499,1500,1501])
-            buddy_z2 = np.array([], dtype=int)
-            buddy_y2 = np.array([], dtype=int)
-            buddy_x2 = np.array([], dtype=int)
-
+            buddy_z2 = buddy_z
+            # Vectorised logic from transfm_pbc_point
+            buddy_y2 = np.where(
+                buddy_y < ((hdim1_min + hdim1_max) / 2),
+                buddy_y + hdim1_max + 1,
+                buddy_y,
+            )
+            buddy_x2 = np.where(
+                buddy_x < ((hdim2_min + hdim2_max) / 2),
+                buddy_x + hdim2_max + 1,
+                buddy_x,
+            )
             # These are just for feature positions and are in z2/y2/x2 space
             # (may or may not be within real grid domain)
             # so that when the buddy box is constructed, seeding is done properly
@@ -750,53 +747,6 @@ def segmentation_timestep(
 
             # NOTE: We may not need this, as we already do this editing the buddy_features df
             # and an iterrows call through this is what's used to actually seed the buddy box
-
-            buddy_looper = 0
-
-            # loop thru buddies
-            for buddy in buddies:
-                if buddy == 0:
-                    continue
-                # isolate feature from set of buddies
-                buddy_feat = features_in[features_in["feature"] == buddy].iloc[0]
-
-                # transform buddy feature position if needed for positioning in z2/y2/x2 space
-                # MAY be redundant with what is done just below here
-                yf2 = pbc_utils.transfm_pbc_point(
-                    int(buddy_feat.hdim_1), hdim1_min, hdim1_max
-                )
-                xf2 = pbc_utils.transfm_pbc_point(
-                    int(buddy_feat.hdim_2), hdim2_min, hdim2_max
-                )
-
-                # edit value in buddy_features dataframe
-                buddy_features.iloc[
-                    buddy_looper, buddy_features.columns.get_loc("hdim_1")
-                ] = pbc_utils.transfm_pbc_point(
-                    float(buddy_feat.hdim_1), hdim1_min, hdim1_max
-                )
-                buddy_features.iloc[
-                    buddy_looper, buddy_features.columns.get_loc("hdim_2")
-                ] = pbc_utils.transfm_pbc_point(
-                    float(buddy_feat.hdim_2), hdim2_min, hdim2_max
-                )
-
-                buddy_looper = buddy_looper + 1
-                # Create 1:1 map through actual domain points and continuous/contiguous points
-                # used to identify buddy box dimension lengths for its construction
-                for z, y, x in zip(
-                    z_reg_inds[buddy], y_reg_inds[buddy], x_reg_inds[buddy]
-                ):
-                    buddy_z = np.append(buddy_z, z)
-                    buddy_y = np.append(buddy_y, y)
-                    buddy_x = np.append(buddy_x, x)
-
-                    y2 = pbc_utils.transfm_pbc_point(y, hdim1_min, hdim1_max)
-                    x2 = pbc_utils.transfm_pbc_point(x, hdim2_min, hdim2_max)
-
-                    buddy_z2 = np.append(buddy_z2, z)
-                    buddy_y2 = np.append(buddy_y2, y2)
-                    buddy_x2 = np.append(buddy_x2, x2)
 
             # Buddy Box!
             # Identify mins and maxes of Buddy Box continuous points range
@@ -829,9 +779,7 @@ def segmentation_timestep(
             # unmasked_buddies = np.isin(segmentation_mask_3[*buddy_locs], buddy_features.feature)
 
             buddy_markers = markers[*buddy_locs]
-            buddy_markers = np.where(
-                np.isin(buddy_markers, buddy_features.feature), buddy_markers, 0
-            )
+            buddy_markers = np.where(np.isin(buddy_markers, buddies), buddy_markers, 0)
             # buddy_markers_new = np.where(np.isin(buddy_markers_new, buddy_features.feature) & unmasked_buddies, buddy_markers_new, 0)
 
             # perform segmentation:
