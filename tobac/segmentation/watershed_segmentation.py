@@ -773,12 +773,14 @@ def segmentation_timestep(
                 indexing="ij",
             )
 
-            buddy_segmentation = data_segmentation[*buddy_locs]
+            buddy_segmentation = data_segmentation[
+                buddy_locs[0], buddy_locs[1], buddy_locs[2]
+            ]
 
-            unmasked_buddies = unmasked[*buddy_locs]
-            # unmasked_buddies = np.isin(segmentation_mask_3[*buddy_locs], buddy_features.feature)
+            unmasked_buddies = unmasked[buddy_locs[0], buddy_locs[1], buddy_locs[2]]
+            # unmasked_buddies = np.isin(segmentation_mask_3[buddy_locs[0], buddy_locs[1], buddy_locs[2]], buddy_features.feature)
 
-            buddy_markers = markers[*buddy_locs]
+            buddy_markers = markers[buddy_locs[0], buddy_locs[1], buddy_locs[2]]
             buddy_markers = np.where(np.isin(buddy_markers, buddies), buddy_markers, 0)
             # buddy_markers_new = np.where(np.isin(buddy_markers_new, buddy_features.feature) & unmasked_buddies, buddy_markers_new, 0)
 
@@ -806,8 +808,10 @@ def segmentation_timestep(
             # 2) changing to/from feature of interest or adjacent segmented feature
             # We don't want to overwrite other features that may be in the
             # buddy box if not contacting the intersected seg field
-            seg_mask_3_subset = segmentation_mask_3[*buddy_locs]
-            segmentation_mask_3[*buddy_locs] = np.where(
+            seg_mask_3_subset = segmentation_mask_3[
+                buddy_locs[0], buddy_locs[1], buddy_locs[2]
+            ]
+            segmentation_mask_3[buddy_locs[0], buddy_locs[1], buddy_locs[2]] = np.where(
                 np.logical_and(
                     np.isin(seg_mask_3_subset, buddies),
                     np.isin(segmentation_mask_4, buddies),
