@@ -30,8 +30,7 @@ jobs:
       - name: Setup Conda Environment
         uses: mamba-org/setup-micromamba@v1
         with:
-          environment-file: environment-ci.yml
-          activate-environment: pyart-dev
+          environment-file: environment.yml
           cache-downloads: true
           channels: conda-forge
           channel-priority: strict
