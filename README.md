@@ -35,11 +35,16 @@ conda update -c conda-forge tobac
 
 You can also install conda via git, either for development purposes or to use specific development branches for the Github repository.
 
-If you are using anaconda, the following command from within the cloned repository should make sure all dependencies are met and up to date:
+tobac's requirements are defined in `pyproject.toml` (PyPI) and `pixi.toml` / `environment.yml` (conda-forge). From within the cloned repository, you can set up a development environment with any of:
 
 ```
-conda install -c conda-forge --yes --file requirements.txt
+pixi shell                                                         # pixi
+conda env create -f environment.yml && pip install -e . --no-deps  # conda / mamba
+pip install -e . --group dev                                       # pip >= 25.1
+uv sync                                                            # uv
 ```
+
+See the [installation guide](https://tobac.readthedocs.io/en/latest/getting_started/installguide.html) for details.
 
 You can directly install the package directly from github with pip and either of the two following commands:
 

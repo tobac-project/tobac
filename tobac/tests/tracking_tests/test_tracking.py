@@ -549,7 +549,10 @@ def test_untracked_nat():
     assert np.all(pd.isnull(output["time_cell"]))
     # the exact data type depends on architecture, so
     # instead just check by name
-    assert output["time_cell"].dtype.name == "timedelta64[ns]"
+    assert (
+        output["time_cell"].dtype.name == "timedelta64[ns]"
+        or output["time_cell"].dtype.name == "timedelta64[us]"
+    )
 
 
 @pytest.mark.parametrize(

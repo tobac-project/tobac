@@ -1,0 +1,138 @@
+# pixi workspace (conda-forge packages). Run e.g. `pixi run test`,
+# `pixi run -e py313 test`, `pixi run lint-black`, `pixi run -e examples jupyter lab`,
+# `pixi run -e docs docs`.
+#
+# These are the conda-forge counterparts of the requirements in pyproject.toml
+# (some names differ, e.g. scitools-iris / iris), and
+# environment.yml / environment-examples.yml mirror the default and examples
+# environments below. All of these are edited by hand; keep them in sync.
+# .github/scripts/check_requirements.py checks this in CI.
+
+[workspace]
+name = "tobac"
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
+
+[dependencies]
+numpy = ">=1.23"
+scipy = ">=1.8"
+scikit-image = ">=0.19"
+scikit-learn = ">=1.0"
+pandas = ">=2.0"
+matplotlib = ">=3.5"
+iris = ">=3.2"
+xarray = ">=2023.4"
+cartopy = ">=0.21"
+trackpy = ">=0.6.1"
+typing_extensions = ">=4.0"
+pip = "*"
+
+[pypi-dependencies]
+tobac = { path = ".", editable = true }
+
+[feature.test.dependencies]
+pytest = "*"
+pytest-cov = "*"
+coverage = "*"
+
+[feature.test.tasks]
+test = "pytest -v"
+coverage = "python -m coverage run -m pytest --cov=./ --cov-report=xml"
+
+[feature.lint.dependencies]
+black = "*"
+pylint = "*"
+pre-commit = "*"
+
+[feature.lint.tasks]
+lint-black = "black tobac --check --diff"
+lint-pylint = "pylint tobac --disable=C --exit-zero"
+
+[feature.dev.dependencies]
+nbconvert = "*"
+
+[feature.examples]
+platforms = ["linux-64"]
+
+[feature.examples.dependencies]
+trackpy = ">=0.6.1"
+jupyter = "*"
+notebook = "*"
+nbconvert = "*"
+pyarrow = "*"
+s3fs = "*"
+arm_pyart = "*"
+seaborn = "*"
+h5netcdf = "*"
+rioxarray = "*"
+numba = "*"
+dask = "*"
+intake = "!=2.0.0,!=2.0.1,!=2.0.3,!=2.0.4,!=2.0.5"
+intake-xarray = "*"
+jinja2 = "*"
+healpix = ">=2024.2"
+easygems = "*"
+pyvista = ">=0.46"
+vtk = ">=9.4.2"
+trame = "*"
+trame-vtk = "*"
+trame-vuetify = "*"
+ipywidgets = "*"
+ffmpeg = "*"
+
+[feature.docs.dependencies]
+sphinx = "*"
+nbsphinx = "*"
+ipykernel = "*"
+sphinx-gallery = "*"
+pydata-sphinx-theme = "*"
+myst-parser = "*"
+sphinx-design = "*"
+sphinx-toolbox = "*"
+linkify-it-py = "*"
+sphinxcontrib-mermaid = "*"
+pandoc = "*"
+
+[feature.docs.tasks]
+docs = "sphinx-build -b html doc doc/_build/html"
+
+[feature.py39.dependencies]
+python = "3.9.*"
+[feature.py310.dependencies]
+python = "3.10.*"
+[feature.py311.dependencies]
+python = "3.11.*"
+[feature.py312.dependencies]
+python = "3.12.*"
+[feature.py313.dependencies]
+python = "3.13.*"
+[feature.py314.dependencies]
+python = "3.14.*"
+
+# oldest supported versions of the core dependencies (the floors in
+# [project] dependencies), tested with the oldest supported python
+[feature.min-versions.dependencies]
+python = "3.9.*"
+numpy = "1.23.*"
+scipy = "1.8.*"
+scikit-image = "0.19.*"
+scikit-learn = "1.0.*"
+pandas = "2.0.*"
+matplotlib = "3.5.*"
+iris = "3.2.*"
+xarray = "2023.4.*"
+cartopy = "0.21.*"
+trackpy = "0.6.1.*"
+typing_extensions = "4.0.*"
+
+[environments]
+default = ["test", "lint", "dev"]
+py39 = ["test", "py39"]
+py310 = ["test", "py310"]
+py311 = ["test", "py311"]
+py312 = ["test", "py312"]
+py313 = ["test", "py313"]
+py314 = ["test", "py314"]
+examples = ["examples"]
+docs = ["docs"]
+min-versions = ["test", "min-versions"]

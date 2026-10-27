@@ -3,10 +3,12 @@ formats: all
 build:
   os: ubuntu-22.04
   tools:
-    python: "3.9"
-python:
-  install:
-    - requirements: doc/requirements.txt
+    python: "3.14"
+  jobs:
+    # install only the "docs" dependency group from pyproject.toml
+    install:
+      - pip install --upgrade "pip>=25.1"
+      - pip install --group docs
 sphinx:
   # Path to your Sphinx configuration file.
   configuration: doc/conf.py

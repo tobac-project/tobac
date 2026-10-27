@@ -1,16 +1,29 @@
-name: tobac
+# conda environment matching the "default" pixi environment in pixi.toml;
+# keep in sync with pixi.toml and pyproject.toml (checked by
+# .github/scripts/check_requirements.py).
+# After creating the environment, install tobac with `pip install -e . --no-deps`
+
+name: tobac-dev
 channels:
   - conda-forge
 dependencies:
-  - python>=3.7
-  - numpy
-  - scipy
-  - scikit-image
-  - scikit-learn
-  - pandas<3
-  - matplotlib
-  - iris
-  - xarray
-  - cartopy
-  - trackpy
-  - typing_extensions
+  - python>=3.9,<3.15
+  - numpy>=1.23
+  - scipy>=1.8
+  - scikit-image>=0.19
+  - scikit-learn>=1.0
+  - pandas>=2.0
+  - matplotlib>=3.5
+  - iris>=3.2
+  - xarray>=2023.4
+  - cartopy>=0.21
+  - trackpy>=0.6.1
+  - typing_extensions>=4.0
+  - pip
+  - pytest
+  - pytest-cov
+  - coverage
+  - black
+  - pylint
+  - pre-commit
+  - nbconvert
