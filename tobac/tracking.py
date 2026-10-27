@@ -1373,6 +1373,8 @@ def _filter_trajectories(
 
     Returns
     -------
+    pd.DataFrame
+        Filtered trajectories dataframe with `cell` and `time_cell` columns
 
     """
     # Reset particle numbers from the arbitrary numbers at the end of the feature detection and
