@@ -516,6 +516,7 @@ def segmentation_timestep(
             segmentation_mask = segmentation_mask[np.newaxis, :, :]
             unmasked = unmasked[np.newaxis, :, :]
             data_segmentation = data_segmentation[np.newaxis, :, :]
+            markers = markers[np.newaxis, :, :]
             vertical_coord_axis = 0
             hdim_1_axis = 1
             hdim_2_axis = 2
@@ -815,88 +816,23 @@ def segmentation_timestep(
             # of data in domain and re-seeding with Buddy feature markers
             buddy_rgn = np.zeros((bbox_zsize, bbox_ysize, bbox_xsize))
 
-            # need to loop thru ALL z,y,x inds in buddy box
-            # not just the ones that have nonzero seg mask values
-
-            # "_a1" points are re-transformations from the continuous buddy box points
-            # back to original grid/domain space to ensure that the correct data are
-            # copied to the proper Buddy Box locations
-            for z in range(bbox_zstart, bbox_zend):
-                for y in range(bbox_ystart, bbox_yend):
-                    for x in range(bbox_xstart, bbox_xend):
-                        z_a1 = z
-                        if y > hdim1_max:
-                            y_a1 = y - (hdim1_max + 1)
-                        else:
-                            y_a1 = y
-
-                        if x > hdim2_max:
-                            x_a1 = x - (hdim2_max + 1)
-                        else:
-                            x_a1 = x
-                        if is_3D_seg:
-                            buddy_rgn[
-                                z - bbox_zstart, y - bbox_ystart, x - bbox_xstart
-                            ] = field_in.data[z_a1, y_a1, x_a1]
-                        else:
-                            buddy_rgn[
-                                z - bbox_zstart, y - bbox_ystart, x - bbox_xstart
-                            ] = field_in.data[y_a1, x_a1]
-
-            # Update buddy_features feature positions to correspond to buddy box space
-            # rather than domain space or continuous/contiguous point space
-            if "vdim" not in buddy_features:
-                buddy_features["vdim"] = np.zeros(len(buddy_features), dtype=int)
-            for buddy_looper in range(0, len(buddy_features)):
-                buddy_features.iloc[
-                    buddy_looper, buddy_features.columns.get_loc("vdim")
-                ] = (buddy_features.vdim.values[buddy_looper] - bbox_zstart)
-
-                buddy_features.iloc[
-                    buddy_looper, buddy_features.columns.get_loc("hdim_1")
-                ] = (buddy_features.hdim_1.values[buddy_looper] - bbox_ystart)
-                buddy_features.iloc[
-                    buddy_looper, buddy_features.columns.get_loc("hdim_2")
-                ] = (buddy_features.hdim_2.values[buddy_looper] - bbox_xstart)
-
-            # Create dask array from input data:
-            buddy_data = buddy_rgn
-
-            # All of the below is the same overarching segmentation procedure as in the original
-            # segmentation approach until the line which states
-            # "#transform segmentation_mask_4 data back to original mask after PBC first-pass ("segmentation_mask_3")"
-            # It's just performed on the buddy box and its data rather than our full domain
-
-            # mask data outside region above/below threshold and invert data if tracking maxima:
-            if target == "maximum":
-                unmasked_buddies = buddy_data > threshold
-                buddy_segmentation = -1 * buddy_data
-            elif target == "minimum":
-                unmasked_buddies = buddy_data < threshold
-                buddy_segmentation = buddy_data
-            else:
-                raise ValueError("unknown type of target")
-
-            # set markers at the positions of the features:
-            buddy_markers = np.zeros(unmasked_buddies.shape).astype(np.int32)
-            # Buddy boxes are always without PBCs
-            buddy_markers = add_markers(
-                buddy_features,
-                buddy_markers,
-                seed_3D_flag,
-                seed_3D_size,
-                level,
-                PBC_flag="none",
+            buddy_locs = np.meshgrid(
+                np.arange(bbox_zstart, bbox_zend, dtype=int),
+                np.arange(bbox_ystart, bbox_yend, dtype=int) % (hdim1_max + 1),
+                np.arange(bbox_xstart, bbox_xend, dtype=int) % (hdim2_max + 1),
+                indexing="ij",
             )
 
-            # set markers in cells not fulfilling threshold condition to zero:
-            buddy_markers[~unmasked_buddies] = 0
+            buddy_segmentation = data_segmentation[*buddy_locs]
 
-            marker_vals = np.unique(buddy_markers)
+            unmasked_buddies = unmasked[*buddy_locs]
+            # unmasked_buddies = np.isin(segmentation_mask_3[*buddy_locs], buddy_features.feature)
 
-            # Turn into np arrays (not necessary for markers) as dask arrays don't yet seem to work for watershedding algorithm
-            buddy_segmentation = np.array(buddy_segmentation)
-            unmasked_buddies = np.array(unmasked_buddies)
+            buddy_markers = markers[*buddy_locs]
+            buddy_markers = np.where(
+                np.isin(buddy_markers, buddy_features.feature), buddy_markers, 0
+            )
+            # buddy_markers_new = np.where(np.isin(buddy_markers_new, buddy_features.feature) & unmasked_buddies, buddy_markers_new, 0)
 
             # perform segmentation:
             if method == "watershed":
@@ -917,47 +853,21 @@ def segmentation_timestep(
 
             # transform segmentation_mask_4 data back to mask created after PBC first-pass ("segmentation_mask_3")
 
-            # loop through buddy box inds and analogous seg mask inds
-            for z_val in range(bbox_zstart, bbox_zend):
-                z_seg = z_val - bbox_zstart
-                z_val_o = z_val
-                for y_val in range(bbox_ystart, bbox_yend):
-                    y_seg = y_val - bbox_ystart
-                    # y_val_o = y_val
-                    if y_val > hdim1_max:
-                        y_val_o = y_val - (hdim1_max + 1)
-                    else:
-                        y_val_o = y_val
-                    for x_val in range(bbox_xstart, bbox_xend):
-                        x_seg = x_val - bbox_xstart
-                        # x_val_o = x_val
-                        if x_val > hdim2_max:
-                            x_val_o = x_val - (hdim2_max + 1)
-                        else:
-                            x_val_o = x_val
+            # overwrite IF:
+            # 1) feature of interest
+            # 2) changing to/from feature of interest or adjacent segmented feature
+            # We don't want to overwrite other features that may be in the
+            # buddy box if not contacting the intersected seg field
+            seg_mask_3_subset = segmentation_mask_3[*buddy_locs]
+            segmentation_mask_3[*buddy_locs] = np.where(
+                np.logical_and(
+                    np.isin(seg_mask_3_subset, buddies),
+                    np.isin(segmentation_mask_4, buddies),
+                ),
+                segmentation_mask_4,
+                seg_mask_3_subset,
+            )
 
-                        # fix to
-                        # overwrite IF:
-                        # 1) feature of interest
-                        # 2) changing to/from feature of interest or adjacent segmented feature
-
-                        # We don't want to overwrite other features that may be in the
-                        # buddy box if not contacting the intersected seg field
-
-                        if np.any(
-                            segmentation_mask_3[z_val_o, y_val_o, x_val_o] == buddies
-                        ) and np.any(
-                            segmentation_mask_4.data[z_seg, y_seg, x_seg] == buddies
-                        ):
-                            # only do updating procedure if old and new values both in buddy set
-                            # and values are different
-                            if (
-                                segmentation_mask_3[z_val_o, y_val_o, x_val_o]
-                                != segmentation_mask_4.data[z_seg, y_seg, x_seg]
-                            ):
-                                segmentation_mask_3[z_val_o, y_val_o, x_val_o] = (
-                                    segmentation_mask_4.data[z_seg, y_seg, x_seg]
-                                )
         if not is_3D_seg:
             segmentation_mask_3 = segmentation_mask_3[0]
 
