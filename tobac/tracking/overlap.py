@@ -359,9 +359,7 @@ def _update_predicted_velocities(
 
 def _wrap_coords(
     coords: np.ndarray[int],
-    hdim1_size: int,
-    hdim2_size: int,
-    vdim_size: Optional[int] = None,
+    shape: np.ndarray[int],
     PBC_flag: Optional[Literal["none", "hdim_1", "hdim_2", "both"]] = None,
 ) -> np.ndarray[int]:
     """Wrap coordinates according to periodic boundary conditions. Coordinate locations which fall outside the size of the array are removed.
@@ -370,12 +368,9 @@ def _wrap_coords(
     ----------
     coords : np.ndarray[int]
         Coordinate array to wrap. Shape is (n_dims, n_points).
-    hdim1_size : int
-        Size of the first horizontal dimension.
-    hdim2_size : int
-        Size of the second horizontal dimension.
-    vdim_size : int, optional
-        Size of the vertical dimension. If None, no vertical wrapping applied.
+    shape : np.ndarray[int]
+        Shape of the domain to wrap coordinates in. Translated points
+        outside of the domain will be removed if they are not on a periodic boundary
     PBC_flag : {'none', 'hdim_1', 'hdim_2', 'both'}, optional
         Specification of which dimensions have periodic boundaries.
         Default is None.
@@ -387,14 +382,15 @@ def _wrap_coords(
 
     """
     if PBC_flag in ["hdim_1", "both"]:
-        coords[-2] = coords[-2] % hdim1_size
+        coords[-2] = coords[-2] % shape[-2]
     if PBC_flag in ["hdim_2", "both"]:
-        coords[-1] = coords[-1] % hdim2_size
-    filter = np.logical_and(coords[-2] < hdim1_size, coords[-1] < hdim2_size)
-    if vdim_size is not None:
-        filter = np.logical_and(filter, coords[0] < vdim_size)
-    filter = np.logical_and(filter, np.any(coords >= 0, axis=0))
-    return coords[:, filter]
+        coords[-1] = coords[-1] % shape[-1]
+    return coords[
+        :,
+        np.logical_and(
+            np.all(coords >= 0, axis=0), np.all(coords < shape[:, np.newaxis], axis=0)
+        ),
+    ]
 
 
 def _translate_labels(
@@ -442,9 +438,9 @@ def _translate_labels(
 
     wrap_coords = partial(
         _wrap_coords,
-        hdim1_size=hdim1_size,
-        hdim2_size=hdim2_size,
-        vdim_size=vdim_size,
+        shape=np.array(
+            [s for s in [vdim_size, hdim1_size, hdim2_size] if s is not None], dtype=int
+        ),
         PBC_flag=PBC_flag,
     )
     if translate_method == "predict":
