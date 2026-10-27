@@ -20,22 +20,21 @@ References
 """
 
 from __future__ import annotations
-import logging
-import numpy as np
-import pandas as pd
-import warnings
-import math
-from . import utils as tb_utils
-from .utils import periodic_boundaries as pbc_utils
-from .utils import internal as internal_utils
-from .utils.internal import coordinates as coord_utils
 
-from packaging import version as pkgvsn
-import trackpy as tp
 import copy
+import logging
+import warnings
 from typing import Optional
 
+import numpy as np
+import pandas as pd
 import sklearn
+import trackpy as tp
+from packaging import version as pkgvsn
+
+from tobac.utils import periodic_boundaries as pbc_utils
+from tobac.utils import internal as internal_utils
+from tobac.utils.internal import coordinates as coord_utils
 
 
 def linking_trackpy(
