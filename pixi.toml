@@ -3,7 +3,7 @@
 # `pixi run -e docs docs`.
 #
 # These are the conda-forge counterparts of the requirements in pyproject.toml
-# (some names differ, e.g. scitools-iris / iris, tables / pytables), and
+# (some names differ, e.g. scitools-iris / iris), and
 # environment.yml / environment-examples.yml mirror the default and examples
 # environments below. All of these are edited by hand; keep them in sync.
 # .github/scripts/check_requirements.py checks this in CI.
@@ -59,7 +59,7 @@ trackpy = ">=0.6.1"
 jupyter = "*"
 notebook = "*"
 nbconvert = "*"
-pytables = "*"
+pyarrow = "*"
 s3fs = "*"
 arm_pyart = "*"
 seaborn = "*"
@@ -67,10 +67,11 @@ h5netcdf = "*"
 rioxarray = "*"
 numba = "*"
 dask = "*"
-intake = "==0.7.0"
-intake-xarray = "==0.7.0"
-healpix = "*"
-easygems = "==0.1.2"
+intake = "!=2.0.0,!=2.0.1,!=2.0.3,!=2.0.4,!=2.0.5"
+intake-xarray = "*"
+jinja2 = "*"
+healpix = ">=2024.2"
+easygems = "*"
 pyvista = ">=0.46"
 vtk = ">=9.4.2"
 trame = "*"

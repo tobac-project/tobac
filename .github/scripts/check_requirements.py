@@ -23,7 +23,6 @@ ROOT = Path(__file__).resolve().parents[2]
 # PyPI name -> conda-forge name, when they differ
 PYPI_TO_CONDA = {
     "scitools-iris": "iris",
-    "tables": "pytables",
 }
 # conda-only packages (not on PyPI/not needed on pip)
 CONDA_ONLY = {"pip", "ffmpeg", "pandoc"}
