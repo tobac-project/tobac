@@ -337,7 +337,11 @@ def _update_predicted_velocities(
         elif wh_missing_vels.all():
             features.loc[wh_missing_vels, "_track_velocity"] = 0
         elif velocity_method == "mean":
-            mean_vel = features._track_velocity.mean()
+            mean_vel = (
+                features._track_velocity[~features._track_velocity.isna()]
+                .to_numpy()
+                .mean()
+            )
             features.loc[wh_missing_vels, "_track_velocity"] = {
                 k: mean_vel for k in features[wh_missing_vels].index
             }
@@ -465,7 +469,9 @@ def _translate_labels(
                     dict(
                         zip(
                             features.index,
-                            features._track_velocity.mean()
+                            features._track_velocity[~features._track_velocity.isna()]
+                            .to_numpy()
+                            .mean()
                             * (
                                 to_timestamp(timestep.values)
                                 - to_timestamp(features.time)
