@@ -1376,7 +1376,7 @@ def _filter_trajectories(
 
     """
     # Reset particle numbers from the arbitrary numbers at the end of the feature detection and
-    # linking to consecutive cell number; keep 'particle' for reference to the feature detection step.
+    # linking to consecutive cell number.
     trajectories_final = trajectories_unfiltered.rename(columns={"particle": "cell"})
     trajectories_final["cell"] = (
         np.unique(trajectories_final.cell, return_inverse=True)[1] + cell_number_start
