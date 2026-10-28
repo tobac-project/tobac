@@ -358,9 +358,9 @@ def cog_cell(
     #   Tracks_COG_frozen_list.append(Tracks_COG_frozen_i)
     logging.debug("COG frozen loaded for " + str(cell))
 
-    Tracks_COG_total_i.to_hdf(savefile_COG_total_i, "table")
-    Tracks_COG_liquid_i.to_hdf(savefile_COG_liquid_i, "table")
-    Tracks_COG_frozen_i.to_hdf(savefile_COG_frozen_i, "table")
+    Tracks_COG_total_i.to_hdf(savefile_COG_total_i, key="table")
+    Tracks_COG_liquid_i.to_hdf(savefile_COG_liquid_i, key="table")
+    Tracks_COG_frozen_i.to_hdf(savefile_COG_frozen_i, key="table")
     logging.debug("individual COG calculated and saved to " + savedir_cell)
 
 
