@@ -102,9 +102,6 @@ def add_markers(
     if seed_3D_flag not in ["column", "box"]:
         raise ValueError('seed_3D_flag must be either "column" or "box"')
 
-    # What marker number is the background? Assumed 0.
-    bg_marker = 0
-
     if level is None:
         level = slice(None)
 
@@ -119,159 +116,93 @@ def add_markers(
         z_len = 0
         h1_len = marker_arr.shape[0]
         h2_len = marker_arr.shape[1]
-        # transpose to 3D array to make things easier.
-        marker_arr = marker_arr[np.newaxis, :, :]
 
     if seed_3D_flag == "column":
-        for _, row in features.iterrows():
-            # Offset marker locations by 0.5 to find nearest pixel
-            marker_arr[
-                level,
-                int(row["hdim_1"] + 0.5) % h1_len,
-                int(row["hdim_2"] + 0.5) % h2_len,
-            ] = row["feature"]
+        marker_arr[
+            level if is_3D else None,
+            features.hdim_1.to_numpy().round().astype(int) % h1_len,
+            features.hdim_2.to_numpy().round().astype(int) % h2_len,
+        ] = features.feature
 
     elif seed_3D_flag == "box":
         # Get the size of the seed box from the input parameter
         try:
-            if is_3D:
-                seed_z = seed_3D_size[0]
-                start_num = 1
-            else:
-                start_num = 0
-            seed_h1 = seed_3D_size[start_num]
-            seed_h2 = seed_3D_size[start_num + 1]
+            seed_z = seed_3D_size[0] if is_3D else 1
+            seed_h1 = seed_3D_size[-2]
+            seed_h2 = seed_3D_size[-1]
         except TypeError:
             # Not iterable, assume int.
             seed_z = seed_3D_size
             seed_h1 = seed_3D_size
             seed_h2 = seed_3D_size
 
-        for _, row in features.iterrows():
-            if is_3D:
-                # If we have a 3D input and we need to do box seeding
-                # we need to have 3D features.
-                try:
-                    row["vdim"]
-                except KeyError:
-                    raise ValueError(
-                        "For Box seeding on 3D segmentation,"
-                        " you must have a 3D input source."
-                    )
-
-            # Because we don't support PBCs on the vertical axis,
-            # this is simple- just go in the seed_z/2 points around the
-            # vdim of the feature, up to the limits of the array.
-            if is_3D:
-                z_seed_start = int(np.max([0, np.ceil(row["vdim"] - seed_z / 2)]))
-                z_seed_end = int(np.min([z_len, np.ceil(row["vdim"] + seed_z / 2)]))
-            else:
-                z_seed_start = 0
-                z_seed_end = 1
-            # For the horizontal dimensions, it's more complicated if we have
-            # PBCs.
-            hdim_1_min = int(np.ceil(row["hdim_1"] - seed_h1 / 2))
-            hdim_1_max = int(np.ceil(row["hdim_1"] + seed_h1 / 2))
-            hdim_2_min = int(np.ceil(row["hdim_2"] - seed_h2 / 2))
-            hdim_2_max = int(np.ceil(row["hdim_2"] + seed_h2 / 2))
-
-            all_seed_boxes = pbc_utils.get_pbc_coordinates(
-                h1_min=0,
-                h1_max=h1_len,
-                h2_min=0,
-                h2_max=h2_len,
-                h1_start_coord=hdim_1_min,
-                h1_end_coord=hdim_1_max,
-                h2_start_coord=hdim_2_min,
-                h2_end_coord=hdim_2_max,
-                PBC_flag=PBC_flag,
+        # Now we create a big list of points to assign seed boxes
+        if is_3D:
+            seed_box_offsets = np.meshgrid(
+                np.arange(-seed_z / 2, seed_z / 2),
+                np.arange(-seed_h1 / 2, seed_h1 / 2),
+                np.arange(-seed_h2 / 2, seed_h2 / 2),
+                indexing="ij",
             )
-            # Build distance function ahead of time, 3D always true as we then reduce
-            dist_func = pbc_utils.build_distance_function(
-                0, h1_len, 0, h2_len, PBC_flag, True
+            seed_box_offset_z, seed_box_offset_h1, seed_box_offset_h2 = (
+                sbo.ravel()[:, np.newaxis] for sbo in seed_box_offsets
             )
-            for seed_box in all_seed_boxes:
-                # Need to see if there are any other points seeded
-                # in this seed box first.
-                curr_box_markers = marker_arr[
-                    z_seed_start:z_seed_end,
-                    seed_box[0] : seed_box[1],
-                    seed_box[2] : seed_box[3],
-                ]
-                all_feats_in_box = np.unique(curr_box_markers)
-                if np.any(curr_box_markers != bg_marker):
-                    # If we have non-background points already seeded,
-                    # we need to find the best way to seed them.
-                    # Currently seeding with the closest point.
-                    # Loop through all points in the box
-                    with np.nditer(curr_box_markers, flags=["multi_index"]) as it:
-                        for curr_box_pt in it:
-                            # Get its global index so that we can calculate
-                            # distance and set the array.
-                            local_index = it.multi_index
-                            global_index = (
-                                local_index[0] + z_seed_start,
-                                local_index[1] + seed_box[0],
-                                local_index[2] + seed_box[2],
-                            )
+            seed_box_locs_z = np.ceil(
+                (seed_box_offset_z + features.vdim.to_numpy())
+            ).astype(int)
+        else:
+            seed_box_offsets = np.meshgrid(
+                np.arange(-seed_h1 / 2, seed_h1 / 2),
+                np.arange(-seed_h2 / 2, seed_h2 / 2),
+                indexing="ij",
+            )
+            seed_box_offset_h1, seed_box_offset_h2 = (
+                sbo.ravel()[:, np.newaxis] for sbo in seed_box_offsets
+            )
 
-                            # If it's a background marker, we can just set it
-                            # with the feature we're working on.
-                            if curr_box_pt == bg_marker:
-                                marker_arr[global_index] = row["feature"]
-                                continue
-                            # it has another feature in it. Calculate the distance
-                            # from its current set feature and the new feature.
-                            if is_3D:
-                                curr_coord = np.array(
-                                    (row["vdim"], row["hdim_1"], row["hdim_2"])
-                                )
-                            else:
-                                curr_coord = np.array((0, row["hdim_1"], row["hdim_2"]))
+        seed_box_locs_h1 = np.ceil(
+            (seed_box_offset_h1 + features.hdim_1.to_numpy())
+        ).astype(int)
+        seed_box_locs_h2 = np.ceil(
+            (seed_box_offset_h2 + features.hdim_2.to_numpy())
+        ).astype(int)
 
-                            dist_from_curr_pt = dist_func(
-                                np.array(global_index), curr_coord
-                            )
+        # Reorder to furthest first, closest last - this assigns preferring the closest features
+        ordering = np.argsort(
+            (
+                (seed_box_locs_z - features.vdim.to_numpy()) ** 2
+                if is_3D
+                else 0
+                + (seed_box_locs_h1 - features.hdim_1.to_numpy()) ** 2
+                + (seed_box_locs_h2 - features.hdim_2.to_numpy()) ** 2
+            ).ravel()
+        )[::-1]
 
-                            # This is technically an O(N^2) operation, but
-                            # hopefully performance isn't too bad as this should
-                            # be rare.
-                            orig_row = features[
-                                features["feature"] == curr_box_pt
-                            ].iloc[0]
-                            if is_3D:
-                                orig_coord = np.array(
-                                    (
-                                        orig_row["vdim"],
-                                        orig_row["hdim_1"],
-                                        orig_row["hdim_2"],
-                                    )
-                                )
-                            else:
-                                orig_coord = np.array(
-                                    (0, orig_row["hdim_1"], orig_row["hdim_2"])
-                                )
-                            dist_from_orig_pt = dist_func(
-                                np.array(global_index), orig_coord
-                            )
-                            # The current point center is further away
-                            # than the original point center, so do nothing
-                            if dist_from_curr_pt > dist_from_orig_pt:
-                                continue
-                            else:
-                                # the current point center is closer.
-                                marker_arr[global_index] = row["feature"]
-                # completely unseeded region so far.
-                else:
-                    marker_arr[
-                        z_seed_start:z_seed_end,
-                        seed_box[0] : seed_box[1],
-                        seed_box[2] : seed_box[3],
-                    ] = row["feature"]
+        if is_3D:
+            seed_box_locs_z = seed_box_locs_z.flatten()[ordering]
+            seed_box_locs_z = np.clip(seed_box_locs_z, 0, z_len - 1)
+        seed_box_locs_h1 = seed_box_locs_h1.flatten()[ordering]
+        seed_box_locs_h2 = seed_box_locs_h2.flatten()[ordering]
+        marker_values = np.tile(
+            features.feature.to_numpy()[np.newaxis, :], (seed_box_offset_h1.shape[0], 1)
+        ).flatten()[ordering]
 
-    # If we aren't 3D, transpose back.
-    if not is_3D:
-        marker_arr = marker_arr[0, :, :]
+        if PBC_flag in ["hdim_1", "both"]:
+            seed_box_locs_h1 = seed_box_locs_h1 % h1_len
+        else:
+            seed_box_locs_h1 = np.clip(seed_box_locs_h1, 0, h1_len - 1)
+
+        if PBC_flag in ["hdim_2", "both"]:
+            seed_box_locs_h2 = seed_box_locs_h2 % h2_len
+        else:
+            seed_box_locs_h2 = np.clip(seed_box_locs_h2, 0, h2_len - 1)
+
+        # Now assign to the marker array:
+        marker_arr[
+            seed_box_locs_z if is_3D else None,
+            seed_box_locs_h1,
+            seed_box_locs_h2,
+        ] = marker_values
 
     return marker_arr
 
@@ -460,7 +391,6 @@ def segmentation_timestep(
         from skimage.segmentation import watershed
     except ImportError:
         from skimage.morphology import watershed
-    # from skimage.segmentation import random_walker
     from scipy.ndimage import distance_transform_edt
     from copy import deepcopy
 
@@ -583,6 +513,7 @@ def segmentation_timestep(
             segmentation_mask = segmentation_mask[np.newaxis, :, :]
             unmasked = unmasked[np.newaxis, :, :]
             data_segmentation = data_segmentation[np.newaxis, :, :]
+            markers = markers[np.newaxis, :, :]
             vertical_coord_axis = 0
             hdim_1_axis = 1
             hdim_2_axis = 2
@@ -780,35 +711,32 @@ def segmentation_timestep(
 
             buddies = np.unique(buddies)
 
-            if np.all(buddies == cur_idx):
-                continue
-            else:
-                inter_buddies, feat_inds, buddy_inds = np.intersect1d(
-                    features_in.feature.values[:], buddies, return_indices=True
-                )
-
-            # Get features that are needed for the buddy box
-            buddy_features = features_in.iloc[feat_inds].copy()
-
-            # create arrays to contain points of all buddies
-            # and their transpositions/transformations
-            # for use in Buddy Box space
-
             # z,y,x points in the grid domain with no transformations
-            # NOTE: when I think about it, not sure if these are really needed
-            # as we use the y_a1/x_a1 points for the data transposition
-            # to the buddy box rather than these and their z2/y2/x2 counterparts
-            buddy_z = np.array([], dtype=int)
-            buddy_y = np.array([], dtype=int)
-            buddy_x = np.array([], dtype=int)
+            buddy_z = np.concatenate(
+                [z_reg_inds[buddy] for buddy in buddies if buddy != 0]
+            )
+            buddy_y = np.concatenate(
+                [y_reg_inds[buddy] for buddy in buddies if buddy != 0]
+            )
+            buddy_x = np.concatenate(
+                [x_reg_inds[buddy] for buddy in buddies if buddy != 0]
+            )
 
             # z,y,x points from the grid domain WHICH MAY OR MAY NOT BE TRANSFORMED
             # so as to be continuous/contiguous across a grid boundary for that dimension
             # (e.g., instead of [1496,1497,0,1,2,3] it would be [1496,1497,1498,1499,1500,1501])
-            buddy_z2 = np.array([], dtype=int)
-            buddy_y2 = np.array([], dtype=int)
-            buddy_x2 = np.array([], dtype=int)
-
+            buddy_z2 = buddy_z
+            # Vectorised logic from transfm_pbc_point
+            buddy_y2 = np.where(
+                buddy_y < ((hdim1_min + hdim1_max) / 2),
+                buddy_y + hdim1_max + 1,
+                buddy_y,
+            )
+            buddy_x2 = np.where(
+                buddy_x < ((hdim2_min + hdim2_max) / 2),
+                buddy_x + hdim2_max + 1,
+                buddy_x,
+            )
             # These are just for feature positions and are in z2/y2/x2 space
             # (may or may not be within real grid domain)
             # so that when the buddy box is constructed, seeding is done properly
@@ -816,53 +744,6 @@ def segmentation_timestep(
 
             # NOTE: We may not need this, as we already do this editing the buddy_features df
             # and an iterrows call through this is what's used to actually seed the buddy box
-
-            buddy_looper = 0
-
-            # loop thru buddies
-            for buddy in buddies:
-                if buddy == 0:
-                    continue
-                # isolate feature from set of buddies
-                buddy_feat = features_in[features_in["feature"] == buddy].iloc[0]
-
-                # transform buddy feature position if needed for positioning in z2/y2/x2 space
-                # MAY be redundant with what is done just below here
-                yf2 = pbc_utils.transfm_pbc_point(
-                    int(buddy_feat.hdim_1), hdim1_min, hdim1_max
-                )
-                xf2 = pbc_utils.transfm_pbc_point(
-                    int(buddy_feat.hdim_2), hdim2_min, hdim2_max
-                )
-
-                # edit value in buddy_features dataframe
-                buddy_features.iloc[
-                    buddy_looper, buddy_features.columns.get_loc("hdim_1")
-                ] = pbc_utils.transfm_pbc_point(
-                    float(buddy_feat.hdim_1), hdim1_min, hdim1_max
-                )
-                buddy_features.iloc[
-                    buddy_looper, buddy_features.columns.get_loc("hdim_2")
-                ] = pbc_utils.transfm_pbc_point(
-                    float(buddy_feat.hdim_2), hdim2_min, hdim2_max
-                )
-
-                buddy_looper = buddy_looper + 1
-                # Create 1:1 map through actual domain points and continuous/contiguous points
-                # used to identify buddy box dimension lengths for its construction
-                for z, y, x in zip(
-                    z_reg_inds[buddy], y_reg_inds[buddy], x_reg_inds[buddy]
-                ):
-                    buddy_z = np.append(buddy_z, z)
-                    buddy_y = np.append(buddy_y, y)
-                    buddy_x = np.append(buddy_x, x)
-
-                    y2 = pbc_utils.transfm_pbc_point(y, hdim1_min, hdim1_max)
-                    x2 = pbc_utils.transfm_pbc_point(x, hdim2_min, hdim2_max)
-
-                    buddy_z2 = np.append(buddy_z2, z)
-                    buddy_y2 = np.append(buddy_y2, y2)
-                    buddy_x2 = np.append(buddy_x2, x2)
 
             # Buddy Box!
             # Identify mins and maxes of Buddy Box continuous points range
@@ -874,96 +755,23 @@ def segmentation_timestep(
             bbox_yend = int(np.max(buddy_y2) + 1)
             bbox_xend = int(np.max(buddy_x2) + 1)
 
-            bbox_zsize = bbox_zend - bbox_zstart
-            bbox_ysize = bbox_yend - bbox_ystart
-            bbox_xsize = bbox_xend - bbox_xstart
-
             # Creation of actual Buddy Box space for transposition
             # of data in domain and re-seeding with Buddy feature markers
-            buddy_rgn = np.zeros((bbox_zsize, bbox_ysize, bbox_xsize))
-
-            # need to loop thru ALL z,y,x inds in buddy box
-            # not just the ones that have nonzero seg mask values
-
-            # "_a1" points are re-transformations from the continuous buddy box points
-            # back to original grid/domain space to ensure that the correct data are
-            # copied to the proper Buddy Box locations
-            for z in range(bbox_zstart, bbox_zend):
-                for y in range(bbox_ystart, bbox_yend):
-                    for x in range(bbox_xstart, bbox_xend):
-                        z_a1 = z
-                        if y > hdim1_max:
-                            y_a1 = y - (hdim1_max + 1)
-                        else:
-                            y_a1 = y
-
-                        if x > hdim2_max:
-                            x_a1 = x - (hdim2_max + 1)
-                        else:
-                            x_a1 = x
-                        if is_3D_seg:
-                            buddy_rgn[
-                                z - bbox_zstart, y - bbox_ystart, x - bbox_xstart
-                            ] = field_in.data[z_a1, y_a1, x_a1]
-                        else:
-                            buddy_rgn[
-                                z - bbox_zstart, y - bbox_ystart, x - bbox_xstart
-                            ] = field_in.data[y_a1, x_a1]
-
-            # Update buddy_features feature positions to correspond to buddy box space
-            # rather than domain space or continuous/contiguous point space
-            if "vdim" not in buddy_features:
-                buddy_features["vdim"] = np.zeros(len(buddy_features), dtype=int)
-            for buddy_looper in range(0, len(buddy_features)):
-                buddy_features.iloc[
-                    buddy_looper, buddy_features.columns.get_loc("vdim")
-                ] = (buddy_features.vdim.values[buddy_looper] - bbox_zstart)
-
-                buddy_features.iloc[
-                    buddy_looper, buddy_features.columns.get_loc("hdim_1")
-                ] = (buddy_features.hdim_1.values[buddy_looper] - bbox_ystart)
-                buddy_features.iloc[
-                    buddy_looper, buddy_features.columns.get_loc("hdim_2")
-                ] = (buddy_features.hdim_2.values[buddy_looper] - bbox_xstart)
-
-            # Create dask array from input data:
-            buddy_data = buddy_rgn
-
-            # All of the below is the same overarching segmentation procedure as in the original
-            # segmentation approach until the line which states
-            # "#transform segmentation_mask_4 data back to original mask after PBC first-pass ("segmentation_mask_3")"
-            # It's just performed on the buddy box and its data rather than our full domain
-
-            # mask data outside region above/below threshold and invert data if tracking maxima:
-            if target == "maximum":
-                unmasked_buddies = buddy_data > threshold
-                buddy_segmentation = -1 * buddy_data
-            elif target == "minimum":
-                unmasked_buddies = buddy_data < threshold
-                buddy_segmentation = buddy_data
-            else:
-                raise ValueError("unknown type of target")
-
-            # set markers at the positions of the features:
-            buddy_markers = np.zeros(unmasked_buddies.shape).astype(np.int32)
-            # Buddy boxes are always without PBCs
-            buddy_markers = add_markers(
-                buddy_features,
-                buddy_markers,
-                seed_3D_flag,
-                seed_3D_size,
-                level,
-                PBC_flag="none",
+            buddy_locs = np.meshgrid(
+                np.arange(bbox_zstart, bbox_zend, dtype=int),
+                np.arange(bbox_ystart, bbox_yend, dtype=int) % (hdim1_max + 1),
+                np.arange(bbox_xstart, bbox_xend, dtype=int) % (hdim2_max + 1),
+                indexing="ij",
             )
 
-            # set markers in cells not fulfilling threshold condition to zero:
-            buddy_markers[~unmasked_buddies] = 0
+            buddy_segmentation = data_segmentation[
+                buddy_locs[0], buddy_locs[1], buddy_locs[2]
+            ]
 
-            marker_vals = np.unique(buddy_markers)
+            unmasked_buddies = unmasked[buddy_locs[0], buddy_locs[1], buddy_locs[2]]
 
-            # Turn into np arrays (not necessary for markers) as dask arrays don't yet seem to work for watershedding algorithm
-            buddy_segmentation = np.array(buddy_segmentation)
-            unmasked_buddies = np.array(unmasked_buddies)
+            buddy_markers = markers[buddy_locs[0], buddy_locs[1], buddy_locs[2]]
+            buddy_markers = np.where(np.isin(buddy_markers, buddies), buddy_markers, 0)
 
             # perform segmentation:
             if method == "watershed":
@@ -984,47 +792,23 @@ def segmentation_timestep(
 
             # transform segmentation_mask_4 data back to mask created after PBC first-pass ("segmentation_mask_3")
 
-            # loop through buddy box inds and analogous seg mask inds
-            for z_val in range(bbox_zstart, bbox_zend):
-                z_seg = z_val - bbox_zstart
-                z_val_o = z_val
-                for y_val in range(bbox_ystart, bbox_yend):
-                    y_seg = y_val - bbox_ystart
-                    # y_val_o = y_val
-                    if y_val > hdim1_max:
-                        y_val_o = y_val - (hdim1_max + 1)
-                    else:
-                        y_val_o = y_val
-                    for x_val in range(bbox_xstart, bbox_xend):
-                        x_seg = x_val - bbox_xstart
-                        # x_val_o = x_val
-                        if x_val > hdim2_max:
-                            x_val_o = x_val - (hdim2_max + 1)
-                        else:
-                            x_val_o = x_val
+            # overwrite IF:
+            # 1) feature of interest
+            # 2) changing to/from feature of interest or adjacent segmented feature
+            # We don't want to overwrite other features that may be in the
+            # buddy box if not contacting the intersected seg field
+            seg_mask_3_subset = segmentation_mask_3[
+                buddy_locs[0], buddy_locs[1], buddy_locs[2]
+            ]
+            segmentation_mask_3[buddy_locs[0], buddy_locs[1], buddy_locs[2]] = np.where(
+                np.logical_and(
+                    np.isin(seg_mask_3_subset, buddies),
+                    np.isin(segmentation_mask_4, buddies),
+                ),
+                segmentation_mask_4,
+                seg_mask_3_subset,
+            )
 
-                        # fix to
-                        # overwrite IF:
-                        # 1) feature of interest
-                        # 2) changing to/from feature of interest or adjacent segmented feature
-
-                        # We don't want to overwrite other features that may be in the
-                        # buddy box if not contacting the intersected seg field
-
-                        if np.any(
-                            segmentation_mask_3[z_val_o, y_val_o, x_val_o] == buddies
-                        ) and np.any(
-                            segmentation_mask_4.data[z_seg, y_seg, x_seg] == buddies
-                        ):
-                            # only do updating procedure if old and new values both in buddy set
-                            # and values are different
-                            if (
-                                segmentation_mask_3[z_val_o, y_val_o, x_val_o]
-                                != segmentation_mask_4.data[z_seg, y_seg, x_seg]
-                            ):
-                                segmentation_mask_3[z_val_o, y_val_o, x_val_o] = (
-                                    segmentation_mask_4.data[z_seg, y_seg, x_seg]
-                                )
         if not is_3D_seg:
             segmentation_mask_3 = segmentation_mask_3[0]
 
@@ -1044,14 +828,12 @@ def segmentation_timestep(
     segmentation_mask[wh_below_threshold] = segment_number_below_threshold
     segmentation_out.data = segmentation_mask
 
-    # add ncells to feature dataframe with new statistic method
-    features_out = get_statistics(
-        features_out,
-        np.array(segmentation_out.data.copy()),
-        np.array(field_in.data.copy()),
-        statistic={"ncells": np.count_nonzero},
-        default=0,
-    )
+    # add ncells to feature dataframe
+    if len(features_out):
+        features_out["ncells"] = np.bincount(
+            np.maximum(segmentation_out.values.ravel(), 0),
+            minlength=int(features_out.feature.max() + 1),
+        )[features_out.feature.astype(int)]
 
     # compute additional statistics, if requested
     if statistic:
