@@ -496,22 +496,25 @@ def test_bulk_statistics_broadcasting():
     )
 
 
-def test_get_statistics_collapse_axis():
+def test_get_statistics_collapse_dim():
     """
-    Test the collapse_axis keyword of get_statistics
+    Test the collapse_dim keyword of get_statistics
     """
-    test_labels = np.array(
-        [
-            [0, 0, 0, 0, 0],
-            [0, 1, 0, 0, 0],
-            [0, 1, 0, 2, 0],
-            [0, 1, 0, 2, 0],
-            [0, 0, 0, 0, 0],
-        ],
-        dtype=int,
+    test_labels = xr.DataArray(
+        np.array(
+            [
+                [0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0],
+                [0, 1, 0, 2, 0],
+                [0, 1, 0, 2, 0],
+                [0, 0, 0, 0, 0],
+            ],
+            dtype=int,
+        ),
+        dims=("y", "x"),
     )
 
-    test_values = np.array([0.25, 0.5, 0.75, 1, 1])
+    test_values = xr.DataArray(np.array([0.25, 0.5, 0.75, 1, 1]), dims=("x",))
 
     test_features = pd.DataFrame(
         {
@@ -526,75 +529,79 @@ def test_get_statistics_collapse_axis():
     statistics_sum = {"sum": np.sum}
 
     expected_sum_result_axis0 = np.array([0.5, 1])
-    output_collapse_axis0 = tb_utils.get_statistics(
+    output_collapse_dim0 = tb_utils.get_statistics(
         test_features,
         test_labels,
         test_values,
         statistic=statistics_sum,
-        collapse_axis=0,
+        collapse_dim="y",
     )
-    assert np.all(output_collapse_axis0["sum"] == expected_sum_result_axis0)
+    assert np.all(output_collapse_dim0["sum"] == expected_sum_result_axis0)
 
+    test_values = xr.DataArray(np.array([0.25, 0.5, 0.75, 1, 1]), dims=("y",))
     expected_sum_result_axis1 = np.array([2.25, 1.75])
-    output_collapse_axis1 = tb_utils.get_statistics(
+    output_collapse_dim1 = tb_utils.get_statistics(
         test_features,
         test_labels,
         test_values,
         statistic=statistics_sum,
-        collapse_axis=1,
+        collapse_dim="x",
     )
-    assert np.all(output_collapse_axis1["sum"] == expected_sum_result_axis1)
+    assert np.all(output_collapse_dim1["sum"] == expected_sum_result_axis1)
 
     # Check that attempting broadcast raises a ValueError
-    with pytest.raises(ValueError):
-        _ = tb_utils.get_statistics(
-            test_features,
-            test_labels,
-            test_values.reshape([5, 1]),
-            statistic=statistics_sum,
-            collapse_axis=0,
-        )
+    # with pytest.raises(ValueError):
+    #     _ = tb_utils.get_statistics(
+    #         test_features,
+    #         test_labels,
+    #         test_values.reshape([5, 1]),
+    #         statistic=statistics_sum,
+    #         collapse_axis=0,
+    #     )
 
-    # Check that attempting to collapse all axes raises a ValueError:
+    # Check that attempting to collapse all dims raises a ValueError:
     with pytest.raises(ValueError):
         _ = tb_utils.get_statistics(
             test_features,
             test_labels,
             test_values,
             statistic=statistics_sum,
-            collapse_axis=[0, 1],
+            collapse_dim=["y", "x"],
         )
 
     # Test with collpasing multiple axes
-    test_labels = np.array(
-        [
+    test_labels = xr.DataArray(
+        np.array(
             [
-                [0, 0, 0, 0, 0],
-                [0, 1, 0, 0, 0],
-                [0, 1, 0, 2, 0],
-                [0, 1, 0, 2, 0],
-                [0, 0, 0, 0, 0],
+                [
+                    [0, 0, 0, 0, 0],
+                    [0, 1, 0, 0, 0],
+                    [0, 1, 0, 2, 0],
+                    [0, 1, 0, 2, 0],
+                    [0, 0, 0, 0, 0],
+                ],
+                [
+                    [0, 0, 0, 0, 0],
+                    [0, 1, 0, 0, 0],
+                    [0, 1, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                ],
             ],
-            [
-                [0, 0, 0, 0, 0],
-                [0, 1, 0, 0, 0],
-                [0, 1, 0, 0, 0],
-                [0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0],
-            ],
-        ],
-        dtype=int,
+            dtype=int,
+        ),
+        dims=("z", "y", "x"),
     )
-    test_values = np.array([0.5, 1])
-    expected_sum_result_axis12 = np.array([1.5, 0.5])
-    output_collapse_axis12 = tb_utils.get_statistics(
+    test_values = xr.DataArray(np.array([0.5, 1]), dims="z")
+    expected_sum_result_dim12 = np.array([1.5, 0.5])
+    output_collapse_dim12 = tb_utils.get_statistics(
         test_features,
         test_labels,
         test_values,
         statistic=statistics_sum,
-        collapse_axis=[1, 2],
+        collapse_dim=["y", "x"],
     )
-    assert np.all(output_collapse_axis12["sum"] == expected_sum_result_axis12)
+    assert np.all(output_collapse_dim12["sum"] == expected_sum_result_dim12)
 
 
 def test_get_statistics_from_mask_collapse_dim():

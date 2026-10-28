@@ -12,30 +12,37 @@ from functools import partial
 from typing import Callable, Optional, Union
 
 import numpy as np
-
-from tobac.utils.generators import field_and_features_over_time
-
-# numpy renamed core to _core recently
-try:
-    from numpy._core import multiarray as mu
-except ModuleNotFoundError:
-    from numpy.core import multiarray as mu
 import pandas as pd
 import xarray as xr
+from skimage.measure import regionprops_table
+
 from tobac.utils import decorators
+from tobac.utils.generators import field_and_features_over_time
+
+
+def get_collapsed_coords(coords, uncollapsed_axes, shape):
+    return np.stack(
+        np.unravel_index(
+            np.unique(
+                np.ravel_multi_index(coords.T[uncollapsed_axes], shape),
+            ),
+            shape,
+        ),
+        -1,
+    )
 
 
 def get_statistics(
     features: pd.DataFrame,
-    labels: np.ndarray[int],
+    labels: xr.DataArray,
     *fields: tuple[xr.DataArray],
     statistic: dict[str, Union[Callable, tuple[Callable, dict]]] = {
         "ncells": np.count_nonzero
     },
-    index: Union[None, list[int]] = None,
-    default: Union[None, float] = None,
+    index: Optional[list[int]] = None,
+    default: Optional[float] = None,
     id_column: str = "feature",
-    collapse_axis: Union[None, int, list[int]] = None,
+    collapse_dim: Optional[Union[str, list[str]]] = None,
 ) -> pd.DataFrame:
     """Get bulk statistics for objects (e.g. features or segmented features)
     given a labelled mask of the objects and any input field with the same
@@ -53,7 +60,7 @@ def get_statistics(
         detection or segmentation), which can be for the specific timestep or
         for the whole dataset
 
-    labels : np.ndarray[int]
+    labels : xr.DataArray
         Mask with labels of each regions to apply function to (e.g. output of
         segmentation for a specific timestep)
 
@@ -91,126 +98,105 @@ def get_statistics(
         in a new column.
     """
 
-    # if mask and input data dimensions do not match we can broadcast using numpy broadcasting rules
-    if collapse_axis is not None:
-        # Test if iterable and if not make a list
-        try:
-            collapse_axis = list(iter(collapse_axis))
-        except TypeError:
-            collapse_axis = [collapse_axis]
+    if len(features):
+        # Drop existing stats columns
+        stats_columns = list(statistic.keys())
+        features = features.drop(columns=stats_columns, errors="ignore")
 
-        # Normalise axes to handle negative axis number conventions
-        ndim = len(labels.shape)
-        collapse_axis = [mu.normalize_axis_index(axis, ndim) for axis in collapse_axis]
-        uncollapsed_axes = [
-            i for i, _ in enumerate(labels.shape) if i not in collapse_axis
-        ]
-        if not len(uncollapsed_axes):
-            raise ValueError("Cannot collapse all axes of labels")
-        collapsed_shape = tuple(
-            [s for i, s in enumerate(labels.shape) if i not in collapse_axis]
-        )
-        broadcast_flag = any([collapsed_shape != field.shape for field in fields])
-        if broadcast_flag:
-            raise ValueError("Broadcasting not supported with collapse_axis")
-
-    else:
-        broadcast_flag = any([labels.shape != field.shape for field in fields])
-        if broadcast_flag:
-            # Broadcast input labels and fields to ensure they work according to numpy broadcasting rules
-            broadcast_fields = np.broadcast_arrays(labels, *fields)
-            labels = broadcast_fields[0]
-            fields = broadcast_fields[1:]
-
-    # mask must contain positive values to calculate statistics
-    if np.any(labels > 0):
         if index is None:
-            index = features[id_column].to_numpy().astype(int)
-        else:
-            # get the statistics only for specified feature objects
-            if np.max(index) > np.max(labels):
-                raise ValueError("Index contains values that are not in labels!")
+            index = features[id_column]
 
-        # Find which labels exist in features for output:
-        index_in_features = np.isin(index, features[id_column])
-
-        # set negative markers to 0 as they are unsegmented
-        bins = np.cumsum(np.bincount(np.maximum(labels.ravel(), 0)))
-        argsorted = np.argsort(labels.ravel())
-
-        # Create lambdas to get (ravelled) label locations using argsorted and bins
-        if collapse_axis is None:
-            label_locs = lambda i: argsorted[bins[i - 1] : bins[i]]
-        else:
-            # Collapse ravelled locations to the remaining axes
-            label_locs = lambda i: np.unique(
-                np.ravel_multi_index(
-                    np.array(
-                        np.unravel_index(argsorted[bins[i - 1] : bins[i]], labels.shape)
-                    )[uncollapsed_axes],
-                    collapsed_shape,
+        coords = (
+            pd.DataFrame(
+                regionprops_table(
+                    np.where(np.isin(labels.values, index), labels.values, 0),
+                    properties=("label", "coords"),
                 )
             )
+            .set_index("label")
+            .coords
+        )
 
-        # apply each function given per statistic parameter for the labeled regions sorted in ascending order
-        for stats_name in statistic.keys():
-            # if function is given as a tuple, take the input parameters provided
-            if type(statistic[stats_name]) is tuple:
-                # assure that key word arguments are provided as dictionary
-                if not type(statistic[stats_name][1]) is dict:
-                    raise TypeError(
-                        "Tuple must contain dictionary with key word arguments for function."
-                    )
+        if len(coords):
 
-                func = partial(statistic[stats_name][0], **statistic[stats_name][1])
-            else:
-                func = statistic[stats_name]
-
-            # default needs to be sequence when function output is array-like
-            output = func(*([np.random.rand(10)] * len(fields)))
-            if hasattr(output, "__len__"):
-                default = np.full(output.shape, default)
-
-            stats = np.array(
-                [
-                    (
-                        func(*(field.ravel()[label_locs(i)] for field in fields))
-                        if i < bins.size and bins[i] > bins[i - 1]
-                        else default
-                    )
-                    for i in index
-                ]
-            )
-
-            # add results of computed statistics to feature dataframe with column name given per statistic
-            # initiate new column in feature dataframe if it does not already exist
-            if stats_name not in features.columns:
-                if default is not None and not hasattr(default, "__len__"):
-                    # If result is a scalar value we can create an empty column with the correct dtype
-                    features[stats_name] = np.full(
-                        [len(features)], default, type(default)
-                    )
+            dims = list(labels.dims)
+            if collapse_dim is not None:
+                if isinstance(collapse_dim, str):
+                    if any((collapse_dim in f.dims for f in fields)):
+                        warnings.warn(
+                            f"collapse_dim {collapse_dim} found in one or more fields, this selection could cause unexpected results"
+                        )
+                    dims.remove(collapse_dim)
                 else:
-                    features[stats_name] = np.full([len(features)], None, object)
+                    if any((c in f.dims for f in fields for c in collapse_dim)):
+                        warnings.warn(
+                            f"collapse_dim {collapse_dim} found in one or more fields, this selection could cause unexpected results"
+                        )
 
-            for idx, label in enumerate(index):
-                if index_in_features[idx]:
-                    # test if values are scalars
-                    if not hasattr(stats[idx], "__len__"):
-                        # if yes, we can just assign the value to the new column and row of the respective feature
-                        features.loc[features[id_column] == label, stats_name] = stats[
-                            idx
-                        ]
-                        # if stats output is array-like it has to be added in a different way
-                    else:
-                        df = pd.DataFrame({stats_name: [stats[idx]]})
-                        # get row index rather than pd.Dataframe index value since we need to use .iloc indexing
-                        row_idx = np.where(features[id_column] == label)[0]
-                        features.iloc[
-                            row_idx,
-                            features.columns.get_loc(stats_name),
-                        ] = df.apply(lambda r: tuple(r), axis=1)
+                    dims = [d for d in dims if d not in collapse_dim]
 
+                if not len(dims):
+                    ValueError("Cannot collapse all axes of labels")
+
+                uncollapsed_axes = [
+                    i for i, dim in enumerate(labels.dims) if dim in dims
+                ]
+                shape = np.array([labels.sizes[d] for d in dims])
+                coords = coords.apply(
+                    partial(
+                        get_collapsed_coords,
+                        uncollapsed_axes=uncollapsed_axes,
+                        shape=shape,
+                    )
+                )
+
+            data = coords.apply(
+                lambda r: [
+                    da.values
+                    for da in xr.broadcast(
+                        *(
+                            f.isel(
+                                dict(
+                                    zip(
+                                        dims, xr.DataArray(r.T, dims=("dim_", "points"))
+                                    )
+                                ),
+                                missing_dims="ignore",
+                            )
+                            for f in fields
+                        )
+                    )
+                ]
+            )  # Get data corresponding to each feature
+
+            features = features.reset_index().set_index(features[id_column])
+
+            for stats_name in statistic:
+                # if function is given as a tuple, take the input parameters provided
+                if type(statistic[stats_name]) is tuple:
+                    # assure that key word arguments are provided as dictionary
+                    if not type(statistic[stats_name][1]) is dict:
+                        raise TypeError(
+                            "Tuple must contain dictionary with key word arguments for function."
+                        )
+
+                    statistic[stats_name] = partial(
+                        statistic[stats_name][0], **statistic[stats_name][1]
+                    )
+
+                features.loc[data.index, stats_name] = data.apply(
+                    lambda r: statistic[stats_name](*r)
+                )
+
+            if default is not None:
+                features[stats_columns] = features[stats_columns].fillna(value=default)
+
+            return features.set_index("index")
+
+        else:
+            features = features.copy()
+            features[stats_columns] = default
+            return features
     return features
 
 
@@ -293,20 +279,6 @@ def get_statistics_from_mask(
             "Note that non-unique feature labels occur also in the same timestep. This likely causes unexpected results for the computation of bulk statistics."
         )
 
-    if collapse_dim is not None:
-        if isinstance(collapse_dim, str):
-            collapse_dim = [collapse_dim]
-        non_time_dims = [dim for dim in segmentation_mask.dims if dim != "time"]
-        collapse_axis = [
-            i for i, dim in enumerate(non_time_dims) if dim in collapse_dim
-        ]
-        if len(collapse_dim) != len(collapse_axis):
-            raise ValueError(
-                "One or more of collapse_dim not found in dimensions of segmentation_mask"
-            )
-    else:
-        collapse_axis = None
-
     # check if any of the feature dataframe input values match with segmentation mask IDs
     if not np.any(np.isin(features[id_column], np.unique(segmentation_mask))):
         raise ValueError(
@@ -325,11 +297,9 @@ def get_statistics_from_mask(
         # select specific timestep
         fields_t = (
             (
-                field.sel(
-                    {time_var_name: tt}, method="nearest", tolerance=time_padding
-                ).values
+                field.sel({time_var_name: tt}, method="nearest", tolerance=time_padding)
                 if time_var_name in field.coords
-                else field.values
+                else field
             )
             for field in fields
         )
@@ -344,14 +314,14 @@ def get_statistics_from_mask(
             # make sure that features are not double-defined
             step_statistics.append(
                 get_statistics(
-                    features_t.copy(),
-                    segmentation_mask_t.values.astype(np.int64),
+                    features_t,
+                    segmentation_mask_t,
                     *fields_t,
                     statistic=statistic,
                     default=default,
                     index=index,
                     id_column=id_column,
-                    collapse_axis=collapse_axis,
+                    collapse_dim=collapse_dim,
                 )
             )
 
