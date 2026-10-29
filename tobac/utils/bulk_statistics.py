@@ -150,22 +150,15 @@ def get_statistics(
                     )
                 )
 
+            fields = xr.broadcast(*fields)
+
             data = coords.apply(
                 lambda r: [
-                    da.values
-                    for da in xr.broadcast(
-                        *(
-                            f.isel(
-                                dict(
-                                    zip(
-                                        dims, xr.DataArray(r.T, dims=("dim_", "points"))
-                                    )
-                                ),
-                                missing_dims="ignore",
-                            )
-                            for f in fields
-                        )
-                    )
+                    f.isel(
+                        dict(zip(dims, xr.DataArray(r.T, dims=("dim_", "points")))),
+                        missing_dims="ignore",
+                    ).values
+                    for f in fields
                 ]
             )  # Get data corresponding to each feature
 
