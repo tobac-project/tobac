@@ -539,6 +539,7 @@ def test_get_statistics_collapse_dim():
     assert np.all(output_collapse_dim0["sum"] == expected_sum_result_axis0)
 
     test_values = xr.DataArray(np.array([0.25, 0.5, 0.75, 1, 1]), dims=("y",))
+
     expected_sum_result_axis1 = np.array([2.25, 1.75])
     output_collapse_dim1 = tb_utils.get_statistics(
         test_features,
@@ -561,13 +562,14 @@ def test_get_statistics_collapse_dim():
 
     # Check that attempting to collapse all dims raises a ValueError:
     with pytest.raises(ValueError):
-        _ = tb_utils.get_statistics(
-            test_features,
-            test_labels,
-            test_values,
-            statistic=statistics_sum,
-            collapse_dim=["y", "x"],
-        )
+        with pytest.warns(UserWarning, match="collapse_dim"):
+            _ = tb_utils.get_statistics(
+                test_features,
+                test_labels,
+                test_values,
+                statistic=statistics_sum,
+                collapse_dim=["y", "x"],
+            )
 
     # Test with collpasing multiple axes
     test_labels = xr.DataArray(
@@ -594,6 +596,7 @@ def test_get_statistics_collapse_dim():
     )
     test_values = xr.DataArray(np.array([0.5, 1]), dims="z")
     expected_sum_result_dim12 = np.array([1.5, 0.5])
+
     output_collapse_dim12 = tb_utils.get_statistics(
         test_features,
         test_labels,
@@ -918,3 +921,253 @@ def test_bulk_statistics_feature_detection_3d():
 
     assert np.allclose(features_max, features["max"].to_numpy(dtype=float))
     assert np.allclose(features_mean, features["mean"].to_numpy(dtype=float))
+
+
+def test_get_statistics_1d_label():
+    test_labels = np.array(
+        [0, 1, 1, 1, 0],
+        dtype=int,
+    )
+
+    test_labels = xr.DataArray(
+        test_labels,
+        dims=("x"),
+        coords={
+            "x": np.arange(5),
+        },
+    )
+
+    test_areas = np.array(
+        [0.25, 0.5, 0.75, 1, 1],
+    )
+
+    test_areas = xr.DataArray(
+        test_areas,
+        dims=("x"),
+        coords={
+            "x": np.arange(5),
+        },
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1],
+            "frame": [0],
+            "time": [
+                datetime(2000, 1, 1),
+            ],
+        }
+    )
+
+    get_statistics_result = tb_utils.get_statistics(
+        test_features, test_labels, test_areas, statistic={"sum": np.sum}
+    )
+
+    assert np.all(get_statistics_result["sum"] == 2.25)
+
+
+def test_get_statistics_collapse_dim_warning():
+    test_labels = xr.DataArray(
+        np.array(
+            [
+                [0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0],
+                [0, 1, 0, 2, 0],
+                [0, 1, 0, 2, 0],
+                [0, 0, 0, 0, 0],
+            ],
+            dtype=int,
+        ),
+        dims=("y", "x"),
+    )
+
+    test_areas = np.array(
+        [
+            [0.25, 0.5, 0.75, 1, 1],
+            [0.25, 0.5, 0.75, 1, 1],
+            [0.25, 0.5, 0.75, 1, 1],
+            [0.25, 0.5, 0.75, 1, 1],
+            [0.25, 0.5, 0.75, 1, 1],
+        ]
+    )
+
+    test_areas = xr.DataArray(
+        test_areas,
+        dims=("y", "x"),
+        coords={
+            "y": np.arange(5),
+            "x": np.arange(5),
+        },
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2],
+            "frame": [0, 0],
+            "time": [
+                datetime(2000, 1, 1),
+                datetime(2000, 1, 1),
+            ],
+        }
+    )
+    statistics_sum = {"sum": np.sum}
+
+    expected_sum_result_axis0 = np.array([2.5, 5])
+    with pytest.warns(UserWarning, match="collapse_dim"):
+        output_collapse_dim0 = tb_utils.get_statistics(
+            test_features,
+            test_labels,
+            test_areas,
+            statistic=statistics_sum,
+            collapse_dim="y",
+        )
+    assert np.all(output_collapse_dim0["sum"] == expected_sum_result_axis0)
+
+
+def test_mismatched_coordinates_error():
+    test_labels = xr.DataArray(
+        np.array(
+            [
+                [0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0],
+                [0, 1, 0, 2, 0],
+                [0, 1, 0, 2, 0],
+                [0, 0, 0, 0, 0],
+            ],
+            dtype=int,
+        ),
+        dims=("y", "x"),
+        coords={"y": np.arange(5), "x": np.arange(5)},
+    )
+
+    test_areas = np.array(
+        [
+            [0.25, 0.5, 0.75, 1, 1],
+            [0.25, 0.5, 0.75, 1, 1],
+            [0.25, 0.5, 0.75, 1, 1],
+            [0.25, 0.5, 0.75, 1, 1],
+            [0.25, 0.5, 0.75, 1, 1],
+        ]
+    )
+
+    test_areas = xr.DataArray(
+        test_areas,
+        dims=("y", "x"),
+        coords={
+            "y": np.arange(2, 7),
+            "x": np.arange(2, 7),
+        },
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2],
+            "frame": [0, 0],
+            "time": [
+                datetime(2000, 1, 1),
+                datetime(2000, 1, 1),
+            ],
+        }
+    )
+    statistics_sum = {"sum": np.sum}
+
+    expected_sum_result_axis0 = np.array([2.5, 5])
+    with pytest.raises(ValueError, match="The label input and "):
+        _ = tb_utils.get_statistics(
+            test_features,
+            test_labels,
+            test_areas,
+            statistic=statistics_sum,
+        )
+
+
+def test_invalid_statistic_tuple():
+    test_labels = xr.DataArray(
+        np.array(
+            [
+                [0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0],
+                [0, 1, 0, 2, 0],
+                [0, 1, 0, 2, 0],
+                [0, 0, 0, 0, 0],
+            ],
+            dtype=int,
+        ),
+        dims=("y", "x"),
+    )
+
+    test_areas = np.array(
+        [
+            [0.25, 0.5, 0.75, 1, 1],
+            [0.25, 0.5, 0.75, 1, 1],
+            [0.25, 0.5, 0.75, 1, 1],
+            [0.25, 0.5, 0.75, 1, 1],
+            [0.25, 0.5, 0.75, 1, 1],
+        ]
+    )
+
+    test_areas = xr.DataArray(
+        test_areas,
+        dims=("y", "x"),
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2],
+            "frame": [0, 0],
+            "time": [
+                datetime(2000, 1, 1),
+                datetime(2000, 1, 1),
+            ],
+        }
+    )
+    statistics_sum = {"sum": (np.sum, 0)}
+
+    with pytest.raises(
+        TypeError,
+        match="Tuple must contain dictionary with key word arguments for function.",
+    ):
+        _ = tb_utils.get_statistics(
+            test_features,
+            test_labels,
+            test_areas,
+            statistic=statistics_sum,
+        )
+
+
+def test_no_matching_labels_error():
+    test_labels = xr.DataArray(
+        np.array(
+            [
+                [0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0],
+                [0, 1, 0, 2, 0],
+                [0, 1, 0, 2, 0],
+                [0, 0, 0, 0, 0],
+            ],
+            dtype=int,
+        ),
+        dims=("y", "x"),
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [3, 4],
+            "frame": [0, 0],
+            "time": [
+                datetime(2000, 1, 1),
+                datetime(2000, 1, 1),
+            ],
+        }
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="The labels of the segmentation mask and the feature dataframe do not seem to match. Please make sure you provide the correct input feature dataframe  to calculate the bulk statistics.",
+    ):
+        _ = tb_utils.get_statistics_from_mask(
+            test_features,
+            test_labels,
+            None,
+            statistic=None,
+        )
