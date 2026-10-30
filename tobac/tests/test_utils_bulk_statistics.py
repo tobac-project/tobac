@@ -924,6 +924,7 @@ def test_bulk_statistics_feature_detection_3d():
 
 
 def test_get_statistics_1d_label():
+    """Test that 1D labels are correctly handled by get_statistics to overcome regionprops only working for 2D and 3D fields"""
     test_labels = np.array(
         [0, 1, 1, 1, 0],
         dtype=int,
@@ -967,6 +968,7 @@ def test_get_statistics_1d_label():
 
 
 def test_get_statistics_collapse_dim_warning():
+    """Test that if collapse_dim is present in the field of interest, a UserWarning is shown"""
     test_labels = xr.DataArray(
         np.array(
             [
@@ -1025,6 +1027,7 @@ def test_get_statistics_collapse_dim_warning():
 
 
 def test_mismatched_coordinates_error():
+    """Test that if labels and field have mismatched coordinates, a ValueError is raised"""
     test_labels = xr.DataArray(
         np.array(
             [
@@ -1082,6 +1085,7 @@ def test_mismatched_coordinates_error():
 
 
 def test_invalid_statistic_tuple():
+    """Test that if a statistic is given as a tuple but the second element is not a dict of keyword and values a TypeError is raised"""
     test_labels = xr.DataArray(
         np.array(
             [
@@ -1136,6 +1140,7 @@ def test_invalid_statistic_tuple():
 
 
 def test_no_matching_labels_error():
+    """Test that a ValueError is raised if none of the feature ids in the input dataframe are present in the labels array"""
     test_labels = xr.DataArray(
         np.array(
             [
@@ -1174,6 +1179,7 @@ def test_no_matching_labels_error():
 
 
 def test_get_statistics_different_dimension_order():
+    """Test that a field with different dimension order to labels is handled correctly by get_statistics"""
     test_labels = xr.DataArray(
         np.array(
             [
@@ -1231,6 +1237,7 @@ def test_get_statistics_different_dimension_order():
 
 
 def test_get_statistics_reversed_coordinate_order():
+    """Test that a field with reversed coordinates is handled correctly by get_statistics"""
     test_labels = xr.DataArray(
         np.array(
             [
@@ -1243,6 +1250,10 @@ def test_get_statistics_reversed_coordinate_order():
             dtype=int,
         ),
         dims=("y", "x"),
+        coords={
+            "y": np.arange(5),
+            "x": np.arange(5),
+        },
     )
 
     test_areas = np.array(
@@ -1256,11 +1267,11 @@ def test_get_statistics_reversed_coordinate_order():
     )
 
     test_areas = xr.DataArray(
-        test_areas[::-1],
+        test_areas,
         dims=("y", "x"),
         coords={
-            "y": np.arange(5)[::-1],
-            "x": np.arange(5),
+            "y": np.arange(5),
+            "x": np.arange(5)[::-1],
         },
     )
 
@@ -1276,7 +1287,7 @@ def test_get_statistics_reversed_coordinate_order():
     )
     statistics_sum = {"sum": np.sum}
 
-    expected_sum_result = np.array([1.5, 2])
+    expected_sum_result = np.array([3, 1])
 
     output = tb_utils.get_statistics(
         test_features,
