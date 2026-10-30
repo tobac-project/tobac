@@ -106,16 +106,31 @@ def get_statistics(
         if index is None:
             index = features[id_column]
 
-        coords = (
-            pd.DataFrame(
-                regionprops_table(
-                    np.where(np.isin(labels.values, index), labels.values, 0),
-                    properties=("label", "coords"),
+        if len(labels.shape) == 1:
+            # Handle 1D labels case where regionprops does not work
+            coords = (
+                pd.DataFrame(
+                    regionprops_table(
+                        np.where(np.isin(labels.values, index), labels.values, 0)[
+                            np.newaxis, :
+                        ],
+                        properties=("label", "coords"),
+                    )
                 )
+                .set_index("label")
+                .coords
+            ).apply(lambda r: r[:, 1:])
+        else:
+            coords = (
+                pd.DataFrame(
+                    regionprops_table(
+                        np.where(np.isin(labels.values, index), labels.values, 0),
+                        properties=("label", "coords"),
+                    )
+                )
+                .set_index("label")
+                .coords
             )
-            .set_index("label")
-            .coords
-        )
 
         if len(coords):
 
