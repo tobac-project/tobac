@@ -126,14 +126,14 @@ def get_statistics(
                         warnings.warn(
                             f"collapse_dim {collapse_dim} found in one or more fields, this selection could cause unexpected results"
                         )
-                    dims.remove(collapse_dim)
+                    collapse_dim = [collapse_dim]
                 else:
                     if any((c in f.dims for f in fields for c in collapse_dim)):
                         warnings.warn(
                             f"collapse_dim {collapse_dim} found in one or more fields, this selection could cause unexpected results"
                         )
 
-                    dims = [d for d in dims if d not in collapse_dim]
+                dims = [d for d in dims if d not in collapse_dim]
 
                 if not len(dims):
                     ValueError("Cannot collapse all axes of labels")
@@ -149,8 +149,25 @@ def get_statistics(
                         shape=shape,
                     )
                 )
+                aligned = xr.broadcast(
+                    *xr.align(labels.isel({d: 0 for d in collapse_dim}), *fields)
+                )
 
-            fields = xr.broadcast(*fields)
+            else:
+                aligned = xr.broadcast(*xr.align(labels, *fields))
+
+            labels_aligned = aligned[0]
+            fields = aligned[1:]
+
+            mismatched_dims = [
+                labels_aligned.sizes[d] != labels.sizes[d]
+                for d in labels_aligned.dims
+                if d in labels.dims
+            ]
+            if any(mismatched_dims):
+                raise ValueError(
+                    "The label input and one or more fields have mismatched coordinates, please only use dataarrays with the same coordinates as input to get_statistics"
+                )
 
             data = coords.apply(
                 lambda r: [
