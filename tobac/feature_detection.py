@@ -1136,21 +1136,6 @@ def feature_detection_multithreshold_timestep(
             elif vertical_axis == 2:
                 labels = np.transpose(labels, axes=(1, 2, 0))
 
-    if statistic:
-        # select which data to use according to statistics_unsmoothed option
-        stats_data = data_i.values if statistics_unsmoothed else track_data
-
-        features_thresholds = get_statistics(
-            features_thresholds,
-            labels,
-            stats_data,
-            statistic=statistic,
-            index=np.unique(labels[labels > 0]),
-            id_column="idx",
-        )
-
-    # Create the final output
-    if return_labels:
         label_fields = xr.DataArray(
             labels,
             coords=data_i.coords,
@@ -1158,10 +1143,25 @@ def feature_detection_multithreshold_timestep(
             name="label_fields",
         ).assign_attrs(threshold=threshold)
 
+    if statistic:
+        features_thresholds = get_statistics(
+            features_thresholds,
+            label_fields,
+            (
+                data_i
+                if statistics_unsmoothed
+                else data_i.copy(data=track_data, deep=False)
+            ),
+            statistic=statistic,
+            index=np.unique(labels[labels > 0]),
+            id_column="idx",
+        )
+
+    # Create the final output
+    if return_labels:
         return label_fields, features_thresholds
 
-    else:
-        return features_thresholds
+    return features_thresholds
 
 
 @decorators.irispandas_to_xarray(save_iris_info=True)
