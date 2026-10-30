@@ -1171,3 +1171,117 @@ def test_no_matching_labels_error():
             None,
             statistic=None,
         )
+
+
+def test_get_statistics_different_dimension_order():
+    test_labels = xr.DataArray(
+        np.array(
+            [
+                [0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0],
+                [0, 1, 0, 2, 0],
+                [0, 1, 0, 2, 0],
+                [0, 0, 0, 0, 0],
+            ],
+            dtype=int,
+        ),
+        dims=("y", "x"),
+    )
+
+    test_areas = np.array(
+        [
+            [0.25, 0.5, 0.75, 1, 1],
+            [0.25, 0.5, 0.75, 1, 1],
+            [0.25, 0.5, 0.75, 1, 1],
+            [0.25, 0.5, 0.75, 1, 1],
+            [0.25, 0.5, 0.75, 1, 1],
+        ]
+    )
+
+    test_areas = xr.DataArray(
+        test_areas.T,
+        dims=("x", "y"),
+        coords={
+            "y": np.arange(5),
+            "x": np.arange(5),
+        },
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2],
+            "frame": [0, 0],
+            "time": [
+                datetime(2000, 1, 1),
+                datetime(2000, 1, 1),
+            ],
+        }
+    )
+    statistics_sum = {"sum": np.sum}
+
+    expected_sum_result = np.array([1.5, 2])
+
+    output = tb_utils.get_statistics(
+        test_features,
+        test_labels,
+        test_areas,
+        statistic=statistics_sum,
+    )
+    assert np.all(output["sum"] == expected_sum_result)
+
+
+def test_get_statistics_reversed_coordinate_order():
+    test_labels = xr.DataArray(
+        np.array(
+            [
+                [0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0],
+                [0, 1, 0, 2, 0],
+                [0, 1, 0, 2, 0],
+                [0, 0, 0, 0, 0],
+            ],
+            dtype=int,
+        ),
+        dims=("y", "x"),
+    )
+
+    test_areas = np.array(
+        [
+            [0.25, 0.5, 0.75, 1, 1],
+            [0.25, 0.5, 0.75, 1, 1],
+            [0.25, 0.5, 0.75, 1, 1],
+            [0.25, 0.5, 0.75, 1, 1],
+            [0.25, 0.5, 0.75, 1, 1],
+        ]
+    )
+
+    test_areas = xr.DataArray(
+        test_areas[::-1],
+        dims=("y", "x"),
+        coords={
+            "y": np.arange(5)[::-1],
+            "x": np.arange(5),
+        },
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2],
+            "frame": [0, 0],
+            "time": [
+                datetime(2000, 1, 1),
+                datetime(2000, 1, 1),
+            ],
+        }
+    )
+    statistics_sum = {"sum": np.sum}
+
+    expected_sum_result = np.array([1.5, 2])
+
+    output = tb_utils.get_statistics(
+        test_features,
+        test_labels,
+        test_areas,
+        statistic=statistics_sum,
+    )
+    assert np.all(output["sum"] == expected_sum_result)
