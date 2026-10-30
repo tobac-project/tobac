@@ -65,8 +65,11 @@ def get_statistics(
         segmentation for a specific timestep)
 
     *fields : tuple[xr.DataArray]
-        Fields to give as arguments to each function call. If the shape does not
-        match that of labels, numpy-style broadcasting will be applied.
+        Fields to give as arguments to each function call. These will be aligned
+        and broadcast with the input labels (minus any collapsed dims) using
+        xarray coordinate alignment. The coordinates of fields must match those
+        of labels where the same dimensions are present in both, otherwise an
+        error will be raised.
 
     statistic: dict[str, Callable], optional (default: {'ncells':np.count_nonzero})
         Dictionary with function(s) to apply over each region as values and the
@@ -85,8 +88,8 @@ def get_statistics(
         Name of the column in feature dataframe that contains IDs that match with
         the labels in mask. The default is the column "feature".
 
-    collapse_axis: None | int | list[int], optional (default: None):
-        Index or indices of axes of labels to collapse. This will reduce the dimensionality of labels
+    collapse_dim: None | str | list[str], optional (default: None):
+        Name(s) of dimensions of labels to collapse. This will reduce the dimensionality of labels
         while allowing labelled features to overlap. This can be used, for example, to calculate the
         footprint area (2D) of 3D labels
 
@@ -256,7 +259,9 @@ def get_statistics_from_mask(
         Field(s) with input data. If field does not have a time dimension it
         will be considered time invariant, and the entire field will be passed
         for each time step in segmentation_mask. If the shape does not match
-        that of labels, numpy-style broadcasting will be applied.
+        that of labels, xarray alignement and broadcasting will be applied.
+        The coordinates of fields must match those of labels where the same
+        dimensions are present in both, otherwise an error will be raised.
 
     statistic: dict[str, Callable], optional (default: {'ncells':np.count_nonzero})
         Dictionary with function(s) to apply over each region as values and the
@@ -271,11 +276,12 @@ def get_statistics_from_mask(
         default value to return in a region that has no values
 
     id_column: str, optional (default: "feature")
-        Name of the column in feature dataframe that contains IDs that match with the labels in mask. The default is the column "feature".
+        Name of the column in feature dataframe that contains IDs that match with
+        the labels in mask. The default is the column "feature".
 
     collapse_dim: None | str | list[str], optional (default: None)
-        Dimension names of labels to collapse, allowing, e.g. calulcation of statistics on 2D
-        fields for the footprint of 3D objects
+        Dimension names of labels to collapse, allowing, e.g. calculation of
+        statistics on 2D fields for the footprint of 3D objects.
 
     time_var_name : str, optional (default: "time")
         The name of the time dimension in the input fields and the time column
