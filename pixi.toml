@@ -91,7 +91,10 @@ sphinx-design = "*"
 sphinx-toolbox = "*"
 linkify-it-py = "*"
 sphinxcontrib-mermaid = "*"
+sphinxcontrib-mermaid = "*"
+sphinx-codeautolink = "*"
 pandoc = "*"
+
 
 [feature.docs.tasks]
 docs = "sphinx-build -b html doc doc/_build/html"

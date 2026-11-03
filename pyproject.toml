@@ -126,7 +126,6 @@ docs = [
     "sphinx-toolbox",
     "linkify-it-py",
     "sphinxcontrib-mermaid",
-    "sphinxcontrib-mermaid",
     "sphinx-codeautolink",
 ]
 
