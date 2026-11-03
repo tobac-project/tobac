@@ -6,6 +6,7 @@ import tobac.testing
 import tobac.tracking
 import pytest
 import copy
+import re
 import pandas as pd
 import numpy as np
 import datetime
@@ -658,7 +659,14 @@ def test_append_tracks_predict_stubs_error(time_cell_min: float, should_raise: b
         features[features["frame"] < 2], None, **tracking_params
     )
     if should_raise:
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "Append tracks with method_linking='predict' and more than 2 frames for "
+                "stubs (time_cell_min >= 2*dt) requires the unfiltered cell numbers. "
+                "Track the original features with save_unfiltered_cell=True."
+            ),
+        ):
             tobac.tracking.append_tracks_trackpy(
                 initial_tracking, features, **tracking_params
             )
@@ -976,12 +984,21 @@ def test_append_tracks_latlon_errors():
     )
 
     # need exactly one of v_max and d_max
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Exactly one of 'v_max' or 'd_max' should be specified."),
+    ):
         tobac.tracking.append_tracks_trackpy(
             initial_tracking, features, dt=300, v_max=30, d_max=30, use_latlon=True
         )
     # PBCs are not used with lat/lon
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "PBC_flag must be 'none' with use_latlon, as the haversine distance "
+            "already accounts for periodicity."
+        ),
+    ):
         tobac.tracking.append_tracks_trackpy(
             initial_tracking,
             features,
@@ -993,12 +1010,18 @@ def test_append_tracks_latlon_errors():
             max_h2=200,
         )
     # d_min is not supported
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=re.escape("d_min is not supported with use_latlon. Use d_max or v_max."),
+    ):
         tobac.tracking.append_tracks_trackpy(
             initial_tracking, features, dt=300, d_min=30, use_latlon=True
         )
     # new features need lat/lon too
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Coordinate latitude is note present in the dataframe"),
+    ):
         tobac.tracking.append_tracks_trackpy(
             initial_tracking,
             features.drop(columns=["latitude"]),
@@ -1007,7 +1030,13 @@ def test_append_tracks_latlon_errors():
             use_latlon=True,
         )
     # adaptive_stop is not supported with lat/lon
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "adaptive_stop is not supported with use_latlon. "
+            "Use adaptive_stop_multiplier."
+        ),
+    ):
         tobac.tracking.append_tracks_trackpy(
             initial_tracking,
             features,
@@ -1018,7 +1047,13 @@ def test_append_tracks_latlon_errors():
             adaptive_stop=0.1,
         )
     # adaptive_step and adaptive_stop_multiplier must both be set
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Adaptive search requires values for adaptive_step and "
+            "adaptive_stop_multiplier. Please specify adaptive_stop_multiplier."
+        ),
+    ):
         tobac.tracking.append_tracks_trackpy(
             initial_tracking,
             features,
@@ -1028,7 +1063,12 @@ def test_append_tracks_latlon_errors():
             adaptive_step=0.9,
         )
     # adaptive_stop_multiplier must be between 0 and 1
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Adaptive search requires values for adaptive_stop_multiplier between 0 and 1."
+        ),
+    ):
         tobac.tracking.append_tracks_trackpy(
             initial_tracking,
             features,
@@ -1039,7 +1079,13 @@ def test_append_tracks_latlon_errors():
             adaptive_stop_multiplier=1.4,
         )
     # adaptive_stop_multiplier is only for lat/lon
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "adaptive_stop_multiplier is only supported with use_latlon. "
+            "Use adaptive_stop."
+        ),
+    ):
         tobac.tracking.append_tracks_trackpy(
             initial_tracking,
             features,
@@ -1050,7 +1096,9 @@ def test_append_tracks_latlon_errors():
             adaptive_stop_multiplier=0.1,
         )
     # dxy is required without lat/lon
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match=re.escape("dxy must be set unless use_latlon is True.")
+    ):
         tobac.tracking.append_tracks_trackpy(
             initial_tracking, features, dt=300, v_max=30
         )
@@ -1358,27 +1406,49 @@ def test_append_tracks_3d_errors():
     )
 
     # 3D tracks with 2D new features
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "One track is 3D, new track is 2D. Need to both have the same dimensions."
+        ),
+    ):
         tobac.tracking.append_tracks_trackpy(
             tracks_3d, features_2d, dz=500, vertical_coord=None, **tracking_params
         )
     # 2D tracks with 3D new features
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "One track is 3D, new track is 2D. Need to both have the same dimensions."
+        ),
+    ):
         tobac.tracking.append_tracks_trackpy(
             tracks_2d, features_3d, dz=500, vertical_coord=None, **tracking_params
         )
     # dz and vertical_coord both set
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "dz and vertical_coord both set, vertical spacing is ambiguous. "
+            "Set one to None."
+        ),
+    ):
         tobac.tracking.append_tracks_trackpy(
             tracks_3d, features_3d, dz=500, vertical_coord="z", **tracking_params
         )
     # neither dz nor vertical_coord set
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Neither dz nor vertical_coord are set. One must be set."),
+    ):
         tobac.tracking.append_tracks_trackpy(
             tracks_3d, features_3d, dz=None, vertical_coord=None, **tracking_params
         )
     # lat/lon append only supports 2D
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Append tracks with use_latlon only supports 2D tracking."),
+    ):
         tobac.tracking.append_tracks_trackpy(
             _add_latlon_to_features(tracks_3d, 40, -90, dxy=500),
             _add_latlon_to_features(features_3d, 40, -90, dxy=500),
