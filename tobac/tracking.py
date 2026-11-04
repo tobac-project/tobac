@@ -130,9 +130,10 @@ def linking_trackpy(
         Number of output timesteps features allowed to vanish for to
         be still considered tracked. Default is 0.
 
-        .. warning :: This parameter should be used with caution, as it
-                     can lead to erroneous trajectory linking,
-                     espacially for data with low time resolution.
+        .. warning::
+            This parameter should be used with caution, as it
+            can lead to erroneous trajectory linking,
+            especially for data with low time resolution.
 
     stubs : int, optional
         Minimum number of timesteps of a tracked cell to be reported
@@ -145,7 +146,7 @@ def linking_trackpy(
 
     order : int, optional
         Order of polynomial used to extrapolate trajectory into gaps and
-        ond start and end point.
+        and start and end point.
         Default is 1.
 
     extrapolate : int, optional
@@ -280,7 +281,7 @@ def linking_trackpy(
     if PBC_flag in ["hdim_2", "both"] and (min_h2 is None or max_h2 is None):
         raise ValueError("For PBC tracking, must set min and max coordinates.")
 
-    # in case of adaptive search, check wether both parameters are specified
+    # in case of adaptive search, check whether both parameters are specified
     if adaptive_stop is not None:
         if adaptive_step is None:
             raise ValueError(
@@ -459,14 +460,14 @@ def linking_trackpy_latlon(
     time_cell_min=None,
     order=1,
     extrapolate=0,
-    method_linking="random",
+    method_linking="predict",
     adaptive_step=None,
     adaptive_stop_multiplier=None,
     cell_number_start=1,
     cell_number_unassigned=-1,
     planet_radius: float = 6378137.0,
 ):
-    """Perform Linking of features in trajectories using latitude/longitue values.
+    """Perform Linking of features in trajectories using latitude/longitude values.
 
     Similar to linking_trackpy, but for 2D latitude/longitude values.
     Uses the haversine formula to calculate the distance between all
@@ -528,9 +529,10 @@ def linking_trackpy_latlon(
         Number of output timesteps features allowed to vanish for to
         be still considered tracked. Default is 0.
 
-        .. warning :: This parameter should be used with caution, as it
-                     can lead to erroneous trajectory linking,
-                     especially for data with low time resolution.
+        .. warning::
+            This parameter should be used with caution, as it
+            can lead to erroneous trajectory linking,
+            especially for data with low time resolution.
 
     stubs : int, optional
         Minimum number of timesteps of a tracked cell to be reported
@@ -545,7 +547,7 @@ def linking_trackpy_latlon(
 
     order : int, optional
         Order of polynomial used to extrapolate trajectory into gaps and
-        ond start and end point.
+        and start and end point.
         Default is 1.
 
     extrapolate : int, optional
@@ -751,17 +753,19 @@ def linking_trackpy_latlon(
         )
         # recreate a single dataframe from the list
         trajectories_unfiltered = pd.concat(trajectories_unfiltered)
+    else:
+        raise ValueError("method linking must be one of 'random' or 'predict'")
 
-        trajectories_unfiltered.drop(columns=["x", "y"], inplace=True)
+    trajectories_unfiltered.drop(columns=["x", "y"], inplace=True)
 
-        trajectories_unfiltered.rename(
-            columns={
-                "__temp_y_coord": "y",
-                "__temp_x_coord": "x",
-                "__temp_z_coord": "z",
-            },
-            inplace=True,
-        )
+    trajectories_unfiltered.rename(
+        columns={
+            "__temp_y_coord": "y",
+            "__temp_x_coord": "x",
+            "__temp_z_coord": "z",
+        },
+        inplace=True,
+    )
 
     # Reset trackpy parameters to previously set values
     if subnetwork_size is not None:
@@ -858,8 +862,11 @@ def _filter_trajectories(
 def fill_gaps(
     t, order=1, extrapolate=0, frame_max=None, hdim_1_max=None, hdim_2_max=None
 ):
-    """Add cell time as time since the initiation of each cell.
+    """Fill gaps in trajectories by interpolation and optionally
+    extrapolate them beyond their start and end points.
+
     :hidden:
+
     Parameters
     ----------
     t : pandas.DataFrame
@@ -875,14 +882,14 @@ def fill_gaps(
     frame_max : int, optional
         Size of input data along time axis. Default is None.
 
-    hdim_1_max, hdim2_max : int, optional
+    hdim_1_max, hdim_2_max : int, optional
         Size of input data along first and second horizontal axis.
         Default is None.
 
     Returns
     -------
     t : pandas.DataFrame
-        Trajectories from trackpy with with filled gaps and potentially
+        Trajectories from trackpy with filled gaps and potentially
         extrapolated.
     """
 

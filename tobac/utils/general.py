@@ -80,7 +80,7 @@ def add_coordinates_3D(
     t: pandas DataFrame
         Input features
     variable_cube: iris.cube.Cube
-        Cube (usually the one you are tracking on) at least conaining the dimension of 'time'.
+        Cube (usually the one you are tracking on) at least containing the dimension of 'time'.
         Typically, 'longitude','latitude','x_projection_coordinate','y_projection_coordinate',
         and 'altitude' (if 3D) are the coordinates that we expect, although this function
         will happily interpolate along any dimension coordinates you give.
@@ -166,7 +166,7 @@ def get_bounding_box(x, buffer=1):
         # make sure there is two values in idx_i
         elif len(idx_i) > 2:
             idx_i = array([idx_i[0], idx_i[-1]])
-        # caluclate min and max values for idx_i and append them to list
+        # calculate min and max values for idx_i and append them to list
         idx_min = max(0, idx_i[0] + 1 - buffer)
         idx_max = min(x.shape[kdim] - 1, idx_i[1] + 1 + buffer)
         bbox.append([idx_min, idx_max])
@@ -222,7 +222,7 @@ def get_spacings(
     from copy import deepcopy
 
     # set horizontal grid spacing of input data
-    # If cartesian x and y corrdinates are present, use these to determine dxy (vertical grid spacing used to transfer pixel distances to real distances):
+    # If cartesian x and y coordinates are present, use these to determine dxy (vertical grid spacing used to transfer pixel distances to real distances):
     coord_names = [coord.name() for coord in field_in.coords()]
 
     if (
@@ -273,8 +273,8 @@ def spectral_filtering(
     can be used as a bandpass filter to remove certain wavelengths
     of an atmospheric input field (e.g. vorticity, IVT, etc).
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     dxy : float
         Grid spacing in m.
 
@@ -291,8 +291,8 @@ def spectral_filtering(
         default: False. If set to True, then the 2D transfer function and
         the corresponding wavelengths are returned.
 
-    Returns:
-    --------
+    Returns
+    -------
     filtered_field: numpy.array
         Spectrally filtered 2D field of data (with same shape as input data).
 

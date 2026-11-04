@@ -22,7 +22,7 @@ def to_cftime(
     dates : Union[str, datetime.datetime, np.datetime64, pd.Timestamp, cftime.datetime]
         A datetime-like object or array of datetime-like objects to be converted
     calendar : str
-        The requested cftime calender
+        The requested cftime calendar
     align_on : str, optional
         The 'align-on' parameter required for 360-day, 365-day and 366-day
         cftime dates, by default "date"

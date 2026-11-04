@@ -232,12 +232,12 @@ def plot_tracks_mask_field(
         positions from the track dataframe. Default is 4.
 
     plot_number : bool, optional
-        Boolean defining wether the index of the cells
+        Boolean defining whether the index of the cells
         is plotted next to the individual feature position.
         Default is True.
 
     plot_features : bool, optional
-        Boolean defining wether the positions of the features from
+        Boolean defining whether the positions of the features from
         the features dataframe are plotted. Default is True.
 
     marker_feature : optional
@@ -268,7 +268,7 @@ def plot_tracks_mask_field(
         Default is 50.
 
     cmap : {'viridis',...}, optional
-        Colormap of the countour plot of the field.
+        Colormap of the contour plot of the field.
         matplotlib.colors. Default is 'viridis'.
 
     extend : str, optional
@@ -418,7 +418,7 @@ def plot_tracks_mask_field(
                 markersize=makersize_feature,
             )
 
-    # restrict features to featues inside axis extent
+    # restrict features to features inside axis extent
     track_lat_dim, track_lon_dim, _ = find_dataframe_horizontal_coords(
         features, coord_type="latlon"
     )
@@ -462,7 +462,7 @@ def plot_tracks_mask_field(
                 )
             else:
                 raise ValueError("mask has shape that cannot be understood")
-            # plot countour lines around the edges of the mask
+            # plot contour lines around the edges of the mask
             iplt.contour(
                 mask_i,
                 coords=["longitude", "latitude"],
@@ -511,7 +511,7 @@ def animation_mask_field(
         Delay between frames in milliseconds.
         Default is 500.
 
-    figsize : tupel of float, optional
+    figsize : tuple of float, optional
         Width, height of the plot in inches.
         Default is (10, 10).
 
@@ -2244,7 +2244,7 @@ def plot_histogram_cellwise(
         histogram is to be based on. Default is None.
 
     quantity : {'max', 'min', 'mean'}, optional
-        Flag determining wether to use maximum, minimum or mean
+        Flag determining whether to use maximum, minimum or mean
         of a variable from all timeframes the cell covers.
         Default is 'max'.
 

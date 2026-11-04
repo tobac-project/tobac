@@ -130,7 +130,7 @@ def cell_statistics(
         Cube containing mask (int id for tracked volumes 0 everywhere
         else).
 
-    aggregators list
+    aggregators : list
         list of iris.analysis.Aggregator instances
 
     cell : int
@@ -307,6 +307,9 @@ def cog_cell(
     M_frozen : subset of cube, optional
         Default is None.
 
+    Mask : iris.cube.Cube, optional
+        Default is None.
+
     savedir : str
         Default is None.
 
@@ -386,7 +389,7 @@ def lifetime_histogram(
         over the range is 1. Default is False.
 
     return_values : bool, optional
-        Bool determining wether the lifetimes of the features are
+        Bool determining whether the lifetimes of the features are
         returned from this function. Default is False.
 
     Returns
@@ -398,7 +401,7 @@ def lifetime_histogram(
         The edges of the histogram.
 
     bin_centers : ndarray
-        The centers of the histogram intervalls.
+        The centers of the histogram intervals.
 
     minutes, optional : ndarray
         Numpy.array of the lifetime of each feature in minutes.
@@ -428,16 +431,16 @@ def velocity_histogram(
 
     Parameters
     ----------
-    track: pandas.DataFrame
+    track : pandas.DataFrame
         DataFrame of the linked features, containing the columns 'cell',
-         'time' and either 'projection_x_coordinate' and
-         'projection_y_coordinate' or 'latitude' and 'longitude'.
+        'time' and either 'projection_x_coordinate' and
+        'projection_y_coordinate' or 'latitude' and 'longitude'.
 
     bin_edges : int or ndarray, optional
         If bin_edges is an int, it defines the number of equal-width
         bins in the given range. If bins is a ndarray, it defines a
         monotonically increasing array of bin edges, including the
-        rightmost edge. Default is np.arange(0, 30000, 500).
+        rightmost edge. Default is np.arange(0, 30, 1).
 
     density : bool, optional
         If False, the result will contain the number of samples in
@@ -445,15 +448,15 @@ def velocity_histogram(
         density function at the bin, normalized such that the integral
         over the range is 1. Default is False.
 
-    methods_distance : {None, 'xy', 'latlon'}, optional
+    method_distance : {None, 'xy', 'latlon'}, optional
         Method of distance calculation, used to calculate the velocity.
         'xy' uses the length of the vector between the two features,
-        'latlon' uses the haversine distance. None checks wether the
+        'latlon' uses the haversine distance. None checks whether the
         required coordinates are present and starts with 'xy'.
         Default is None.
 
     return_values : bool, optional
-        Bool determining wether the velocities of the features are
+        Bool determining whether the velocities of the features are
         returned from this function. Default is False.
 
     Returns
@@ -507,7 +510,7 @@ def histogram_cellwise(
         including the rightmost edge.
 
     quantity : {'max', 'min', 'mean'}, optional
-        Flag determining wether to use maximum, minimum or mean
+        Flag determining whether to use maximum, minimum or mean
         of a variable from all timeframes the cell covers.
         Default is 'max'.
 
@@ -527,7 +530,7 @@ def histogram_cellwise(
         The edges of the histogram
 
     bin_centers : ndarray
-        The centers of the histogram intervalls
+        The centers of the histogram intervals
 
     Raises
     ------
@@ -561,7 +564,7 @@ def calculate_overlap(
     Parameters
     ----------
     track_1, track_2 : pandas.DataFrame
-        The tracks conaining the cells to analyze.
+        The tracks containing the cells to analyze.
 
     min_sum_inv_distance : float, optional
         Minimum of the inverse net distance for two

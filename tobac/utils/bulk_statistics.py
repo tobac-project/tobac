@@ -307,7 +307,7 @@ def get_statistics_from_mask(
     else:
         collapse_axis = None
 
-    # check if any of the feature dataframe input values match with segmentaion mask IDs
+    # check if any of the feature dataframe input values match with segmentation mask IDs
     if not np.any(np.isin(features[id_column], np.unique(segmentation_mask))):
         raise ValueError(
             "The labels of the segmentation mask and the feature dataframe do not seem to match. Please make sure you provide the correct input feature dataframe  to calculate the bulk statistics."

@@ -170,3 +170,56 @@ def test_lat_lon_tracking_errors():
         test_feature = tobac.tracking.linking_trackpy_latlon(
             test_feature, dt=30, adaptive_step=0.4, adaptive_stop_multiplier=1.4
         )
+
+
+@pytest.mark.parametrize("method_linking", ["random", "predict"])
+def test_lat_lon_tracking_preserves_input_columns(method_linking: str):
+    """Tests that lat/lon tracking only adds the 'cell' and 'time_cell'
+    columns, leaving all input columns (including any existing x/y/z
+    columns) unchanged and not leaving temporary columns behind,
+    regardless of method_linking. Also checks that the input dataframe
+    is not modified."""
+
+    test_feature = tobac.testing.generate_single_feature(
+        start_h1=0,
+        start_h2=0,
+        min_h1=0,
+        max_h1=100,
+        min_h2=0,
+        max_h2=100,
+        frame_start=0,
+        num_frames=5,
+        spd_h1=1,
+        spd_h2=1,
+        PBC_flag="none",
+    )
+    lats, lons = meters_to_latlon(
+        40,
+        -90,
+        test_feature["hdim_2"].values * 1000,
+        test_feature["hdim_1"].values * 1000,
+    )
+    test_feature["latitude"] = lats
+    test_feature["longitude"] = lons
+    test_feature["x"] = test_feature["hdim_2"] * 1000
+    test_feature["y"] = test_feature["hdim_1"] * 1000
+    test_feature["z"] = 500.0
+    test_feature_orig = test_feature.copy(deep=True)
+
+    lat_lon_linking = tobac.tracking.linking_trackpy_latlon(
+        test_feature, 60, method_linking=method_linking, d_max=2000
+    )
+
+    # ensure input isn't modified.
+    assert_frame_equal(test_feature, test_feature_orig)
+
+    # assert that only cell and time_cell should be added
+    assert set(lat_lon_linking.columns) == set(test_feature.columns) | {
+        "cell",
+        "time_cell",
+    }
+
+    # all input columns should be unchanged
+    assert_frame_equal(
+        lat_lon_linking[test_feature.columns], test_feature, check_like=True
+    )

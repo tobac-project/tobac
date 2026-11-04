@@ -9,6 +9,7 @@ import pytest
 import numpy as np
 import xarray as xr
 
+import tobac
 import tobac.utils.internal.xarray_utils as xr_utils
 import tobac.testing as tbtest
 import datetime
@@ -230,3 +231,37 @@ def test_add_coordinates_to_features_interpolate_along_other_dims(
         assert coord in resulting_df
         if coord != "time":
             assert np.all(resulting_df[coord].values == expected_vals[coord])
+
+
+def test_pbc_coordinate_extrapolation():
+    data = tbtest.make_sample_data_3D_1blob(data_type="xarray").roll(y=25, x=50)
+    features = tobac.feature_detection_multithreshold(
+        data, 1000, threshold=5, position_threshold="weighted_abs", PBC_flag="both"
+    )
+
+    assert not np.any(features.x.isna())
+    assert not np.any(features.y.isna())
+    assert not np.any(features.latitude.isna())
+    assert not np.any(features.longitude.isna())
+
+
+def test_add_coordinates_to_features_scalar_coords():
+    """Scalar (0-d) coordinates should be added as plain values, not DataArray objects"""
+    all_feats = tbtest.generate_single_feature(
+        1, 1, feature_num=1, num_frames=3, max_h1=100, max_h2=100
+    )
+    test_xr_arr = xr.DataArray(
+        np.empty((3, 5, 5)),
+        dims=("time", "hdim_0", "hdim_1"),
+        coords={
+            "time": [datetime.datetime(2000, 1, 1, x) for x in range(3)],
+            "scalar_num": 39,
+            "scalar_str": "a",
+        },
+    )
+
+    resulting_df = xr_utils.add_coordinates_to_features(all_feats, test_xr_arr)
+
+    assert resulting_df["scalar_num"].dtype.kind == "i"
+    assert np.all(resulting_df["scalar_num"].values == 39)
+    assert np.all(resulting_df["scalar_str"].values == "a")

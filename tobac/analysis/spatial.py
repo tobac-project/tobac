@@ -91,7 +91,7 @@ def calculate_distance(
     method_distance : {None, 'xy', 'latlon'}, optional
         Method of distance calculation. 'xy' uses the length of the
         vector between the two features, 'latlon' uses the haversine
-        distance. None checks wether the required coordinates are
+        distance. None checks whether the required coordinates are
         present and starts with 'xy'. Default is None.
 
     hdim1_coord, hdim2_coord : str, optional (default: None)
@@ -239,7 +239,7 @@ def calculate_velocity_individual(
     method_distance : {None, 'xy', 'latlon'}, optional
         Method of distance calculation, used to calculate the velocity.
         'xy' uses the length of the vector between the two features,
-        'latlon' uses the haversine distance. None checks wether the
+        'latlon' uses the haversine distance. None checks whether the
         required coordinates are present and starts with 'xy'.
         Default is None.
 
@@ -326,7 +326,7 @@ def calculate_velocity(
         Method of distance calculation, used to calculate the
         velocity. 'xy' uses the length of the vector between the
         two features, 'latlon' uses the haversine distance. None
-        checks wether the required coordinates are present and
+        checks whether the required coordinates are present and
         starts with 'xy'. Default is None.
 
     return_components : bool, optional (default=False)
@@ -391,7 +391,7 @@ def calculate_nearestneighbordistance(features, method_distance=None):
     method_distance : {None, 'xy', 'latlon'}, optional
         Method of distance calculation. 'xy' uses the length of the vector
         between the two features, 'latlon' uses the haversine distance.
-        None checks wether the required coordinates are present and starts
+        None checks whether the required coordinates are present and starts
         with 'xy'. Default is None.
 
     Returns
@@ -447,11 +447,11 @@ def calculate_areas_2Dlatlon(_2Dlat_coord, _2Dlon_coord):
     Parameters
     ----------
     _2Dlat_coord : AuxCoord
-        Iris auxilliary coordinate containing a 2d grid of latitudes
+        Iris auxiliary coordinate containing a 2d grid of latitudes
         for each point.
 
     _2Dlon_coord : AuxCoord
-        Iris auxilliary coordinate containing a 2d grid of longitudes
+        Iris auxiliary coordinate containing a 2d grid of longitudes
         for each point.
 
     Returns
@@ -515,7 +515,7 @@ def calculate_area(features, mask, method_area=None, vertical_coord=None):
         Flag determining how the area is calculated. 'xy' uses the
         areas of the individual pixels, 'latlon' uses the
         area_weights method of iris.analysis.cartography, None
-        checks wether the required coordinates are present and
+        checks whether the required coordinates are present and
         starts with 'xy'. Default is None.
 
     vertical_coord: None | str, optional (default: None)
