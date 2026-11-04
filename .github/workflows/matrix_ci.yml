@@ -28,12 +28,11 @@ jobs:
 
       # Install micromamba and dependencies
       - name: Setup Conda Environment
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v3
         with:
           environment-file: environment.yml
+          cache-environment: true
           cache-downloads: true
-          channels: conda-forge
-          channel-priority: strict
           create-args: python=${{ matrix.python-version }}
 
       - name: Fetch all history for all tags and branches

@@ -24,7 +24,7 @@ jobs:
       - name: check out repository code
         uses: actions/checkout@v3
       - name: set up mamba environment
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v3
         with:
           environment-file: environment-examples.yml
           generate-run-shell: true
