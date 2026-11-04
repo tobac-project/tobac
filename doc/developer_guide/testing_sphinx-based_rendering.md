@@ -53,14 +53,17 @@ website out of the documentation material present in `tobac`.
     /tmp/website-testing> pip install --upgrade pip
 
     # now everything is installed into the local python env!
-    /tmp/website-testing> pip install -r tobac/doc/requirements.txt
+    # (``--group`` needs pip >= 25.1)
+    /tmp/website-testing> cd tobac
+    /tmp/website-testing/tobac> pip install --group docs
     ```
 
     `pip`-based installation takes a bit of time, but is much faster than `conda`.
 
     Alternatively, the documentation dependencies can be installed alongside tobac with
-    `pip install -e "tobac[docs]"`, or as a conda environment with
-    `conda env create -f tobac/environment-docs.yml`.
+    `pip install -e . --group docs` or `uv sync --group docs`, or with [pixi](https://pixi.sh) using
+    `pixi run -e docs docs` from within the repository, which installs the
+    dependencies and builds the website in one step.
    
 
 If the installation runs without problems, you are ready to build the website.

@@ -1,5 +1,16 @@
 # Tobac Changelog
 
+## Unreleased Changes
+
+**Enhancements for Users**
+
+- tobac now declares minimum supported versions of its dependencies (e.g. numpy >= 1.23, pandas >= 2.0, xarray >= 2023.4).
+
+**Internal Enhancements**
+
+- Consolidated all requirements into `pyproject.toml`, `environment.yml`, `environment-examples.yml`, and a new `pixi.toml`. This brings us in line with best practices and allows us to edit fewer files upon changing dependencies. We have also added a CI check to ensure lists agree.
+
+
 ## Version 1.6.4
 
 **Enhancements for Users**

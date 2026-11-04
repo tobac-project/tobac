@@ -13,3 +13,12 @@ examples/climate-processes-tobac_example_data-b3e69ee
 *.egg-info
 doc/api/generated/*
 
+
+# pixi / uv environments and lock files
+.pixi/
+pixi.lock
+.venv/
+uv.lock
+
+# build artifacts
+dist/
