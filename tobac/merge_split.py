@@ -95,7 +95,7 @@ def merge_split_MEST(
         Maximum point in hdim_2, exclusive. max_h2-min_h2 should be the size of
         hdim_2.
 
-    return_as : str('dataset', 'dataframe')
+    return_as : str('dataset', 'dataframe'), optional (default: 'dataset')
         Whether to return the output as an xarray dataset of track and cell properties,
         or to return the input pandas dataframe dataset with new columns containing
         track, merge and split properties.
