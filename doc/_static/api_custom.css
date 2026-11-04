@@ -1,0 +1,56 @@
+/* General styles - light + dark mode */
+dl.py.function > dt,
+dl.py.method > dt,
+dl.py.class > dt {
+    background-color: #f0f7fb;
+    border-left: 4px solid #1f77b4;
+    padding: 10px;
+    margin-bottom: 10px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+dl.py.function > dt .sig-name,
+dl.py.method > dt .sig-name,
+dl.py.class > dt .sig-name {
+    font-size: 1.3em;
+    font-weight: 600;
+    color: #1f77b4;
+}
+
+/* Dark mode style overrides */
+[data-theme="dark"] dl.py.function > dt,
+[data-theme="dark"] dl.py.method > dt,
+[data-theme="dark"] dl.py.class > dt {
+    background-color: #1e2a35;
+    border-left: 4px solid #64b5f6;
+}
+
+[data-theme="dark"] dl.py.function > dt .sig-name,
+[data-theme="dark"] dl.py.method > dt .sig-name,
+[data-theme="dark"] dl.py.class > dt .sig-name {
+    color: #64b5f6;
+}
+
+[data-theme="dark"] dl.py.function > dt .sig-param,
+[data-theme="dark"] dl.py.method > dt .sig-param,
+[data-theme="dark"] dl.py.class > dt .sig-param {
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] dl.py.function > dt .sig-param .n,
+[data-theme="dark"] dl.py.method > dt .sig-param .n,
+[data-theme="dark"] dl.py.class > dt .sig-param .n {
+    color: #90caf9;
+}
+
+[data-theme="dark"] dl.py.function > dt .sig-param .o,
+[data-theme="dark"] dl.py.method > dt .sig-param .o,
+[data-theme="dark"] dl.py.class > dt .sig-param .o {
+    color: #b0b0b0;
+}
+
+[data-theme="dark"] dl.py.function > dt .sig-param .default_value,
+[data-theme="dark"] dl.py.method > dt .sig-param .default_value,
+[data-theme="dark"] dl.py.class > dt .sig-param .default_value {
+    color: #ffcc80;
+}

@@ -16,3 +16,10 @@
     }
 
 }
+
+html[data-theme="dark"] {
+    /* tobac primary colors: #A2C2E5, #4D80BE, F6D94F*/
+    --pst-color-primary: #4D80BE;
+    --pst-color-secondary: #F6D94F;
+}
+

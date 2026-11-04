@@ -6,9 +6,7 @@ if sys.version_info < (3, 7):
     Support for Python versions less than 3.7 is deprecated. 
     Version 1.5 of tobac will require Python 3.7 or later.
    Python {py} detected. \n\n
-    """.format(
-        py=".".join(str(v) for v in sys.version_info[:3])
-    )
+    """.format(py=".".join(str(v) for v in sys.version_info[:3]))
 
     print(warning)
 
@@ -76,11 +74,38 @@ from .utils.general import (
     add_coordinates,
     get_spacings,
 )
+from .utils.mask import convert_feature_mask_to_cells, convert_cell_mask_to_features
 from .feature_detection import feature_detection_multithreshold
 from .tracking import linking_trackpy
 from .wrapper import maketrack
 from .wrapper import tracking_wrapper
 from . import merge_split
+import importlib.metadata
+import pathlib
+
+# default version number
+__version__ = "unknown_dev_version"
 
 # Set version number
-__version__ = "1.6.0"
+# This version should work without needing the package installed
+try:
+    __version__ = importlib.metadata.version(__package__ or __name__)
+except importlib.metadata.PackageNotFoundError:
+    # need to get version directly from text file
+    try:
+        import tomllib
+
+        pyproject_toml_file_name = (
+            pathlib.Path(__file__).parent.parent / "pyproject.toml"
+        )
+        if pyproject_toml_file_name.exists() and pyproject_toml_file_name.is_file():
+            with open(pyproject_toml_file_name, "rb") as f:
+                toml_data = tomllib.load(f)
+                if "project" in toml_data and "version" in toml_data["project"]:
+                    __version__ = toml_data["project"]["version"]
+
+    except ImportError:
+        # on python <3.11 but not installing tobac.
+        # don't bother giving precise version number.
+        __version__ = "unknown_dev_version"
+    pass

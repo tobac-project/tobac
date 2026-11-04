@@ -201,7 +201,7 @@ def find_dataframe_horizontal_coords(
     variable_dataframe : pd.DataFrame
         Input dataframe
     hdim1_coord : Optional[str], optional
-        First horzontal coordinate name, by default None
+        First horizontal coordinate name, by default None
     hdim2_coord : Optional[str], optional
         Second horizontal coordinate name, by default None
     coord_type : Optional[Literal[xy, latlon]], optional
@@ -211,7 +211,7 @@ def find_dataframe_horizontal_coords(
     Returns
     -------
     Tuple[str, str, str]
-        First horzontal coordinate name, second horizontal coordinate name, and the coordinate type
+        First horizontal coordinate name, second horizontal coordinate name, and the coordinate type
 
     Raises
     ------
@@ -287,6 +287,7 @@ def find_dataframe_horizontal_coords(
 def calc_distance_coords(coords_1: np.array, coords_2: np.array) -> float:
     """Function to calculate the distance between cartesian
     coordinate set 1 and coordinate set 2.
+
     Parameters
     ----------
     coords_1: 2D or 3D array-like
@@ -294,6 +295,7 @@ def calc_distance_coords(coords_1: np.array, coords_2: np.array) -> float:
         coordinates or (hdim_1, hdim_2) coordinates.
     coords_2: 2D or 3D array-like
         Similar to coords_1, but for the second pair of coordinates
+
     Returns
     -------
     float
@@ -428,3 +430,59 @@ def detect_latlon_coord_name(
                 out_lon = test_lon_name
                 break
     return out_lat, out_lon
+
+
+def make_empty_features_dataframe(is_3D: bool) -> pd.DataFrame:
+    """
+    Create an empty but properly formatted feature DataFrame.
+
+    Returns an empty pandas DataFrame with the same columns and dtypes as the feature detection output.
+    This is used when no features are detected, to ensure a consistent return type and avoid returning ``None``.
+
+    Parameters
+    ----------
+    is_3D : bool
+        Whether the feature detection is 3D. If True, include vertical coordinate columns.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Empty DataFrame with the correct columns and dtypes for feature output.
+    """
+
+    if is_3D:
+        schema = {
+            "frame": "int64",
+            "idx": "int64",
+            "vdim": "float64",
+            "hdim_1": "float64",
+            "hdim_2": "float64",
+            "num": "int64",
+            "threshold_value": "int64",
+            "feature": "int64",
+            "time": "datetime64[ns]",
+            "timestr": "object",
+            "z": "float64",
+            "y": "float64",
+            "x": "float64",
+            "latitude": "float64",
+            "longitude": "float64",
+        }
+    else:
+        schema = {
+            "frame": "int64",
+            "idx": "int64",
+            "hdim_1": "float64",
+            "hdim_2": "float64",
+            "num": "int64",
+            "threshold_value": "int64",
+            "feature": "int64",
+            "time": "datetime64[ns]",
+            "timestr": "object",
+            "y": "float64",
+            "x": "float64",
+            "latitude": "float64",
+            "longitude": "float64",
+        }
+
+    return pd.DataFrame({c: pd.Series(dtype=t) for c, t in schema.items()})

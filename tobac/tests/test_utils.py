@@ -1,4 +1,3 @@
-from cycler import V
 import pytest
 import tobac.testing
 import tobac.testing as tbtest
