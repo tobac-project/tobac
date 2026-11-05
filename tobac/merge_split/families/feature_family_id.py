@@ -4,14 +4,12 @@ A family is defined as a set of contiguous points above a single threshold that 
 one but can contain many detected features.
 """
 
-import copy
 from typing import Optional, Literal, Union
 import datetime
 
 import pandas as pd
 import numpy as np
 import xarray as xr
-import skimage.measure
 import tobac.utils.internal.label_functions as tb_label
 import tobac.utils.datetime as tb_datetime
 
@@ -133,15 +131,13 @@ def identify_feature_families_from_data(
     is_3D = len(in_data.shape) == 4
 
     seg_family_dict = dict()
-    out_families = copy.deepcopy(in_data)
-    out_families = out_families.astype(np.int64)
+    out_families = xr.zeros_like(in_data, dtype=np.int64)
     out_families.name = "family_grid"
     max_family_number = 0
     enable_family_statistics = True
 
     if enable_family_statistics:
-        region_props_vals = ["bbox", "centroid", "num_pixels"]
-        family_stats = dict()
+        family_stats = list()
     for time_index in range(in_data.shape[0]):
         # TODO: fix time_var_name for isel?
         # print("time_index: ", time_index)
@@ -162,33 +158,6 @@ def identify_feature_families_from_data(
         )
         if not is_3D:
             family_labeled_data = family_labeled_data[0]
-        if enable_family_statistics:
-            all_family_nums = list()
-
-            family_props = skimage.measure.regionprops(family_labeled_data)
-            # print(max_family_number)
-            for family in family_props:
-                all_family_nums.append(family.label + max_family_number)
-                family_stats[family.label + max_family_number] = dict()
-                # family_stats[family.label+max_family_number]['frame'] =
-
-                family_stats[family.label + max_family_number][
-                    "num_pixels"
-                ] = family.area
-                family_stats[family.label + max_family_number][family_column_name] = (
-                    family.label + max_family_number
-                )
-                if not is_3D:
-                    family_stats[family.label + max_family_number]["hdim_1_center"] = (
-                        family.centroid[0]
-                    )
-                    family_stats[family.label + max_family_number]["hdim_2_center"] = (
-                        family.centroid[1]
-                    )
-
-                else:
-                    # TODO: integrate 3D stats - mostly around center coordinates - need the functions in tobac proper
-                    raise NotImplementedError("3D stats not implemented yet")
 
         # need to associate family ID with each feature ID
 
@@ -241,22 +210,57 @@ def identify_feature_families_from_data(
         # print(family_labeled_data.shape)
 
         family_ids = family_labeled_data[points_list]
-        # remove 0 (background) if needed
+        # remove 0 (background) if needed. Otherwise, a feature that sits on a
+        # background point keeps the background in the output grid, offset by
+        # max_family_number.
 
-        family_ids_sorted = np.unique(family_ids[family_ids > 0])
+        family_ids_sorted = np.unique(family_ids)
+        family_ids_sorted = family_ids_sorted[family_ids_sorted != 0]
 
         # we want to get rid of points that aren't features in the grid output
-        suppressing_families = np.isin(family_labeled_data, family_ids_sorted)
+        is_kept_family = np.zeros(family_labeled_data.max() + 1, dtype=bool)
+        is_kept_family[family_ids_sorted] = True
+        suppressing_families = is_kept_family[family_labeled_data]
         feature_id_family_id_match_ct = {
             feat: (fam_id + max_family_number if fam_id != 0 else -1)
             for feat, fam_id in zip(rows_at_time["feature"].values, family_ids)
         }
         seg_family_dict.update(feature_id_family_id_match_ct)
-        out_families[time_index] = (
-            family_labeled_data + max_family_number
-        ) * suppressing_families.astype(int)
+        out_families[time_index] = np.where(
+            suppressing_families, family_labeled_data + max_family_number, 0
+        )
 
-        max_family_number = out_families.max().values
+        # stats are only kept for families with features in them, so only calculate those
+        if enable_family_statistics and len(family_ids_sorted) > 0:
+            if is_3D:
+                # TODO: integrate 3D stats - mostly around center coordinates - need the functions in tobac proper
+                raise NotImplementedError("3D stats not implemented yet")
+            kept_points = np.flatnonzero(suppressing_families)
+            kept_labels = family_labeled_data.ravel()[kept_points]
+            kept_h1, kept_h2 = np.unravel_index(kept_points, data_in_shape)
+            num_bins = len(is_kept_family)
+            num_pixels = np.bincount(kept_labels, minlength=num_bins)
+            h1_sum = np.bincount(kept_labels, weights=kept_h1, minlength=num_bins)
+            h2_sum = np.bincount(kept_labels, weights=kept_h2, minlength=num_bins)
+            num_pixels = num_pixels[family_ids_sorted]
+            family_nums = family_ids_sorted.astype(np.int64) + max_family_number
+            family_stats.append(
+                pd.DataFrame(
+                    {
+                        "num_pixels": num_pixels,
+                        family_column_name: family_nums,
+                        "hdim_1_center": h1_sum[family_ids_sorted] / num_pixels,
+                        "hdim_2_center": h2_sum[family_ids_sorted] / num_pixels,
+                    },
+                    index=family_nums,
+                )
+            )
+
+        # only look at this time; later times still hold the raw input data.
+        # keep the running max in case no families were kept at this time.
+        max_family_number = max(
+            max_family_number, int(out_families[time_index].max().values)
+        )
 
     family_series = pd.Series(seg_family_dict, name=family_column_name)
     feature_series = pd.Series({x: x for x in seg_family_dict.keys()}, name="feature")
@@ -272,7 +276,17 @@ def identify_feature_families_from_data(
         ]
 
     if enable_family_statistics:
-        family_stats_df = pd.DataFrame.from_dict(family_stats, orient="index")
+        if len(family_stats) > 0:
+            family_stats_df = pd.concat(family_stats)
+        else:
+            family_stats_df = pd.DataFrame(
+                columns=[
+                    "num_pixels",
+                    family_column_name,
+                    "hdim_1_center",
+                    "hdim_2_center",
+                ]
+            )
         # we need to drop any family_stats that aren't in the feature DF
         family_stats_df = family_stats_df[
             family_stats_df[family_column_name].isin(

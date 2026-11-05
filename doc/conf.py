@@ -24,6 +24,7 @@ extensions = [
     "sphinx_design",
     "sphinx_toolbox.code",
     "sphinxcontrib.mermaid",
+    "sphinx_codeautolink",
 ]
 
 
@@ -184,6 +185,7 @@ nbsphinx_thumbnails = {
     "examples/Basics/Methods-and-Parameters-for-Segmentation": "_static/thumbnails/Basics_Methods-and-Parameters-for-Segmentation_Thumbnail.png",
     "examples/Basics/Idealized-Family-Detection": "_static/thumbnails/Idealized-Family-Detection_Thumbnail.png",
     "examples/Example_OLR_Tracking_model/Example_OLR_Tracking_model": "_static/thumbnails/Example_OLR_Tracking_model_Thumbnail.png",
+    "examples/Example_OLR_Tracking_model_latlon_tracking/Example_OLR_Tracking_model_latlon_tracking": "_static/thumbnails/Example_OLR_Tracking_model_Thumbnail.png",
     "examples/Example_OLR_Tracking_satellite/Example_OLR_Tracking_satellite": "_static/thumbnails/Example_OLR_Tracking_satellite_Thumbnail.png",
     "examples/Example_Precip_Tracking/Example_Precip_Tracking": "_static/thumbnails/Example_Precip_Tracking_Thumbnail.png",
     "examples/Example_Track_on_Radar_Segment_on_Satellite/Example_Track_on_Radar_Segment_on_Satellite": "_static/thumbnails/Example_Track_on_Radar_Segment_on_Satellite_Thumbnail.png",
@@ -192,4 +194,5 @@ nbsphinx_thumbnails = {
     "examples/Example_low_cloud_tracking_eurec4a/Example_low_cloud_tracking_eurec4a": "_static/thumbnails/Example_low_cloud_tracking_eurac4a_Thumbnail.png",
     "examples/Example_ICON_MCS_tracking/Example_ICON_MCS_tracking": "_static/thumbnails/Example_ICON_MCS_tracking_Thumbnail.png",
     "examples/big_data_processing/parallel_processing_tobac": "_static/thumbnails/big_data_processing_parallel_processing_tobac.svg",
+    "examples/Example_Append_Tracking_Radar/Example_Append_Tracking_Radar": "_static/thumbnails/Example_Append_Tracking_Radar.png",
 }

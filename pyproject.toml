@@ -45,7 +45,7 @@ dependencies = [
     "scipy",
     "scikit-image",
     "scikit-learn",
-    "pandas<3",
+    "pandas",
     "matplotlib",
     "scitools-iris",
     "xarray",
@@ -67,7 +67,7 @@ dev = [
 examples = [
     "jupyter",
     "notebook",
-    "pytables",
+    "tables",
     "s3fs",
     "arm_pyart",
     "seaborn",

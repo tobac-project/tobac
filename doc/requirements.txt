@@ -9,3 +9,4 @@ sphinx-design
 sphinx-toolbox
 linkify-it-py
 sphinxcontrib-mermaid
+sphinx-codeautolink

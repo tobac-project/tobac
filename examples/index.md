@@ -25,6 +25,8 @@ tobac is provided with a set of Jupyter notebooks that show examples of the appl
 
    OLR from GOES-13 Satellite <./Example_OLR_Tracking_satellite/Example_OLR_Tracking_satellite>
    Combine Radar & Satellite <./Example_Track_on_Radar_Segment_on_Satellite/Example_Track_on_Radar_Segment_on_Satellite>
+  Append Tracks with Radar Data <./Example_Append_Tracking_Radar/Example_Append_Tracking_Radar>
+
 ```
 
 ## Examples of Using _tobac_ with Model Data
@@ -33,6 +35,7 @@ tobac is provided with a set of Jupyter notebooks that show examples of the appl
    :caption: Examples of Using tobac with Model Data
 
    WRF OLR <./Example_OLR_Tracking_model/Example_OLR_Tracking_model>
+  WRF OLR with Latitude/Longitude Tracking <./Example_OLR_Tracking_model_latlon_tracking/Example_OLR_Tracking_model_latlon_tracking>
    WRF Precip <./Example_Precip_Tracking/Example_Precip_Tracking>
    WRF Updrafts <./Example_Updraft_Tracking/Example_Updraft_Tracking>
    WRF Mesoscale Vorticity <./Example_vorticity_tracking_model/Example_vorticity_tracking_model>
