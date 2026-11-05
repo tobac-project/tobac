@@ -332,6 +332,7 @@ def make_sample_data_3D_1blob(data_type="iris", invert_xy=False):
     through the dataset for part of the time. The blob follows a
     trajectory that starts at (x=10km, y=10km, z=4km) and moves along a
     linear path at each time step.
+
     Parameters
     ----------
     data_type : {'iris', 'xarray'}, optional
@@ -340,6 +341,7 @@ def make_sample_data_3D_1blob(data_type="iris", invert_xy=False):
     invert_xy : bool, optional
         Flag to determine whether to switch x and y coordinates.
         Default is False.
+
     Returns
     -------
     sample_data : iris.cube.Cube or xarray.DataArray
@@ -572,7 +574,7 @@ def make_sample_data_3D_3blobs(data_type="iris", invert_xy=False):
         Default is 'iris'
 
     invert_xy : bool, optional
-        Flag to determine wether to switch x and y coordinates
+        Flag to determine whether to switch x and y coordinates
         Default is False
 
     Returns

@@ -28,8 +28,10 @@ def nearestneighbordistance_histogram(
     If the DataFrame does not contain a 'min_distance' column, the
     distances are calculated.
 
+    Parameters
     ----------
-    features
+    features : pandas.DataFrame
+        DataFrame of the features.
 
     bin_edges : int or ndarray, optional
         If bin_edges is an int, it defines the number of equal-width
@@ -46,11 +48,11 @@ def nearestneighbordistance_histogram(
     method_distance : {None, 'xy', 'latlon'}, optional
         Method of distance calculation. 'xy' uses the length of the
         vector between the two features, 'latlon' uses the haversine
-        distance. None checks wether the required coordinates are
+        distance. None checks whether the required coordinates are
         present and starts with 'xy'. Default is None.
 
     return_values : bool, optional
-        Bool determining wether the nearest neighbor distance of the
+        Bool determining whether the nearest neighbor distance of the
         features are returned from this function. Default is False.
 
     Returns
@@ -119,11 +121,18 @@ def area_histogram(
         probability density function at the bin, normalized such
         that the integral over the range is 1. Default is False.
 
+    method_area : {None, 'xy', 'latlon'}, optional
+        Flag determining how the area is calculated. 'xy' uses the
+        areas of the individual pixels, 'latlon' uses the
+        area_weights method of iris.analysis.cartography, None
+        checks whether the required coordinates are present and
+        starts with 'xy'. Default is None.
+
     return_values : bool, optional
-        Bool determining wether the areas of the features are
+        Bool determining whether the areas of the features are
         returned from this function. Default is False.
 
-    representive_area: bool, optional
+    representative_area : bool, optional
         If False, no weights will associated to the values.
         If True, the weights for each area will be the areas
         itself, i.e. each bin count will have the value of
@@ -139,7 +148,7 @@ def area_histogram(
         The edges of the histogram.
 
     bin_centers : ndarray
-        The centers of the histogram intervalls.
+        The centers of the histogram intervals.
 
     areas : ndarray, optional
         A numpy array approximating the area of each feature.
@@ -202,7 +211,7 @@ def histogram_featurewise(Track, variable=None, bin_edges=None, density=False):
         The edges of the histogram
 
     bin_centers : ndarray
-        The centers of the histogram intervalls
+        The centers of the histogram intervals
 
     """
 

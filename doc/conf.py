@@ -8,6 +8,26 @@ import sys, os
 
 sys.path.insert(0, os.path.abspath("extensions"))
 
+
+# as of sphinx 8.2.0, symlinks break images in notebooks. This code fixes it.
+from pathlib import Path
+from sphinx.environment import BuildEnvironment
+
+_orig_relfn2path = BuildEnvironment.relfn2path
+
+
+def _relfn2path_lexical(self, filename, docname=None):
+    name = str(filename)
+    if not name.startswith(("/", "\\")) and not os.path.isabs(name):
+        docname = docname or self.docname
+        if docname:
+            doc_dir = self.doc2path(docname, base=False).parent
+            filename = "/" + Path(os.path.normpath(doc_dir / name)).as_posix()
+    return _orig_relfn2path(self, filename, docname)
+
+
+BuildEnvironment.relfn2path = _relfn2path_lexical
+
 # What Sphinx extensions do we need
 extensions = [
     "sphinx.ext.autodoc",

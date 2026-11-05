@@ -50,6 +50,7 @@ from tobac.utils import internal as internal_utils
 from tobac.utils import get_statistics
 from tobac.utils import decorators
 from tobac.utils.generators import field_and_features_over_time
+from tobac.utils.mask import convert_feature_mask_to_cells
 
 
 def add_markers(
@@ -62,7 +63,9 @@ def add_markers(
 ) -> np.array:
     """Adds markers for watershedding using the `features` dataframe
     to the marker_arr.
+
     :hidden:
+
     Parameters
     ----------
     features: pandas.DataFrame
@@ -285,6 +288,7 @@ def segmentation_3D(
     PBC_flag="none",
     seed_3D_flag="column",
     statistic=None,
+    suppress_warnings=False,
 ):
     """Wrapper for the segmentation()-function."""
 
@@ -300,6 +304,7 @@ def segmentation_3D(
         PBC_flag=PBC_flag,
         seed_3D_flag=seed_3D_flag,
         statistic=statistic,
+        suppress_warnings=suppress_warnings,
     )
 
 
@@ -315,6 +320,7 @@ def segmentation_2D(
     PBC_flag="none",
     seed_3D_flag="column",
     statistic=None,
+    suppress_warnings=False,
 ):
     """Wrapper for the segmentation()-function."""
     return segmentation(
@@ -329,6 +335,7 @@ def segmentation_2D(
         PBC_flag=PBC_flag,
         seed_3D_flag=seed_3D_flag,
         statistic=statistic,
+        suppress_warnings=suppress_warnings,
     )
 
 
@@ -351,8 +358,10 @@ def segmentation_timestep(
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
 ) -> tuple[iris.cube.Cube, pd.DataFrame]:
     """Perform watershedding for an individual time step of the data. Works
-    for both 2D and 3D data
+    for both 2D and 3D data.
+
     :hidden:
+
     Parameters
     ----------
     field_in : xr.DataArray
@@ -414,8 +423,11 @@ def segmentation_timestep(
     segment_number_unassigned: int
         the marker to use to indicate a segmentation point is above the threshold but unsegmented.
         This can be the same as `segment_number_below_threshold`, but can also be set separately.
-    statistics: boolean, optional
-        Default is None. If True, bulk statistics for the data points assigned to each feature are saved in output.
+    statistic : dict, optional
+        Default is None. Optional parameter to calculate bulk statistics within segmentation.
+        Dictionary with callable function(s) to apply over the region of each segmented feature and
+        the name of the statistics to appear in the feature output dataframe.
+        The functions should be the values and the names of the metric the keys (e.g. {'mean': np.mean})
 
     Returns
     -------
@@ -505,7 +517,7 @@ def segmentation_timestep(
             transposed_data = True
 
     # Set level at which to create "Seed" for each feature in the case of 3D watershedding:
-    # If none, use all levels (later reduced to the ones fulfilling the theshold conditions)
+    # If none, use all levels (later reduced to the ones fulfilling the threshold conditions)
     if level is None:
         level = slice(None)
 
@@ -1070,7 +1082,7 @@ def check_add_unseeded_across_bdrys(
     dim_to_run:  {'hdim_1', 'hdim_2'}
         what dimension to run
     segmentation_mask: np.array
-        the incomming segmentation mask
+        the incoming segmentation mask
     unseeded_labels: np.array
         The list of labels that are unseeded
     border_min: int
@@ -1135,6 +1147,9 @@ def segmentation(
     segment_number_unassigned: int = 0,
     statistic: Union[dict[str, Union[Callable, tuple[Callable, dict]]], None] = None,
     time_padding: Optional[datetime.timedelta] = datetime.timedelta(seconds=0.5),
+    suppress_warnings: Optional[bool] = False,
+    return_cells: bool = False,
+    stubs: Optional[int] = None,
 ) -> tuple[xr.DataArray, pd.DataFrame]:
     """Use watershedding to determine region above a threshold
     value around initial seeding position for all time steps of
@@ -1142,7 +1157,7 @@ def segmentation(
     point) and 3D and returns a mask with zeros everywhere around
     the identified regions and the feature id inside the regions.
 
-    Calls segmentation_timestep at each individal timestep of the
+    Calls segmentation_timestep at each individual timestep of the
     input data.
 
     Parameters
@@ -1161,7 +1176,7 @@ def segmentation(
         Default is 3e-3.
 
     target : {'maximum', 'minimum'}, optional
-        Flag to determine if tracking is targetting minima or maxima in
+        Flag to determine if tracking is targeting minima or maxima in
         the data. Default is 'maximum'.
 
     level : slice of iris.cube.Cube, optional
@@ -1212,6 +1227,20 @@ def segmentation(
         timestep that is time_padding off of the feature. Extremely useful when
         converting between micro- and nanoseconds, as is common when using Pandas
         dataframes.
+    suppress_warnings: bool, optional
+        If True, suppresses warnings. Default is False.
+    return_cells: bool, optional (default: False)
+        If True, the segmentation mask returned will use the cell values of the
+        input dataframe, rather than the feature values. This requires the
+        features input to be the output from tobac.linking_trackpy
+    stubs: int, optional (default: None)
+        The stub values used for unlinked cells in tobac.linking_trackpy, used
+        when return_cells=True If None, the stub cells with be relabelled with
+        the stub cell value in the feature dataframe. If a value is provided,
+        the masked regions corresponding to stub cells with be removed from the
+        output. Warning: the presence of stub cells may make it impossible to
+        perfectly reconstruct the feature mask afterwards as any stub features
+        will be removed.
 
     Returns
     -------
@@ -1250,6 +1279,12 @@ def segmentation(
             )
         ) from exc
 
+    # Check features has cell column if return_cells is True:
+    if return_cells and "cell" not in features.columns:
+        raise ValueError(
+            "`cell` column not found in features input, please perform tracking on this data before performing segmentation with `return_cells=True`"
+        )
+
     # create our output dataarray
     segmentation_out_data = xr.DataArray(
         np.zeros(field.shape, dtype=int),
@@ -1266,7 +1301,7 @@ def segmentation(
 
     features_out_list = []
 
-    if len(field.coords[time_var_name]) == 1:
+    if not suppress_warnings and len(field.coords[time_var_name]) == 1:
         warnings.warn(
             "As of v1.6.0, segmentation with time length 1 will return time as a coordinate"
             " instead of dropping it (i.e., output will now be 1xMxN instead of MxN). ",
@@ -1306,6 +1341,16 @@ def segmentation(
 
     # Merge output from individual timesteps:
     features_out = pd.concat(features_out_list)
+
+    # Convert feature mask to cells if return_cells is True:
+    if return_cells:
+        segmentation_out_data = convert_feature_mask_to_cells(
+            features_out,
+            segmentation_out_data,
+            stubs=stubs,
+            inplace=True,
+        )
+
     logging.debug("Finished segmentation")
     return segmentation_out_data, features_out
 

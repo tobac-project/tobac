@@ -7,7 +7,7 @@ from typing import Literal, Optional, Tuple, Union
 
 def features_to_interest_field(
     features,
-    template: xr.DataArray,  # field for correct geometrie
+    template: xr.DataArray,  # field for correct geometry
     *,
     position_mode: Literal["hdim"] = "hdim",
     position_cols: Optional[Tuple[str, ...]] = None,
@@ -49,8 +49,11 @@ def features_to_interest_field(
         Column name used to estimate the threshold for blob amplitude.
     size_from : str, optional
         Column name used to estimate blob size.
+    amp_factor : float, optional
+        Factor applied to the threshold to derive the blob amplitude if
+        `amp_from` is None or not found in the features.
     default_amp : float, optional
-        Factor applied to amplitudes derived from `amp_from`.
+        Currently unused.
     default_thresh : float, optional
         Default threshold if `thresh_from` is not provided or invalid.
     default_size : float, optional

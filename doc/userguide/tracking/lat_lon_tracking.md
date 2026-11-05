@@ -24,6 +24,13 @@ have latitude and longitude coordinates attached.
 - You have data that is 3D spatially (i.e., there will be a `vdim` column in your output)
 - You have data that is not on a latitude/longitude grid
 
+## Appending to Lat/Lon Tracks
+
+Tracks created with {py:func}`tobac.tracking.linking_trackpy_latlon` can be extended with new
+features without re-running tracking on the full dataset. Use
+{py:func}`tobac.tracking.append_tracks_trackpy` with `use_latlon=True`. See
+{ref}`append-tracking-latlon` for details.
+
 ## Examples using Lat/Lon Tracking
 
 ::::{grid} 1 2 2 3
