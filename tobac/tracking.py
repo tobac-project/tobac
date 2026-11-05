@@ -698,87 +698,6 @@ def linking_trackpy_latlon(
     return filtered_trajectories
 
 
-def _filter_trajectories(
-    trajectories_unfiltered: pd.DataFrame,
-    cell_number_start: int,
-    cell_number_unassigned: int,
-    stubs: int,
-    save_unfiltered_cell: bool = False,
-) -> pd.DataFrame:
-    """Internal function to postprocess and filter trajectories from Trackpy
-    to a form usable by tobac down the line.
-
-    :hidden:
-
-    Parameters
-    ----------
-    trajectories_unfiltered: pd.DataFrame
-        Unfiltered trajectories dataframe
-    cell_number_start: int
-        What cell number to start with
-    cell_number_unassigned: int
-        What number to assign untracked cells
-    stubs: int
-        Number of frames that a cell must be tracked for to be included (vs filtered out)
-    save_unfiltered_cell: bool
-        If True, save the cell number before stub filtering as 'cell_unfiltered'
-
-    Returns
-    -------
-
-    """
-    # Reset particle numbers from the arbitrary numbers at the end of the feature detection and
-    # linking to consecutive cell number; keep 'particle' for reference to the feature detection step.
-    trajectories_unfiltered["cell"] = None
-    particle_num_to_cell_num = {}
-    for i_particle, particle in enumerate(
-        pd.Series.unique(trajectories_unfiltered["particle"])
-    ):
-        cell = int(i_particle + cell_number_start)
-        particle_num_to_cell_num[particle] = int(cell)
-    remap_particle_to_cell_vec = np.vectorize(remap_particle_to_cell_nv)
-    trajectories_unfiltered["cell"] = remap_particle_to_cell_vec(
-        particle_num_to_cell_num, trajectories_unfiltered["particle"]
-    )
-    trajectories_unfiltered["cell"] = trajectories_unfiltered["cell"].astype(int)
-    trajectories_unfiltered.drop(columns=["particle"], inplace=True)
-    if save_unfiltered_cell:
-        trajectories_unfiltered["cell_unfiltered"] = trajectories_unfiltered["cell"]
-
-    trajectories_bycell = trajectories_unfiltered.groupby("cell")
-    stub_cell_nums = list()
-    for cell, trajectories_cell in trajectories_bycell:
-        if trajectories_cell.shape[0] < stubs:
-            logging.debug(
-                "cell"
-                + str(cell)
-                + "  is a stub ("
-                + str(trajectories_cell.shape[0])
-                + "), setting cell number to "
-                + str(cell_number_unassigned)
-            )
-            stub_cell_nums.append(cell)
-
-    trajectories_unfiltered.loc[
-        trajectories_unfiltered["cell"].isin(stub_cell_nums), "cell"
-    ] = cell_number_unassigned
-
-    trajectories_filtered = trajectories_unfiltered
-
-    trajectories_filtered_filled = deepcopy(trajectories_filtered)
-
-    trajectories_final = add_cell_time(
-        trajectories_filtered_filled, cell_number_unassigned=cell_number_unassigned
-    )
-    # Add metadata
-    trajectories_final.attrs["cell_number_unassigned"] = cell_number_unassigned
-
-    # add coordinate to raw features identified:
-    logging.debug("start adding coordinates to detected features")
-    logging.debug("feature linking completed")
-    return trajectories_final
-
-
 def append_tracks_trackpy(
     tracks_orig: pd.DataFrame,
     new_features: pd.DataFrame,
@@ -1427,6 +1346,62 @@ def append_tracks_trackpy(
     return trajectories_final
 
 
+def _filter_trajectories(
+    trajectories_unfiltered: pd.DataFrame,
+    cell_number_start: int,
+    cell_number_unassigned: int,
+    stubs: int,
+    save_unfiltered_cell: bool = False,
+) -> pd.DataFrame:
+    """Internal function to postprocess and filter trajectories from Trackpy
+    to a form usable by tobac down the line.
+
+    :hidden:
+
+    Parameters
+    ----------
+    trajectories_unfiltered: pd.DataFrame
+        Unfiltered trajectories dataframe
+    cell_number_start: int
+        What cell number to start with
+    cell_number_unassigned: int
+        What number to assign untracked cells
+    stubs: int
+        Number of frames that a cell must be tracked for to be included (vs filtered out)
+    save_unfiltered_cell: bool
+        If True, save the cell number before stub filtering as 'cell_unfiltered'
+
+    Returns
+    -------
+
+    """
+    # Reset particle numbers from the arbitrary numbers at the end of the feature detection and
+    # linking to consecutive cell number; keep 'particle' for reference to the feature detection step.
+    trajectories_final = trajectories_unfiltered.rename(columns={"particle": "cell"})
+    trajectories_final["cell"] = (
+        np.unique(trajectories_final.cell, return_inverse=True)[1] + cell_number_start
+    )
+
+    if save_unfiltered_cell:
+        trajectories_final["cell_unfiltered"] = trajectories_final["cell"]
+
+    if stubs > 1:
+        cell_count = trajectories_final.groupby("cell").cell.count()
+        stub_cells = cell_count.index[cell_count < stubs].values
+        trajectories_final.loc[np.isin(trajectories_final.cell, stub_cells), "cell"] = (
+            cell_number_unassigned
+        )
+
+    trajectories_final = add_cell_time(
+        trajectories_final, cell_number_unassigned=cell_number_unassigned
+    )
+    # Add metadata
+    trajectories_final.attrs["cell_number_unassigned"] = cell_number_unassigned
+
+    # add coordinate to raw features identified:
+    return trajectories_final
+
+
 def _clean_track_dfs_for_append(
     tracks_orig: pd.DataFrame,
     new_features: pd.DataFrame,
@@ -1745,29 +1720,30 @@ def _calc_velocity_to_most_recent_point(
     return mean_speed_df
 
 
-def add_cell_time(t: pd.DataFrame, cell_number_unassigned: int):
+def add_cell_time(tracks: pd.DataFrame, cell_number_unassigned: int):
     """add cell time as time since the initiation of each cell
     :hidden:
     Parameters
     ----------
-    t : pandas.DataFrame
+    tracks : pandas.DataFrame
         trajectories with added coordinates
     cell_number_unassigned: int
         unassigned cell value
 
     Returns
     -------
-    t : pandas.Dataframe
+    tracks : pandas.Dataframe
         trajectories with added cell time
     """
 
-    # logging.debug('start adding time relative to cell initiation')
-    t_grouped = t.groupby("cell")
-
-    t["time_cell"] = t["time"] - t.groupby("cell")["time"].transform("min")
-    t["time_cell"] = pd.to_timedelta(t["time_cell"])
-    t.loc[t["cell"] == cell_number_unassigned, "time_cell"] = pd.Timedelta("nat")
-    return t
+    tracks["time_cell"] = tracks["time"] - tracks.groupby("cell")["time"].transform(
+        "min"
+    )
+    tracks["time_cell"] = pd.to_timedelta(tracks["time_cell"])
+    tracks.loc[tracks["cell"] == cell_number_unassigned, "time_cell"] = pd.Timedelta(
+        "nat"
+    )
+    return tracks
 
 
 def remap_particle_to_cell_nv(particle_cell_map, input_particle):
