@@ -1,7 +1,7 @@
 name: Jupyter Notebooks CI
 on:
   push:
-    branches: [main, RC_*]
+    branches: [main]
   pull_request:
     paths:
       - "tobac/**"

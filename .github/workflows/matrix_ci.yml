@@ -1,6 +1,9 @@
 name: Matrix Testing CI
 # this is similar to the pyart CI action
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
