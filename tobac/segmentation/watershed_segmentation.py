@@ -1047,8 +1047,8 @@ def segmentation_timestep(
     # add ncells to feature dataframe with new statistic method
     features_out = get_statistics(
         features_out,
-        np.array(segmentation_out.data.copy()),
-        np.array(field_in.data.copy()),
+        segmentation_out,
+        field_in,
         statistic={"ncells": np.count_nonzero},
         default=0,
     )
@@ -1057,8 +1057,8 @@ def segmentation_timestep(
     if statistic:
         features_out = get_statistics(
             features_out,
-            segmentation_out.data.copy(),
-            field_in.data.copy(),
+            segmentation_out,
+            field_in,
             statistic=statistic,
         )
 
