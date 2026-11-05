@@ -134,7 +134,7 @@ def identify_feature_families_from_data(
     out_families = xr.zeros_like(in_data, dtype=np.int64)
     out_families.name = "family_grid"
     max_family_number = 0
-    enable_family_statistics = True
+    enable_family_statistics = False
 
     if enable_family_statistics:
         family_stats = list()
@@ -193,12 +193,12 @@ def identify_feature_families_from_data(
                 )
 
             rows_at_time["vdim_adj"] = np.clip(
-                int(rows_at_time["vdim"] + 0.5).astype(int), a_min=0, a_max=v_max - 1
+                (rows_at_time["vdim"] + 0.5).astype(int), a_min=0, a_max=v_max - 1
             )
             points_list = (
+                rows_at_time["vdim_adj"].values,
                 rows_at_time["hdim_1_adj"].values,
                 rows_at_time["hdim_2_adj"].values,
-                rows_at_time["vdim_adj"].values,
             )
 
         else:
@@ -267,11 +267,11 @@ def identify_feature_families_from_data(
     family_df = pd.concat([family_series, feature_series], axis=1)
     out_df = feature_df.merge(family_df, on="feature", how="inner")
     if unlinked_family_id is not None:
-        out_df.loc[out_df["feature_family_id"] == 0, "feature_family_id"] = -1
+        out_df.loc[out_df[family_column_name] == 0, family_column_name] = -1
     else:
         out_df = out_df[
             np.logical_and(
-                out_df["feature_family_id"] != 0, out_df["feature_family_id"] != -1
+                out_df[family_column_name] != 0, out_df[family_column_name] != -1
             )
         ]
 
@@ -316,6 +316,11 @@ def identify_feature_families_from_data(
     if return_grid:
         if enable_family_statistics:
             return out_df, family_stats_df, out_families
+        else:
+            return out_df, out_families
 
     else:
-        return out_df, family_stats_df
+        if enable_family_statistics:
+            return out_df, family_stats_df
+        else:
+            return out_df
