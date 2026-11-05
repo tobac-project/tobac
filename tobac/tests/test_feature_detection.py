@@ -1,15 +1,29 @@
-import tobac.testing
+import cftime
+import tobac
+import tobac.testing as tbtest
 import tobac.feature_detection as feat_detect
 import pytest
+import numpy as np
+import xarray as xr
+import pandas as pd
+from pandas.testing import assert_frame_equal
 
 
-def test_feature_detection_multithreshold_timestep():
+@pytest.mark.parametrize(
+    "test_threshs, n_min_threshold, dxy, wavelength_filtering",
+    [
+        ([1.5], 2, -1, None),
+        ([1, 1.5, 2], 2, 10000, (100 * 1000, 500 * 1000)),
+        ([1, 2, 1.5], [3, 1, 2], -1, None),
+        ([1, 1.5, 2], {1.5: 2, 1: 3, 2: 1}, -1, None),
+    ],
+)
+def test_feature_detection_multithreshold_timestep(
+    test_threshs, n_min_threshold, dxy, wavelength_filtering
+):
     """
-    Tests ```tobac.feature_detection.feature_detection_multithreshold_timestep
+    Tests ```tobac.feature_detection.feature_detection_multithreshold_timestep```
     """
-    import numpy as np
-    from tobac import testing
-    from tobac import feature_detection
 
     # start by building a simple dataset with a single feature and seeing
     # if we identify it
@@ -20,13 +34,9 @@ def test_feature_detection_multithreshold_timestep():
     test_hdim_1_sz = 5
     test_hdim_2_sz = 5
     test_amp = 2
-    test_threshs = [
-        1.5,
-    ]
-    test_min_num = 2
 
     test_data = np.zeros(test_dset_size)
-    test_data = testing.make_feature_blob(
+    test_data = tbtest.make_feature_blob(
         test_data,
         test_hdim_1_pt,
         test_hdim_2_pt,
@@ -34,13 +44,1655 @@ def test_feature_detection_multithreshold_timestep():
         h2_size=test_hdim_2_sz,
         amplitude=test_amp,
     )
-    test_data_iris = testing.make_dataset_from_arr(test_data, data_type="iris")
-    fd_output = feature_detection.feature_detection_multithreshold_timestep(
-        test_data_iris, 0, threshold=test_threshs, n_min_threshold=test_min_num
+    test_data_xr = tbtest.make_dataset_from_arr(test_data, data_type="xarray")
+    fd_output = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_xr,
+        0,
+        threshold=test_threshs,
+        n_min_threshold=n_min_threshold,
+        dxy=dxy,
+        wavelength_filtering=wavelength_filtering,
     )
 
     # Make sure we have only one feature
-    assert len(fd_output.index) == 1
+    assert len(fd_output) == 1, f"Expected 1 feature, but got {len(fd_output)}"
     # Make sure that the location of the feature is correct
-    assert fd_output.iloc[0]["hdim_1"] == pytest.approx(test_hdim_1_pt)
-    assert fd_output.iloc[0]["hdim_2"] == pytest.approx(test_hdim_2_pt)
+    assert fd_output.iloc[0]["hdim_1"] == pytest.approx(
+        test_hdim_1_pt
+    ), f"Expected hdim_1 to be {test_hdim_1_pt}, but got {fd_output.iloc[0]['hdim_1']}"
+    assert fd_output.iloc[0]["hdim_2"] == pytest.approx(
+        test_hdim_2_pt
+    ), f"Expected hdim_2 to be {test_hdim_2_pt}, but got {fd_output.iloc[0]['hdim_2']}"
+
+    labels, features = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_xr,
+        0,
+        threshold=test_threshs,
+        n_min_threshold=n_min_threshold,
+        dxy=dxy,
+        wavelength_filtering=wavelength_filtering,
+        return_labels=True,
+    )
+
+    # Make sure we have only one feature
+    assert (
+        len(features.index) == 1
+    ), f"Expected 1 feature, but got {len(features.index)}"
+
+    # Check if labels are returned
+    assert isinstance(
+        labels, xr.DataArray
+    ), "Expected label fields to be a xarray.DataArray"
+
+    # Check if labels have the correct shape
+    assert labels.shape == (
+        test_data_xr.shape[0],
+        test_data_xr.shape[1],
+    ), f"Expected labels shape to be {test_data_xr.shape}, but got {labels.shape}"
+
+    # Ensure labels have at least one non-zero entry
+    assert (labels > 0).any(), "No labels detected in the labels array"
+
+    # Optionally check for the threshold attribute
+    assert hasattr(labels, "threshold"), "Expected 'threshold' attribute in labels"
+    assert (
+        labels.attrs["threshold"] == test_threshs
+    ), f"Expected threshold to be {test_threshs}, but got {labels.attrs['threshold']}"
+
+    # All non-zero labels must match the feature IDs in the returned dataframe
+    nonzero_labels = labels.values[labels.values > 0]
+    unique_label_value = np.unique(nonzero_labels)[0]
+    feature_label_value = features["idx"].iloc[0]
+
+    assert (
+        unique_label_value == feature_label_value
+    ), f"Label field contains {unique_label_value}, but features dataframe idx is {feature_label_value}"
+
+    # All labeled points are <= the threshold value in the input field
+    mask = labels.values > 0
+    labeled_values = test_data_xr.values[mask]
+    feature_threshold = features["threshold_value"].iloc[0]
+    print(labeled_values)
+    assert np.all(labeled_values >= feature_threshold), (
+        f"Found labeled pixels below threshold {feature_threshold}. "
+        f"Minimum labeled value is {labeled_values.min()}"
+    )
+
+
+@pytest.mark.parametrize(
+    "z_dim_num",
+    [0, 1, 2],
+)
+def test_feature_detection_multithreshold_timestep_3d(z_dim_num):
+    """
+    Tests ```tobac.feature_detection.feature_detection_multithreshold_timestep``` for 3d data
+    """
+
+    # start by building a simple dataset with a single feature and seeing
+    # if we identify it
+
+    test_dset_size = (20, 40, 50)
+    test_hdim_1_pt = 15.0
+    test_hdim_2_pt = 20.0
+    test_vdim_pt = 8
+    test_hdim_1_sz = 5
+    test_hdim_2_sz = 5
+    test_vdim_sz = 5
+    test_amp = 2
+
+    test_data = np.zeros(test_dset_size)
+    test_data = tbtest.make_feature_blob(
+        test_data,
+        test_hdim_1_pt,
+        test_hdim_2_pt,
+        test_vdim_pt,
+        h1_size=test_hdim_1_sz,
+        h2_size=test_hdim_2_sz,
+        v_size=test_vdim_sz,
+        amplitude=test_amp,
+    )
+    if z_dim_num == 1:
+        test_data = test_data.transpose(1, 0, 2)
+    if z_dim_num == 2:
+        test_data = test_data.transpose(1, 2, 0)
+
+    test_data_xr = tbtest.make_dataset_from_arr(
+        test_data, z_dim_num=z_dim_num, data_type="xarray"
+    )
+
+    labels, features = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_xr,
+        0,
+        threshold=[1],
+        n_min_threshold=[1],
+        dxy=1,
+        vertical_axis=z_dim_num,
+        return_labels=True,
+    )
+
+    # Make sure we have only one feature
+    assert (
+        len(features.index) == 1
+    ), f"Expected 1 feature, but got {len(features.index)}"
+
+    # Check if labels are returned
+    assert isinstance(
+        labels, xr.DataArray
+    ), "Expected label fields to be a xarray.DataArray"
+
+    # Check if labels have the correct shape
+    assert labels.shape == (
+        test_data_xr.shape[0],
+        test_data_xr.shape[1],
+        test_data_xr.shape[2],
+    ), f"Expected labels shape to be {test_data_xr.shape}, but got {labels.shape}"
+
+    # Ensure labels have at least one non-zero entry
+    assert (labels > 0).any(), "No labels detected in the labels array"
+
+    # Optionally check for the threshold attribute
+    assert hasattr(labels, "threshold"), "Expected 'threshold' attribute in labels"
+    assert labels.attrs["threshold"] == [
+        1
+    ], f"Expected threshold to be {[1]}, but got {labels.attrs['threshold']}"
+
+    # All non-zero labels must match the feature IDs in the returned dataframe
+    nonzero_labels = labels.values[labels.values > 0]
+    unique_label_value = np.unique(nonzero_labels)[0]
+    feature_label_value = features["idx"].iloc[0]
+
+    assert (
+        unique_label_value == feature_label_value
+    ), f"Label field contains {unique_label_value}, but features dataframe idx is {feature_label_value}"
+
+    # All labeled points are <= the threshold value in the input field
+    mask = labels.values > 0
+    labeled_values = test_data_xr.values[mask]
+    feature_threshold = features["threshold_value"].iloc[0]
+    print(labeled_values)
+    assert np.all(labeled_values > feature_threshold), (
+        f"Found labeled pixels below threshold {feature_threshold}. "
+        f"Minimum labeled value is {labeled_values.min()}"
+    )
+    assert np.all(test_data_xr.values[~mask] <= feature_threshold), (
+        f"Found unlabeled pixels above threshold {feature_threshold}. "
+        f"Maximum unlabeled value is {test_data_xr.values[~mask].max()}"
+    )
+
+
+@pytest.mark.parametrize(
+    "position_threshold",
+    [("center"), ("extreme"), ("weighted_diff"), ("weighted_abs"), ("error")],
+)
+def test_feature_detection_position(position_threshold):
+    """
+    Tests to make sure that all feature detection position_thresholds work.
+    """
+
+    test_dset_size = (50, 50)
+
+    test_data = np.zeros(test_dset_size)
+
+    test_data[0:5, 0:5] = 3
+    test_threshs = [
+        1.5,
+    ]
+    test_min_num = 2
+
+    test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type="iris")
+
+    if position_threshold == "error":
+        with pytest.raises(ValueError):
+            feat_detect.feature_detection_multithreshold_timestep(
+                test_data_iris,
+                0,
+                threshold=test_threshs,
+                n_min_threshold=test_min_num,
+                position_threshold=position_threshold,
+            )
+
+    else:
+        fd_output = feat_detect.feature_detection_multithreshold_timestep(
+            test_data_iris,
+            0,
+            threshold=test_threshs,
+            n_min_threshold=test_min_num,
+            position_threshold=position_threshold,
+        )
+
+        fd_output_minima = feat_detect.feature_detection_multithreshold_timestep(
+            -test_data_iris,
+            0,
+            threshold=test_threshs,
+            n_min_threshold=test_min_num,
+            position_threshold=position_threshold,
+            target="minimum",
+        )
+
+
+@pytest.mark.parametrize(
+    "feature_1_loc, feature_2_loc, dxy, dz, min_distance,"
+    "target, add_x_coords, add_y_coords,"
+    "add_z_coords, PBC_flag, expect_feature_1, expect_feature_2",
+    [
+        (  # If separation greater than min_distance, keep both features
+            (0, 0, 0, 4, 1),
+            (1, 1, 1, 4, 1),
+            1000,
+            100,
+            1,
+            "maximum",
+            False,
+            False,
+            False,
+            "none",
+            True,
+            True,
+        ),
+        (  # Keep feature 1 by area
+            (0, 0, 0, 4, 1),
+            (1, 1, 1, 3, 1),
+            1000,
+            100,
+            5000,
+            "maximum",
+            False,
+            False,
+            False,
+            "none",
+            True,
+            False,
+        ),
+        (  # Keep feature 2 by area
+            (0, 0, 0, 4, 1),
+            (1, 1, 1, 6, 1),
+            1000,
+            100,
+            5000,
+            "maximum",
+            False,
+            False,
+            False,
+            "none",
+            False,
+            True,
+        ),
+        (  # Keep feature 1 by area
+            (0, 0, 0, 4, 1),
+            (1, 1, 1, 3, 1),
+            1000,
+            100,
+            5000,
+            "minimum",
+            False,
+            False,
+            False,
+            "none",
+            True,
+            False,
+        ),
+        (  # Keep feature 2 by area
+            (0, 0, 0, 4, 1),
+            (1, 1, 1, 6, 1),
+            1000,
+            100,
+            5000,
+            "minimum",
+            False,
+            False,
+            False,
+            "none",
+            False,
+            True,
+        ),
+        (  # Keep feature 1 by maximum threshold
+            (0, 0, 0, 4, 2),
+            (1, 1, 1, 10, 1),
+            1000,
+            100,
+            5000,
+            "maximum",
+            False,
+            False,
+            False,
+            "none",
+            True,
+            False,
+        ),
+        (  # Keep feature 2 by maximum threshold
+            (0, 0, 0, 4, 2),
+            (1, 1, 1, 10, 3),
+            1000,
+            100,
+            5000,
+            "maximum",
+            False,
+            False,
+            False,
+            "none",
+            False,
+            True,
+        ),
+        (  # Keep feature 1 by minimum threshold
+            (0, 0, 0, 4, -1),
+            (1, 1, 1, 10, 1),
+            1000,
+            100,
+            5000,
+            "minimum",
+            False,
+            False,
+            False,
+            "none",
+            True,
+            False,
+        ),
+        (  # Keep feature 2 by minimum threshold
+            (0, 0, 0, 4, 2),
+            (1, 1, 1, 10, 1),
+            1000,
+            100,
+            5000,
+            "minimum",
+            False,
+            False,
+            False,
+            "none",
+            False,
+            True,
+        ),
+        (  # Keep feature 1 by tie-break
+            (0, 0, 0, 4, 2),
+            (1, 1, 1, 4, 2),
+            1000,
+            100,
+            5000,
+            "maximum",
+            False,
+            False,
+            False,
+            "none",
+            True,
+            False,
+        ),
+        (  # Keep feature 1 by tie-break
+            (0, 0, 0, 4, 2),
+            (1, 1, 1, 4, 2),
+            1000,
+            100,
+            5000,
+            "minimum",
+            False,
+            False,
+            False,
+            "none",
+            True,
+            False,
+        ),
+        (  # If target is not maximum or minimum raise ValueError
+            (0, 0, 0, 4, 1),
+            (1, 1, 1, 4, 1),
+            1000,
+            100,
+            1,
+            "__invalid_option__",
+            False,
+            False,
+            False,
+            "none",
+            False,
+            False,
+        ),
+        (  # test hdim_1 PBCs
+            (0, 0, 0, 4, 3),
+            (1, 99, 0, 4, 1),
+            1000,
+            100,
+            3000,
+            "maximum",
+            False,
+            False,
+            False,
+            "hdim_1",
+            True,
+            False,
+        ),
+        (  # test hdim_2 PBCs - false case
+            (0, 0, 0, 4, 3),
+            (1, 99, 0, 4, 1),
+            1000,
+            100,
+            3000,
+            "maximum",
+            False,
+            False,
+            False,
+            "hdim_2",
+            True,
+            True,
+        ),
+        (  # test hdim_2 PBCs - true case
+            (0, 0, 0, 4, 3),
+            (1, 0, 99, 4, 1),
+            1000,
+            100,
+            3000,
+            "maximum",
+            False,
+            False,
+            False,
+            "hdim_2",
+            True,
+            False,
+        ),
+        (  # test both PBCs - true case
+            (0, 0, 0, 4, 3),
+            (1, 99, 99, 4, 1),
+            1000,
+            100,
+            3000,
+            "maximum",
+            False,
+            False,
+            False,
+            "both",
+            True,
+            False,
+        ),
+        (  # Test using z coord name
+            (0, 0, 0, 4, 1),
+            (1, 1, 1, 4, 1),
+            1000,
+            None,
+            1,
+            "maximum",
+            False,
+            False,
+            True,
+            "none",
+            True,
+            True,
+        ),
+        (  # Test using z coord name
+            (0, 0, 0, 5, 1),
+            (1, 1, 1, 4, 1),
+            1,
+            None,
+            101,
+            "maximum",
+            False,
+            False,
+            True,
+            "none",
+            True,
+            False,
+        ),
+    ],
+)
+def test_filter_min_distance(
+    feature_1_loc,
+    feature_2_loc,
+    dxy,
+    dz,
+    min_distance,
+    target,
+    add_x_coords,
+    add_y_coords,
+    add_z_coords,
+    PBC_flag,
+    expect_feature_1,
+    expect_feature_2,
+):
+    """Tests tobac.feature_detection.filter_min_distance
+    Parameters
+    ----------
+    feature_1_loc: tuple, length of  4 or 5
+        Feature 1 location, num, and threshold value (assumes a 100 x 100 x 100 grid).
+        Assumes z, y, x, num, threshold_value for 3D where num is the size/ 'num'
+        column of the feature and threshold_value is the threshold_value.
+        If 2D, assumes y, x, num, threshold_value.
+    feature_2_loc: tuple, length of  4 or 5
+        Feature 2 location, same format and length as `feature_1_loc`
+    dxy: float or None
+        Horizontal grid spacing
+    dz: float or None
+        Vertical grid spacing (constant)
+    min_distance: float
+        Minimum distance between features (m)
+    target: str ["maximum" | "minimum"]
+        Target maxima or minima threshold for selecting which feature to keep
+    add_x_coords: bool
+        Whether or not to add x coordinates
+    add_y_coords: bool
+        Whether or not to add y coordinates
+    add_z_coords: bool
+        Whether or not to add z coordinates
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
+    expect_feature_1: bool
+        True if we expect feature 1 to remain, false if we expect it gone.
+    expect_feature_2: bool
+        True if we expect feature 2 to remain, false if we expect it gone.
+    """
+    import pandas as pd
+    import numpy as np
+
+    h1_max = 100
+    h2_max = 100
+    z_max = 100
+
+    assumed_dxy = 100
+    assumed_dz = 100
+
+    x_coord_name = "projection_coord_x"
+    y_coord_name = "projection_coord_y"
+    z_coord_name = "projection_coord_z"
+
+    is_3D = len(feature_1_loc) == 5
+    start_size_loc = 3 if is_3D else 2
+    start_h1_loc = 1 if is_3D else 0
+    feat_opts_f1 = {
+        "start_h1": feature_1_loc[start_h1_loc],
+        "start_h2": feature_1_loc[start_h1_loc + 1],
+        "max_h1": h1_max,
+        "max_h2": h2_max,
+        "feature_size": feature_1_loc[start_size_loc],
+        "threshold_val": feature_1_loc[start_size_loc + 1],
+        "feature_num": 1,
+    }
+
+    feat_opts_f2 = {
+        "start_h1": feature_2_loc[start_h1_loc],
+        "start_h2": feature_2_loc[start_h1_loc + 1],
+        "max_h1": h1_max,
+        "max_h2": h2_max,
+        "feature_size": feature_2_loc[start_size_loc],
+        "threshold_val": feature_2_loc[start_size_loc + 1],
+        "feature_num": 2,
+    }
+    if is_3D:
+        feat_opts_f1["start_v"] = feature_1_loc[0]
+        feat_opts_f2["start_v"] = feature_2_loc[0]
+
+    feat_1_interp = tbtest.generate_single_feature(**feat_opts_f1)
+    feat_2_interp = tbtest.generate_single_feature(**feat_opts_f2)
+
+    feat_combined = pd.concat([feat_1_interp, feat_2_interp], ignore_index=True)
+
+    filter_dist_opts = {
+        "features": feat_combined,
+        "dxy": dxy,
+        "dz": dz,
+        "min_distance": min_distance,
+        "target": target,
+        "PBC_flag": PBC_flag,
+        "min_h1": 0,
+        "max_h1": 100,
+        "min_h2": 0,
+        "max_h2": 100,
+    }
+    if add_x_coords:
+        feat_combined[x_coord_name] = feat_combined["hdim_2"] * assumed_dxy
+        filter_dist_opts["x_coordinate_name"] = x_coord_name
+    if add_y_coords:
+        feat_combined[y_coord_name] = feat_combined["hdim_1"] * assumed_dxy
+        filter_dist_opts["y_coordinate_name"] = y_coord_name
+    if add_z_coords and is_3D:
+        feat_combined[z_coord_name] = feat_combined["vdim"] * assumed_dz
+        filter_dist_opts["z_coordinate_name"] = z_coord_name
+
+    if target not in ["maximum", "minimum"]:
+        with pytest.raises(ValueError):
+            out_feats = feat_detect.filter_min_distance(**filter_dist_opts)
+
+    else:
+        out_feats = feat_detect.filter_min_distance(**filter_dist_opts)
+
+        assert expect_feature_1 == (np.sum(out_feats["feature"] == 1) == 1)
+        assert expect_feature_2 == (np.sum(out_feats["feature"] == 2) == 1)
+
+
+@pytest.mark.parametrize(
+    "test_dset_size, vertical_axis_num, "
+    "vertical_coord_name,"
+    " vertical_coord_opt, expected_raise",
+    [
+        ((1, 20, 30, 40), 1, "altitude", None, False),
+        ((1, 20, 30, 40), 2, "altitude", None, False),
+        ((1, 20, 30, 40), 3, "altitude", None, False),
+        ((1, 20, 30, 40), 1, "air_pressure", "air_pressure", False),
+        ((1, 20, 30, 40), 1, "air_pressure", None, True),
+        ((1, 20, 30, 40), 1, "model_level_number", None, False),
+        ((1, 20, 30, 40), 1, "altitude", None, False),
+        ((1, 20, 30, 40), 1, "geopotential_height", None, False),
+    ],
+)
+def test_feature_detection_multiple_z_coords(
+    test_dset_size,
+    vertical_axis_num,
+    vertical_coord_name,
+    vertical_coord_opt,
+    expected_raise,
+):
+    """Tests ```tobac.feature_detection.feature_detection_multithreshold```
+    with different axes
+
+    Parameters
+    ----------
+    test_dset_size: tuple(int, int, int, int)
+        Size of the test dataset
+    vertical_axis_num: int (0-2, inclusive)
+        Which axis in test_dset_size is the vertical axis
+    vertical_coord_name: str
+        Name of the vertical coordinate.
+    vertical_coord_opt: str
+        What to pass in as the vertical coordinate option to segmentation_timestep
+    expected_raise: bool
+        True if we expect a ValueError to be raised, false otherwise
+    """
+    import numpy as np
+
+    # First, just check that input and output shapes are the same.
+    test_dxy = 1000
+    test_vdim_pt_1 = 8
+    test_hdim_1_pt_1 = 12
+    test_hdim_2_pt_1 = 12
+    test_data = np.zeros(test_dset_size)
+    test_data[0, 0:5, 0:5, 0:5] = 3
+    common_dset_opts = {
+        "in_arr": test_data,
+        "data_type": "iris",
+        "z_dim_name": vertical_coord_name,
+    }
+    if vertical_axis_num == 1:
+        test_data_iris = tbtest.make_dataset_from_arr(
+            time_dim_num=0, z_dim_num=1, y_dim_num=2, x_dim_num=3, **common_dset_opts
+        )
+    elif vertical_axis_num == 2:
+        test_data_iris = tbtest.make_dataset_from_arr(
+            time_dim_num=0, z_dim_num=2, y_dim_num=1, x_dim_num=3, **common_dset_opts
+        )
+    elif vertical_axis_num == 3:
+        test_data_iris = tbtest.make_dataset_from_arr(
+            time_dim_num=0, z_dim_num=3, y_dim_num=1, x_dim_num=2, **common_dset_opts
+        )
+
+    if not expected_raise:
+        out_df = feat_detect.feature_detection_multithreshold(
+            field_in=test_data_iris,
+            dxy=test_dxy,
+            threshold=[
+                1.5,
+            ],
+            vertical_coord=vertical_coord_opt,
+        )
+        # Check that the vertical coordinate is returned.
+        print(out_df.columns)
+        assert vertical_coord_name in out_df
+    else:
+        # Expecting a raise
+        with pytest.raises(ValueError):
+            out_df = feat_detect.feature_detection_multithreshold(
+                field_in=test_data_iris,
+                dxy=test_dxy,
+                threshold=[
+                    1.5,
+                ],
+                vertical_coord=vertical_coord_opt,
+            )
+
+
+def test_feature_detection_setting_multiple():
+    """Tests that an error is raised when vertical_axis and vertical_coord
+    are both set.
+    """
+    test_data = np.zeros((1, 5, 5, 5))
+    test_data[0, 0:5, 0:5, 0:5] = 3
+    common_dset_opts = {
+        "in_arr": test_data,
+        "data_type": "iris",
+        "z_dim_name": "altitude",
+    }
+    test_data_iris = tbtest.make_dataset_from_arr(
+        time_dim_num=0, z_dim_num=1, y_dim_num=2, x_dim_num=3, **common_dset_opts
+    )
+
+    with pytest.raises(ValueError):
+        _ = feat_detect.feature_detection_multithreshold(
+            field_in=test_data_iris,
+            dxy=10000,
+            threshold=[
+                1.5,
+            ],
+            vertical_coord="altitude",
+            vertical_axis=1,
+        )
+
+
+def test_feature_detection_multithreshold_returns():
+    """Tests regarding return_labels."""
+    test_data = np.zeros((1, 5, 5, 5))
+    test_data[0, 0:5, 0:5, 0:5] = 3
+    common_dset_opts = {
+        "in_arr": test_data,
+        "data_type": "xarray",
+        "z_dim_name": "altitude",
+    }
+    test_data_xr = tbtest.make_dataset_from_arr(
+        time_dim_num=0,
+        z_dim_num=1,
+        y_dim_num=2,
+        x_dim_num=3,
+        **common_dset_opts,
+    )
+
+    # Test when return_labels is True
+    labels, features = feat_detect.feature_detection_multithreshold(
+        field_in=test_data_xr,
+        dxy=10000,
+        threshold=[
+            1.5,
+        ],
+        return_labels=True,
+    )
+    assert labels is not None, "Expected labels to be returned"
+    assert isinstance(labels, xr.DataArray), "Expected labels to be a xarray DataArray"
+    assert (labels > 0).any(), "Expected at least one labeled feature"
+
+
+@pytest.mark.parametrize(
+    "test_threshs, target",
+    [
+        (([1, 2, 3], [3, 2, 1], [1, 3, 2]), "maximum"),
+        (([1, 2, 3], [3, 2, 1], [1, 3, 2]), "minimum"),
+    ],
+)
+def test_feature_detection_threshold_sort(test_threshs, target):
+    """Tests that feature detection is consistent regardless of what order they are in"""
+    test_dset_size = (50, 50)
+    test_hdim_1_pt = 20.0
+    test_hdim_2_pt = 20.0
+    test_hdim_1_sz = 5
+    test_hdim_2_sz = 5
+    test_amp = 2
+    test_min_num = 2
+
+    test_data = np.zeros(test_dset_size)
+    test_data = tbtest.make_feature_blob(
+        test_data,
+        test_hdim_1_pt,
+        test_hdim_2_pt,
+        h1_size=test_hdim_1_sz,
+        h2_size=test_hdim_2_sz,
+        amplitude=test_amp,
+    )
+    test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type="iris")
+    fd_output_first = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        threshold=test_threshs[0],
+        n_min_threshold=test_min_num,
+        dxy=1,
+        target=target,
+    )
+
+    for thresh_test in test_threshs[1:]:
+        fd_output_test = feat_detect.feature_detection_multithreshold_timestep(
+            test_data_iris,
+            0,
+            threshold=thresh_test,
+            n_min_threshold=test_min_num,
+            dxy=1,
+            target=target,
+        )
+        assert_frame_equal(fd_output_first, fd_output_test)
+
+
+@pytest.mark.parametrize(
+    "hdim_1_pt,"
+    "hdim_2_pt,"
+    "hdim_1_size,"
+    "hdim_2_size,"
+    "PBC_flag,"
+    "expected_center,",
+    [
+        (10, 10, 3, 3, "both", (10, 10)),
+        (0, 0, 3, 3, "both", (0, 0)),
+        (0, 0, 3, 3, "hdim_1", (0, 0.5)),
+        (0, 0, 3, 3, "hdim_2", (0.5, 0)),
+        (0, 10, 3, 3, "hdim_1", (0, 10)),
+    ],
+)
+def test_feature_detection_threshold_pbc(
+    hdim_1_pt, hdim_2_pt, hdim_1_size, hdim_2_size, PBC_flag, expected_center
+):
+    """Tests that feature detection works with periodic boundaries"""
+    test_dset_size = (50, 50)
+    test_amp = 2
+    test_min_num = 2
+
+    test_data = np.zeros(test_dset_size)
+    test_data = tbtest.make_feature_blob(
+        test_data,
+        hdim_1_pt,
+        hdim_2_pt,
+        h1_size=hdim_1_size,
+        h2_size=hdim_2_size,
+        amplitude=test_amp,
+        PBC_flag=PBC_flag,
+    )
+    # test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type="iris")
+    fd_output_df, fd_output_reg = feat_detect.feature_detection_threshold(
+        test_data,
+        0,
+        threshold=1,
+        n_min_threshold=test_min_num,
+        target="maximum",
+        PBC_flag=PBC_flag,
+    )
+    assert len(fd_output_df) == 1
+    assert np.isclose(fd_output_df["hdim_1"].values[0], expected_center[0])
+    assert np.isclose(fd_output_df["hdim_2"].values[0], expected_center[1])
+
+
+def test_feature_detection_coords():
+    """Tests that the output features dataframe contains all the coords of the input iris cube"""
+    test_dset_size = (50, 50)
+    test_hdim_1_pt = 20.0
+    test_hdim_2_pt = 20.0
+    test_hdim_1_sz = 5
+    test_hdim_2_sz = 5
+    test_amp = 2
+    test_min_num = 2
+
+    test_data = np.zeros(test_dset_size)
+    test_data = tbtest.make_feature_blob(
+        test_data,
+        test_hdim_1_pt,
+        test_hdim_2_pt,
+        h1_size=test_hdim_1_sz,
+        h2_size=test_hdim_2_sz,
+        amplitude=test_amp,
+    )
+    test_data_xr = xr.DataArray(
+        test_data[np.newaxis, ...],
+        dims=("time", "y", "x"),
+        coords={
+            "time": [np.datetime64("2000-01-01T00:00:00")],
+            "y": np.arange(test_data.shape[0]),
+            "x": np.arange(test_data.shape[1]),
+            "2d_coord": xr.DataArray(np.random.rand(*test_data.shape), dims=("y", "x")),
+        },
+    )
+
+    fd_output = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_xr,
+        threshold=[1, 2, 3],
+        n_min_threshold=test_min_num,
+        dxy=1,
+        target="maximum",
+    )
+
+    assert all([coord in fd_output for coord in test_data_xr.coords])
+
+    test_data_iris = test_data_xr.to_iris()
+
+    fd_output_iris = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_iris,
+        threshold=[1, 2, 3],
+        n_min_threshold=test_min_num,
+        dxy=1,
+        target="maximum",
+    )
+
+    assert all([coord.name() in fd_output_iris for coord in test_data_iris.coords()])
+
+
+def test_feature_detection_preserve_datetime():
+    """Tests that datetime output is of the correct type when converting to and from iris cubes"""
+    test_dset_size = (50, 50)
+    test_hdim_1_pt = 20.0
+    test_hdim_2_pt = 20.0
+    test_hdim_1_sz = 5
+    test_hdim_2_sz = 5
+    test_amp = 2
+    test_min_num = 2
+
+    test_data = np.zeros(test_dset_size)
+    test_data = tbtest.make_feature_blob(
+        test_data,
+        test_hdim_1_pt,
+        test_hdim_2_pt,
+        h1_size=test_hdim_1_sz,
+        h2_size=test_hdim_2_sz,
+        amplitude=test_amp,
+    )
+    test_data_xr = xr.DataArray(
+        test_data[np.newaxis, ...],
+        dims=("time", "y", "x"),
+        coords={
+            "time": [np.datetime64("2000-01-01T00:00:00")],
+        },
+    )
+
+    fd_output = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_xr,
+        threshold=[1, 2, 3],
+        n_min_threshold=test_min_num,
+        dxy=1,
+        target="maximum",
+    )
+
+    assert isinstance(fd_output.time.to_numpy()[0], np.datetime64)
+
+    test_data_iris = test_data_xr.to_iris()
+
+    fd_output_iris_dt64 = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_iris,
+        threshold=[1, 2, 3],
+        n_min_threshold=test_min_num,
+        dxy=1,
+        target="maximum",
+        preserve_iris_datetime_types=False,
+    )
+
+    assert isinstance(fd_output_iris_dt64.time.to_numpy()[0], np.datetime64)
+
+    fd_output_iris_cft = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_iris,
+        threshold=[1, 2, 3],
+        n_min_threshold=test_min_num,
+        dxy=1,
+        target="maximum",
+        preserve_iris_datetime_types=True,
+    )
+
+    assert isinstance(
+        fd_output_iris_cft.time.to_numpy()[0], cftime.DatetimeProlepticGregorian
+    )
+
+
+def test_feature_detection_preserve_datetime_3d():
+    """Tests that datetime output is of the correct type when converting to and from iris cubes with 3d data"""
+    test_dset_size = (10, 50, 50)
+    test_hdim_1_pt = 20.0
+    test_hdim_2_pt = 20.0
+    test_vdim_pt = 5
+    test_hdim_1_sz = 5
+    test_hdim_2_sz = 5
+    test_amp = 2
+    test_min_num = 2
+
+    test_data = np.zeros(test_dset_size)
+    test_data = tbtest.make_feature_blob(
+        test_data,
+        test_hdim_1_pt,
+        test_hdim_2_pt,
+        test_vdim_pt,
+        h1_size=test_hdim_1_sz,
+        h2_size=test_hdim_2_sz,
+        amplitude=test_amp,
+    )
+    test_data_xr = xr.DataArray(
+        test_data[np.newaxis, ...],
+        dims=("time", "z", "y", "x"),
+        coords={
+            "time": [np.datetime64("2000-01-01T00:00:00")],
+            "z": np.arange(test_data.shape[0]),
+        },
+    )
+
+    fd_output = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_xr,
+        threshold=[1, 2, 3],
+        n_min_threshold=test_min_num,
+        dxy=1,
+        target="maximum",
+    )
+
+    assert isinstance(fd_output.time.to_numpy()[0], np.datetime64)
+
+    test_data_iris = test_data_xr.to_iris()
+
+    fd_output_iris_dt64 = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_iris,
+        threshold=[1, 2, 3],
+        n_min_threshold=test_min_num,
+        dxy=1,
+        target="maximum",
+        preserve_iris_datetime_types=False,
+    )
+
+    assert isinstance(fd_output_iris_dt64.time.to_numpy()[0], np.datetime64)
+
+    fd_output_iris_cft = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_iris,
+        threshold=[1, 2, 3],
+        n_min_threshold=test_min_num,
+        dxy=1,
+        target="maximum",
+        preserve_iris_datetime_types=True,
+    )
+
+    assert isinstance(
+        fd_output_iris_cft.time.to_numpy()[0], cftime.DatetimeProlepticGregorian
+    )
+
+
+def test_feature_detection_360_day_calendar():
+    """Tests that datetime format and feature detection work correctly with
+    cftime 360-day calendars
+    """
+    test_dset_size = (50, 50)
+    test_hdim_1_pt = 20.0
+    test_hdim_2_pt = 20.0
+    test_hdim_1_sz = 5
+    test_hdim_2_sz = 5
+    test_amp = 2
+    test_min_num = 2
+
+    test_data = np.zeros(test_dset_size)
+    test_data = tbtest.make_feature_blob(
+        test_data,
+        test_hdim_1_pt,
+        test_hdim_2_pt,
+        h1_size=test_hdim_1_sz,
+        h2_size=test_hdim_2_sz,
+        amplitude=test_amp,
+    )
+    test_data_xr = xr.DataArray(
+        test_data[np.newaxis, ...],
+        dims=("time", "y", "x"),
+        coords={
+            "time": [cftime.Datetime360Day(2000, 1, 1)],
+        },
+    )
+
+    fd_output = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_xr,
+        threshold=[1, 2, 3],
+        n_min_threshold=test_min_num,
+        dxy=1,
+        target="maximum",
+    )
+
+    assert isinstance(fd_output.time.to_numpy()[0], cftime.Datetime360Day)
+
+    test_data_iris = test_data_xr.to_iris()
+
+    fd_output_iris = tobac.feature_detection.feature_detection_multithreshold(
+        test_data_iris,
+        threshold=[1, 2, 3],
+        n_min_threshold=test_min_num,
+        dxy=1,
+        target="maximum",
+    )
+
+    assert isinstance(fd_output_iris.time.to_numpy()[0], cftime.Datetime360Day)
+
+
+def test_strict_thresholding():
+    """Tests that strict_thresholding prevents detection of features that have not met all
+    previous n_min_threshold values"""
+
+    # Generate test dataset
+    test_dset_size = (100, 100)
+    test_hdim_1_pt = 50.0
+    test_hdim_2_pt = 50.0
+    test_hdim_1_sz = 10
+    test_hdim_2_sz = 10
+    test_amp = 10
+    test_data = np.zeros(test_dset_size)
+    test_data = tbtest.make_feature_blob(
+        test_data,
+        test_hdim_1_pt,
+        test_hdim_2_pt,
+        h1_size=test_hdim_1_sz,
+        h2_size=test_hdim_2_sz,
+        amplitude=test_amp,
+    )
+    test_data_iris = tbtest.make_dataset_from_arr(test_data, data_type="iris")
+
+    # All of these thresholds will be met
+    thresholds = [1, 5, 7.5]
+
+    # The second n_min threshold can never be met
+    n_min_thresholds = [0, test_data.size + 1, 0]
+
+    # This will detect 2 features (first and last threshold value)
+    features = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        dxy=1,
+        threshold=thresholds,
+        n_min_threshold=n_min_thresholds,
+        strict_thresholding=False,
+    )
+    assert len(features) == 1
+    assert features["threshold_value"].item() == thresholds[-1]
+
+    # Since the second n_min_thresholds value is not met this will only detect 1 feature
+    features = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        dxy=1,
+        threshold=thresholds,
+        n_min_threshold=n_min_thresholds,
+        strict_thresholding=True,
+    )
+    assert len(features) == 1
+    assert features["threshold_value"].item() == thresholds[0]
+
+    # Repeat for minima
+    test_data_iris = tbtest.make_dataset_from_arr(10 - test_data, data_type="iris")
+    # All of these thresholds will be met
+    thresholds = [9, 5, 2.5]
+
+    # This will detect 2 features (first and last threshold value)
+    features = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        dxy=1,
+        threshold=thresholds,
+        n_min_threshold=n_min_thresholds,
+        strict_thresholding=False,
+        target="minimum",
+    )
+    assert len(features) == 1
+    assert features["threshold_value"].item() == thresholds[-1]
+
+    # Since the second n_min_thresholds value is not met this will only detect 1 feature
+    features = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        dxy=1,
+        threshold=thresholds,
+        n_min_threshold=n_min_thresholds,
+        strict_thresholding=True,
+        target="minimum",
+    )
+    assert len(features) == 1
+    assert features["threshold_value"].item() == thresholds[0]
+
+    # Test example from documentation
+    input_field_arr = np.zeros((1, 101, 101))
+
+    for idx, side in enumerate([40, 20, 10, 5]):
+        input_field_arr[
+            :,
+            (50 - side - 4 * idx) : (50 + side - 4 * idx),
+            (50 - side - 4 * idx) : (50 + side - 4 * idx),
+        ] = (
+            50 - side
+        )
+
+    input_field_iris = xr.DataArray(
+        input_field_arr,
+        dims=["time", "Y", "X"],
+        coords={"time": [np.datetime64("2019-01-01T00:00:00")]},
+    ).to_iris()
+
+    thresholds = [8, 29, 39, 44]
+
+    n_min_thresholds = [79**2, input_field_arr.size, 8**2, 3**2]
+
+    features_demo = tobac.feature_detection_multithreshold(
+        input_field_iris,
+        dxy=1000,
+        threshold=thresholds,
+        n_min_threshold=n_min_thresholds,
+        strict_thresholding=False,
+    )
+
+    assert features_demo.iloc[0]["hdim_1"] == pytest.approx(37.5)
+    assert features_demo.iloc[0]["hdim_2"] == pytest.approx(37.5)
+
+    # Now repeat with strict thresholding
+    features_demo = tobac.feature_detection_multithreshold(
+        input_field_iris,
+        dxy=1000,
+        threshold=thresholds,
+        n_min_threshold=n_min_thresholds,
+        strict_thresholding=True,
+    )
+
+    assert features_demo.iloc[0]["hdim_1"] == pytest.approx(49.5)
+    assert features_demo.iloc[0]["hdim_2"] == pytest.approx(49.5)
+
+
+def test_feature_position():
+    """Test feature position for different position methods with 3D data"""
+
+    test_data = np.arange(24).reshape((2, 3, 4))
+    test_data = np.pad(test_data, 1)
+
+    _, max_h1, max_h2 = test_data.shape
+    max_h1 -= 1
+    max_h2 -= 1
+
+    vdim_inds, hdim1_inds, hdim2_inds = np.where(test_data > 0)
+
+    # center position
+    expected_output = (np.mean(vdim_inds), np.mean(hdim1_inds), np.mean(hdim2_inds))
+
+    feat_pos_output = feat_detect.feature_position(
+        hdim1_inds,
+        hdim2_inds,
+        vdim_indices=vdim_inds,
+        hdim1_max=max_h1,
+        hdim2_max=max_h2,
+        position_threshold="center",
+    )
+
+    assert np.all(np.isclose(feat_pos_output, expected_output))
+
+    # extreme position
+    expected_output = np.unravel_index(np.argmax(test_data), test_data.shape)
+
+    feat_pos_output = feat_detect.feature_position(
+        hdim1_inds,
+        hdim2_inds,
+        vdim_indices=vdim_inds,
+        hdim1_max=max_h1,
+        hdim2_max=max_h2,
+        position_threshold="extreme",
+        track_data=test_data,
+        target="maximum",
+    )
+
+    assert np.all(np.isclose(feat_pos_output, expected_output))
+
+    # weighted_abs position
+    weights = test_data[test_data > 0]
+    expected_output = (
+        np.average(vdim_inds, weights=weights),
+        np.average(hdim1_inds, weights=weights),
+        np.average(hdim2_inds, weights=weights),
+    )
+
+    feat_pos_output = feat_detect.feature_position(
+        hdim1_inds,
+        hdim2_inds,
+        vdim_indices=vdim_inds,
+        hdim1_max=max_h1,
+        hdim2_max=max_h2,
+        position_threshold="weighted_abs",
+        track_data=test_data,
+        target="maximum",
+    )
+
+    assert np.all(np.isclose(feat_pos_output, expected_output))
+
+    # weighted_diff position
+    weights = test_data[test_data > 0] - 1
+    expected_output = (
+        np.average(vdim_inds, weights=weights),
+        np.average(hdim1_inds, weights=weights),
+        np.average(hdim2_inds, weights=weights),
+    )
+
+    feat_pos_output = feat_detect.feature_position(
+        hdim1_inds,
+        hdim2_inds,
+        vdim_indices=vdim_inds,
+        hdim1_max=max_h1,
+        hdim2_max=max_h2,
+        position_threshold="weighted_diff",
+        track_data=test_data,
+        target="maximum",
+        threshold_i=1,
+    )
+
+    assert np.all(np.isclose(feat_pos_output, expected_output))
+
+    # test invalid input for position_threshold
+    with pytest.raises(ValueError):
+        feat_pos_output = feat_detect.feature_position(
+            hdim1_inds,
+            hdim2_inds,
+            vdim_indices=vdim_inds,
+            hdim1_max=max_h1,
+            hdim2_max=max_h2,
+            position_threshold="invalid_option",
+            track_data=test_data,
+            target="maximum",
+            threshold_i=1,
+        )
+
+
+@pytest.mark.parametrize(
+    "h1_indices, h2_indices, max_h1, max_h2, PBC_flag, position_threshold, expected_output",
+    (
+        ([1], [1], 10, 10, "both", "center", (1, 1)),
+        ([1, 2], [1, 2], 10, 10, "both", "center", (1.5, 1.5)),
+        ([0, 1], [1, 2], 10, 10, "both", "center", (0.5, 1.5)),
+        ([0, 10], [1, 1], 10, 10, "hdim_1", "center", (10.5, 1)),
+        ([1, 1], [0, 10], 10, 10, "hdim_2", "center", (1, 10.5)),
+        ([0, 10], [1, 1], 10, 10, "both", "center", (10.5, 1)),
+        ([1, 1], [0, 10], 10, 10, "both", "center", (1, 10.5)),
+        ([0, 10], [0, 10], 10, 10, "both", "center", (10.5, 10.5)),
+        ([0, 1, 9, 10], [0, 0, 10, 10], 10, 10, "both", "center", (10.5, 10.5)),
+    ),
+)
+def test_feature_position_pbc(
+    h1_indices,
+    h2_indices,
+    max_h1,
+    max_h2,
+    PBC_flag,
+    position_threshold,
+    expected_output,
+):
+    """Tests to make sure that tobac.feature_detection.feature_position
+    works properly with periodic boundaries.
+    """
+
+    in_data = np.zeros((max_h1 + 1, max_h2 + 1))
+
+    feat_pos_output = feat_detect.feature_position(
+        h1_indices,
+        h2_indices,
+        hdim1_max=max_h1,
+        hdim2_max=max_h2,
+        PBC_flag=PBC_flag,
+        position_threshold=position_threshold,
+        track_data=in_data,
+    )
+
+    assert feat_pos_output[0] % (max_h1 + 1) == pytest.approx(expected_output[0])
+    assert feat_pos_output[1] % (max_h2 + 1) == pytest.approx(expected_output[1])
+
+
+@pytest.mark.parametrize(
+    "v_indices, h1_indices, h2_indices, max_v, max_h1, max_h2, PBC_flag, position_threshold, expected_output",
+    (
+        ([1], [1], [1], 10, 10, 10, "both", "center", (1, 1, 1)),
+        ([1, 1], [1, 2], [1, 2], 10, 10, 10, "both", "center", (1, 1.5, 1.5)),
+        ([1, 1], [0, 1], [1, 2], 10, 10, 10, "both", "center", (1, 0.5, 1.5)),
+        ([1, 1], [0, 10], [1, 1], 10, 10, 10, "hdim_1", "center", (1, 10.5, 1)),
+        ([1, 1], [1, 1], [0, 10], 10, 10, 10, "hdim_2", "center", (1, 1, 10.5)),
+        ([1, 1], [0, 10], [1, 1], 10, 10, 10, "both", "center", (1, 10.5, 1)),
+        ([1, 1], [1, 1], [0, 10], 10, 10, 10, "both", "center", (1, 1, 10.5)),
+        ([1, 1], [0, 10], [0, 10], 10, 10, 10, "both", "center", (1, 10.5, 10.5)),
+        (
+            [1, 1],
+            [0, 1, 9, 10],
+            [0, 0, 10, 10],
+            10,
+            10,
+            10,
+            "both",
+            "center",
+            (1, 10.5, 10.5),
+        ),
+        (
+            [1, 9],
+            [1, 2],
+            [1, 2],
+            10,
+            10,
+            10,
+            "both",
+            "center",
+            (5, 1.5, 1.5),
+        ),  # test that vdim is not treated as periodic
+    ),
+)
+def test_feature_position_pbc_3d(
+    v_indices,
+    h1_indices,
+    h2_indices,
+    max_v,
+    max_h1,
+    max_h2,
+    PBC_flag,
+    position_threshold,
+    expected_output,
+):
+    """Tests to make sure that tobac.feature_detection.feature_position
+    works properly with periodic boundaries.
+    """
+
+    in_data = np.zeros((max_v + 1, max_h1 + 1, max_h2 + 1))
+
+    feat_pos_output = feat_detect.feature_position(
+        h1_indices,
+        h2_indices,
+        vdim_indices=v_indices,
+        hdim1_max=max_h1,
+        hdim2_max=max_h2,
+        PBC_flag=PBC_flag,
+        position_threshold=position_threshold,
+        track_data=in_data,
+    )
+    assert feat_pos_output[0] == pytest.approx(expected_output[0])
+    assert feat_pos_output[1] % (max_h1 + 1) == pytest.approx(expected_output[1])
+    assert feat_pos_output[2] % (max_h2 + 1) == pytest.approx(expected_output[2])
+
+
+def test_pbc_snake_feature_detection():
+    """
+    Test that a "snake" feature that crosses PBCs multiple times is recognized as a single feature
+    """
+
+    test_arr = np.zeros((50, 50))
+    test_arr[::4, 0] = 2
+    test_arr[1::4, 0] = 2
+    test_arr[3::4, 0] = 2
+
+    test_arr[1::4, 49] = 2
+    test_arr[2::4, 49] = 2
+    test_arr[3::4, 49] = 2
+
+    test_data_iris = tbtest.make_dataset_from_arr(test_arr, data_type="iris")
+    fd_output = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        threshold=[1, 2, 3],
+        n_min_threshold=2,
+        dxy=1,
+        target="maximum",
+        PBC_flag="hdim_2",
+    )
+    assert len(fd_output) == 1
+    # test hdim_1
+    test_data_iris = tbtest.make_dataset_from_arr(test_arr.T, data_type="iris")
+    fd_output = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        threshold=[1, 2, 3],
+        n_min_threshold=2,
+        dxy=1,
+        target="maximum",
+        PBC_flag="hdim_1",
+    )
+    assert len(fd_output) == 1
+
+
+def test_banded_feature():
+    """
+    Test that a feature that spans the length of the array is detected as one feature, and in the center.
+    """
+
+    test_arr = np.zeros((50, 50))
+    test_arr[20:22, :] = 2.5
+    # Remove some values so that the distribution is not symmetric
+    test_arr[20, 0] = 0
+    test_arr[21, -1] = 0
+    test_data_iris = tbtest.make_dataset_from_arr(test_arr, data_type="iris")
+    fd_output = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        threshold=[1, 2, 3],
+        n_min_threshold=2,
+        dxy=1,
+        target="maximum",
+        PBC_flag="hdim_2",
+    )
+    assert len(fd_output) == 1
+    assert fd_output.iloc[0]["hdim_1"] == pytest.approx(20.5)
+    assert fd_output.iloc[0]["hdim_2"] == pytest.approx(24.5)
+
+    test_data_iris = tbtest.make_dataset_from_arr(test_arr.T, data_type="iris")
+    fd_output = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        threshold=[1, 2, 3],
+        n_min_threshold=2,
+        dxy=1,
+        target="maximum",
+        PBC_flag="hdim_1",
+    )
+    assert len(fd_output) == 1
+    assert fd_output.iloc[0]["hdim_2"] == pytest.approx(20.5)
+    assert fd_output.iloc[0]["hdim_1"] == pytest.approx(24.5)
+
+    # Test different options for position_threshold
+    test_data_iris = tbtest.make_dataset_from_arr(test_arr, data_type="iris")
+    fd_output = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        threshold=[1, 2, 3],
+        n_min_threshold=2,
+        dxy=1,
+        target="maximum",
+        position_threshold="weighted_abs",
+        PBC_flag="hdim_2",
+    )
+    assert len(fd_output) == 1
+    assert fd_output.iloc[0]["hdim_1"] == pytest.approx(20.5)
+    assert fd_output.iloc[0]["hdim_2"] == pytest.approx(24.5)
+
+    # Test different options for position_threshold
+    test_data_iris = tbtest.make_dataset_from_arr(test_arr, data_type="iris")
+    fd_output = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        threshold=[1, 2, 3],
+        n_min_threshold=2,
+        dxy=1,
+        target="maximum",
+        position_threshold="weighted_diff",
+        PBC_flag="hdim_2",
+    )
+    assert len(fd_output) == 1
+    assert fd_output.iloc[0]["hdim_1"] == pytest.approx(20.5)
+    assert fd_output.iloc[0]["hdim_2"] == pytest.approx(24.5)
+
+    # Make a test case with a diagonal object to test corners
+    test_arr = (
+        np.zeros((50, 50))
+        + np.diag(np.ones([50]))
+        + np.diag(np.ones([49]), -1)
+        + np.diag(np.ones([49]), 1)
+    ) * 2.5
+    # Remove some values so that the distribution is not symmetric
+    test_arr[1, 0] = 0
+    test_arr[-2, -1] = 0
+    test_data_iris = tbtest.make_dataset_from_arr(test_arr, data_type="iris")
+    fd_output = feat_detect.feature_detection_multithreshold_timestep(
+        test_data_iris,
+        0,
+        threshold=[1, 2, 3],
+        n_min_threshold=2,
+        dxy=1,
+        target="maximum",
+        position_threshold="weighted_diff",
+        PBC_flag="both",
+    )
+    assert len(fd_output) == 1
+    assert fd_output.iloc[0]["hdim_1"] == pytest.approx(24.5)
+    assert fd_output.iloc[0]["hdim_2"] == pytest.approx(24.5)
+
+
+def test_feature_detection_2d_no_features_returns_empty_df():
+    """
+    Test that 2D feature detection returns an empty, properly formatted DataFrame when no features are detected.
+    """
+    # 2D + time => (time, y, x)
+    data = np.zeros((2, 10, 12), dtype=float)
+    da = xr.DataArray(
+        data,
+        dims=("time", "y", "x"),
+        coords={"time": pd.date_range("2000-01-01", periods=2, freq="2min")},
+        name="field",
+    )
+
+    features = feat_detect.feature_detection_multithreshold(
+        da,
+        dxy=1000.0,
+        threshold=[1e9],
+        return_labels=False,
+    )
+
+    assert isinstance(features, pd.DataFrame)
+    assert features.empty
+
+    expected_cols = [
+        "frame",
+        "idx",
+        "hdim_1",
+        "hdim_2",
+        "num",
+        "threshold_value",
+        "feature",
+        "time",
+        "timestr",
+        "y",
+        "x",
+        "latitude",
+        "longitude",
+    ]
+    assert list(features.columns) == expected_cols
+
+
+def test_feature_detection_3d_no_features_returns_empty_df():
+    """
+    Test that 3D feature detection returns an empty, properly formatted DataFrame when no features are detected.
+    """
+    # 3D + time => (time, z, y, x)
+    data = np.zeros((2, 3, 10, 12), dtype=float)
+    da = xr.DataArray(
+        data,
+        dims=("time", "z", "y", "x"),
+        coords={
+            "time": pd.date_range("2000-01-01", periods=2, freq="2min"),
+            "z": np.arange(3),
+            "y": np.arange(10),
+            "x": np.arange(12),
+        },
+        name="field",
+    )
+
+    features = feat_detect.feature_detection_multithreshold(
+        da,
+        dxy=1000.0,
+        threshold=[1e9],
+        return_labels=False,
+    )
+
+    assert isinstance(features, pd.DataFrame)
+    assert features.empty
+
+    expected_cols = [
+        "frame",
+        "idx",
+        "vdim",
+        "hdim_1",
+        "hdim_2",
+        "num",
+        "threshold_value",
+        "feature",
+        "time",
+        "timestr",
+        "z",
+        "y",
+        "x",
+        "latitude",
+        "longitude",
+    ]
+    assert list(features.columns) == expected_cols

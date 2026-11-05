@@ -1,21 +1,40 @@
+"""Identify center of gravity and mass for analysis."""
+
 import logging
+import warnings
 
 
 def calculate_cog(tracks, mass, mask):
-    """caluclate centre of gravity and mass forech individual tracked cell in the simulation
-    Input:
-    tracks:     pandas.DataFrame
-                DataFrame containing trajectories of cell centres
-    mass:       iris.cube.Cube
-                cube of quantity (need coordinates 'time', 'geopotential_height','projection_x_coordinate' and 'projection_y_coordinate')
-    mask:       iris.cube.Cube
-                cube containing mask (int > where belonging to cloud volume, 0 everywhere else )
-    Output:
-    tracks_out  pandas.DataFrame
-                Dataframe containing t,x,y,z positions of centre of gravity and total cloud mass each tracked cells at each timestep
+    """Calculate center of gravity and mass for each tracked cell.
+
+    Parameters
+    ----------
+    tracks : pandas.DataFrame
+         DataFrame containing trajectories of cell centers.
+
+    mass : iris.cube.Cube
+        Cube of quantity (need coordinates 'time',
+        'geopotential_height','projection_x_coordinate' and
+        'projection_y_coordinate').
+
+    mask : iris.cube.Cube
+        Cube containing mask (int > where belonging to area/volume
+        of feature, 0 else).
+
+    Returns
+    -------
+    tracks_out : pandas.DataFrame
+        Dataframe containing t, x, y, z positions of center of gravity
+        and total mass of each tracked cell at each timestep.
     """
+
     from .utils import mask_cube_cell
     from iris import Constraint
+
+    warnings.warn(
+        "calculate_cog is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
 
     logging.info("start calculating centre of gravity for tracked cells")
 
@@ -39,20 +58,34 @@ def calculate_cog(tracks, mass, mask):
 
 
 def calculate_cog_untracked(mass, mask):
-    """caluclate centre of gravity and mass for untracked parts of domain
-    Input:
-    mass:       iris.cube.Cube
-                cube of quantity (need coordinates 'time', 'geopotential_height','projection_x_coordinate' and 'projection_y_coordinate')
+    """Calculate center of gravity and mass for untracked domain parts.
 
-    mask:       iris.cube.Cube
-                cube containing mask (int > where belonging to cloud volume, 0 everywhere else )
-    Output:
-    tracks_out  pandas.DataFrame
-                Dataframe containing t,x,y,z positions of centre of gravity and total cloud mass for untracked part of dimain
+    Parameters
+    ----------
+    mass : iris.cube.Cube
+        Cube of quantity (need coordinates 'time',
+        'geopotential_height','projection_x_coordinate' and
+        'projection_y_coordinate').
+
+    mask : iris.cube.Cube
+        Cube containing mask (int > where belonging to area/volume
+        of feature, 0 else).
+
+    Returns
+    -------
+    tracks_out : pandas.DataFrame
+        Dataframe containing t, x, y, z positions of center of gravity
+        and total mass for untracked part of the domain.
     """
+
     from pandas import DataFrame
     from .utils import mask_cube_untracked
     from iris import Constraint
+
+    warnings.warn(
+        "calculate_cog_untracked is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
 
     logging.info(
         "start calculating centre of gravity for untracked parts of the domain"
@@ -81,16 +114,29 @@ def calculate_cog_untracked(mass, mask):
 
 
 def calculate_cog_domain(mass):
-    """caluclate centre of gravity and mass for entire domain
-    Input:
-    mass:       iris.cube.Cube
-                cube of quantity (need coordinates 'time', 'geopotential_height','projection_x_coordinate' and 'projection_y_coordinate')
-    Output:
-    tracks_out  pandas.DataFrame
-                Dataframe containing t,x,y,z positions of centre of gravity and total cloud mass
+    """Calculate center of gravity and mass for entire domain.
+
+    Parameters
+    ----------
+    mass : iris.cube.Cube
+        Cube of quantity (need coordinates 'time',
+        'geopotential_height','projection_x_coordinate' and
+        'projection_y_coordinate').
+
+    Returns
+    -------
+    tracks_out : pandas.DataFrame
+        Dataframe containing t, x, y, z positions of center of gravity
+        and total mass of the entire domain.
     """
+
     from pandas import DataFrame
     from iris import Constraint
+
+    warnings.warn(
+        "calculate_cog_domain is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
 
     logging.info("start calculating centre of gravity for entire domain")
 
@@ -115,23 +161,37 @@ def calculate_cog_domain(mass):
 
 
 def center_of_gravity(cube_in):
-    """caluclate centre of gravity and sum of quantity
-    Input:
-    cube_in:       iris.cube.Cube
-                   cube (potentially masked) of quantity (need coordinates 'geopotential_height','projection_x_coordinate' and 'projection_y_coordinate')
-    Output:
-    x:             float
-                   x position of centre of gravity
-    y:             float
-                   y position of centre of gravity
-    z:             float
-                   z position of centre of gravity
-    variable_sum:  float
-                   sum of quantity of over unmasked part of the cube
+    """Calculate center of gravity and sum of quantity.
 
+    Parameters
+    ----------
+    cube_in : iris.cube.Cube
+        Cube (potentially masked) of quantity (need coordinates
+        'geopotential_height','projection_x_coordinate' and
+        'projection_y_coordinate').
+
+    Returns
+    -------
+    x : float
+        X position of center of gravity.
+
+    y : float
+        Y position of center of gravity.
+
+    z : float
+        Z position of center of gravity.
+
+    variable_sum : float
+        Sum of quantity of over unmasked part of the cube.
     """
+
     from iris.analysis import SUM
     import numpy as np
+
+    warnings.warn(
+        "center_of_gravity is depreciated and will be removed or significantly changed in v2.0.",
+        DeprecationWarning,
+    )
 
     cube_sum = cube_in.collapsed(["bottom_top", "south_north", "west_east"], SUM)
     z = cube_in.coord("geopotential_height")

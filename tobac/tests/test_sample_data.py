@@ -1,6 +1,7 @@
 """
 Tests for tobac based on simple sample datasets with moving blobs. These tests should be adapted to be more modular in the future.
 """
+
 from tobac.testing import (
     make_sample_data_2D_3blobs,
     make_sample_data_2D_3blobs_inv,

@@ -1,21 +1,37 @@
+"""Containing methods to make simple sample data for testing."""
+
 import datetime
 import numpy as np
 from xarray import DataArray
 import pandas as pd
+from collections import Counter
+from .utils import periodic_boundaries as pbc_utils
+from typing import Union, Optional, Literal, Iterable
 
 
 def make_simple_sample_data_2D(data_type="iris"):
-    """
-    function creating a simple dataset to use in tests for tobac.
-    The grid has a grid spacing of 1km in both horizontal directions and 100 grid cells in x direction and 500 in y direction.
-    Time resolution is 1 minute and the total length of the dataset is 100 minutes around a abritraty date (2000-01-01 12:00).
-    The longitude and latitude coordinates are added as 2D aux coordinates and arbitrary, but in realisitic range.
-    The data contains a single blob travelling on a linear trajectory through the dataset for part of the time.
+    """Create a simple dataset to use in tests.
 
-    :param data_type: 'iris' or 'xarray' to chose the type of dataset to produce
-    :return: sample dataset as an Iris.Cube.cube or xarray.DataArray
+    The grid has a grid spacing of 1km in both horizontal directions
+    and 100 grid cells in x direction and 500 in y direction.
+    Time resolution is 1 minute and the total length of the dataset is
+    100 minutes around a abritraty date (2000-01-01 12:00).
+    The longitude and latitude coordinates are added as 2D aux
+    coordinates and arbitrary, but in realisitic range.
+    The data contains a single blob travelling on a linear trajectory
+    through the dataset for part of the time.
 
+    Parameters
+    ----------
+    data_type : {'iris', 'xarray'}, optional
+        Choose type of the dataset that will be produced.
+        Default is 'iris'
+
+    Returns
+    -------
+    sample_data : iris.cube.Cube or xarray.DataArray
     """
+
     from iris.cube import Cube
     from iris.coords import DimCoord, AuxCoord
 
@@ -45,7 +61,7 @@ def make_simple_sample_data_2D(data_type="iris"):
             ) * np.exp(-np.power(yy - y_i, 2.0) / (2 * np.power(10e3, 2.0)))
 
     t_start = datetime.datetime(1970, 1, 1, 0, 0)
-    t_points = (t - t_start).astype("timedelta64[ms]").astype(int) / 1000
+    t_points = (t - t_start).astype("timedelta64[ms]").astype(int) // 1000
     t_coord = DimCoord(
         t_points,
         standard_name="time",
@@ -79,20 +95,30 @@ def make_simple_sample_data_2D(data_type="iris"):
 
 
 def make_sample_data_2D_3blobs(data_type="iris"):
+    """Create a simple dataset to use in tests.
+
+    The grid has a grid spacing of 1km in both horizontal directions
+    and 100 grid cells in x direction and 200 in y direction.
+    Time resolution is 1 minute and the total length of the dataset is
+    100 minutes around a arbitrary date (2000-01-01 12:00).
+    The longitude and latitude coordinates are added as 2D aux
+    coordinates and arbitrary, but in realisitic range.
+    The data contains three individual blobs travelling on a linear
+    trajectory through the dataset for part of the time.
+
+    Parameters
+    ----------
+    data_type : {'iris', 'xarray'}, optional
+        Choose type of the dataset that will be produced.
+        Default is 'iris'
+
+    Returns
+    -------
+    sample_data : iris.cube.Cube or xarray.DataArray
+    """
+
     from iris.cube import Cube
     from iris.coords import DimCoord, AuxCoord
-
-    """
-    function creating a simple dataset to use in tests for tobac. 
-    The grid has a grid spacing of 1km in both horizontal directions and 100 grid cells in x direction and 200 in y direction.
-    Time resolution is 1 minute and the total length of the dataset is 100 minutes around a abritraty date (2000-01-01 12:00). 
-    The longitude and latitude coordinates are added as 2D aux coordinates and arbitrary, but in realisitic range.
-    The data contains a three individual blobs travelling on a linear trajectory through the dataset for part of the time.
-    
-    :param data_type: 'iris' or 'xarray' to chose the type of dataset to produce
-    :return: sample dataset as an Iris.Cube.cube or xarray.DataArray
-
-    """
 
     t_0 = datetime.datetime(2000, 1, 1, 12, 0, 0)
 
@@ -149,7 +175,7 @@ def make_sample_data_2D_3blobs(data_type="iris"):
                 -np.power(xx - x_i, 2.0) / (2 * np.power(10e3, 2.0))
             ) * np.exp(-np.power(yy - y_i, 2.0) / (2 * np.power(10e3, 2.0)))
     t_start = datetime.datetime(1970, 1, 1, 0, 0)
-    t_points = (t - t_start).astype("timedelta64[ms]").astype(int) / 1000
+    t_points = (t - t_start).astype("timedelta64[ms]").astype(int) // 1000
     t_coord = DimCoord(
         t_points,
         standard_name="time",
@@ -183,14 +209,24 @@ def make_sample_data_2D_3blobs(data_type="iris"):
 
 
 def make_sample_data_2D_3blobs_inv(data_type="iris"):
-    """
-    function creating a version of the dataset created in the function make_sample_cube_2D, but with switched coordinate order for the horizontal coordinates
-    for tests to ensure that this does not affect the results
+    """Create a version of the dataset with switched coordinates.
 
-    :param data_type: 'iris' or 'xarray' to chose the type of dataset to produce
-    :return: sample dataset as an Iris.Cube.cube or xarray.DataArray
+    Create a version of the dataset created in the function
+    make_sample_cube_2D, but with switched coordinate order for the
+    horizontal coordinates for tests to ensure that this does not
+    affect the results.
 
+    Parameters
+    ----------
+    data_type : {'iris', 'xarray'}, optional
+        Choose type of the dataset that will be produced.
+        Default is 'iris'
+
+    Returns
+    -------
+    sample_data : iris.cube.Cube or xarray.DataArray
     """
+
     from iris.cube import Cube
     from iris.coords import DimCoord, AuxCoord
 
@@ -249,7 +285,7 @@ def make_sample_data_2D_3blobs_inv(data_type="iris"):
             ) * np.exp(-np.power(yy - y_i, 2.0) / (2 * np.power(10e3, 2.0)))
 
     t_start = datetime.datetime(1970, 1, 1, 0, 0)
-    t_points = (t - t_start).astype("timedelta64[ms]").astype(int) / 1000
+    t_points = (t - t_start).astype("timedelta64[ms]").astype(int) // 1000
 
     t_coord = DimCoord(
         t_points,
@@ -284,21 +320,270 @@ def make_sample_data_2D_3blobs_inv(data_type="iris"):
     return sample_data
 
 
-def make_sample_data_3D_3blobs(data_type="iris", invert_xy=False):
+def make_sample_data_3D_1blob(data_type="iris", invert_xy=False):
+    """Create a simple dataset to use in tests with one blob moving diagonally.
+    The grid has a grid spacing of 1km in both horizontal directions
+    and 100 grid cells in the x direction and 50 in the y direction.
+    Time resolution is 1 minute, and the total length of the dataset is
+    50 minutes starting from an arbitrary date (2000-01-01 12:00).
+    The longitude and latitude coordinates are added as 2D aux
+    coordinates and are arbitrary, but within a realistic range.
+    The data contains a single blob traveling on a linear trajectory
+    through the dataset for part of the time. The blob follows a
+    trajectory that starts at (x=10km, y=10km, z=4km) and moves along a
+    linear path at each time step.
+
+    Parameters
+    ----------
+    data_type : {'iris', 'xarray'}, optional
+        Choose type of the dataset that will be produced.
+        Default is 'iris'.
+    invert_xy : bool, optional
+        Flag to determine whether to switch x and y coordinates.
+        Default is False.
+
+    Returns
+    -------
+    sample_data : iris.cube.Cube or xarray.DataArray
+    """
+
     from iris.cube import Cube
     from iris.coords import DimCoord, AuxCoord
 
-    """
-    function creating a simple dataset to use in tests for tobac. 
-    The grid has a grid spacing of 1km in both horizontal directions and 100 grid cells in x direction and 200 in y direction.
-    Time resolution is 1 minute and the total length of the dataset is 100 minutes around a abritraty date (2000-01-01 12:00). 
-    The longitude and latitude coordinates are added as 2D aux coordinates and arbitrary, but in realisitic range.
-    The data contains a three individual blobs travelling on a linear trajectory through the dataset for part of the time.
-    
-    :param data_type: 'iris' or 'xarray' to chose the type of dataset to produce
-    :return: sample dataset as an Iris.Cube.cube or xarray.DataArray
+    t_0 = datetime.datetime(2000, 1, 1, 12, 0, 0)
 
+    x = np.arange(0, 100e3, 1000)
+    y = np.arange(0, 50e3, 1000)
+    z = np.arange(0, 50e3, 1000)
+
+    t = t_0 + np.arange(0, 50, 2) * datetime.timedelta(minutes=1)
+
+    t_temp = np.arange(0, 60, 1)
+    track1_t = t_0 + t_temp * datetime.timedelta(minutes=1)
+    x_0_1 = 10e3
+    y_0_1 = 10e3
+    z_0_1 = 4e3
+
+    track1_x = x_0_1 + 30 * t_temp * 60
+    track1_y = y_0_1 + 14 * t_temp * 60
+    track1_z = z_0_1 + 16 * t_temp * 60
+    track1_magnitude = 10 * np.ones(track1_x.shape)
+
+    size_factor = 5e3
+
+    if invert_xy == False:
+        zz, yy, xx = np.meshgrid(z, y, x, indexing="ij")
+        y_dim = 2
+        x_dim = 3
+        data = np.zeros((t.shape[0], z.shape[0], y.shape[0], x.shape[0]))
+
+    else:
+        zz, xx, yy = np.meshgrid(z, x, y, indexing="ij")
+        x_dim = 2
+        y_dim = 3
+        data = np.zeros((t.shape[0], z.shape[0], x.shape[0], y.shape[0]))
+
+    for i_t, t_i in enumerate(t):
+        if np.any(t_i in track1_t):
+            x_i = track1_x[track1_t == t_i]
+            y_i = track1_y[track1_t == t_i]
+            z_i = track1_z[track1_t == t_i]
+            mag_i = track1_magnitude[track1_t == t_i]
+            data[i_t] = data[i_t] + mag_i * np.exp(
+                -np.power(xx - x_i, 2.0) / (2 * np.power(size_factor, 2.0))
+            ) * np.exp(
+                -np.power(yy - y_i, 2.0) / (2 * np.power(size_factor, 2.0))
+            ) * np.exp(
+                -np.power(zz - z_i, 2.0) / (2 * np.power(5e3, 2.0))
+            )
+
+    t_start = datetime.datetime(1970, 1, 1, 0, 0)
+    t_points = (t - t_start).astype("timedelta64[ms]").astype(int) // 1000
+    t_coord = DimCoord(
+        t_points,
+        standard_name="time",
+        var_name="time",
+        units="seconds since 1970-01-01 00:00",
+    )
+    z_coord = DimCoord(z, standard_name="geopotential_height", var_name="z", units="m")
+    y_coord = DimCoord(
+        y, standard_name="projection_y_coordinate", var_name="y", units="m"
+    )
+    x_coord = DimCoord(
+        x, standard_name="projection_x_coordinate", var_name="x", units="m"
+    )
+    lat_coord = AuxCoord(
+        24 + 1e-5 * xx[0], standard_name="latitude", var_name="latitude", units="degree"
+    )
+    lon_coord = AuxCoord(
+        150 + 1e-5 * yy[0],
+        standard_name="longitude",
+        var_name="longitude",
+        units="degree",
+    )
+    sample_data = Cube(
+        data,
+        dim_coords_and_dims=[
+            (t_coord, 0),
+            (z_coord, 1),
+            (y_coord, y_dim),
+            (x_coord, x_dim),
+        ],
+        aux_coords_and_dims=[(lat_coord, (2, 3)), (lon_coord, (2, 3))],
+        var_name="w",
+        units="m s-1",
+    )
+
+    if data_type == "xarray":
+        sample_data = DataArray.from_iris(sample_data)
+
+    return sample_data
+
+
+def make_sample_data_3D_2crossing_blobs_xarray(invert_xy: bool = False):
     """
+    Create a simple 3D xarray dataset with two Gaussian blobs crossing in x-y while evolving in z.
+
+    Grid:
+      - dx=dy=dz=1 km
+      - x: 0..99 km (100 points)
+      - y: 0..49 km (50 points)
+      - z: 0..49 km (50 points)
+    Time:
+      - every 2 minutes
+      - total length 50 minutes starting at 2000-01-01 12:00
+
+    Returns
+    -------
+    sample_data : xarray.DataArray
+        dims are ("time","z","y","x") if invert_xy=False, else ("time","z","x","y")
+        coords are in meters for x/y/z, time is datetime64.
+    """
+    t_0 = datetime.datetime(2000, 1, 1, 12, 0, 0)
+
+    x = np.arange(0, 100e3, 1000)  # 100 points
+    y = np.arange(0, 50e3, 1000)  # 50 points
+    z = np.arange(0, 50e3, 1000)  # 50 points
+
+    # output times (every 2 minutes)
+    t = np.array(
+        [np.datetime64(t_0 + i * datetime.timedelta(minutes=2)) for i in range(25)]
+    )
+
+    # define tracks on the SAME output times (no iris/time conversion needed)
+    # Blob 1: from (10km,10km,4km) moving up-right and up in z
+    x0_1, y0_1, z0_1 = 10e3, 10e3, 4e3
+    vx_1, vy_1, vz_1 = 30.0, 14.0, 16.0  # m/s
+
+    # Blob 2: from (90km,10km,46km) moving up-left and down in z -> crosses blob1
+    x0_2, y0_2, z0_2 = 90e3, 10e3, 46e3
+    vx_2, vy_2, vz_2 = -30.0, 14.0, -16.0  # m/s
+
+    # amplitudes
+    mag1, mag2 = 10.0, 10.0
+
+    # widths
+    sigma_xy = 5e3
+    sigma_z = 5e3
+
+    # precompute spatial mesh once
+    if not invert_xy:
+        zz, yy, xx = np.meshgrid(z, y, x, indexing="ij")  # (z,y,x)
+        data = np.zeros((t.shape[0], z.shape[0], y.shape[0], x.shape[0]), dtype=float)
+        dims = ("time", "z", "y", "x")
+    else:
+        zz, xx, yy = np.meshgrid(z, x, y, indexing="ij")  # (z,x,y)
+        data = np.zeros((t.shape[0], z.shape[0], x.shape[0], y.shape[0]), dtype=float)
+        dims = ("time", "z", "x", "y")
+
+    # fill
+    for i_t, t_i in enumerate(t):
+        # seconds since start
+        dt_s = float((t_i - np.datetime64(t_0)) / np.timedelta64(1, "s"))
+
+        x1 = x0_1 + vx_1 * dt_s
+        y1 = y0_1 + vy_1 * dt_s
+        z1 = z0_1 + vz_1 * dt_s
+
+        x2 = x0_2 + vx_2 * dt_s
+        y2 = y0_2 + vy_2 * dt_s
+        z2 = z0_2 + vz_2 * dt_s
+
+        blob1 = (
+            mag1
+            * np.exp(-np.power(xx - x1, 2.0) / (2 * sigma_xy**2))
+            * np.exp(-np.power(yy - y1, 2.0) / (2 * sigma_xy**2))
+            * np.exp(-np.power(zz - z1, 2.0) / (2 * sigma_z**2))
+        )
+
+        blob2 = (
+            mag2
+            * np.exp(-np.power(xx - x2, 2.0) / (2 * sigma_xy**2))
+            * np.exp(-np.power(yy - y2, 2.0) / (2 * sigma_xy**2))
+            * np.exp(-np.power(zz - z2, 2.0) / (2 * sigma_z**2))
+        )
+
+        # combine: max (like "crossing blobs" idealized case)
+        data[i_t] = np.maximum(blob1, blob2)
+
+    # coords dict depends on dims
+    if not invert_xy:
+        coords = {"time": t, "z": z, "y": y, "x": x}
+        # aux coords (2D) on (y,x) plane (pick z=0 slice)
+        lat2d = 24 + 1e-5 * xx[0]  # shape (y,x)
+        lon2d = 150 + 1e-5 * yy[0]  # shape (y,x)
+        aux_dims = ("y", "x")
+    else:
+        coords = {"time": t, "z": z, "x": x, "y": y}
+        # here xx[0] is shape (x,y) and yy[0] is shape (x,y)
+        lat2d = 24 + 1e-5 * xx[0]  # shape (x,y)
+        lon2d = 150 + 1e-5 * yy[0]  # shape (x,y)
+        aux_dims = ("x", "y")
+
+    da = DataArray(
+        data=data,
+        dims=dims,
+        coords=coords,
+        name="w",
+        attrs={"units": "m s-1"},
+    )
+
+    # add aux coords (2D)
+    da = da.assign_coords(latitude=(aux_dims, lat2d))
+    da = da.assign_coords(longitude=(aux_dims, lon2d))
+
+    return da
+
+
+def make_sample_data_3D_3blobs(data_type="iris", invert_xy=False):
+    """Create a simple dataset to use in tests.
+
+    The grid has a grid spacing of 1km in both horizontal directions
+    and 100 grid cells in x direction and 200 in y direction.
+    Time resolution is 1 minute and the total length of the dataset is
+    100 minutes around a abritraty date (2000-01-01 12:00).
+    The longitude and latitude coordinates are added as 2D aux
+    coordinates and arbitrary, but in realisitic range.
+    The data contains three individual blobs travelling on a linear
+    trajectory through the dataset for part of the time.
+
+    Parameters
+    ----------
+    data_type : {'iris', 'xarray'}, optional
+        Choose type of the dataset that will be produced.
+        Default is 'iris'
+
+    invert_xy : bool, optional
+        Flag to determine whether to switch x and y coordinates
+        Default is False
+
+    Returns
+    -------
+    sample_data : iris.cube.Cube or xarray.DataArray
+    """
+
+    from iris.cube import Cube
+    from iris.coords import DimCoord, AuxCoord
 
     t_0 = datetime.datetime(2000, 1, 1, 12, 0, 0)
 
@@ -381,7 +666,7 @@ def make_sample_data_3D_3blobs(data_type="iris", invert_xy=False):
             )
 
     t_start = datetime.datetime(1970, 1, 1, 0, 0)
-    t_points = (t - t_start).astype("timedelta64[ms]").astype(int) / 1000
+    t_points = (t - t_start).astype("timedelta64[ms]").astype(int) // 1000
     t_coord = DimCoord(
         t_points,
         standard_name="time",
@@ -428,6 +713,7 @@ def make_dataset_from_arr(
     data_type="xarray",
     time_dim_num=None,
     z_dim_num=None,
+    z_dim_name="altitude",
     y_dim_num=0,
     x_dim_num=1,
 ):
@@ -438,41 +724,85 @@ def make_dataset_from_arr(
     ----------
     in_arr: array-like
         The input array to convert to iris/xarray
-    data_type: str('xarray' or 'iris')
+
+    data_type: str('xarray' or 'iris'), optional
         Type of the dataset to return
-    time_dim_num: int or None
+        Default is 'xarray'
+
+    time_dim_num: int or None, optional
         What axis is the time dimension on, None for a single timestep
-    z_dim_num: int or None
+        Default is None
+
+    z_dim_num: int or None, optional
         What axis is the z dimension on, None for a 2D array
+    z_dim_name: str
+        What the z dimension name is named
     y_dim_num: int
         What axis is the y dimension on, typically 0 for a 2D array
-    x_dim_num: int
+        Default is 0
+
+    x_dim_num: int, optional
         What axis is the x dimension on, typically 1 for a 2D array
+        Default is 1
 
     Returns
     -------
     Iris or xarray dataset with everything we need for feature detection/tracking.
 
     """
+
     import xarray as xr
     import iris
 
-    if time_dim_num is not None:
-        raise NotImplementedError("Time dimension not yet implemented in this function")
+    time_dim_name = "time"
+    has_time = time_dim_num is not None
 
     is_3D = z_dim_num is not None
     output_arr = xr.DataArray(in_arr)
     if is_3D:
         z_max = in_arr.shape[z_dim_num]
 
+    if has_time:
+        time_min = datetime.datetime(2022, 1, 1)
+        time_num = in_arr.shape[time_dim_num]
+        time_vals = pd.date_range(start=time_min, periods=time_num).values.astype(
+            "datetime64[s]"
+        )
+
     if data_type == "xarray":
+        # add dimension and coordinates
+        if is_3D:
+            output_arr = output_arr.rename(
+                new_name_or_name_dict={"dim_" + str(z_dim_num): z_dim_name}
+            )
+            output_arr = output_arr.assign_coords(
+                {z_dim_name: (z_dim_name, np.arange(0, z_max))}
+            )
+        # add dimension and coordinates
+        if has_time:
+            output_arr = output_arr.rename(
+                new_name_or_name_dict={"dim_" + str(time_dim_num): time_dim_name}
+            )
+            output_arr = output_arr.assign_coords(
+                {time_dim_name: (time_dim_name, time_vals)}
+            )
         return output_arr
-    elif data_type == "iris":
+    if data_type == "iris":
         out_arr_iris = output_arr.to_iris()
+
         if is_3D:
             out_arr_iris.add_dim_coord(
-                iris.coords.DimCoord(np.arange(0, z_max), standard_name="altitude"),
+                iris.coords.DimCoord(np.arange(0, z_max), standard_name=z_dim_name),
                 z_dim_num,
+            )
+        if has_time:
+            out_arr_iris.add_dim_coord(
+                iris.coords.DimCoord(
+                    time_vals.astype(int),
+                    standard_name=time_dim_name,
+                    units="seconds since epoch",
+                ),
+                time_dim_num,
             )
         return out_arr_iris
     else:
@@ -489,41 +819,63 @@ def make_feature_blob(
     v_size=1,
     shape="rectangle",
     amplitude=1,
+    PBC_flag="none",
 ):
-    import xarray as xr
-
-    """Function to make a defined "blob" in location (zloc, yloc, xloc) with 
+    """Function to make a defined "blob" in location (zloc, yloc, xloc) with
     user-specified shape and amplitude. Note that this function will
     round the size and locations to the nearest point within the array.
-    
+
     Parameters
     ----------
     in_arr: array-like
         input array to add the "blob" to
+
     h1_loc: float
         Center hdim_1 location of the blob, required
+
     h2_loc: float
         Center hdim_2 location of the blob, required
-    v_loc: float
+
+    v_loc: float, optional
         Center vdim location of the blob, optional. If this is None, we assume that the
         dataset is 2D.
-    h1_size: float
+        Default is None
+
+    h1_size: float, optional
         Size of the bubble in array coordinates in hdim_1
-    h2_size: float
+        Default is 1
+
+    h2_size: float, optional
         Size of the bubble in array coordinates in hdim_2
-    v_size: float
+        Default is 1
+
+    v_size: float, optional
         Size of the bubble in array coordinates in vdim
-    shape: str('rectangle')
+        Default is 1
+
+    shape: str('rectangle'), optional
         The shape of the blob that is added. For now, this is just rectangle
         'rectangle' adds a rectangular/rectangular prism bubble with constant amplitude `amplitude`.
-    amplitude: float
+        Default is "rectangle"
+
+    amplitude: float, optional
         Maximum amplitude of the blob
+        Default is 1
+
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
 
     Returns
     -------
     array-like
         An array with the same type as `in_arr` that has the blob added.
     """
+
+    import xarray as xr
 
     # Check if z location is there and set our 3D-ness based on this.
     if v_loc is None:
@@ -559,10 +911,32 @@ def make_feature_blob(
 
     start_h2 = int(np.ceil(h2_loc - h2_size / 2))
     end_h2 = int(np.ceil(h2_loc + h2_size / 2))
-    in_arr = set_arr_2D_3D(
-        in_arr, amplitude, start_h1, end_h1, start_h2, end_h2, start_v, end_v
+
+    # get the coordinate sets
+    coords_to_fill = pbc_utils.get_pbc_coordinates(
+        h1_min,
+        h1_max,
+        h2_min,
+        h2_max,
+        start_h1,
+        end_h1,
+        start_h2,
+        end_h2,
+        PBC_flag=PBC_flag,
     )
-    return in_arr
+    if shape == "rectangle":
+        for coord_box in coords_to_fill:
+            in_arr = set_arr_2D_3D(
+                in_arr,
+                amplitude,
+                coord_box[0],
+                coord_box[1],
+                coord_box[2],
+                coord_box[3],
+                start_v,
+                end_v,
+            )
+        return in_arr
 
 
 def set_arr_2D_3D(
@@ -576,27 +950,37 @@ def set_arr_2D_3D(
     ----------
     in_arr: array-like
         Array of values to set
+
     value: int, float, or array-like of size (end_v-start_v, end_h1-start_h1, end_h2-start_h2)
         The value to assign to in_arr. This will work to assign an array, but the array
         must have the same dimensions as the size specified in the function.
+
     start_h1: int
         Start index to set for hdim_1
+
     end_h1: int
         End index to set for hdim_1 (exclusive, so it acts like [start_h1:end_h1])
+
     start_h2: int
         Start index to set for hdim_2
+
     end_h2: int
         End index to set for hdim_2
-    start_v: int
-        Start index to set for vdim (optional)
-    end_v: int
-        End index to set for vdim (optional)
+
+    start_v: int, optional
+        Start index to set for vdim
+        Default is None
+
+    end_v: int, optional
+        End index to set for vdim
+        Default is None
 
     Returns
     -------
     array-like
         in_arr with the new values set.
     """
+
     if start_v is not None and end_v is not None:
         in_arr[start_v:end_v, start_h1:end_h1, start_h2:end_h2] = value
     else:
@@ -605,82 +989,412 @@ def set_arr_2D_3D(
     return in_arr
 
 
+def get_single_pbc_coordinate(
+    h1_min, h1_max, h2_min, h2_max, h1_coord, h2_coord, PBC_flag="none"
+):
+    """Function to get the PBC-adjusted coordinate for an original non-PBC adjusted
+    coordinate.
+
+    Parameters
+    ----------
+    h1_min: int
+        Minimum point in hdim_1
+    h1_max: int
+        Maximum point in hdim_1
+    h2_min: int
+        Minimum point in hdim_2
+    h2_max: int
+        Maximum point in hdim_2
+    h1_coord: int
+        hdim_1 query coordinate
+    h2_coord: int
+        hdim_2 query coordinate
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
+
+    Returns
+    -------
+    tuple
+        Returns a tuple of (hdim_1, hdim_2).
+
+    Raises
+    ------
+    ValueError
+        Raises a ValueError if the point is invalid (e.g., h1_coord < h1_min
+        when PBC_flag = 'none')
+    """
+    # Avoiding duplicating code here, so throwing this into a loop.
+    is_pbc = [False, False]
+    if PBC_flag in ["hdim_1", "both"]:
+        is_pbc[0] = True
+    if PBC_flag in ["hdim_2", "both"]:
+        is_pbc[1] = True
+
+    out_coords = list()
+
+    for point_query, dim_min, dim_max, dim_pbc in zip(
+        [h1_coord, h2_coord], [h1_min, h2_min], [h1_max, h2_max], is_pbc
+    ):
+        dim_size = dim_max - dim_min
+        if point_query >= dim_min and point_query < dim_max:
+            out_coords.append(point_query)
+        # off at least one domain
+        elif point_query < dim_min:
+            if not dim_pbc:
+                raise ValueError("Point invalid!")
+            if abs(point_query // dim_size) > 1:
+                # we are more than one interval length away from the periodic boundary
+                point_query = point_query + (
+                    dim_size * (abs(point_query // dim_size) - 1)
+                )
+
+            out_coords.append(point_query + dim_size)
+        elif point_query >= dim_max:
+            if not dim_pbc:
+                raise ValueError("Point invalid!")
+            if abs(point_query // dim_size) > 1:
+                # we are more than one interval length away from the periodic boundary
+                point_query = point_query - (
+                    dim_size * (abs(point_query // dim_size) - 1)
+                )
+            out_coords.append(point_query - dim_size)
+
+    return tuple(out_coords)
+
+
 def generate_single_feature(
-    start_h1,
-    start_h2,
-    start_v=None,
-    spd_h1=1,
-    spd_h2=1,
-    spd_v=1,
-    min_h1=0,
-    max_h1=1000,
-    min_h2=0,
-    max_h2=1000,
-    num_frames=1,
-    dt=datetime.timedelta(minutes=5),
-    start_date=datetime.datetime(2022, 1, 1, 0),
-    frame_start=1,
-    feature_num=1,
+    start_h1: Union[float, Iterable[float]],
+    start_h2: Union[float, Iterable[float]],
+    start_v: Optional[Union[float, Iterable[float]]] = None,
+    spd_h1: float = 1,
+    spd_h2: float = 1,
+    spd_v: float = 1,
+    min_h1: float = 0,
+    max_h1: Optional[float] = None,
+    min_h2: float = 0,
+    max_h2: Optional[float] = None,
+    num_frames: int = 1,
+    dt: datetime.timedelta = datetime.timedelta(minutes=5),
+    start_date: datetime.datetime = datetime.datetime(2022, 1, 1, 0),
+    PBC_flag: Literal["none", "hdim_1", "hdim_2", "both"] = "none",
+    frame_start: int = 0,
+    feature_num: int = 1,
+    feature_size: Optional[int] = None,
+    threshold_val: Optional[float] = None,
 ):
     """Function to generate a dummy feature dataframe to test the tracking functionality
 
     Parameters
     ----------
-    start_h1: float
-        Starting point of the feature in hdim_1 space
-    start_h2: float
-        Starting point of the feature in hdim_2 space
-    start_v: float
-        Starting point of the feature in vdim space (if 3D). For 2D, set to None.
-    spd_h1: float
+    start_h1: float or iterable of floats
+        Starting point of the feature in hdim_1 space if float
+        or all h1 points if iterable. If iterable is passed,
+        all other parameters are ignored.
+
+    start_h2: float or iterable of floats
+        Starting point of the feature in hdim_2 space if float
+        or all h2 points if iterable
+
+    start_v: float, optional
+        Starting point of the feature in vdim space (if 3D) if float
+        or all vertical points if iterable.
+        For 2D, set to None.
+        Default is None
+
+    spd_h1: float, optional
         Speed (per frame) of the feature in hdim_1
-    spd_h2: float
+        Default is 1
+
+    spd_h2: float, optional
         Speed (per frame) of the feature in hdim_2
-    spd_v: float
+        Default is 1
+
+    spd_v: float, optional
         Speed (per frame) of the feature in vdim
-    min_h1: int
+        Default is 1
+
+    min_h1: int, optional
         Minimum value of hdim_1 allowed. If PBC_flag is not 'none', then
         this will be used to know when to wrap around periodic boundaries.
         If PBC_flag is 'none', features will disappear if they are above/below
         these bounds.
-    max_h1: int
+        Default is 0
+
+    max_h1: int, optional
         Similar to min_h1, but the max value of hdim_1 allowed.
-    min_h2: int
+        Default is 1000
+
+    min_h2: int, optional
         Similar to min_h1, but the minimum value of hdim_2 allowed.
-    max_h2: int
+        Default is 0
+
+    max_h2: int, optional
         Similar to min_h1, but the maximum value of hdim_2 allowed.
-    num_frames: int
+        Default is 1000
+
+    num_frames: int, optional
         Number of frames to generate
-    dt: datetime.timedelta
+        Default is 1
+
+    dt: datetime.timedelta, optional
         Difference in time between each frame
-    start_date: datetime.datetime
+        Default is datetime.timedelta(minutes=5)
+
+    start_date: datetime.datetime, optional
         Start datetime
+        Default is datetime.datetime(2022, 1, 1, 0)
+
+    PBC_flag : str('none', 'hdim_1', 'hdim_2', 'both')
+        Sets whether to use periodic boundaries, and if so in which directions.
+        'none' means that we do not have periodic boundaries
+        'hdim_1' means that we are periodic along hdim1
+        'hdim_2' means that we are periodic along hdim2
+        'both' means that we are periodic along both horizontal dimensions
     frame_start: int
         Number to start the frame at
-    feature_num: int
+        Default is 1
+
+    feature_num: int, optional
         What number to start the feature at
+        Default is 1
+    feature_size: int or None
+        'num' column in output; feature size
+        If None, doesn't set this column
+    threshold_val: float or None
+        Threshold value of this feature
     """
 
-    out_list_of_dicts = list()
-    curr_h1 = start_h1
-    curr_h2 = start_h2
-    curr_v = start_v
+    if max_h1 is None or max_h2 is None:
+        raise ValueError("Max coords must be specified.")
+
+    h1_list = []
+    h2_list = []
+    v_list = []
+
+    # check if start_h1, start_h2, and start_v are all arrays
+    if not np.isscalar(start_h1) and not np.isscalar(start_h2):
+        if start_v is not None and np.isscalar(start_h2):
+            raise ValueError(
+                "Must specify all start_h1, start_h2, and start_v as arrays."
+            )
+        h1_list = start_h1
+        h2_list = start_h2
+        if start_v is not None:
+            v_list = start_v
+    # we need to make the list of points.
+    else:
+        curr_h1 = start_h1
+        curr_h2 = start_h2
+        curr_v = start_v
+
+        for i in range(num_frames):
+            curr_h1, curr_h2 = get_single_pbc_coordinate(
+                min_h1, max_h1, min_h2, max_h2, curr_h1, curr_h2, PBC_flag
+            )
+
+            h1_list.append(curr_h1)
+            h2_list.append(curr_h2)
+            curr_h1 += spd_h1
+            curr_h2 += spd_h2
+
+            if start_v is not None:
+                v_list.append(curr_v)
+                curr_v += spd_v
+
+    out_list_of_dicts = []
     curr_dt = start_date
-    is_3D = not (start_v is None)
-    for i in range(num_frames):
+    for i in range(len(h1_list)):
+        if h1_list[i] < 0 or h2_list[i] < 0:
+            curr_dt += dt
+            continue
+        if len(v_list) > 0:
+            if v_list[i] < 0:
+                curr_dt += dt
+                continue
         curr_dict = dict()
-        curr_dict["hdim_1"] = curr_h1
-        curr_dict["hdim_2"] = curr_h2
+        curr_dict["hdim_1"] = h1_list[i]
+        curr_dict["hdim_2"] = h2_list[i]
         curr_dict["frame"] = frame_start + i
-        if curr_v is not None:
-            curr_dict["vdim"] = curr_v
+        curr_dict["idx"] = 0
+        if len(v_list) > 0:
+            curr_dict["vdim"] = v_list[i]
             curr_v += spd_v
         curr_dict["time"] = curr_dt
         curr_dict["feature"] = feature_num + i
-
-        curr_h1 += spd_h1
-        curr_h2 += spd_h2
+        if feature_size is not None:
+            curr_dict["num"] = feature_size
+        if threshold_val is not None:
+            curr_dict["threshold_value"] = threshold_val
         curr_dt += dt
         out_list_of_dicts.append(curr_dict)
 
     return pd.DataFrame.from_dict(out_list_of_dicts)
+
+
+def combine_single_features(
+    feat_list: list[pd.DataFrame], begin_feat_num: int = 1
+) -> pd.DataFrame:
+    """Combines multiple generate_single_feature outputs into one
+    coherent output
+
+    Parameters
+    ----------
+    feat_list
+
+    Returns
+    -------
+
+    """
+
+    time_col_name: str = "time"
+
+    comb_output = pd.concat(feat_list)
+
+    all_times = comb_output[time_col_name].unique()
+    all_times = sorted(all_times)
+    frame_nums = {str(np.datetime64(x, "ns")): i for i, x in enumerate(all_times)}
+    vec_frame_func = np.vectorize(lambda x: frame_nums[str(np.datetime64(x, "ns"))])
+    comb_output["frame"] = vec_frame_func(comb_output[time_col_name])
+    comb_output["idx"] = comb_output.groupby("frame").transform("cumcount")
+    comb_output = comb_output.sort_values(["frame", "idx"], axis=0)
+    feat_col = np.arange(begin_feat_num, begin_feat_num + len(comb_output))
+    comb_output["feature"] = feat_col
+    return comb_output
+
+
+def get_start_end_of_feat(center_point, size, axis_min, axis_max, is_pbc=False):
+    """Gets the start and ending points for a feature given a size and PBC
+    conditions
+
+    Parameters
+    ----------
+    center_point: float
+        The center point of the feature
+    size: float
+        The size of the feature in this dimension
+    axis_min: int
+        Minimum point on the axis (usually 0)
+    axis_max: int
+        Maximum point on the axis (exclusive). This is 1 after
+        the last real point on the axis, such that axis_max - axis_min
+        is the size of the axis
+    is_pbc: bool
+        True if we should give wrap around points, false if we shouldn't.
+
+    Returns
+    -------
+    tuple (start_point, end_point)
+    Note that if is_pbc is True, start_point can be less than axis_min and
+    end_point can be greater than or equal to axis_max. This is designed to be used with
+    ```get_pbc_coordinates```
+    """
+    import numpy as np
+
+    min_pt = int(np.ceil(center_point - size / 2))
+    max_pt = int(np.ceil(center_point + size / 2))
+    # adjust points for boundaries, if needed.
+    if min_pt < axis_min and not is_pbc:
+        min_pt = axis_min
+    if max_pt > axis_max and not is_pbc:
+        max_pt = axis_max
+
+    return (min_pt, max_pt)
+
+
+def generate_grid_coords(min_max_coords, lengths):
+    """Generates a grid of coordinates, such as fake lat/lons for testing.
+
+    Parameters
+    ----------
+    min_max_coords: array-like, either length 2, length 4, or length 6.
+        The minimum and maximum values in each dimension as:
+        (min_dim1, max_dim1, min_dim2, max_dim2, min_dim3, max_dim3) to use
+        all 3 dimensions. You can omit any dimensions that you aren't using.
+    lengths: array-like, either length 1, 2, or 3.
+        The lengths of values in each dimension. Length must equal 1/2 the length
+        of min_max_coords.
+
+    Returns
+    -------
+    1, 2, or 3 array-likes
+        array-like of grid coordinates in the number of dimensions requested
+        and with the number of arrays specified (meshed coordinates)
+
+    """
+    import numpy as np
+
+    if len(min_max_coords) != len(lengths) * 2:
+        raise ValueError(
+            "The length of min_max_coords must be exactly 2 times"
+            " the length of lengths."
+        )
+
+    if len(lengths) == 1:
+        return np.mgrid[
+            min_max_coords[0] : min_max_coords[1] : complex(imag=lengths[0])
+        ]
+
+    if len(lengths) == 2:
+        return np.mgrid[
+            min_max_coords[0] : min_max_coords[1] : complex(imag=lengths[0]),
+            min_max_coords[2] : min_max_coords[3] : complex(imag=lengths[1]),
+        ]
+
+    if len(lengths) == 3:
+        return np.mgrid[
+            min_max_coords[0] : min_max_coords[1] : complex(imag=lengths[0]),
+            min_max_coords[2] : min_max_coords[3] : complex(imag=lengths[1]),
+            min_max_coords[4] : min_max_coords[5] : complex(imag=lengths[2]),
+        ]
+
+
+def lists_equal_without_order(a, b):
+    """
+    This will make sure the inner list contain the same,
+    but doesn't account for duplicate groups.
+    from: https://stackoverflow.com/questions/31501909/assert-list-of-list-equality-without-order-in-python/31502000
+    """
+    for l1 in a:
+        check_counter = Counter(l1)
+        if not any(Counter(l2) == check_counter for l2 in b):
+            return False
+    return True
+
+
+def check_tracking_identical(
+    a: pd.DataFrame, b: pd.DataFrame, cell_column: str = "cell"
+) -> bool:
+    """Checks that tracks between a and b are identical, allowing for the
+    cell values to differ as long as the same features are linked together.
+
+    Parameters
+    ----------
+    a: pd.DataFrame
+        first tracking dataframe
+    b: pd.DataFrame
+        second tracking dataframe
+    cell_column: str
+        Column name of the tracking ID (cell by default)
+
+    Returns
+    -------
+    bool
+        True if identical, false if not.
+
+    """
+
+    def cell_signatures(df):
+        return {
+            frozenset(
+                zip(group["frame"], group["hdim_1"], group["hdim_2"], group["feature"])
+            )
+            for _, group in df.groupby(cell_column)
+        }
+
+    orig_sigs = cell_signatures(a)
+    app_sigs = cell_signatures(b)
+    return np.all(orig_sigs == app_sigs)

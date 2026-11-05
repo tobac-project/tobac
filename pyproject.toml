@@ -1,0 +1,141 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tobac"
+version = "1.6.4"
+authors = [
+      { name="Max Heikenfeld", email="max.heikenfeld@physics.ox.ac.uk" },
+      { name="William Jones", email="william.jones@physics.ox.ac.uk" },
+      { name="Fabian Senf", email="senf@tropos.de" },
+      { name="Sean Freeman", email="sean.freeman@uah.edu" },
+      { name="Julia Kukulies", email="kukulies@ucar.edu" },
+      { name="Kelcy Brunner", email="Kelcy.Brunner@ttu.edu" },
+      { name="Sven Starzer", email="sven.starzer@proton.me"}
+]
+description = "A package for identifying and tracking atmospheric phenomena"
+readme = "README.md"
+requires-python = ">=3.9,<3.15"
+license = {text = "BSD-3-Clause"}
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Atmospheric Science",
+]
+
+
+# always required
+dependencies = [
+    "numpy>=1.23",
+    "scipy>=1.8",
+    "scikit-image>=0.19",
+    "scikit-learn>=1.0",
+    "pandas>=2.0",
+    "matplotlib>=3.5",
+    "scitools-iris>=3.2",
+    "xarray>=2023.4",
+    "cartopy>=0.21",
+    "trackpy>=0.6.1",
+    "typing_extensions>=4.0",
+]
+
+[project.optional-dependencies]
+# required to run example notebooks
+examples = [
+    "trackpy>=0.6.1",
+    "jupyter",
+    "notebook",
+    "nbconvert",
+    "pyarrow",
+    "s3fs",
+    "arm_pyart",
+    "seaborn",
+    "h5netcdf",
+    "rioxarray",
+    "numba",
+    "dask",
+    "intake!=2.0.0,!=2.0.1,!=2.0.3,!=2.0.4,!=2.0.5",
+    "intake-xarray",
+    "jinja2",
+    "healpix>=2024.2",
+    "easygems; python_version >= '3.10'",
+    "pyvista>=0.46",
+    "vtk>=9.4.2",
+    "trame",
+    "trame-vtk",
+    "trame-vuetify",
+    "ipywidgets",
+]
+
+# All extras combined
+all = ["tobac[examples]"]
+
+
+# Development-only requirements (PEP 735), not published as extras.
+# Install with `pip install -e . --group dev` (pip >= 25.1) or `uv sync`.
+[dependency-groups]
+# required to run the tests
+test = [
+    "pytest",
+    "pytest-cov",
+    "coverage",
+]
+
+# required for linting/formatting
+lint = [
+    "black",
+    "pylint",
+    "pre-commit",
+]
+
+# required for development
+dev = [
+    {include-group = "test"},
+    {include-group = "lint"},
+    "nbconvert",
+]
+
+# required to build the documentation (installed on Read the Docs without
+# tobac's own dependencies, which doc/conf.py mocks)
+docs = [
+    "numpy",
+    "sphinx",
+    "nbsphinx",
+    "ipykernel",
+    "sphinx-gallery",
+    "pydata-sphinx-theme",
+    "myst-parser",
+    "sphinx-design",
+    "sphinx-toolbox",
+    "linkify-it-py",
+    "sphinxcontrib-mermaid",
+    "sphinx-codeautolink",
+]
+
+
+[project.urls]
+Homepage = "http://github.com/tobac-project/tobac"
+Documentation = "http://tobac.io"
+Issues = "http://github.com/tobac-project/tobac/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["tobac*"]
+exclude = ["tmp*"]

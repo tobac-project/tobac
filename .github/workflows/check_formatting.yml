@@ -1,14 +1,19 @@
-name: check_formatting
+name: Check Python File Formatting with Black
 on: [push, pull_request]
 jobs:
   formatting_job:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v4
+      - name: Set up conda
+        uses: mamba-org/setup-micromamba@v1
         with:
-          python-version: '3.8'
-      - run: pip install .
-      - run: pip install black
-      - run: black tobac --check
-      
+          environment-file: environment.yml
+          generate-run-shell: true
+          cache-environment: true
+          cache-downloads: true
+      - name: Check formatting
+        shell: micromamba-shell {0}
+        run:
+          black --version &&
+          black tobac --check --diff 

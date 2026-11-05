@@ -1,5 +1,16 @@
 # from .tracking import maketrack
-from .segmentation import (
+import sys
+
+if sys.version_info < (3, 7):
+    warning = """ \n\n 
+    Support for Python versions less than 3.7 is deprecated. 
+    Version 1.5 of tobac will require Python 3.7 or later.
+   Python {py} detected. \n\n
+    """.format(py=".".join(str(v) for v in sys.version_info[:3]))
+
+    print(warning)
+
+from tobac.segmentation.watershed_segmentation import (
     segmentation_3D,
     segmentation_2D,
     watershedding_3D,
@@ -16,48 +27,85 @@ from .plotting import (
     plot_mask_cell_track_follow,
     plot_mask_cell_track_static,
     plot_mask_cell_track_static_timeseries,
-)
-from .plotting import (
     plot_lifetime_histogram,
     plot_lifetime_histogram_bar,
     plot_histogram_cellwise,
     plot_histogram_featurewise,
-)
-from .plotting import plot_mask_cell_track_3Dstatic, plot_mask_cell_track_2D3Dstatic
-from .plotting import (
+    plot_mask_cell_track_3Dstatic,
+    plot_mask_cell_track_2D3Dstatic,
     plot_mask_cell_individual_static,
     plot_mask_cell_individual_3Dstatic,
+    animation_mask_field,
+    make_map,
+    map_tracks,
 )
-from .plotting import animation_mask_field
-from .plotting import make_map, map_tracks
-from .analysis import (
+from tobac.analysis.cell_analysis import (
     cell_statistics,
     cog_cell,
     lifetime_histogram,
-    histogram_featurewise,
     histogram_cellwise,
-)
-from .analysis import calculate_velocity, calculate_distance, calculate_area
-from .analysis import calculate_nearestneighbordistance
-from .analysis import (
     velocity_histogram,
+    calculate_overlap,
+)
+from tobac.analysis.feature_analysis import (
+    histogram_featurewise,
+    calculate_nearestneighbordistance,
     nearestneighbordistance_histogram,
     area_histogram,
 )
-from .analysis import calculate_overlap
-from .utils import (
+from tobac.analysis.spatial import (
+    calculate_velocity,
+    calculate_distance,
+    calculate_area,
+)
+from .utils.mask import (
     mask_cell,
     mask_cell_surface,
     mask_cube_cell,
     mask_cube_untracked,
     mask_cube,
     column_mask_from2D,
-    get_bounding_box,
+    mask_features,
+    mask_features_surface,
+    mask_cube_features,
 )
-from .utils import mask_features, mask_features_surface, mask_cube_features
-
-from .utils import add_coordinates, get_spacings
+from .utils.general import (
+    get_bounding_box,
+    add_coordinates,
+    get_spacings,
+)
+from .utils.mask import convert_feature_mask_to_cells, convert_cell_mask_to_features
 from .feature_detection import feature_detection_multithreshold
 from .tracking import linking_trackpy
 from .wrapper import maketrack
 from .wrapper import tracking_wrapper
+from . import merge_split
+import importlib.metadata
+import pathlib
+
+# default version number
+__version__ = "unknown_dev_version"
+
+# Set version number
+# This version should work without needing the package installed
+try:
+    __version__ = importlib.metadata.version(__package__ or __name__)
+except importlib.metadata.PackageNotFoundError:
+    # need to get version directly from text file
+    try:
+        import tomllib
+
+        pyproject_toml_file_name = (
+            pathlib.Path(__file__).parent.parent / "pyproject.toml"
+        )
+        if pyproject_toml_file_name.exists() and pyproject_toml_file_name.is_file():
+            with open(pyproject_toml_file_name, "rb") as f:
+                toml_data = tomllib.load(f)
+                if "project" in toml_data and "version" in toml_data["project"]:
+                    __version__ = toml_data["project"]["version"]
+
+    except ImportError:
+        # on python <3.11 but not installing tobac.
+        # don't bother giving precise version number.
+        __version__ = "unknown_dev_version"
+    pass
