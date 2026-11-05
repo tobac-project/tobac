@@ -8,6 +8,26 @@ import sys, os
 
 sys.path.insert(0, os.path.abspath("extensions"))
 
+
+# as of sphinx 8.2.0, symlinks break images in notebooks. This code fixes it.
+from pathlib import Path
+from sphinx.environment import BuildEnvironment
+
+_orig_relfn2path = BuildEnvironment.relfn2path
+
+
+def _relfn2path_lexical(self, filename, docname=None):
+    name = str(filename)
+    if not name.startswith(("/", "\\")) and not os.path.isabs(name):
+        docname = docname or self.docname
+        if docname:
+            doc_dir = self.doc2path(docname, base=False).parent
+            filename = "/" + Path(os.path.normpath(doc_dir / name)).as_posix()
+    return _orig_relfn2path(self, filename, docname)
+
+
+BuildEnvironment.relfn2path = _relfn2path_lexical
+
 # What Sphinx extensions do we need
 extensions = [
     "sphinx.ext.autodoc",
@@ -24,6 +44,7 @@ extensions = [
     "sphinx_design",
     "sphinx_toolbox.code",
     "sphinxcontrib.mermaid",
+    "sphinx_codeautolink",
 ]
 
 
@@ -183,6 +204,7 @@ nbsphinx_thumbnails = {
     "examples/Basics/Methods-and-Parameters-for-Linking": "_static/thumbnails/Basics_Methods-and-Parameters-for-Linking_Thumbnail.png",
     "examples/Basics/Methods-and-Parameters-for-Segmentation": "_static/thumbnails/Basics_Methods-and-Parameters-for-Segmentation_Thumbnail.png",
     "examples/Example_OLR_Tracking_model/Example_OLR_Tracking_model": "_static/thumbnails/Example_OLR_Tracking_model_Thumbnail.png",
+    "examples/Example_OLR_Tracking_model_latlon_tracking/Example_OLR_Tracking_model_latlon_tracking": "_static/thumbnails/Example_OLR_Tracking_model_Thumbnail.png",
     "examples/Example_OLR_Tracking_satellite/Example_OLR_Tracking_satellite": "_static/thumbnails/Example_OLR_Tracking_satellite_Thumbnail.png",
     "examples/Example_Precip_Tracking/Example_Precip_Tracking": "_static/thumbnails/Example_Precip_Tracking_Thumbnail.png",
     "examples/Example_Track_on_Radar_Segment_on_Satellite/Example_Track_on_Radar_Segment_on_Satellite": "_static/thumbnails/Example_Track_on_Radar_Segment_on_Satellite_Thumbnail.png",
@@ -191,4 +213,5 @@ nbsphinx_thumbnails = {
     "examples/Example_low_cloud_tracking_eurec4a/Example_low_cloud_tracking_eurec4a": "_static/thumbnails/Example_low_cloud_tracking_eurac4a_Thumbnail.png",
     "examples/Example_ICON_MCS_tracking/Example_ICON_MCS_tracking": "_static/thumbnails/Example_ICON_MCS_tracking_Thumbnail.png",
     "examples/big_data_processing/parallel_processing_tobac": "_static/thumbnails/big_data_processing_parallel_processing_tobac.svg",
+    "examples/Example_Append_Tracking_Radar/Example_Append_Tracking_Radar": "_static/thumbnails/Example_Append_Tracking_Radar.png",
 }

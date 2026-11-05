@@ -317,7 +317,7 @@ def add_coordinates_3D(
     t:             pandas DataFrame
                    trajectories/features
     variable_cube: iris.cube.Cube
-        Cube (usually the one you are tracking on) at least conaining the dimension of 'time'.
+        Cube (usually the one you are tracking on) at least containing the dimension of 'time'.
         Typically, 'longitude','latitude','x_projection_coordinate','y_projection_coordinate',
         and 'altitude' (if 3D) are the coordinates that we expect, although this function
         will happily interpolate along any dimension coordinates you give.

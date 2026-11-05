@@ -1,0 +1,15 @@
+name: Check Requirements Are In Sync
+on: [push, pull_request]
+jobs:
+  check-requirements:
+    runs-on: ubuntu-latest
+    steps:
+      - name: check out repository code
+        uses: actions/checkout@v4
+      - name: set up python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check pyproject.toml, pixi.toml and environment files agree
+        run: |
+          python .github/scripts/check_requirements.py
