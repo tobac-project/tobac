@@ -317,17 +317,16 @@ def linking_trackpy(
             )
 
         # avoid setting pos_columns by renaming to default values to avoid trackpy bug
-        features_linking.rename(
+        features_linking = features_linking.rename(
             columns={
                 "y": "__temp_y_coord",
                 "x": "__temp_x_coord",
                 "z": "__temp_z_coord",
             },
-            inplace=True,
         )
 
-        features_linking.rename(
-            columns={"hdim_1": "y", "hdim_2": "x", "vdim_adj": "z"}, inplace=True
+        features_linking = features_linking.rename(
+            columns={"hdim_1": "y", "hdim_2": "x", "vdim_adj": "z"},
         )
 
         # generate list of features as input for df_link_iter to avoid bug in df_link
@@ -356,16 +355,15 @@ def linking_trackpy(
         trajectories_unfiltered = pd.concat(trajectories_unfiltered)
 
         # change to column names back
-        trajectories_unfiltered.rename(
-            columns={"y": "hdim_1", "x": "hdim_2", "z": "vdim_adj"}, inplace=True
+        trajectories_unfiltered = trajectories_unfiltered.rename(
+            columns={"y": "hdim_1", "x": "hdim_2", "z": "vdim_adj"},
         )
-        trajectories_unfiltered.rename(
+        trajectories_unfiltered = trajectories_unfiltered.rename(
             columns={
                 "__temp_y_coord": "y",
                 "__temp_x_coord": "x",
                 "__temp_z_coord": "z",
             },
-            inplace=True,
         )
 
     else:
@@ -1025,9 +1023,9 @@ def append_tracks_trackpy(
     )
     # drop time_cell if it's there.
     # TODO: do we really need to drop time_cell? can we recalculate?
-    tracks_vel.drop("time_cell", axis=1, inplace=True)
-    tracks_cut.drop("time_cell", axis=1, inplace=True)
-    old_tracks_retrack.drop("time_cell", axis=1, inplace=True)
+    tracks_vel = tracks_vel.drop("time_cell", axis=1)
+    tracks_cut = tracks_cut.drop("time_cell", axis=1)
+    old_tracks_retrack = old_tracks_retrack.drop("time_cell", axis=1)
     if use_latlon:
         pos_columns_tp = ["y", "x"]
     elif is_3D:
@@ -1087,41 +1085,38 @@ def append_tracks_trackpy(
                 "3D Predictive Tracking Only Supported with trackpy versions newer than 0.6.0."
             )
         # avoid setting pos_columns by renaming to default values to avoid trackpy bug
-        tracks_vel.rename(
+        tracks_vel = tracks_vel.rename(
             columns={
                 "y": "__temp_y_coord",
                 "x": "__temp_x_coord",
                 "z": "__temp_z_coord",
             },
-            inplace=True,
         )
-        old_tracks_retrack.rename(
+        old_tracks_retrack = old_tracks_retrack.rename(
             columns={
                 "y": "__temp_y_coord",
                 "x": "__temp_x_coord",
                 "z": "__temp_z_coord",
             },
-            inplace=True,
         )
 
-        new_features_cleaned.rename(
+        new_features_cleaned = new_features_cleaned.rename(
             columns={
                 "y": "__temp_y_coord",
                 "x": "__temp_x_coord",
                 "z": "__temp_z_coord",
             },
-            inplace=True,
         )
 
-        tracks_vel.rename(
-            columns={"hdim_1": "y", "hdim_2": "x", "vdim_adj": "z"}, inplace=True
+        tracks_vel = tracks_vel.rename(
+            columns={"hdim_1": "y", "hdim_2": "x", "vdim_adj": "z"}
         )
-        old_tracks_retrack.rename(
-            columns={"hdim_1": "y", "hdim_2": "x", "vdim_adj": "z"}, inplace=True
+        old_tracks_retrack = old_tracks_retrack.rename(
+            columns={"hdim_1": "y", "hdim_2": "x", "vdim_adj": "z"}
         )
 
-        new_features_cleaned.rename(
-            columns={"hdim_1": "y", "hdim_2": "x", "vdim_adj": "z"}, inplace=True
+        new_features_cleaned = new_features_cleaned.rename(
+            columns={"hdim_1": "y", "hdim_2": "x", "vdim_adj": "z"}
         )
 
     # generate list of features as input for df_link_iter
@@ -1203,16 +1198,15 @@ def append_tracks_trackpy(
 
         if not use_latlon:
             # change to column names back
-            trajectories_unfiltered.rename(
-                columns={"y": "hdim_1", "x": "hdim_2", "z": "vdim_adj"}, inplace=True
+            trajectories_unfiltered = trajectories_unfiltered.rename(
+                columns={"y": "hdim_1", "x": "hdim_2", "z": "vdim_adj"}
             )
-            trajectories_unfiltered.rename(
+            trajectories_unfiltered = trajectories_unfiltered.rename(
                 columns={
                     "__temp_y_coord": "y",
                     "__temp_x_coord": "x",
                     "__temp_z_coord": "z",
                 },
-                inplace=True,
             )
 
     else:
@@ -1302,7 +1296,7 @@ def append_tracks_trackpy(
         particle_num_to_cell_num, trajectories_unfiltered["particle"]
     )
     trajectories_unfiltered["cell"] = trajectories_unfiltered["cell"].astype(int)
-    trajectories_unfiltered.drop(columns=["particle"], inplace=True)
+    trajectories_unfiltered = trajectories_unfiltered.drop(columns=["particle"])
 
     trajectories_unfiltered = pd.concat([tracks_cut, trajectories_unfiltered])
     if has_unfiltered_cell:
@@ -1717,8 +1711,8 @@ def _calc_velocity_to_most_recent_point(
         rsuffix="_mean",
     )
 
-    mean_speed_df.drop(spd_cols, inplace=True, axis="columns")
-    mean_speed_df.dropna(inplace=True, axis=0)
+    mean_speed_df = mean_speed_df.drop(spd_cols, axis="columns")
+    mean_speed_df = mean_speed_df.dropna(axis=0)
     return mean_speed_df
 
 
@@ -1876,13 +1870,12 @@ def _latlon_to_trackpy_coords(
     features_linking = copy.deepcopy(features)
 
     # avoid setting pos_columns by renaming to default values to avoid trackpy bug
-    features_linking.rename(
+    features_linking = features_linking.rename(
         columns={
             "y": "__temp_y_coord",
             "x": "__temp_x_coord",
             "z": "__temp_z_coord",
         },
-        inplace=True,
     )
 
     # need to convert input lat/lon into radians from degrees
