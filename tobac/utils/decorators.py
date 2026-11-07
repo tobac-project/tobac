@@ -43,7 +43,9 @@ def convert_cube_to_dataarray(
         da = xr.DataArray.from_iris(cube)
 
     if preserve_iris_datetime_types & ("time" in da.coords):
-        da = da.convert_calendar(cube.coord("time").units.calendar, use_cftime=True)
+        da = da.convert_calendar(
+            cube.coord("time").units.calendar, use_cftime=True
+        ).astype(da.dtype)
 
     return da
 

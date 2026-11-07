@@ -604,8 +604,15 @@ def calculate_area(features, mask, method_area=None, vertical_coord=None):
     else:
         raise ValueError("method undefined")
 
-    # Area needs to be a dataarray for get_statistics from mask, but otherwise dims/coords don't actually matter
-    area = xr.DataArray(area, dims=("a", "b"))
+    # Area needs to be a dataarray for get_statistics from mask, with dims matching the (2D) spatial coords of the mask
+    area = xr.DataArray(
+        area,
+        dims=[
+            d
+            for d in xr.DataArray.from_iris(mask).dims
+            if d not in ["time", collapse_dim]
+        ],
+    )
 
     features = get_statistics_from_mask(
         features,
