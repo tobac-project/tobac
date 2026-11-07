@@ -17,9 +17,11 @@ Documentation is broken down by directory and module.
    tracking
    segmentation
    merge_split
+   merge_split.families
    utils.bulk_statistics
    utils.general
    plotting
    analysis.cell_analysis
    analysis.feature_analysis
    analysis.spatial
+
