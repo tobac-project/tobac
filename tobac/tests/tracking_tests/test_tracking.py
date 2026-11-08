@@ -10,6 +10,7 @@ import pytest
 import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal
+from skimage.data import cell
 import trackpy as tp
 
 import tobac.testing
@@ -715,3 +716,57 @@ def test_trackpy_predict_PBC():
 
     # Assert with PBCs and prdictive tracking the cells should cross the border
     assert output_predict_pbc["cell"].tolist() == [1, 2, 1, 2, 1, 2, 1, 2]
+
+
+def test_linking_missing_frame():
+    """Test that when there is a missing frame, the features are not linked together when using random or predictive tracking. This is because trackpy interprets "frame" as the time gap between subsequent observations in predictive tracking, and is unaware of the missing frame."""
+    features = pd.DataFrame(
+        data=dict(
+            feature=[1, 2],
+            frame=[1, 3],
+            hdim_1=[1, 1],
+            hdim_2=[1, 1],
+            time=[
+                datetime.datetime(2000, 1, 1),
+                datetime.datetime(2000, 1, 1, 0, 10),
+            ],
+        )
+    )
+
+    # random tracking, no link:
+    tracks_random = tobac.linking_trackpy(
+        features, None, 300, 1000, d_max=1000, stubs=2, method_linking="random"
+    )
+    assert np.all(tracks_random.cell == -1)
+
+    # random tracking with memory, linked:
+    tracks_random_memory = tobac.linking_trackpy(
+        features,
+        None,
+        300,
+        1000,
+        d_max=1000,
+        stubs=2,
+        method_linking="random",
+        memory=1,
+    )
+    assert np.all(tracks_random_memory.cell == 1)
+
+    # predictive tracking, cells are linked despite time gap because trackpy interprets "frame" as the time gap between subsequent observations, and is unaware of the missing frame
+    tracks_predict = tobac.linking_trackpy(
+        features, None, 300, 1000, d_max=1000, stubs=2, method_linking="predict"
+    )
+    assert np.all(tracks_predict.cell == -1)
+
+    # predictive tracking with memory, should still be linked
+    tracks_predict_memory = tobac.linking_trackpy(
+        features,
+        None,
+        300,
+        1000,
+        d_max=1000,
+        stubs=2,
+        method_linking="predict",
+        memory=1,
+    )
+    assert np.all(tracks_predict_memory.cell == 1)
