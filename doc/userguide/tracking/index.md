@@ -7,6 +7,7 @@ Tracking allows you to stitch together the single, individual points of feature 
 
 tracking_output
 lat_lon_tracking
+append_tracking
 
 ```
 
