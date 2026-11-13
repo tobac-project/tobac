@@ -320,12 +320,12 @@ def merge_split_MEST(
         cell_child_feature_count, dims=(cell_dim), coords={cell_dim: cell_id}
     )
 
-    cell_starts_with_split = np.isin(cell_id, start_node_cells)
+    cell_starts_with_split = np.isin(cell_id, end_node_cells)
     cell_starts_with_split = xr.DataArray(
         cell_starts_with_split, dims=(cell_dim), coords={cell_dim: cell_id}
     )
 
-    cell_ends_with_merge = np.isin(cell_id, end_node_cells)
+    cell_ends_with_merge = np.isin(cell_id, start_node_cells)
     cell_ends_with_merge = xr.DataArray(
         cell_ends_with_merge, dims=(cell_dim), coords={cell_dim: cell_id}
     )
