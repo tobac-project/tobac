@@ -205,6 +205,40 @@ def add_markers(
     return marker_arr
 
 
+def pbc_aware_distance_transform(markers: np.array, PBC_flag: str) -> np.array:
+    """Euclidean distance to the nearest non-zero marker, wrapping around the
+    periodic horizontal dimensions indicated by ``PBC_flag``.
+
+    Works for 2D (hdim_1, hdim_2) or 3D (z, hdim_1, hdim_2) marker arrays and
+    returns an array of the same shape. The vertical dimension is never
+    treated as periodic.
+
+    :hidden:
+    """
+    from scipy.ndimage import distance_transform_edt
+
+    squeeze = False
+    if markers.ndim == 2:
+        markers = markers[np.newaxis, :, :]
+        squeeze = True
+
+    # Tile 3x along each periodic horizontal dimension so that the distance
+    # transform sees marker copies on both sides of the boundary, then take
+    # the middle copy, which has the exact periodic distance.
+    reps = [
+        1,
+        3 if PBC_flag in ("hdim_1", "both") else 1,
+        3 if PBC_flag in ("hdim_2", "both") else 1,
+    ]
+    slices = [slice(None)]
+    for ax in (1, 2):
+        length = markers.shape[ax]
+        slices.append(slice(length, 2 * length) if reps[ax] == 3 else slice(None))
+    D = distance_transform_edt(np.tile(markers, reps) == 0)[tuple(slices)]
+
+    return D[0] if squeeze else D
+
+
 def segmentation_3D(
     features,
     field,
@@ -389,11 +423,7 @@ def segmentation_timestep(
         from skimage.segmentation import watershed
     except ImportError:
         from skimage.morphology import watershed
-    from scipy.ndimage import distance_transform_edt
     from copy import deepcopy
-
-    # if max_distance is not None and PBC_flag in ["hdim_1", "hdim_2", "both"]:
-    #     raise NotImplementedError("max_distance not yet implemented for PBCs")
 
     # How many dimensions are we using?
     if field_in.ndim == 2:
@@ -486,7 +516,7 @@ def segmentation_timestep(
 
     # remove everything from the individual masks that is more than max_distance_pixel away from the markers
     if max_distance is not None:
-        D = distance_transform_edt((markers == 0))
+        D = pbc_aware_distance_transform(markers, PBC_flag)
         segmentation_mask[
             np.bitwise_and(segmentation_mask > 0, D > max_distance_pixel)
         ] = 0
@@ -793,12 +823,13 @@ def segmentation_timestep(
 
             # remove everything from the individual masks that is more than max_distance_pixel away from the markers
             if max_distance is not None:
-                D = distance_transform_edt((buddy_markers == 0))
+                # PBC-aware distance to the nearest buddy marker, mapped into buddy box space
+                D = pbc_aware_distance_transform(
+                    np.where(np.isin(markers, buddies), markers, 0), PBC_flag
+                )[buddy_locs[0], buddy_locs[1], buddy_locs[2]]
                 segmentation_mask_4[
                     np.bitwise_and(segmentation_mask_4 > 0, D > max_distance_pixel)
                 ] = 0
-
-            # remove everything from the individual masks that is more than max_distance_pixel away from the markers
 
             # mask all segmentation_mask points below threshold as -1
             # to differentiate from those unmasked points NOT filled by watershedding

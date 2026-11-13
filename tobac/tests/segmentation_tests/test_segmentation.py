@@ -1111,33 +1111,7 @@ def test_max_distance():
     seg_out_arr = seg_output.core_data()
     assert np.all(correct_seg_arr == seg_out_arr)
 
-    test_arr = np.zeros((50, 50))
-    test_arr[:, :20] = 10
-    test_arr[:, 45:] = 10
-
-    fd_output = testing.generate_single_feature(0, 0, max_h1=50, max_h2=50)
-
-    test_data_iris = testing.make_dataset_from_arr(test_arr, data_type="iris")
-
-    # with pytest.raises(NotImplementedError):
-    #     seg_output, seg_feats = segmentation.segmentation_timestep(
-    #         test_data_iris,
-    #         fd_output,
-    #         1,
-    #         threshold=1,
-    #         PBC_flag="hdim_2",
-    #         max_distance=1,
-    #     )
-    """    
-    correct_seg_arr = np.full((50, 50), 0, dtype=np.int32)
-    feat_num: int = 1
-    correct_seg_arr[0:3, 0] = feat_num
-    correct_seg_arr[0, 0:3] = feat_num
-    correct_seg_arr[:, 20:45] = -1
-
-    seg_out_arr = seg_output.core_data()
-    assert np.all(correct_seg_arr == seg_out_arr)
-    """
+    # PBC + max_distance is covered by the test_max_distance_pbc_* tests below.
 
 
 @pytest.mark.parametrize(
@@ -1537,3 +1511,126 @@ def test_add_markers_column_seed_casts_to_int():
     for (iy, ix), feat in expected.items():
         assert marker_arr[iy, ix] == feat
     assert np.count_nonzero(marker_arr) == len(expected)
+
+
+def test_max_distance_pbc_interior_feature_matches_no_pbc():
+    """max_distance filtering with PBCs enabled must give identical results to
+    no PBCs when the feature is far from the boundary (no wrap-around involved),
+    and must keep exactly the disk of radius ceil(max_distance/dxy) around the
+    marker.
+    """
+    ny = nx = 50
+    test_arr = np.full((ny, nx), 10.0)
+    fd_output = testing.generate_single_feature(25, 25, max_h1=ny, max_h2=nx)
+    test_data_iris = testing.make_dataset_from_arr(test_arr, data_type="iris")
+
+    seg_none, _ = segmentation.segmentation_timestep(
+        test_data_iris, fd_output, 1, threshold=1, PBC_flag="none", max_distance=3
+    )
+    seg_pbc, _ = segmentation.segmentation_timestep(
+        test_data_iris, fd_output, 1, threshold=1, PBC_flag="both", max_distance=3
+    )
+    assert np.all(seg_none.core_data() == seg_pbc.core_data())
+
+    y, x = np.mgrid[0:ny, 0:nx]
+    expected = np.where((y - 25) ** 2 + (x - 25) ** 2 <= 9, 1, 0)
+    assert np.all(np.asarray(seg_pbc.core_data()) == expected)
+
+
+@pytest.mark.parametrize(
+    "PBC_flag, feat_h1, feat_h2",
+    [("hdim_1", 0.0, 25.0), ("hdim_2", 25.0, 49.0), ("both", 0.0, 49.0)],
+)
+def test_max_distance_pbc_boundary_feature_wraps(PBC_flag, feat_h1, feat_h2):
+    """max_distance filtering with PBCs must use the periodic distance: cells
+    across the boundary that are within max_distance of the marker must remain
+    assigned to the feature. Uses a uniform above-threshold field with a single
+    feature on the boundary, so the expected mask is a disk of radius
+    ceil(max_distance/dxy) around the marker in periodic distance.
+    """
+    ny = nx = 50
+    test_arr = np.full((ny, nx), 10.0)
+    fd_output = testing.generate_single_feature(feat_h1, feat_h2, max_h1=ny, max_h2=nx)
+    test_data_iris = testing.make_dataset_from_arr(test_arr, data_type="iris")
+
+    max_distance = 3.0
+    seg_output, seg_feats = segmentation.segmentation_timestep(
+        test_data_iris,
+        fd_output,
+        1,
+        threshold=1,
+        PBC_flag=PBC_flag,
+        max_distance=max_distance,
+    )
+    mask = np.asarray(seg_output.core_data())
+
+    # PBC-aware distance to the (int-cast) marker position
+    y, x = np.mgrid[0:ny, 0:nx]
+    my, mx = int(feat_h1 + 0.5), int(feat_h2 + 0.5)
+    dy = np.abs(y - my)
+    dx = np.abs(x - mx)
+    if PBC_flag in ("hdim_1", "both"):
+        dy = np.minimum(dy, ny - dy)
+    if PBC_flag in ("hdim_2", "both"):
+        dx = np.minimum(dx, nx - dx)
+    dist = np.sqrt(dy**2 + dx**2)
+    expected = np.where(dist <= max_distance, 1, 0)
+    assert np.all(mask == expected)
+
+
+def test_max_distance_pbc_blob_across_boundary():
+    """max_distance filtering with PBCs on a blob that straddles the boundary:
+    only cells within the periodic distance of the marker are kept, on both
+    sides of the boundary. Below-threshold and beyond-max-distance cells are 0
+    with the default segment numbers.
+    """
+    ny = nx = 50
+    test_arr = np.zeros((ny, nx))
+    test_arr[23:28, 47:50] = 10.0
+    test_arr[23:28, 0:3] = 10.0
+    fd_output = testing.generate_single_feature(25, 49, max_h1=ny, max_h2=nx)
+    test_data_iris = testing.make_dataset_from_arr(test_arr, data_type="iris")
+
+    seg_output, seg_feats = segmentation.segmentation_timestep(
+        test_data_iris, fd_output, 1, threshold=1, PBC_flag="hdim_2", max_distance=2
+    )
+    mask = np.asarray(seg_output.core_data())
+
+    y, x = np.mgrid[0:ny, 0:nx]
+    dx = np.minimum(np.abs(x - 49), nx - np.abs(x - 49))
+    dist = np.sqrt((y - 25) ** 2 + dx**2)
+    above = test_arr > 1
+    expected = np.where(above & (dist <= 2), 1, 0)
+    assert np.all(mask == expected)
+    # Cells across the boundary within max_distance must be assigned
+    assert mask[25, 0] == 1
+    assert mask[24, 0] == 1
+    # Cells across the boundary beyond max_distance must not be assigned
+    assert mask[25, 3] == 0
+
+
+def test_max_distance_pbc_3d_column_seed():
+    """3D max_distance filtering with PBCs: with column seeding the markers form
+    a full column, so the kept region is a cylinder of radius
+    ceil(max_distance/dxy) around the column in periodic horizontal distance,
+    across the boundary. Feature is on the (49, 49) corner with PBCs in both
+    horizontal dimensions.
+    """
+    nz, ny, nx = 6, 50, 50
+    test_arr = np.full((nz, ny, nx), 10.0)
+    fd_output = testing.generate_single_feature(49, 49, start_v=3, max_h1=ny, max_h2=nx)
+    test_data_iris = testing.make_dataset_from_arr(
+        test_arr, data_type="iris", z_dim_num=0, y_dim_num=1, x_dim_num=2
+    )
+
+    seg_output, seg_feats = segmentation.segmentation_timestep(
+        test_data_iris, fd_output, 1, threshold=1, PBC_flag="both", max_distance=3
+    )
+    mask = np.asarray(seg_output.core_data())
+
+    y, x = np.mgrid[0:ny, 0:nx]
+    dy = np.minimum(np.abs(y - 49), ny - np.abs(y - 49))
+    dx = np.minimum(np.abs(x - 49), nx - np.abs(x - 49))
+    dist = np.sqrt(dy**2 + dx**2)
+    expected = np.where(dist <= 3, 1, 0)[np.newaxis, :, :].repeat(nz, axis=0)
+    assert np.all(mask == expected)
