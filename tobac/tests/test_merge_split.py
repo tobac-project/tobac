@@ -522,3 +522,72 @@ def test_merge_split_MEST_return_as_error():
         mergesplit.merge_split_MEST(
             output, dxy=10, distance=(dist_between + 50) * 10, return_as="error"
         )
+
+
+def test_merge_split_MEST_track_number_unassigned():
+    """Test that track_number_unassigned is applied to the track value of
+    unassigned features in both the dataset and dataframe outputs, that it
+    defaults to cell_number_unassigned, and that time_track is NaT for
+    unassigned tracks
+    """
+    # One assigned cell (features 1 and 2) and one unassigned feature (cell -1)
+    tracks = pd.DataFrame(
+        {
+            "feature": [1, 2, 3],
+            "frame": [0, 1, 0],
+            "time": [
+                datetime.datetime(2022, 1, 1, 0, 0),
+                datetime.datetime(2022, 1, 1, 0, 5),
+                datetime.datetime(2022, 1, 1, 0, 0),
+            ],
+            "hdim_1": [0.0, 5.0, 100.0],
+            "hdim_2": [0.0, 5.0, 100.0],
+            "cell": [1, 1, -1],
+        }
+    )
+
+    # Default: the unassigned track value matches cell_number_unassigned (-1) in
+    # both the dataset and dataframe outputs
+    output_ds = mergesplit.merge_split_MEST(tracks, dxy=10, distance=100)
+    assert output_ds.feature_parent_track_id.sel(feature=3).values == -1
+
+    output_df = mergesplit.merge_split_MEST(
+        tracks, dxy=10, distance=100, return_as="dataframe"
+    )
+    assert output_df.loc[output_df.cell == -1, "track"].iloc[0] == -1
+    assert pd.isna(output_df.loc[output_df.cell == -1, "time_track"].iloc[0])
+    assert pd.api.types.is_integer_dtype(output_df["track"])
+
+    # Assigned features get a real track id and time_track relative to the
+    # start of the track
+    assert np.all(output_df.loc[output_df.cell == 1, "track"] == 1)
+    time_tracks = output_df.loc[output_df.cell == 1, "time_track"]
+    assert (time_tracks == pd.Timedelta(0)).sum() == 1
+    assert (time_tracks == pd.Timedelta(minutes=5)).sum() == 1
+
+    # Custom track_number_unassigned is used for unassigned features in both
+    # outputs, and time_track is NaT for them
+    output_ds_custom = mergesplit.merge_split_MEST(
+        tracks, dxy=10, distance=100, track_number_unassigned=0
+    )
+    assert output_ds_custom.feature_parent_track_id.sel(feature=3).values == 0
+
+    output_df_custom = mergesplit.merge_split_MEST(
+        tracks, dxy=10, distance=100, return_as="dataframe", track_number_unassigned=0
+    )
+    assert output_df_custom.loc[output_df_custom.cell == -1, "track"].iloc[0] == 0
+    assert pd.isna(
+        output_df_custom.loc[output_df_custom.cell == -1, "time_track"].iloc[0]
+    )
+
+    # If track_number_unassigned is None, it matches a custom cell_number_unassigned
+    tracks_custom_cell = tracks.copy()
+    tracks_custom_cell["cell"] = [1, 1, -999]
+    output_df_cnu = mergesplit.merge_split_MEST(
+        tracks_custom_cell,
+        dxy=10,
+        distance=100,
+        cell_number_unassigned=-999,
+        return_as="dataframe",
+    )
+    assert output_df_cnu.loc[output_df_cnu.cell == -999, "track"].iloc[0] == -999

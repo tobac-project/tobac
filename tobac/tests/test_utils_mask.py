@@ -913,7 +913,10 @@ def test_convert_feature_mask_to_tracks_no_track_column():
         }
     )
 
-    with pytest.raises(ValueError, match="`track` column not found in features input*"):
+    with pytest.raises(
+        ValueError,
+        match="`track` column not found in features input.*add_track_info_to_dataframe",
+    ):
         track_mask = convert_feature_mask_to_tracks(test_features, test_mask)
 
 
@@ -1245,7 +1248,10 @@ def test_convert_cell_mask_to_tracks_no_track_column():
         }
     )
 
-    with pytest.raises(ValueError, match="`track` column not found in features input*"):
+    with pytest.raises(
+        ValueError,
+        match="`track` column not found in features input.*add_track_info_to_dataframe",
+    ):
         track_mask = convert_cell_mask_to_tracks(test_features, test_mask)
 
 
@@ -1392,3 +1398,99 @@ def test_convert_cell_mask_to_tracks_inplace():
     # Test mask is the same
     assert track_mask.equals(test_mask)
     assert not mask_copy.equals(test_mask)
+
+
+def test_convert_feature_mask_to_tracks_filters_on_track_not_cell():
+    """
+    Test that convert_feature_mask_to_tracks with track_number_unassigned filters
+    on the track value, not the cell value: a feature with a stub cell id but an
+    assigned track value is relabelled with its track, while a feature with the
+    unassigned track value is labelled 0
+    """
+    test_data = np.zeros([2, 4, 5], dtype=int)
+    test_data[0, 1:3, 1:4] = 1
+    test_data[1, 1:3, 1:4] = 2
+
+    test_mask = xr.DataArray(
+        test_data,
+        dims=("time", "y", "x"),
+        coords=dict(
+            time=pd.date_range(
+                datetime(2000, 1, 1, 0), datetime(2000, 1, 1, 1), periods=2
+            )
+        ),
+        attrs=dict(units="feature"),
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2],
+            "frame": [0, 1],
+            "time": pd.date_range(
+                datetime(2000, 1, 1, 0), datetime(2000, 1, 1, 1), periods=2
+            ),
+            "cell": [-1, 2],
+            "track": [3, -1],
+        }
+    )
+
+    track_mask = convert_feature_mask_to_tracks(
+        test_features, test_mask, track_number_unassigned=-1
+    )
+
+    # Feature 1 has a stub cell id but an assigned track, so its region is
+    # relabelled with the track value 3, not removed
+    assert np.all(track_mask.values[test_mask.values == 1] == 3)
+
+    # Feature 2 has the unassigned track value, so its region is labelled 0
+    assert np.all(track_mask.values[test_mask.values == 2] == 0)
+
+    # Without track_number_unassigned, the unassigned track value is kept
+    track_mask_unfiltered = convert_feature_mask_to_tracks(test_features, test_mask)
+    assert np.all(track_mask_unfiltered.values[test_mask.values == 2] == -1)
+
+
+def test_convert_cell_mask_to_tracks_filters_on_track_not_cell():
+    """
+    Test that convert_cell_mask_to_tracks with track_number_unassigned filters on
+    the track value, not the cell value: a stub cell id whose track is assigned is
+    relabelled with the track, while a cell whose track is the unassigned value is
+    labelled 0
+    """
+    test_data = np.zeros([2, 4, 5], dtype=int)
+    test_data[0, 1:3, 1:4] = -1
+    test_data[1, 1:3, 1:4] = 2
+
+    test_mask = xr.DataArray(
+        test_data,
+        dims=("time", "y", "x"),
+        coords=dict(
+            time=pd.date_range(
+                datetime(2000, 1, 1, 0), datetime(2000, 1, 1, 1), periods=2
+            )
+        ),
+        attrs=dict(units="cell"),
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2],
+            "frame": [0, 1],
+            "time": pd.date_range(
+                datetime(2000, 1, 1, 0), datetime(2000, 1, 1, 1), periods=2
+            ),
+            "cell": [-1, 2],
+            "track": [7, -1],
+        }
+    )
+
+    track_mask = convert_cell_mask_to_tracks(
+        test_features, test_mask, track_number_unassigned=-1
+    )
+
+    # The stub cell id -1 has an assigned track (7), so its region is relabelled
+    # 7, not removed
+    assert np.all(track_mask.values[test_mask.values == -1] == 7)
+
+    # Cell 2 has the unassigned track value, so its region is labelled 0
+    assert np.all(track_mask.values[test_mask.values == 2] == 0)
