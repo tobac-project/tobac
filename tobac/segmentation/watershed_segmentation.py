@@ -222,6 +222,11 @@ def pbc_aware_distance_transform(markers: np.array, PBC_flag: str) -> np.array:
         markers = markers[np.newaxis, :, :]
         squeeze = True
 
+    if PBC_flag not in ("hdim_1", "hdim_2", "both"):
+        # shortcut for no PBCs, just use the normal distance transform
+        D = distance_transform_edt(markers == 0)
+        return D[0] if squeeze else D
+
     # Tile 3x along each periodic horizontal dimension so that the distance
     # transform sees marker copies on both sides of the boundary, then take
     # the middle copy, which has the exact periodic distance.
