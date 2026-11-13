@@ -588,7 +588,7 @@ def convert_feature_mask_to_tracks(
     Returns
     -------
     xr.DataArray
-        A mask of cell regions corresponding to the cells in the input dataframe
+        A mask of track regions corresponding to the tracks in the input dataframe
 
     Raises
     ------
@@ -665,12 +665,12 @@ def convert_cell_mask_to_tracks(
     Returns
     -------
     xr.DataArray
-        A mask of cell regions corresponding to the cells in the input dataframe
+        A mask of track regions corresponding to the tracks in the input dataframe
 
     Raises
     ------
     ValueError
-        If the features input does not have a cell column
+        If the features input does not have a track column
     ValueError
         If there are labels in the cell_mask that are not present in the
         features dataframe
