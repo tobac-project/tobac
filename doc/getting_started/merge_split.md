@@ -6,7 +6,7 @@ This module uses a minimum euclidian spanning tree to combine merging cells, thu
 This submodule will label merged/split cells with a TRACK number in addition to its CELL number.
 
 Features, cells, and tracks are combined using parent/child nomenclature. 
-(quick note on terms; "feature" is a detected object at a single time step (see {doc}`feature_detection_overview`). "cell" is a series of features linked together over multiple timesteps (see {doc}`linking`). "track" may be an individual cell or series of cells which have merged and/or split.)
+(quick note on terms; "feature" is a detected object at a single time step (see {doc}`feature_detection_overview`). "cell" is a series of features linked together over multiple timesteps (see {doc}`tracking_basics`). "track" may be an individual cell or series of cells which have merged and/or split.)
 
 ## Output formats: the `return_as` parameter
 

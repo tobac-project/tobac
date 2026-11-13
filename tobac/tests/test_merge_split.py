@@ -453,6 +453,82 @@ def test_merge_split_MEST_return_dataframe():
     )
 
 
+def test_merge_split_MEST_merge_split_flags():
+    """Test that cell_ends_with_merge / cell_starts_with_split are assigned to
+    the correct cells (and the corresponding ends_with_merge / starts_with_split
+    columns in the dataframe output): cells whose last feature is the end of a
+    merge/split link end with a merge, and cells whose first feature is the
+    start of the link start with a split.
+    """
+    # Merge scenario: cells 1 and 2 end at frame 1 close to where cell 3
+    # starts at frame 2
+    merge_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3, 4, 5, 6],
+            "hdim_1": [0, 1, 0, 1, 2, 3],
+            "hdim_2": [0, 1, 8, 7, 4, 4],
+            "cell": [1, 1, 2, 2, 3, 3],
+            "frame": [0, 1, 0, 1, 2, 3],
+            "time": [
+                datetime.datetime(2000, 1, 1, 0, 0),
+                datetime.datetime(2000, 1, 1, 0, 5),
+                datetime.datetime(2000, 1, 1, 0, 0),
+                datetime.datetime(2000, 1, 1, 0, 5),
+                datetime.datetime(2000, 1, 1, 0, 10),
+                datetime.datetime(2000, 1, 1, 0, 15),
+            ],
+        }
+    )
+    merge_ds = mergesplit.merge_split_MEST(merge_features, dxy=1, distance=5)
+    # Cells 1 and 2 end with the merge, cell 3 starts with the split
+    assert np.all(merge_ds.cell[merge_ds.cell_ends_with_merge].values == [1, 2])
+    assert np.all(merge_ds.cell[merge_ds.cell_starts_with_split].values == [3])
+
+    merge_df = mergesplit.merge_split_MEST(
+        merge_features, dxy=1, distance=5, return_as="dataframe"
+    )
+    # ends_with_merge on the last features of cells 1 and 2, starts_with_split
+    # on the first feature of cell 3
+    assert np.all(merge_df.loc[merge_df.feature.isin([2, 4]), "ends_with_merge"])
+    assert not merge_df.loc[~merge_df.feature.isin([2, 4]), "ends_with_merge"].any()
+    assert np.all(merge_df.loc[merge_df.feature.isin([5]), "starts_with_split"])
+    assert not merge_df.loc[~merge_df.feature.isin([5]), "starts_with_split"].any()
+
+    # Split scenario: cell 1 ends at frame 1 close to where cells 2 and 3
+    # start at frame 2
+    split_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3, 4, 5, 6],
+            "hdim_1": [0, 1, 2, 3, 2, 3],
+            "hdim_2": [4, 4, 0, 0, 8, 8],
+            "cell": [1, 1, 2, 2, 3, 3],
+            "frame": [0, 1, 2, 3, 2, 3],
+            "time": [
+                datetime.datetime(2000, 1, 1, 0, 0),
+                datetime.datetime(2000, 1, 1, 0, 5),
+                datetime.datetime(2000, 1, 1, 0, 10),
+                datetime.datetime(2000, 1, 1, 0, 15),
+                datetime.datetime(2000, 1, 1, 0, 10),
+                datetime.datetime(2000, 1, 1, 0, 15),
+            ],
+        }
+    )
+    split_ds = mergesplit.merge_split_MEST(split_features, dxy=1, distance=5)
+    # Cell 1 ends with the merge, cells 2 and 3 start with the split
+    assert np.all(split_ds.cell[split_ds.cell_ends_with_merge].values == [1])
+    assert np.all(split_ds.cell[split_ds.cell_starts_with_split].values == [2, 3])
+
+    split_df = mergesplit.merge_split_MEST(
+        split_features, dxy=1, distance=5, return_as="dataframe"
+    )
+    # ends_with_merge on the last feature of cell 1, starts_with_split on the
+    # first features of cells 2 and 3
+    assert np.all(split_df.loc[split_df.feature.isin([2]), "ends_with_merge"])
+    assert not split_df.loc[~split_df.feature.isin([2]), "ends_with_merge"].any()
+    assert np.all(split_df.loc[split_df.feature.isin([3, 5]), "starts_with_split"])
+    assert not split_df.loc[~split_df.feature.isin([3, 5]), "starts_with_split"].any()
+
+
 def test_merge_split_MEST_return_as_error():
     """Test that a return_as value other than ['dataset', 'dataframe'] raises
     an exception

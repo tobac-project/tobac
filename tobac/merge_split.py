@@ -117,6 +117,8 @@ def merge_split_MEST(
         - feature_parent_track_id: The associated parent track id for each feature. This is not the same as the cell id number.
         - track_child_cell_count: The total number of features belonging to all child cells of a given track id.
         - cell_child_feature_count: The total number of features for each cell.
+        - cell_starts_with_split: True for each cell whose first feature begins a merge/split link, i.e. cells that start with a split from another cell.
+        - cell_ends_with_merge: True for each cell whose last feature ends a merge/split link, i.e. cells that end with a merge into another cell.
 
     pandas.Dataframe (if return_as = 'dataframe')
         pandas dataframe of feature properties, consisting of the input dataframe
