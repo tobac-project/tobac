@@ -1,41 +1,41 @@
-name: tobac-dev
+# conda environment matching the "examples" pixi environment in pixi.toml
+name: tobac-examples
 channels:
   - conda-forge
 dependencies:
-  - numpy
-  - scipy
-  - scikit-image
-  - scikit-learn
-  - pandas
-  - matplotlib
-  - iris
-  - xarray<2024.10.0
-  - cartopy
+  - python>=3.9,<3.15
+  - numpy>=1.23
+  - scipy>=1.8
+  - scikit-image>=0.19
+  - scikit-learn>=1.0
+  - pandas>=2.0
+  - matplotlib>=3.5
+  - iris>=3.2
+  - xarray>=2023.4
+  - cartopy>=0.21
   - trackpy>=0.6.1
-  - pytest
-  - typing_extensions
-  - black
+  - typing_extensions>=4.0
+  - pip
   - jupyter
   - notebook
+  - nbconvert
   - pyarrow
-  - pooch
   - s3fs
   - arm_pyart
   - seaborn
   - h5netcdf
-  - typing_extensions
   - rioxarray
   - numba
   - dask
-  - ffmpeg
   - intake!=2.0.0,!=2.0.1,!=2.0.3,!=2.0.4,!=2.0.5
   - intake-xarray
   - jinja2
   - healpix>=2024.2
   - easygems
   - pyvista>=0.46
+  - vtk>=9.4.2
   - trame
   - trame-vtk
   - trame-vuetify
   - ipywidgets
-  - vtk>=9.4.2
+  - ffmpeg

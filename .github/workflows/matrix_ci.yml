@@ -1,6 +1,9 @@
 name: Matrix Testing CI
 # this is similar to the pyart CI action
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -28,13 +31,10 @@ jobs:
 
       # Install micromamba and dependencies
       - name: Setup Conda Environment
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v3
         with:
-          environment-file: environment-ci.yml
-          activate-environment: pyart-dev
+          environment-file: environment.yml
           cache-downloads: true
-          channels: conda-forge
-          channel-priority: strict
           create-args: python=${{ matrix.python-version }}
 
       - name: Fetch all history for all tags and branches

@@ -1,7 +1,7 @@
 name: Jupyter Notebooks CI
 on:
   push:
-    branches: [main, RC_*]
+    branches: [main]
   pull_request:
     paths:
       - "tobac/**"
@@ -24,7 +24,7 @@ jobs:
       - name: check out repository code
         uses: actions/checkout@v3
       - name: set up mamba environment
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v3
         with:
           environment-file: environment-examples.yml
           generate-run-shell: true
@@ -33,6 +33,11 @@ jobs:
       - name: Install tobac
         run: |
           pip install .
+      - name: Install CI-only dependencies
+        # pooch is only used by fetch_notebook_data.py, so it is not part of
+        # the examples environment
+        run: |
+          pip install pooch
       - name: Restore example data cache
         id: restore-data
         uses: actions/cache/restore@v4

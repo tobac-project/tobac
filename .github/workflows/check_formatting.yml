@@ -1,14 +1,17 @@
 name: Check Python File Formatting with Black
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
 jobs:
   formatting_job:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Set up conda
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v3
         with:
-          environment-file: environment-ci.yml
+          environment-file: environment.yml
           generate-run-shell: true
           cache-environment: true
           cache-downloads: true
