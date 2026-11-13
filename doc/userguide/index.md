@@ -15,6 +15,7 @@ The *tobac* team is always happy to collaborate with you and make sure your trac
 feature_detection/index
 segmentation/index
 tracking/index
+merge_split/index
 bulk_statistics/index
 big_datasets
 analysis

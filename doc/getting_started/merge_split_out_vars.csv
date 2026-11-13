@@ -7,3 +7,5 @@ feature_parent_cell_id,The associated parent cell id for each feature. All featu
 feature_parent_track_id,The associated parent track id for each feature. This is not the same as the cell id number.,n/a,int64
 track_child_cell_count,The number of features belonging to all child cells of a given track id.,n/a,int64
 cell_child_feature_count,The number of features for each cell.,n/a,int64
+cell_starts_with_split,True for each cell that starts with a split from another cell.,n/a,bool
+cell_ends_with_merge,True for each cell that ends with a merge into another cell.,n/a,bool

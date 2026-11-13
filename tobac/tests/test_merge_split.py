@@ -1,6 +1,7 @@
 """Module to test tobac.merge_split"""
 
 import pandas as pd
+import xarray as xr
 import numpy as np
 import pytest
 
@@ -90,7 +91,6 @@ def test_merge_split_MEST():
     )
 
     # These cells should NOT have merged together.
-    print(mergesplit_output_unmerged["track"])
     assert len(mergesplit_output_unmerged["track"]) == 2
 
 
@@ -349,3 +349,321 @@ def test_merge_split_MEST_3D():
             dxy=1,
             distance=20,
         )
+
+
+def test_merge_split_MEST_return_dataframe():
+    """Test that the return_as='dataframe' option works, and that the resulting
+    properties match those in the dataset return option
+    """
+    cell_1 = tbtest.generate_single_feature(
+        1,
+        1,
+        min_h1=0,
+        max_h1=100,
+        min_h2=0,
+        max_h2=100,
+        frame_start=0,
+        num_frames=2,
+        spd_h1=20,
+        spd_h2=20,
+        start_date=datetime.datetime(2022, 1, 1, 0),
+    )
+    cell_1["feature"] = [1, 3]
+
+    cell_2 = tbtest.generate_single_feature(
+        1,
+        100,
+        min_h1=0,
+        max_h1=101,
+        min_h2=0,
+        max_h2=101,
+        frame_start=0,
+        num_frames=2,
+        spd_h1=20,
+        spd_h2=-20,
+        start_date=datetime.datetime(2022, 1, 1, 0),
+    )
+    cell_2["feature"] = [2, 4]
+    cell_3 = tbtest.generate_single_feature(
+        30,
+        50,
+        min_h1=0,
+        max_h1=100,
+        min_h2=0,
+        max_h2=100,
+        frame_start=2,
+        num_frames=2,
+        spd_h1=20,
+        spd_h2=0,
+        start_date=datetime.datetime(2022, 1, 1, 0, 10),
+    )
+    cell_3["feature"] = [5, 6]
+    features = pd.concat([cell_1, cell_2, cell_3])
+    output = tbtrack.linking_trackpy(features, None, 1, 1, v_max=40)
+
+    dist_between = np.sqrt(
+        np.power(
+            output[output["frame"] == 1].iloc[0]["hdim_1"]
+            - output[output["frame"] == 1].iloc[1]["hdim_1"],
+            2,
+        )
+        + np.power(
+            output[output["frame"] == 1].iloc[0]["hdim_2"]
+            - output[output["frame"] == 1].iloc[1]["hdim_2"],
+            2,
+        )
+    )
+
+    # Test a successful merger
+    mergesplit_output_dataset = mergesplit.merge_split_MEST(
+        output, dxy=10, distance=(dist_between + 50) * 10
+    )
+
+    assert isinstance(mergesplit_output_dataset, xr.Dataset)
+
+    mergesplit_df = mergesplit.merge_split_MEST(
+        output, dxy=10, distance=(dist_between + 50) * 10, return_as="dataframe"
+    )
+
+    assert isinstance(mergesplit_df, pd.DataFrame)
+
+    assert np.all(
+        mergesplit_output_dataset.feature_parent_track_id.sel(
+            feature=mergesplit_df.feature.values
+        ).values
+        == mergesplit_df.track.values
+    )
+
+    assert np.all(
+        np.isin(
+            mergesplit_df.cell[mergesplit_df.ends_with_merge],
+            mergesplit_output_dataset.cell[
+                mergesplit_output_dataset.cell_ends_with_merge
+            ],
+        )
+    )
+
+    assert np.all(
+        np.isin(
+            mergesplit_df.cell[mergesplit_df.starts_with_split],
+            mergesplit_output_dataset.cell[
+                mergesplit_output_dataset.cell_starts_with_split
+            ],
+        )
+    )
+
+
+def test_merge_split_MEST_merge_split_flags():
+    """Test that cell_ends_with_merge / cell_starts_with_split are assigned to
+    the correct cells (and the corresponding ends_with_merge / starts_with_split
+    columns in the dataframe output): cells whose last feature is the end of a
+    merge/split link end with a merge, and cells whose first feature is the
+    start of the link start with a split.
+    """
+    # Merge scenario: cells 1 and 2 end at frame 1 close to where cell 3
+    # starts at frame 2
+    merge_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3, 4, 5, 6],
+            "hdim_1": [0, 1, 0, 1, 2, 3],
+            "hdim_2": [0, 1, 8, 7, 4, 4],
+            "cell": [1, 1, 2, 2, 3, 3],
+            "frame": [0, 1, 0, 1, 2, 3],
+            "time": [
+                datetime.datetime(2000, 1, 1, 0, 0),
+                datetime.datetime(2000, 1, 1, 0, 5),
+                datetime.datetime(2000, 1, 1, 0, 0),
+                datetime.datetime(2000, 1, 1, 0, 5),
+                datetime.datetime(2000, 1, 1, 0, 10),
+                datetime.datetime(2000, 1, 1, 0, 15),
+            ],
+        }
+    )
+    merge_ds = mergesplit.merge_split_MEST(merge_features, dxy=1, distance=5)
+    # Cells 1 and 2 end with the merge, cell 3 starts with the split
+    assert np.all(merge_ds.cell[merge_ds.cell_ends_with_merge].values == [1, 2])
+    assert np.all(merge_ds.cell[merge_ds.cell_starts_with_split].values == [3])
+
+    merge_df = mergesplit.merge_split_MEST(
+        merge_features, dxy=1, distance=5, return_as="dataframe"
+    )
+    # ends_with_merge on the last features of cells 1 and 2, starts_with_split
+    # on the first feature of cell 3
+    assert np.all(merge_df.loc[merge_df.feature.isin([2, 4]), "ends_with_merge"])
+    assert not merge_df.loc[~merge_df.feature.isin([2, 4]), "ends_with_merge"].any()
+    assert np.all(merge_df.loc[merge_df.feature.isin([5]), "starts_with_split"])
+    assert not merge_df.loc[~merge_df.feature.isin([5]), "starts_with_split"].any()
+
+    # Split scenario: cell 1 ends at frame 1 close to where cells 2 and 3
+    # start at frame 2
+    split_features = pd.DataFrame(
+        {
+            "feature": [1, 2, 3, 4, 5, 6],
+            "hdim_1": [0, 1, 2, 3, 2, 3],
+            "hdim_2": [4, 4, 0, 0, 8, 8],
+            "cell": [1, 1, 2, 2, 3, 3],
+            "frame": [0, 1, 2, 3, 2, 3],
+            "time": [
+                datetime.datetime(2000, 1, 1, 0, 0),
+                datetime.datetime(2000, 1, 1, 0, 5),
+                datetime.datetime(2000, 1, 1, 0, 10),
+                datetime.datetime(2000, 1, 1, 0, 15),
+                datetime.datetime(2000, 1, 1, 0, 10),
+                datetime.datetime(2000, 1, 1, 0, 15),
+            ],
+        }
+    )
+    split_ds = mergesplit.merge_split_MEST(split_features, dxy=1, distance=5)
+    # Cell 1 ends with the merge, cells 2 and 3 start with the split
+    assert np.all(split_ds.cell[split_ds.cell_ends_with_merge].values == [1])
+    assert np.all(split_ds.cell[split_ds.cell_starts_with_split].values == [2, 3])
+
+    split_df = mergesplit.merge_split_MEST(
+        split_features, dxy=1, distance=5, return_as="dataframe"
+    )
+    # ends_with_merge on the last feature of cell 1, starts_with_split on the
+    # first features of cells 2 and 3
+    assert np.all(split_df.loc[split_df.feature.isin([2]), "ends_with_merge"])
+    assert not split_df.loc[~split_df.feature.isin([2]), "ends_with_merge"].any()
+    assert np.all(split_df.loc[split_df.feature.isin([3, 5]), "starts_with_split"])
+    assert not split_df.loc[~split_df.feature.isin([3, 5]), "starts_with_split"].any()
+
+
+def test_merge_split_MEST_return_as_error():
+    """Test that a return_as value other than ['dataset', 'dataframe'] raises
+    an exception
+    """
+    cell_1 = tbtest.generate_single_feature(
+        1,
+        1,
+        min_h1=0,
+        max_h1=100,
+        min_h2=0,
+        max_h2=100,
+        frame_start=0,
+        num_frames=2,
+        spd_h1=20,
+        spd_h2=20,
+        start_date=datetime.datetime(2022, 1, 1, 0),
+    )
+    cell_1["feature"] = [1, 3]
+
+    cell_2 = tbtest.generate_single_feature(
+        1,
+        100,
+        min_h1=0,
+        max_h1=101,
+        min_h2=0,
+        max_h2=101,
+        frame_start=0,
+        num_frames=2,
+        spd_h1=20,
+        spd_h2=-20,
+        start_date=datetime.datetime(2022, 1, 1, 0),
+    )
+    cell_2["feature"] = [2, 4]
+    cell_3 = tbtest.generate_single_feature(
+        30,
+        50,
+        min_h1=0,
+        max_h1=100,
+        min_h2=0,
+        max_h2=100,
+        frame_start=2,
+        num_frames=2,
+        spd_h1=20,
+        spd_h2=0,
+        start_date=datetime.datetime(2022, 1, 1, 0, 10),
+    )
+    cell_3["feature"] = [5, 6]
+    features = pd.concat([cell_1, cell_2, cell_3])
+    output = tbtrack.linking_trackpy(features, None, 1, 1, v_max=40)
+
+    dist_between = np.sqrt(
+        np.power(
+            output[output["frame"] == 1].iloc[0]["hdim_1"]
+            - output[output["frame"] == 1].iloc[1]["hdim_1"],
+            2,
+        )
+        + np.power(
+            output[output["frame"] == 1].iloc[0]["hdim_2"]
+            - output[output["frame"] == 1].iloc[1]["hdim_2"],
+            2,
+        )
+    )
+
+    with pytest.raises(
+        ValueError, match="'return_as' must be one of 'dataset', 'dataframe', received "
+    ):
+        mergesplit.merge_split_MEST(
+            output, dxy=10, distance=(dist_between + 50) * 10, return_as="error"
+        )
+
+
+def test_merge_split_MEST_track_number_unassigned():
+    """Test that track_number_unassigned is applied to the track value of
+    unassigned features in both the dataset and dataframe outputs, that it
+    defaults to cell_number_unassigned, and that time_track is NaT for
+    unassigned tracks
+    """
+    # One assigned cell (features 1 and 2) and one unassigned feature (cell -1)
+    tracks = pd.DataFrame(
+        {
+            "feature": [1, 2, 3],
+            "frame": [0, 1, 0],
+            "time": [
+                datetime.datetime(2022, 1, 1, 0, 0),
+                datetime.datetime(2022, 1, 1, 0, 5),
+                datetime.datetime(2022, 1, 1, 0, 0),
+            ],
+            "hdim_1": [0.0, 5.0, 100.0],
+            "hdim_2": [0.0, 5.0, 100.0],
+            "cell": [1, 1, -1],
+        }
+    )
+
+    # Default: the unassigned track value matches cell_number_unassigned (-1) in
+    # both the dataset and dataframe outputs
+    output_ds = mergesplit.merge_split_MEST(tracks, dxy=10, distance=100)
+    assert output_ds.feature_parent_track_id.sel(feature=3).values == -1
+
+    output_df = mergesplit.merge_split_MEST(
+        tracks, dxy=10, distance=100, return_as="dataframe"
+    )
+    assert output_df.loc[output_df.cell == -1, "track"].iloc[0] == -1
+    assert pd.isna(output_df.loc[output_df.cell == -1, "time_track"].iloc[0])
+    assert pd.api.types.is_integer_dtype(output_df["track"])
+
+    # Assigned features get a real track id and time_track relative to the
+    # start of the track
+    assert np.all(output_df.loc[output_df.cell == 1, "track"] == 1)
+    time_tracks = output_df.loc[output_df.cell == 1, "time_track"]
+    assert (time_tracks == pd.Timedelta(0)).sum() == 1
+    assert (time_tracks == pd.Timedelta(minutes=5)).sum() == 1
+
+    # Custom track_number_unassigned is used for unassigned features in both
+    # outputs, and time_track is NaT for them
+    output_ds_custom = mergesplit.merge_split_MEST(
+        tracks, dxy=10, distance=100, track_number_unassigned=0
+    )
+    assert output_ds_custom.feature_parent_track_id.sel(feature=3).values == 0
+
+    output_df_custom = mergesplit.merge_split_MEST(
+        tracks, dxy=10, distance=100, return_as="dataframe", track_number_unassigned=0
+    )
+    assert output_df_custom.loc[output_df_custom.cell == -1, "track"].iloc[0] == 0
+    assert pd.isna(
+        output_df_custom.loc[output_df_custom.cell == -1, "time_track"].iloc[0]
+    )
+
+    # If track_number_unassigned is None, it matches a custom cell_number_unassigned
+    tracks_custom_cell = tracks.copy()
+    tracks_custom_cell["cell"] = [1, 1, -999]
+    output_df_cnu = mergesplit.merge_split_MEST(
+        tracks_custom_cell,
+        dxy=10,
+        distance=100,
+        cell_number_unassigned=-999,
+        return_as="dataframe",
+    )
+    assert output_df_cnu.loc[output_df_cnu.cell == -999, "track"].iloc[0] == -999

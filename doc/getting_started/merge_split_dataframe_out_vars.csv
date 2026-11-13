@@ -1,0 +1,5 @@
+Variable Name,Description,Units,Type
+track,Unique number of the track (individual cell or group of merged/split cells) that each feature belongs to after merge/split post-processing; the same as feature_parent_track_id in the dataset output. Features not part of a track get the track_number_unassigned value (-1 by default).,n/a,int
+time_track,Time elapsed since the first feature of the track. NaT for features not part of a track.,minutes,object/python timedelta
+ends_with_merge,True for the last feature of a cell that ends with a merge into another cell.,n/a,bool
+starts_with_split,True for the first feature of a cell that starts with a split from another cell.,n/a,bool
