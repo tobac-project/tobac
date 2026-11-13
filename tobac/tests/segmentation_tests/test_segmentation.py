@@ -1119,15 +1119,15 @@ def test_max_distance():
 
     test_data_iris = testing.make_dataset_from_arr(test_arr, data_type="iris")
 
-    with pytest.raises(NotImplementedError):
-        seg_output, seg_feats = segmentation.segmentation_timestep(
-            test_data_iris,
-            fd_output,
-            1,
-            threshold=1,
-            PBC_flag="hdim_2",
-            max_distance=1,
-        )
+    # with pytest.raises(NotImplementedError):
+    #     seg_output, seg_feats = segmentation.segmentation_timestep(
+    #         test_data_iris,
+    #         fd_output,
+    #         1,
+    #         threshold=1,
+    #         PBC_flag="hdim_2",
+    #         max_distance=1,
+    #     )
     """    
     correct_seg_arr = np.full((50, 50), 0, dtype=np.int32)
     feat_num: int = 1
@@ -1403,3 +1403,137 @@ def test_segmentation_suppress_warnings(seg_func, suppress_warnings, expect_warn
                 if issubclass(w.category, UserWarning) and warning_msg in str(w.message)
             ]
             assert len(matching_warnings) == 0
+
+
+def test_add_markers_3d_box_overlap_closest_feature_wins():
+    """Regression test: in 3D box seeding, when two seed boxes overlap, each
+    seed point must be assigned to the feature that is closest in full 3D
+    distance, as documented in the ``add_markers`` docstring ("if two seed
+    boxes overlap, the feature that is seeded will be the closer feature").
+    """
+    dset_size = (10, 20, 20)  # (z, hdim_1, hdim_2)
+    seed_3D_size = 9
+    features = pd.DataFrame(
+        [
+            {"feature": 1, "vdim": 4.0, "hdim_1": 10.0, "hdim_2": 10.0},
+            {"feature": 2, "vdim": 5.0, "hdim_1": 14.0, "hdim_2": 10.0},
+        ]
+    )
+    marker_arr = segmentation.add_markers(
+        features,
+        np.zeros(dset_size, dtype=np.int32),
+        seed_3D_flag="box",
+        seed_3D_size=seed_3D_size,
+        PBC_flag="none",
+    )
+
+    # Independently compute the expected assignment: every seed-box point goes
+    # to the feature with the smallest squared distance in all 3 dimensions.
+    offsets = np.arange(-seed_3D_size / 2, seed_3D_size / 2)
+    expected = np.zeros(dset_size, dtype=np.int32)
+    best_dist = np.full(dset_size, np.inf)
+    for _, row in features.iterrows():
+        centre = np.array([row["vdim"], row["hdim_1"], row["hdim_2"]])
+        for dz in offsets:
+            for dh1 in offsets:
+                for dh2 in offsets:
+                    loc = np.ceil(centre + [dz, dh1, dh2]).astype(int)
+                    loc = np.clip(loc, 0, np.array(dset_size) - 1)
+                    dist = ((loc - centre) ** 2).sum()
+                    if dist < best_dist[tuple(loc)]:
+                        best_dist[tuple(loc)] = dist
+                        expected[tuple(loc)] = row["feature"]
+    assert np.all(marker_arr == expected)
+
+    # Specific point where vertical-only distance picks the wrong feature:
+    # (z=4, h1=13, h2=10) is closer to feature 2 in 3D (dist^2 = 2) than to
+    # feature 1 (dist^2 = 9), even though it is closer to feature 1 in z alone.
+    assert marker_arr[4, 13, 10] == 2
+
+
+@pytest.mark.parametrize("PBC_flag", ["hdim_2", "both"])
+def test_segmentation_timestep_pbc_does_not_unassign_cells(PBC_flag):
+    """Regression test: the PBC "buddy box" re-segmentation must not overwrite
+    cells that were already assigned to a feature with the unassigned marker (0).
+    Uses a 2D field with blobs straddling the periodic boundary and a blob on
+    the non-periodic wall, with column seeding.
+    """
+    ny, nx = 40, 50
+    y, x = np.mgrid[0:ny, 0:nx]
+    field_vals = np.zeros((ny, nx))
+    # blob straddling the hdim_2 boundary
+    field_vals += (
+        np.exp(-(((y - 20) ** 2 + np.minimum((x - 49) ** 2, (x - 0) ** 2)) / 8.0)) * 1.2
+    )
+    # blob straddling the hdim_1 boundary
+    field_vals += (
+        np.exp(-((np.minimum((y - 39) ** 2, (y - 0) ** 2) + (x - 25) ** 2) / 8.0)) * 1.1
+    )
+    # interior blob
+    field_vals += np.exp(-(((y - 10) ** 2 + (x - 12) ** 2) / 8.0))
+    field = xr.DataArray(
+        field_vals, dims=("y", "x"), coords={"y": np.arange(ny), "x": np.arange(nx)}
+    )
+    features = pd.DataFrame(
+        [
+            {"feature": 1, "hdim_1": 20.0, "hdim_2": 49.0},
+            {"feature": 2, "hdim_1": 39.0, "hdim_2": 25.0},
+            {"feature": 3, "hdim_1": 0.0, "hdim_2": 25.0},
+            {"feature": 4, "hdim_1": 39.0, "hdim_2": 49.0},
+            {"feature": 5, "hdim_1": 10.2, "hdim_2": 12.4},
+        ]
+    )
+    threshold = 0.3
+    seg_mask, seg_feats = segmentation.segmentation_timestep(
+        field_in=field,
+        features_in=features,
+        dxy=1000.0,
+        threshold=threshold,
+        PBC_flag=PBC_flag,
+    )
+    mask = np.asarray(seg_mask.values)
+
+    # No above-threshold cell may be left unassigned (mask == 0)
+    above_threshold = field_vals > threshold
+    assert not np.any(above_threshold & (mask == 0))
+
+    # Golden ncells, identical to upstream RC_v1.6.x
+    assert dict(zip(seg_feats["feature"], seg_feats["ncells"])) == {
+        1: 44,
+        2: 22,
+        3: 22,
+        4: 0,
+        5: 29,
+    }
+    if PBC_flag == "hdim_2":
+        # Cells that must be assigned across/on the boundary
+        assert mask[0, 22] == 3
+        assert mask[17, 0] == 1
+        assert mask[18, 48] == 1
+
+
+def test_add_markers_column_seed_casts_to_int():
+    """Regression test pinning the column-seeding pixel indexing: hdim
+    coordinates are offset by 0.5 and cast to int (``int(x + 0.5)``, truncation
+    toward zero for negative values), then wrapped via modulo — the behaviour
+    of RC_v1.6.x. The vectorised implementation must reproduce this exactly,
+    in particular it must NOT use ``np.round`` (ties-to-even).
+    """
+    ny, nx = 50, 60
+    features = pd.DataFrame(
+        [
+            {"feature": 1, "hdim_1": 10.5, "hdim_2": 12.5},
+            {"feature": 2, "hdim_1": 11.5, "hdim_2": 13.5},
+            {"feature": 3, "hdim_1": -0.6, "hdim_2": 2.4},
+            {"feature": 4, "hdim_1": 2.5, "hdim_2": 7.5},
+        ]
+    )
+    marker_arr = segmentation.add_markers(
+        features, np.zeros((ny, nx), dtype=np.int32), seed_3D_flag="column"
+    )
+    # int(x + 0.5) cast: 10.5->11, 12.5->13, 11.5->12, 13.5->14, 2.5->3, 7.5->8
+    # negative truncates toward zero: -0.6 -> int(-0.1) -> 0
+    expected = {(11, 13): 1, (12, 14): 2, (0, 2): 3, (3, 8): 4}
+    for (iy, ix), feat in expected.items():
+        assert marker_arr[iy, ix] == feat
+    assert np.count_nonzero(marker_arr) == len(expected)

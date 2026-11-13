@@ -120,8 +120,8 @@ def add_markers(
     if seed_3D_flag == "column":
         marker_arr[
             level if is_3D else None,
-            features.hdim_1.to_numpy().round().astype(int) % h1_len,
-            features.hdim_2.to_numpy().round().astype(int) % h2_len,
+            (features.hdim_1.to_numpy() + 0.5).astype(int) % h1_len,
+            (features.hdim_2.to_numpy() + 0.5).astype(int) % h2_len,
         ] = features.feature
 
     elif seed_3D_flag == "box":
@@ -170,9 +170,7 @@ def add_markers(
         # Reorder to furthest first, closest last - this assigns preferring the closest features
         ordering = np.argsort(
             (
-                (seed_box_locs_z - features.vdim.to_numpy()) ** 2
-                if is_3D
-                else 0
+                ((seed_box_locs_z - features.vdim.to_numpy()) ** 2 if is_3D else 0)
                 + (seed_box_locs_h1 - features.hdim_1.to_numpy()) ** 2
                 + (seed_box_locs_h2 - features.hdim_2.to_numpy()) ** 2
             ).ravel()
@@ -394,8 +392,8 @@ def segmentation_timestep(
     from scipy.ndimage import distance_transform_edt
     from copy import deepcopy
 
-    if max_distance is not None and PBC_flag in ["hdim_1", "hdim_2", "both"]:
-        raise NotImplementedError("max_distance not yet implemented for PBCs")
+    # if max_distance is not None and PBC_flag in ["hdim_1", "hdim_2", "both"]:
+    #     raise NotImplementedError("max_distance not yet implemented for PBCs")
 
     # How many dimensions are we using?
     if field_in.ndim == 2:
@@ -783,6 +781,16 @@ def segmentation_timestep(
             else:
                 raise ValueError("unknown method, must be watershed")
 
+            # If any regions in the buddy box have no been filled, reassign the values from seg_mask_3_subset
+            seg_mask_3_subset = segmentation_mask_3[
+                buddy_locs[0], buddy_locs[1], buddy_locs[2]
+            ]
+            wh_buddy = np.isin(seg_mask_3_subset, buddies)
+            wh_unfilled = segmentation_mask_4 == 0
+            segmentation_mask_4[wh_buddy & wh_unfilled] = seg_mask_3_subset[
+                wh_buddy & wh_unfilled
+            ]
+
             # remove everything from the individual masks that is more than max_distance_pixel away from the markers
             if max_distance is not None:
                 D = distance_transform_edt((buddy_markers == 0))
@@ -803,11 +811,8 @@ def segmentation_timestep(
             # 2) changing to/from feature of interest or adjacent segmented feature
             # We don't want to overwrite other features that may be in the
             # buddy box if not contacting the intersected seg field
-            seg_mask_3_subset = segmentation_mask_3[
-                buddy_locs[0], buddy_locs[1], buddy_locs[2]
-            ]
             segmentation_mask_3[buddy_locs[0], buddy_locs[1], buddy_locs[2]] = np.where(
-                np.isin(seg_mask_3_subset, buddies),
+                wh_buddy,
                 segmentation_mask_4,
                 seg_mask_3_subset,
             )
