@@ -954,12 +954,16 @@ def test_convert_feature_mask_to_tracks_stub_value():
     # Test that without providing a stub value the stub feature is relabelled to -1
     assert np.all(track_mask.values[test_mask.values == 3] == -1)
 
-    track_mask = convert_feature_mask_to_tracks(test_features, test_mask, stubs=-1)
+    track_mask = convert_feature_mask_to_tracks(
+        test_features, test_mask, track_number_unassigned=-1
+    )
 
     # Test that providing a stub value the stub feature is relabelled to 0
     assert np.all(track_mask.values[test_mask.values == 3] == 0)
 
-    track_mask = convert_feature_mask_to_tracks(test_features, test_mask, stubs=-999)
+    track_mask = convert_feature_mask_to_tracks(
+        test_features, test_mask, track_number_unassigned=-999
+    )
 
     # Test that providing a different stub value the stub feature is relabelled to -1
     assert np.all(track_mask.values[test_mask.values == 3] == -1)
@@ -1000,7 +1004,9 @@ def test_convert_feature_mask_to_tracks_no_input_mutation():
     mask_copy = test_mask.copy(deep=True)
     features_copy = test_features.copy(deep=True)
 
-    track_mask = convert_feature_mask_to_tracks(test_features, test_mask, stubs=-1)
+    track_mask = convert_feature_mask_to_tracks(
+        test_features, test_mask, track_number_unassigned=-1
+    )
 
     # Test dataframe is the same
     pd.testing.assert_frame_equal(test_features, features_copy)
@@ -1045,7 +1051,7 @@ def test_convert_feature_mask_to_tracks_inplace():
     features_copy = test_features.copy(deep=True)
 
     track_mask = convert_feature_mask_to_tracks(
-        test_features, test_mask, stubs=-1, inplace=True
+        test_features, test_mask, track_number_unassigned=-1, inplace=True
     )
 
     # Test dataframe is the same
@@ -1280,12 +1286,16 @@ def test_convert_cell_mask_to_tracks_stub_value():
     # Test that without providing a stub value the stub cell is relabelled to -1
     assert np.all(track_mask.values[test_mask.values == -1] == -1)
 
-    track_mask = convert_cell_mask_to_tracks(test_features, test_mask, stubs=-1)
+    track_mask = convert_cell_mask_to_tracks(
+        test_features, test_mask, track_number_unassigned=-1
+    )
 
     # Test that providing a stub value the stub cell is relabelled to 0
     assert np.all(track_mask.values[test_mask.values == -1] == 0)
 
-    track_mask = convert_cell_mask_to_tracks(test_features, test_mask, stubs=-999)
+    track_mask = convert_cell_mask_to_tracks(
+        test_features, test_mask, track_number_unassigned=-999
+    )
 
     # Test that providing a different stub value the stub cell is relabelled to -1
     assert np.all(track_mask.values[test_mask.values == -1] == -1)
@@ -1326,7 +1336,9 @@ def test_convert_cell_mask_to_tracks_no_input_mutation():
     mask_copy = test_mask.copy(deep=True)
     features_copy = test_features.copy(deep=True)
 
-    track_mask = convert_cell_mask_to_tracks(test_features, test_mask, stubs=-1)
+    track_mask = convert_cell_mask_to_tracks(
+        test_features, test_mask, track_number_unassigned=-1
+    )
 
     # Test dataframe is the same
     pd.testing.assert_frame_equal(test_features, features_copy)
@@ -1371,7 +1383,7 @@ def test_convert_cell_mask_to_tracks_inplace():
     features_copy = test_features.copy(deep=True)
 
     track_mask = convert_cell_mask_to_tracks(
-        test_features, test_mask, stubs=-1, inplace=True
+        test_features, test_mask, track_number_unassigned=-1, inplace=True
     )
 
     # Test dataframe is the same

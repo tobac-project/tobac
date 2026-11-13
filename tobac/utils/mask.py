@@ -560,7 +560,7 @@ def convert_cell_mask_to_features(
 def convert_feature_mask_to_tracks(
     features: pd.DataFrame,
     feature_mask: xr.DataArray,
-    stubs: Optional[int] = None,
+    track_number_unassigned: Optional[int] = None,
     inplace: bool = False,
 ) -> xr.DataArray:
     """Relabels a feature mask provided by tobac.segmentation with the track
@@ -577,14 +577,11 @@ def convert_feature_mask_to_tracks(
     feature_mask : xr.DataArray
         A feature mask from tobac.segmentation corresponding to the features in
         the feature dataframe input
-    stubs : int, optional (default: None)
-        The stub values used for unlinked cells in tobac.linking_trackpy. If
-        None, the stub cells with be relabelled with the stub cell value in the
-        feature dataframe. If a value is provided, the masked regions
-        corresponding to stub cells with be removed from the output. Warning:
-        the presence of stub cells may make it impossible to perfectly
-        reconstruct the feature mask afterwards as any stub features will be
-        removed.
+    track_number_unassigned : int, optional (default: None)
+        The track value used for unassigned cells in tobac.linking_trackpy. If
+        None, the unassigned cells with be relabelled with the unassigned track
+        value in the feature dataframe. If a value is provided, the masked regions
+        corresponding to stub cells with be removed from the output (labelled 0).
     inplace : bool, optional (default: False)
         If True, update the cell mask in-place
 
@@ -596,14 +593,14 @@ def convert_feature_mask_to_tracks(
     Raises
     ------
     ValueError
-        If the features input does not have a cell column
+        If the features input does not have a track column
     ValueError
         If there are labels in the feature_mask that are not present in the
         features dataframe
     """
     if "track" not in features.columns:
         raise ValueError(
-            "`track` column not found in features input, please perform merge/split detection with keyword `return_as='dataframe'` on this data before converting features to tracks. Alternatively, if merge/split detection has already been performed with `return_as='dataset', use the function `tobac.merge_split.convert_dataset_to_dataframe` to convert the dataset to a dataframe with a `tracks` column before using this function."
+            "`track` column not found in features input, please perform merge/split detection with keyword `return_as='dataframe'` on this data before converting features to tracks. Alternatively, if merge/split detection has already been performed with `return_as='dataset', use the function `tobac.merge_split.add_track_info_to_dataframe` to convert the dataset to a dataframe with a `track` column before using this function."
         )
 
     if inplace:
@@ -615,8 +612,10 @@ def convert_feature_mask_to_tracks(
         features.track.copy(), dims=("feature",), coords=dict(feature=features.feature)
     )
 
-    if stubs is not None:
-        track_mapper = track_mapper.where(features.cell.to_numpy() != stubs, 0)
+    if track_number_unassigned is not None:
+        track_mapper = track_mapper.where(
+            features.track.to_numpy() != track_number_unassigned, 0
+        )
 
     wh_nonzero_label = np.flatnonzero(track_mask)
 
@@ -638,7 +637,7 @@ def convert_feature_mask_to_tracks(
 def convert_cell_mask_to_tracks(
     features: pd.DataFrame,
     cell_mask: xr.DataArray,
-    stubs: Optional[int] = None,
+    track_number_unassigned: Optional[int] = None,
     inplace: bool = False,
 ) -> xr.DataArray:
     """Relabels a cell mask provided by tobac.segmentation with the track
@@ -652,17 +651,14 @@ def convert_cell_mask_to_tracks(
     ----------
     features : pd.DataFrame
         A feature dataframe with cell values provided by tobac.linking_trackpy
-    feature_mask : xr.DataArray
-        A feature mask from tobac.segmentation corresponding to the features in
+    cell_mask : xr.DataArray
+        A cell mask from tobac.segmentation corresponding to the cells in
         the feature dataframe input
-    stubs : int, optional (default: None)
-        The stub values used for unlinked cells in tobac.linking_trackpy. If
-        None, the stub cells with be relabelled with the stub cell value in the
-        feature dataframe. If a value is provided, the masked regions
-        corresponding to stub cells with be removed from the output. Warning:
-        the presence of stub cells may make it impossible to perfectly
-        reconstruct the feature mask afterwards as any stub features will be
-        removed.
+    track_number_unassigned : int, optional (default: None)
+        The track value used for unassigned cells in tobac.linking_trackpy. If
+        None, the unassigned cells with be relabelled with the unassigned track
+        value in the feature dataframe. If a value is provided, the masked regions
+        corresponding to stub cells with be removed from the output (labelled 0).
     inplace : bool, optional (default: False)
         If True, update the cell mask in-place
 
@@ -676,12 +672,12 @@ def convert_cell_mask_to_tracks(
     ValueError
         If the features input does not have a cell column
     ValueError
-        If there are labels in the feature_mask that are not present in the
+        If there are labels in the cell_mask that are not present in the
         features dataframe
     """
     if "track" not in features.columns:
         raise ValueError(
-            "`track` column not found in features input, please perform merge/split detection with keyword `return_as='dataframe'` on this data before converting features to tracks. Alternatively, if merge/split detection has already been performed with `return_as='dataset', use the function `tobac.merge_split.convert_dataset_to_dataframe` to convert the dataset to a dataframe with a `tracks` column before using this function."
+            "`track` column not found in features input, please perform merge/split detection with keyword `return_as='dataframe'` on this data before converting features to tracks. Alternatively, if merge/split detection has already been performed with `return_as='dataset', use the function `tobac.merge_split.add_track_info_to_dataframe` to convert the dataset to a dataframe with a `track` column before using this function."
         )
 
     if inplace:
@@ -695,8 +691,10 @@ def convert_cell_mask_to_tracks(
         feature_to_cell.copy(), dims=("cell",), coords=dict(cell=feature_to_cell.index)
     )
 
-    if stubs is not None:
-        track_mapper = track_mapper.where(feature_to_cell.values != stubs, 0)
+    if track_number_unassigned is not None:
+        track_mapper = track_mapper.where(
+            feature_to_cell.values != track_number_unassigned, 0
+        )
 
     wh_nonzero_label = np.flatnonzero(track_mask)
 

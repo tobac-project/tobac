@@ -68,13 +68,16 @@ from .utils.mask import (
     mask_features,
     mask_features_surface,
     mask_cube_features,
+    convert_feature_mask_to_cells,
+    convert_feature_mask_to_tracks,
+    convert_cell_mask_to_features,
+    convert_cell_mask_to_tracks,
 )
 from .utils.general import (
     get_bounding_box,
     add_coordinates,
     get_spacings,
 )
-from .utils.mask import convert_feature_mask_to_cells, convert_cell_mask_to_features
 from .feature_detection import feature_detection_multithreshold
 from .tracking import linking_trackpy
 from .wrapper import maketrack

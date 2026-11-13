@@ -9,7 +9,7 @@ with a TRACK number in addition to its CELL number.
 
 from __future__ import annotations
 import logging
-from typing import Optional
+from typing import Optional, Union
 from typing_extensions import Literal
 
 import numpy as np
@@ -36,7 +36,8 @@ def merge_split_MEST(
     min_h2: Optional[int] = None,
     max_h2: Optional[int] = None,
     return_as: Literal["dataset", "dataframe"] = "dataset",
-) -> xr.Dataset:
+    track_number_unassigned: int = -1,
+) -> Union[xr.Dataset, pd.DataFrame]:
     """
     Search for merging splitting cells  in tobac tracking data using a minimum
     euclidean spanning tree, and combine the merged cells into unique tracks.
@@ -61,11 +62,11 @@ def merge_split_MEST(
         to consider merge/splitting. Default is 25x the x/y grid spacing of the
         data, given in dxy. The distance should be in units of meters.
 
-    frame_len : float, optional
+    frame_len : float, optional (default: 5)
         Threshold for the maximum number of frames that can separate the end of
         cell and the start of a related cell, by default 5 frames.
 
-    cell_number_unassigned: int, optional
+    cell_number_unassigned: int, optional (default: -1)
         Value given to unassigned/non-tracked cells by tracking, by default -1.
 
     vertical_coord: str, optional
@@ -99,6 +100,9 @@ def merge_split_MEST(
         Whether to return the output as an xarray dataset of track and cell properties,
         or to return the input pandas dataframe dataset with new columns containing
         track, merge and split properties.
+
+    track_number_unassigned : int, optional (default: -1)
+        The track value used for unassigned cells. Only used if return_as = 'dataframe'.
 
     Returns
     -------
@@ -282,7 +286,9 @@ def merge_split_MEST(
     logging.debug("found feature parent cell ids")
 
     wh_feature_in_cell = (feature_parent_cell_id != cell_number_unassigned).values
-    feature_parent_track_id = np.full(wh_feature_in_cell.shape, cell_number_unassigned)
+    feature_parent_track_id = np.full(
+        wh_feature_in_cell.shape, cell_number_unassigned, dtype=int
+    )
     feature_parent_track_id[wh_feature_in_cell] = cell_parent_track_id.loc[
         feature_parent_cell_id[wh_feature_in_cell]
     ].values
@@ -337,7 +343,9 @@ def merge_split_MEST(
     if return_as == "dataset":
         return merge_split_ds
     if return_as == "dataframe":
-        return add_track_info_to_dataframe(tracks, merge_split_ds)
+        return add_track_info_to_dataframe(
+            tracks, merge_split_ds, track_number_unassigned=track_number_unassigned
+        )
 
     raise ValueError(
         f"'return_as' must be one of 'dataset', 'dataframe', received {return_as}"
@@ -345,7 +353,7 @@ def merge_split_MEST(
 
 
 def add_track_info_to_dataframe(
-    tracks: pd.DataFrame, merge_split_ds: xr.Dataset
+    tracks: pd.DataFrame, merge_split_ds: xr.Dataset, track_number_unassigned: int = -1
 ) -> pd.DataFrame:
     """Add merge split information provided by merge_split_MEST in an
     xarray Dataset format to the pandas dataframe of the input tracks
@@ -366,17 +374,18 @@ def add_track_info_to_dataframe(
     tracks = tracks.reset_index().set_index(tracks.feature)
 
     # Add track id column
-    tracks["track"] = -1
+    tracks["track"] = track_number_unassigned
     tracks.loc[merge_split_ds.feature.values, "track"] = (
         merge_split_ds.feature_parent_track_id.values
     )
 
     # Add track time
-    tracks["time_track"] = pd.NaT
+    #
     tracks["time_track"] = (
         tracks["time"]
         - tracks.time.groupby(tracks.track).min().loc[tracks.track].values
     )
+    tracks.loc[tracks.track == track_number_unassigned, "time_track"] = pd.NaT
 
     # Add merge and split columns for the last/first feature before a merge/split event
     cell_last_features = tracks.feature.groupby(tracks.cell).last()
