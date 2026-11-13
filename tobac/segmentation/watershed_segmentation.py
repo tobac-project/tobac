@@ -780,9 +780,15 @@ def segmentation_timestep(
                     buddy_markers.astype(np.int32),
                     mask=unmasked_buddies,
                 )
-
             else:
                 raise ValueError("unknown method, must be watershed")
+
+            # remove everything from the individual masks that is more than max_distance_pixel away from the markers
+            if max_distance is not None:
+                D = distance_transform_edt((buddy_markers == 0))
+                segmentation_mask_4[
+                    np.bitwise_and(segmentation_mask_4 > 0, D > max_distance_pixel)
+                ] = 0
 
             # remove everything from the individual masks that is more than max_distance_pixel away from the markers
 
@@ -801,10 +807,7 @@ def segmentation_timestep(
                 buddy_locs[0], buddy_locs[1], buddy_locs[2]
             ]
             segmentation_mask_3[buddy_locs[0], buddy_locs[1], buddy_locs[2]] = np.where(
-                np.logical_and(
-                    np.isin(seg_mask_3_subset, buddies),
-                    np.isin(segmentation_mask_4, buddies),
-                ),
+                np.isin(seg_mask_3_subset, buddies),
                 segmentation_mask_4,
                 seg_mask_3_subset,
             )
