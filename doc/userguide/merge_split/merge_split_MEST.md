@@ -51,18 +51,22 @@ When periodic boundaries are used, the domain bounds must be given in grid units
 ```python
 import tobac
 
-# xarray dataset of merge/split properties (default), with periodic
-# boundaries in hdim_2 and a 25 km merge/split distance on a 1 km grid
+# xarray dataset of merge/split properties (default), with a 25 km 
+# merge/split distance on a 1 km grid, with merges/splits found 
+# for cells that end within 3 timesteps of each other
 d = tobac.merge_split.merge_split_MEST(
     Track,
     dxy=1000,
     distance=25e3,
     frame_len=3,
-    PBC_flag="hdim_2",
-    min_h2=0,
-    max_h2=Track.hdim_2.max() + 1,
 )
 
 # the same information as extra columns on the tracks dataframe
-df = tobac.merge_split.merge_split_MEST(Track, dxy=1000, return_as="dataframe")
+df = tobac.merge_split.merge_split_MEST(
+    Track,
+    dxy=1000,
+    distance=25e3,
+    frame_len=3,
+    return_as="dataframe"
+)
 ```
