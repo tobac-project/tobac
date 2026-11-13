@@ -36,7 +36,7 @@ def merge_split_MEST(
     min_h2: Optional[int] = None,
     max_h2: Optional[int] = None,
     return_as: Literal["dataset", "dataframe"] = "dataset",
-    track_number_unassigned: int = -1,
+    track_number_unassigned: Optional[int] = None,
 ) -> Union[xr.Dataset, pd.DataFrame]:
     """
     Search for merging splitting cells  in tobac tracking data using a minimum
@@ -101,8 +101,9 @@ def merge_split_MEST(
         or to return the input pandas dataframe dataset with new columns containing
         track, merge and split properties.
 
-    track_number_unassigned : int, optional (default: -1)
-        The track value used for unassigned cells. Only used if return_as = 'dataframe'.
+    track_number_unassigned : int, optional (default: None)
+        The track value used for unassigned tracks. Only used if return_as = 'dataframe'.
+        If None, will match the value used for unassigned cells.
 
     Returns
     -------
@@ -132,6 +133,8 @@ def merge_split_MEST(
         both_ds.to_netcdf(os.path.join(savedir,'Track_features_merges.nc'))
 
     """
+    if track_number_unassigned is None:
+        track_number_unassigned = cell_number_unassigned
 
     track_groups = tracks[tracks["cell"] != cell_number_unassigned].groupby("cell")
     first = track_groups.first()
@@ -287,7 +290,7 @@ def merge_split_MEST(
 
     wh_feature_in_cell = (feature_parent_cell_id != cell_number_unassigned).values
     feature_parent_track_id = np.full(
-        wh_feature_in_cell.shape, cell_number_unassigned, dtype=int
+        wh_feature_in_cell.shape, track_number_unassigned, dtype=int
     )
     feature_parent_track_id[wh_feature_in_cell] = cell_parent_track_id.loc[
         feature_parent_cell_id[wh_feature_in_cell]
@@ -380,7 +383,6 @@ def add_track_info_to_dataframe(
     )
 
     # Add track time
-    #
     tracks["time_track"] = (
         tracks["time"]
         - tracks.time.groupby(tracks.track).min().loc[tracks.track].values

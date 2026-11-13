@@ -578,12 +578,12 @@ def convert_feature_mask_to_tracks(
         A feature mask from tobac.segmentation corresponding to the features in
         the feature dataframe input
     track_number_unassigned : int, optional (default: None)
-        The track value used for unassigned cells in tobac.linking_trackpy. If
-        None, the unassigned cells with be relabelled with the unassigned track
+        The track value used for unassigned tracks in tobac.linking_trackpy. If
+        None, the unassigned tracks with be relabelled with the unassigned track
         value in the feature dataframe. If a value is provided, the masked regions
-        corresponding to stub cells with be removed from the output (labelled 0).
+        corresponding to stub tracks with be removed from the output (labelled 0).
     inplace : bool, optional (default: False)
-        If True, update the cell mask in-place
+        If True, update the feature mask in-place
 
     Returns
     -------
@@ -655,10 +655,10 @@ def convert_cell_mask_to_tracks(
         A cell mask from tobac.segmentation corresponding to the cells in
         the feature dataframe input
     track_number_unassigned : int, optional (default: None)
-        The track value used for unassigned cells in tobac.linking_trackpy. If
-        None, the unassigned cells with be relabelled with the unassigned track
+        The track value used for unassigned tracks in tobac.linking_trackpy. If
+        None, the unassigned tracks with be relabelled with the unassigned track
         value in the feature dataframe. If a value is provided, the masked regions
-        corresponding to stub cells with be removed from the output (labelled 0).
+        corresponding to stub tracks with be removed from the output (labelled 0).
     inplace : bool, optional (default: False)
         If True, update the cell mask in-place
 
