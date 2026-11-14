@@ -79,6 +79,7 @@ trame-vtk = "*"
 trame-vuetify = "*"
 ipywidgets = "*"
 ffmpeg = "*"
+zarr = ">=3"
 
 [feature.docs.dependencies]
 sphinx = "*"

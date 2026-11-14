@@ -82,6 +82,7 @@ examples = [
     "trame-vtk",
     "trame-vuetify",
     "ipywidgets",
+    "zarr>=3", 
 ]
 
 # All extras combined
