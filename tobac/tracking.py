@@ -1291,11 +1291,16 @@ def append_tracks_trackpy(
             i_additional_particle += 1
             particle_num_to_cell_num[particle] = int(cell)
 
-    remap_particle_to_cell_vec = np.vectorize(remap_particle_to_cell_nv)
-    trajectories_unfiltered["cell"] = remap_particle_to_cell_vec(
-        particle_num_to_cell_num, trajectories_unfiltered["particle"]
+    # Remap trackpy particle numbers to tobac cell numbers, preserving existing
+    # cell IDs. Uses the same np.unique(return_inverse=True) pattern as
+    # _filter_trajectories, with a lookup table for the per-particle cell number.
+    unique_particles, particle_inverse = np.unique(
+        trajectories_unfiltered["particle"], return_inverse=True
     )
-    trajectories_unfiltered["cell"] = trajectories_unfiltered["cell"].astype(int)
+    cell_per_particle = np.array(
+        [particle_num_to_cell_num[p] for p in unique_particles], dtype=np.int64
+    )
+    trajectories_unfiltered["cell"] = cell_per_particle[particle_inverse]
     trajectories_unfiltered = trajectories_unfiltered.drop(columns=["particle"])
 
     trajectories_unfiltered = pd.concat([tracks_cut, trajectories_unfiltered])
@@ -1742,21 +1747,6 @@ def add_cell_time(tracks: pd.DataFrame, cell_number_unassigned: int):
     return tracks
 
 
-def remap_particle_to_cell_nv(particle_cell_map, input_particle):
-    """Remaps the particles to new cells given an input map and the current particle.
-    Helper function that is designed to be vectorized with np.vectorize
-    :hidden:
-    Parameters
-    ----------
-    particle_cell_map: dict-like
-        The dictionary mapping particle number to cell number
-    input_particle: key for particle_cell_map
-        The particle number to remap
-
-    """
-    return particle_cell_map[input_particle]
-
-
 def _calc_search_range_latlon(
     dt: float,
     v_max: Optional[float] = None,
@@ -2087,20 +2077,3 @@ def _calc_frames_for_stubs(
         return stubs
     else:
         return np.floor(time_cell_min / dt) + 1
-
-
-def _prep_tracking_df(input_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Function to prepare an input dataframe for tracking
-    Parameters
-    ----------
-    input_df: pd.DataFrame
-        input dataframe to prepare
-
-    Returns
-    -------
-    pd.DataFrame
-        prepared da
-
-    """
-    pass
