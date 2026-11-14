@@ -977,6 +977,12 @@ def linking_overlap(
     try:
         frame, timestep, labels, features_t = next(field_and_features)
     except StopIteration:  # Only one timestep
+        tracks = _filter_stub_cells(
+            tracks,
+            stubs=stubs,
+            cell_number_start=cell_number_start,
+            cell_number_unassigned=cell_number_unassigned,
+        )
         tracks = _assign_cell_times(
             tracks, cell_number_unassigned=cell_number_unassigned
         )
@@ -990,7 +996,7 @@ def linking_overlap(
     )
 
     bootstrap = True if translate_method in ["drift", "predict"] else False
-
+    matched_overlaps = {}
     while True:
         if len(origin_features) and len(destination_features):
             if bootstrap:

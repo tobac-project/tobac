@@ -1057,3 +1057,79 @@ class TestLinkingOverlap:
         assert tracks_memory_predictive.cell.iloc[1] == 2
         assert tracks_memory_predictive.cell.iloc[-2] == 2
         assert tracks_memory_predictive.cell.iloc[-1] == 1
+
+    def test_memory_with_empty_timestep(self):
+        """Test memory > 0 when an intermediate timestep has no features.
+
+        Regression test: this previously raised UnboundLocalError because
+        matched_overlaps was not initialised when the first destination
+        timestep was empty.
+        """
+        time = pd.date_range("2020-01-01", periods=3, freq="h")
+        hdim_1 = np.arange(10)
+        hdim_2 = np.arange(10)
+
+        mask_data = np.zeros((3, 10, 10), dtype=int)
+        mask_data[0, 2:4, 2:4] = 1
+        # timestep 1 intentionally has no features
+        mask_data[2, 2:4, 2:4] = 2
+
+        mask = xr.DataArray(
+            mask_data,
+            coords={"time": time, "hdim_1": hdim_1, "hdim_2": hdim_2},
+            dims=["time", "hdim_1", "hdim_2"],
+        )
+
+        features = pd.DataFrame(
+            {
+                "feature": [1, 2],
+                "frame": [0, 2],
+                "time": [time[0], time[2]],
+                "hdim_1": [3.0, 3.0],
+                "hdim_2": [3.0, 3.0],
+            }
+        )
+
+        result = linking_overlap(features, mask, memory=1)
+
+        # the feature at the last timestep overlaps the first, so with
+        # memory=1 they should be linked into a single cell across the gap
+        assert result.cell.tolist() == [1, 1]
+
+    @pytest.mark.parametrize("cell_number_unassigned", [-1, -999])
+    def test_single_timestep_cell_assignment(self, cell_number_unassigned):
+        """Test that a single-timestep run still applies cell numbering/filtering.
+
+        Regression test: the single-timestep early return previously skipped
+        _filter_stub_cells, leaving cell=0 instead of cell_number_unassigned.
+        """
+        time = [pd.Timestamp("2020-01-01")]
+        hdim_1 = np.arange(10)
+        hdim_2 = np.arange(10)
+
+        mask_data = np.zeros((1, 10, 10), dtype=int)
+        mask_data[0, 2:4, 2:4] = 1
+
+        mask = xr.DataArray(
+            mask_data,
+            coords={"time": time, "hdim_1": hdim_1, "hdim_2": hdim_2},
+            dims=["time", "hdim_1", "hdim_2"],
+        )
+
+        features = pd.DataFrame(
+            {
+                "feature": [1],
+                "time": time,
+                "hdim_1": [3.0],
+                "hdim_2": [3.0],
+            }
+        )
+
+        result = linking_overlap(
+            features, mask, cell_number_unassigned=cell_number_unassigned
+        )
+
+        # no linking is possible with a single timestep, so the feature must be
+        # unassigned, consistent with unmatched features in multi-timestep runs
+        assert result.cell.tolist() == [cell_number_unassigned]
+        assert result.time_cell.isna().all()
