@@ -38,4 +38,5 @@ dependencies:
   - trame-vtk
   - trame-vuetify
   - ipywidgets
+  - zarr>=3
   - ffmpeg

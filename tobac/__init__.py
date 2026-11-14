@@ -76,7 +76,12 @@ from .utils.general import (
 )
 from .utils.mask import convert_feature_mask_to_cells, convert_cell_mask_to_features
 from .feature_detection import feature_detection_multithreshold
-from .tracking import linking_trackpy
+from .tracking import (
+    linking_trackpy,
+    linking_trackpy_latlon,
+    linking_overlap,
+    append_tracks_trackpy,
+)
 from .wrapper import maketrack
 from .wrapper import tracking_wrapper
 from . import merge_split
