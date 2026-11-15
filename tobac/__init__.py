@@ -75,6 +75,7 @@ from .utils.general import (
     get_spacings,
 )
 from .utils.mask import convert_feature_mask_to_cells, convert_cell_mask_to_features
+from .utils.bulk_statistics import get_statistics_from_mask
 from .feature_detection import feature_detection_multithreshold
 from .tracking import linking_trackpy
 from .wrapper import maketrack
