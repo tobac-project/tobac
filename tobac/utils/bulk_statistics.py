@@ -100,132 +100,135 @@ def get_statistics(
         Updated feature dataframe with bulk statistics for each feature saved
         in a new column.
     """
+    if not labels.dtype.kind in "iu":
+        raise TypeError(f"Labels must be of integer type, received: {labels.dtype}")
 
-    if len(features):
-        # Drop existing stats columns
-        stats_columns = list(statistic.keys())
-        features = features.drop(columns=stats_columns, errors="ignore")
+    if not len(features):
+        # Return early if empty features dataframe is provided
+        return features
 
-        if index is None:
-            index = features[id_column]
+    features = features.copy()
+    # Drop existing stats columns
+    stats_columns = list(statistic.keys())
+    features = features.drop(columns=stats_columns, errors="ignore")
 
-        if len(labels.shape) == 1:
-            # Handle 1D labels case where regionprops does not work
-            coords = (
-                pd.DataFrame(
-                    regionprops_table(
-                        np.where(np.isin(labels.values, index), labels.values, 0)[
-                            np.newaxis, :
-                        ],
-                        properties=("label", "coords"),
-                    )
+    if index is None:
+        index = features[id_column]
+
+    if len(labels.shape) == 1:
+        # Handle 1D labels case where regionprops does not work
+        coords = (
+            pd.DataFrame(
+                regionprops_table(
+                    np.where(np.isin(labels.values, index), labels.values, 0)[
+                        np.newaxis, :
+                    ],
+                    properties=("label", "coords"),
                 )
-                .set_index("label")
-                .coords
-            ).apply(lambda r: r[:, 1:])
+            )
+            .set_index("label")
+            .coords
+        ).apply(lambda r: r[:, 1:])
+    else:
+        coords = (
+            pd.DataFrame(
+                regionprops_table(
+                    np.where(np.isin(labels.values, index), labels.values, 0),
+                    properties=("label", "coords"),
+                )
+            )
+            .set_index("label")
+            .coords
+        )
+
+    if not len(coords):
+        # Return early if no features are found in the labels
+        features[stats_columns] = default
+        return features
+
+    dims = list(labels.dims)
+    if collapse_dim is not None:
+        if isinstance(collapse_dim, str):
+            if any((collapse_dim in f.dims for f in fields)):
+                warnings.warn(
+                    f"collapse_dim {collapse_dim} found in one or more fields, this selection could cause unexpected results"
+                )
+            collapse_dim = [collapse_dim]
         else:
-            coords = (
-                pd.DataFrame(
-                    regionprops_table(
-                        np.where(np.isin(labels.values, index), labels.values, 0),
-                        properties=("label", "coords"),
-                    )
+            if any((c in f.dims for f in fields for c in collapse_dim)):
+                warnings.warn(
+                    f"collapse_dim {collapse_dim} found in one or more fields, this selection could cause unexpected results"
                 )
-                .set_index("label")
-                .coords
+
+        dims = [d for d in dims if d not in collapse_dim]
+
+        if not len(dims):
+            ValueError("Cannot collapse all axes of labels")
+
+        uncollapsed_axes = [i for i, dim in enumerate(labels.dims) if dim in dims]
+        shape = np.array([labels.sizes[d] for d in dims])
+        coords = coords.apply(
+            partial(
+                get_collapsed_coords,
+                uncollapsed_axes=uncollapsed_axes,
+                shape=shape,
+            )
+        )
+        aligned = xr.broadcast(
+            *xr.align(labels.isel({d: 0 for d in collapse_dim}), *fields)
+        )
+
+    else:
+        aligned = xr.broadcast(*xr.align(labels, *fields))
+
+    labels_aligned = aligned[0]
+    fields = aligned[1:]
+
+    mismatched_dims = [
+        labels_aligned.sizes[d] != labels.sizes[d]
+        for d in labels_aligned.dims
+        if d in labels.dims
+    ]
+    if any(mismatched_dims):
+        raise ValueError(
+            "The label input and one or more fields have mismatched coordinates, please only use dataarrays with the same coordinates as input to get_statistics"
+        )
+
+    data = coords.apply(
+        lambda r: [
+            f.isel(
+                dict(zip(dims, xr.DataArray(r.T, dims=("dim_", "points")))),
+                missing_dims="ignore",
+            ).values
+            for f in fields
+        ]
+    )  # Get data corresponding to each feature
+
+    index_name = features.index.name or "index"
+    features = features.reset_index().set_index(features[id_column])
+
+    statistic = statistic.copy()
+    for stats_name in statistic:
+        # if function is given as a tuple, take the input parameters provided
+        if type(statistic[stats_name]) is tuple:
+            # assure that key word arguments are provided as dictionary
+            if not type(statistic[stats_name][1]) is dict:
+                raise TypeError(
+                    "Tuple must contain dictionary with key word arguments for function."
+                )
+
+            statistic[stats_name] = partial(
+                statistic[stats_name][0], **statistic[stats_name][1]
             )
 
-        if len(coords):
+        features.loc[data.index, stats_name] = data.apply(
+            lambda r: statistic[stats_name](*r)
+        )
 
-            dims = list(labels.dims)
-            if collapse_dim is not None:
-                if isinstance(collapse_dim, str):
-                    if any((collapse_dim in f.dims for f in fields)):
-                        warnings.warn(
-                            f"collapse_dim {collapse_dim} found in one or more fields, this selection could cause unexpected results"
-                        )
-                    collapse_dim = [collapse_dim]
-                else:
-                    if any((c in f.dims for f in fields for c in collapse_dim)):
-                        warnings.warn(
-                            f"collapse_dim {collapse_dim} found in one or more fields, this selection could cause unexpected results"
-                        )
+    if default is not None:
+        features.loc[~features.index.isin(data.index), stats_columns] = default
 
-                dims = [d for d in dims if d not in collapse_dim]
-
-                if not len(dims):
-                    ValueError("Cannot collapse all axes of labels")
-
-                uncollapsed_axes = [
-                    i for i, dim in enumerate(labels.dims) if dim in dims
-                ]
-                shape = np.array([labels.sizes[d] for d in dims])
-                coords = coords.apply(
-                    partial(
-                        get_collapsed_coords,
-                        uncollapsed_axes=uncollapsed_axes,
-                        shape=shape,
-                    )
-                )
-                aligned = xr.broadcast(
-                    *xr.align(labels.isel({d: 0 for d in collapse_dim}), *fields)
-                )
-
-            else:
-                aligned = xr.broadcast(*xr.align(labels, *fields))
-
-            labels_aligned = aligned[0]
-            fields = aligned[1:]
-
-            mismatched_dims = [
-                labels_aligned.sizes[d] != labels.sizes[d]
-                for d in labels_aligned.dims
-                if d in labels.dims
-            ]
-            if any(mismatched_dims):
-                raise ValueError(
-                    "The label input and one or more fields have mismatched coordinates, please only use dataarrays with the same coordinates as input to get_statistics"
-                )
-
-            data = coords.apply(
-                lambda r: [
-                    f.isel(
-                        dict(zip(dims, xr.DataArray(r.T, dims=("dim_", "points")))),
-                        missing_dims="ignore",
-                    ).values
-                    for f in fields
-                ]
-            )  # Get data corresponding to each feature
-
-            features = features.reset_index().set_index(features[id_column])
-
-            for stats_name in statistic:
-                # if function is given as a tuple, take the input parameters provided
-                if type(statistic[stats_name]) is tuple:
-                    # assure that key word arguments are provided as dictionary
-                    if not type(statistic[stats_name][1]) is dict:
-                        raise TypeError(
-                            "Tuple must contain dictionary with key word arguments for function."
-                        )
-
-                    statistic[stats_name] = partial(
-                        statistic[stats_name][0], **statistic[stats_name][1]
-                    )
-
-                features.loc[data.index, stats_name] = data.apply(
-                    lambda r: statistic[stats_name](*r)
-                )
-
-            if default is not None:
-                features[stats_columns] = features[stats_columns].fillna(value=default)
-
-            return features.set_index("index")
-
-        else:
-            features = features.copy()
-            features[stats_columns] = default
-            return features
-    return features
+    return features.set_index(index_name)
 
 
 @decorators.iris_to_xarray()

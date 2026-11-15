@@ -1296,3 +1296,42 @@ def test_get_statistics_reversed_coordinate_order():
         statistic=statistics_sum,
     )
     assert np.all(output["sum"] == expected_sum_result)
+
+
+def test_non_integer_labels_error():
+    """Test that a TypeError is raised if the input labels are not integers"""
+    test_labels = xr.DataArray(
+        np.array(
+            [
+                [0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0],
+                [0, 1, 0, 2, 0],
+                [0, 1, 0, 2, 0],
+                [0, 0, 0, 0, 0],
+            ],
+            dtype=float,
+        ),
+        dims=("y", "x"),
+    )
+
+    test_features = pd.DataFrame(
+        {
+            "feature": [1, 2],
+            "frame": [0, 0],
+            "time": [
+                datetime(2000, 1, 1),
+                datetime(2000, 1, 1),
+            ],
+        }
+    )
+
+    with pytest.raises(
+        TypeError,
+        match="Labels must be of integer type, received:*",
+    ):
+        _ = tb_utils.get_statistics(
+            test_features,
+            test_labels,
+            None,
+            statistic=None,
+        )
