@@ -25,7 +25,7 @@ import copy
 import logging
 import warnings
 from copy import deepcopy
-from typing import Optional
+from typing import Literal, Optional
 
 import numpy as np
 import pandas as pd
@@ -212,13 +212,13 @@ def linking_trackpy(
         Default is False.
 
         .. note:: If you are using ``method_linking='predict'`` and plan to
-                  append to these tracks later with
-                  :func:`tobac.tracking.append_tracks_trackpy` using
-                  ``stubs`` greater than 2 (or a ``time_cell_min`` equivalent
-                  to more than 2 frames, i.e., ``time_cell_min >= 2*dt``),
-                  set this option to True. Without the unfiltered cell
-                  numbers, the velocities of stubs at the end of the original
-                  tracks are lost, so append tracking will raise an error.
+            append to these tracks later with
+            :func:`tobac.tracking.append_tracks_trackpy` using
+            ``stubs`` greater than 2 (or a ``time_cell_min`` equivalent
+            to more than 2 frames, i.e., ``time_cell_min >= 2*dt``),
+            set this option to True. Without the unfiltered cell
+            numbers, the velocities of stubs at the end of the original
+            tracks are lost, so append tracking will raise an error.
 
     Returns
     -------
@@ -539,13 +539,13 @@ def linking_trackpy_latlon(
         Default is False.
 
         .. note:: If you are using ``method_linking='predict'`` and plan to
-                  append to these tracks later with
-                  :func:`tobac.tracking.append_tracks_trackpy` using
-                  ``stubs`` greater than 2 (or a ``time_cell_min`` equivalent
-                  to more than 2 frames, i.e., ``time_cell_min >= 2*dt``),
-                  set this option to True. Without the unfiltered cell
-                  numbers, the velocities of stubs at the end of the original
-                  tracks are lost, so append tracking will raise an error.
+            append to these tracks later with
+            :func:`tobac.tracking.append_tracks_trackpy` using
+            ``stubs`` greater than 2 (or a ``time_cell_min`` equivalent
+            to more than 2 frames, i.e., ``time_cell_min >= 2*dt``),
+            set this option to True. Without the unfiltered cell
+            numbers, the velocities of stubs at the end of the original
+            tracks are lost, so append tracking will raise an error.
 
     Returns
     -------

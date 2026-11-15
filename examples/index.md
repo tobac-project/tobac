@@ -15,6 +15,7 @@ tobac is provided with a set of Jupyter notebooks that show examples of the appl
    On Feature Detection: Part 2 <./Basics/Methods-and-Parameters-for-Feature-Detection_Part_2.ipynb>
    On Segmentation <./Basics/Methods-and-Parameters-for-Segmentation.ipynb>
    On Linking <./Basics/Methods-and-Parameters-for-Linking.ipynb>
+   On Overlap Tracking <./Basics/Methods-and-Parameters-for-Overlap-Tracking.ipynb>
 ```
 
 ## Examples of Using _tobac_ with Observations

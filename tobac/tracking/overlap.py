@@ -904,7 +904,8 @@ def linking_overlap(
     minimum_overlap : int, optional
         Minimum pixel overlap required for feature linking. Default is 1.
     minimum_relative_overlap : float, optional
-        Minimum fraction of feature area required for linking. Default is 0.
+        Minimum fraction of the smaller of the two features required to overlap
+        for linking. Default is 0.
     translate_method : {'constant', 'drift', 'predict'}, optional
         Method for predicting feature positions at next time step. Default is None.
     velocity_method : {'constant', 'mean', 'nearest'}, optional
@@ -923,9 +924,11 @@ def linking_overlap(
     memory : int, optional
         Number of output timesteps features allowed to vanish for to
         be still considered tracked. Default is 0.
-        .. warning :: This parameter should be used with caution, as it
-                        can lead to erroneous trajectory linking,
-                        especially for data with low time resolution.
+
+        .. warning::
+            This parameter should be used with caution, as it
+            can lead to erroneous trajectory linking,
+            especially for data with low time resolution.
 
     Returns
     -------
