@@ -163,7 +163,7 @@ def get_statistics(
         dims = [d for d in dims if d not in collapse_dim]
 
         if not len(dims):
-            ValueError("Cannot collapse all axes of labels")
+            raise ValueError("Cannot collapse all axes of labels")
 
         uncollapsed_axes = [i for i, dim in enumerate(labels.dims) if dim in dims]
         shape = np.array([labels.sizes[d] for d in dims])

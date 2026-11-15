@@ -550,18 +550,8 @@ def test_get_statistics_collapse_dim():
     )
     assert np.all(output_collapse_dim1["sum"] == expected_sum_result_axis1)
 
-    # Check that attempting broadcast raises a ValueError
-    # with pytest.raises(ValueError):
-    #     _ = tb_utils.get_statistics(
-    #         test_features,
-    #         test_labels,
-    #         test_values.reshape([5, 1]),
-    #         statistic=statistics_sum,
-    #         collapse_axis=0,
-    #     )
-
     # Check that attempting to collapse all dims raises a ValueError:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Cannot collapse all axes of labels"):
         with pytest.warns(UserWarning, match="collapse_dim"):
             _ = tb_utils.get_statistics(
                 test_features,
