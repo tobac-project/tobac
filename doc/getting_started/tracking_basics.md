@@ -1,6 +1,10 @@
 # Tracking Basics
 
-The currently implemented tracking method in *tobac* uses the trackpy library (http://soft-matter.github.io/trackpy). 
+The *tobac* library includes two sets of linking methods, used to track `cells` which consist of multiple `features` over time. These consists of centroid-based methods, which utilise the feature position to link features based on proximity, and overlap-based methods which utilise the segmentation masks produced by feature detection or segmentation to link features according to their spatial overlap across time steps. In general, centroid-based methods work better for smaller, point-like features such as convective updrafts, whereas overlap-based methods work better for larger, more irregularly shaped objects like anvil clouds. However, the most suitable method for any situation may vary, and we recommend that the user experiment with different methods and parameters to find the best solution for their use.
+
+## Centroid-based tracking
+
+The `linking_trackpy` and `linking_trackpy_latlon` methods in *tobac* uses the trackpy library (http://soft-matter.github.io/trackpy). 
 
 This approach only takes the point-like position of the feature, e.g. determined as the weighted mean (see also {doc}`/userguide/feature_detection/index` for information on selecting the appropriate centroid method), into account. Features to link with are looked for in a search radius defined by the parameters v_max or d_max. The position of the center of this search radius is determined by the method keyword. method="random" uses the position of the current feature ($t_i$), while method="predict" makes use of the information from the linked feature in the previous timestep ($t_{i-1}$) to predict the next position. For a simple case the search radii of the two methods look like this:
 
