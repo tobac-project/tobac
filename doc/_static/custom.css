@@ -214,3 +214,9 @@
 .example-gallery a.sd-stretched-link.reference.external {
   z-index: 999;  /* Countermeasure where z-index = 998 */
 }
+
+/* Underline sphinx autolink */
+a.sphinx-codeautolink-a {
+    text-decoration: underline;
+}
+

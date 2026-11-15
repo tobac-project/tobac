@@ -239,7 +239,7 @@ def match_datetime_format(
     if isinstance(target, cftime.datetime):
         return to_cftime(dates, target.calendar)
     if isinstance(target, pd.Timestamp):
-        precision = target.unit
+        precision = getattr(target, "unit", None)
         return to_timestamp(dates, precision=precision)
     if isinstance(target, np.datetime64):
         precision = np.datetime_data(target)[0]
