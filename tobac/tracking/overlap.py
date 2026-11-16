@@ -889,8 +889,8 @@ def linking_overlap(
     vertical_axis: Optional[int] = None,
     vertical_coord: Optional[str] = None,
     memory: int = 0,
-    max_time_gap: Optional[pd.Timedelta] = None,
-    time_cell_min: Optional[pd.Timedelta] = None,
+    max_time_gap: Optional[pd.Timedelta | float] = None,
+    time_cell_min: Optional[pd.Timedelta | float] = None,
 ) -> pd.DataFrame:
     """Link features through time using spatial overlap tracking.
 
@@ -951,6 +951,11 @@ def linking_overlap(
     """
     tracks = features.copy().set_index("feature")
     tracks["cell"] = 0
+
+    if isinstance(max_time_gap, (int, float)):
+        max_time_gap = pd.to_timedelta(max_time_gap, unit="s")
+    if isinstance(time_cell_min, (int, float)):
+        time_cell_min = pd.to_timedelta(time_cell_min, unit="s")
 
     time_axis = internal_utils.find_axis_from_coord(mask, "time")
     if len(mask.shape) == 4:
