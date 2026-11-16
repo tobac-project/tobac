@@ -8,7 +8,7 @@ The default tracking method in *tobac*, {py:func}`tobac.tracking.linking_trackpy
 
 For each pair of consecutive timesteps, the overlap between the mask of every feature in the current timestep and the masks of all features in the next timestep is computed. If a feature overlaps with several features in the next timestep (or vice versa), the ambiguity is resolved by choosing the one-to-one assignment between features that **maximizes the total overlap area**, using a maximum-weight bipartite matching. Features that cannot be matched end their track at the current timestep, and unmatched features in the next timestep start a new track.
 
-Because the areal overlap is a more robust criterion than the distance between point positions, overlap tracking is particularly useful for fast-moving, crossing, or strongly deforming features. Optionally, the position of each feature can first be translated from the current to the next timestep using its tracked velocity (see {ref}`overlap-tracking-translate` below), which further improves the linking of fast-moving features.
+Because the areal overlap is a more robust criterion than the distance between point positions, overlap tracking is particularly useful for large, irregularly-shaped, crossing, or strongly deforming features. Optionally, the position of each feature can first be translated from the current to the next timestep using its tracked velocity (see {ref}`overlap-tracking-translate` below), which further improves the linking of fast-moving features.
 
 ## Basic usage
 
