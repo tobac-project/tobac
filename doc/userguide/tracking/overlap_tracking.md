@@ -8,7 +8,7 @@ The default tracking method in *tobac*, {py:func}`tobac.tracking.linking_trackpy
 
 For each pair of consecutive timesteps, the overlap between the mask of every feature in the current timestep and the masks of all features in the next timestep is computed. If a feature overlaps with several features in the next timestep (or vice versa), the ambiguity is resolved by choosing the one-to-one assignment between features that **maximizes the total overlap area**, using a maximum-weight bipartite matching. Features that cannot be matched end their track at the current timestep, and unmatched features in the next timestep start a new track.
 
-Because the areal overlap is a more robust criterion than the distance between point positions, overlap tracking is particularly useful for large, irregularly-shaped, crossing, or strongly deforming features. Optionally, the position of each feature can first be translated from the current to the next timestep using its tracked velocity (see {ref}`overlap-tracking-translate` below), which further improves the linking of fast-moving features.
+Because the areal overlap is a more robust criterion than the distance between point positions, overlap tracking is particularly useful for large, irregularly-shaped, crossing, or strongly deforming features. Optionally, the position of each feature can first be translated from the current to the next timestep using its tracked velocity (see {ref}`overlap-tracking-translate` below), which further improves the linking of fast-moving features. Unlike {py:func}`tobac.tracking.linking_trackpy`, overlap tracking also supports **variable time gaps between timesteps** (see `max_time_gap` and `time_cell_min` below).
 
 ## Basic usage
 
@@ -84,9 +84,16 @@ tracks = tobac.tracking.linking_overlap(
 This parameter should be used with caution, as it can lead to erroneous trajectory linking, especially for data with low time resolution.
 ```
 
+### Maximum time gap: `max_time_gap`
+
+`max_time_gap` (`pandas.Timedelta` or float, default `None`) limits the time gap between two *consecutive timesteps* for which linking is attempted: if the time difference between two consecutive timesteps of the `mask` exceeds `max_time_gap`, no matches are made between them and tracks are not extended across the gap. This is useful for data with missing timesteps, where linking across a large gap would be unreliable. If a float is given, it is interpreted as seconds.
+
+Note that `max_time_gap` only limits the gap between consecutive timesteps: with `memory > 0`, features from earlier timesteps remain linking candidates, so a single cell can still contain gaps between consecutive features that are larger than `max_time_gap`.
+
 ### Cell numbering and filtering
 
 - `stubs` (int, default 1): minimum number of timesteps a cell must span to be kept in the output. Cells spanning fewer timesteps are marked as unassigned.
+- `time_cell_min` (`pandas.Timedelta` or float, default `None`): minimum *time span* of a cell (latest minus earliest timestep of the cell) for it to be kept; cells spanning less time are marked as unassigned. Unlike `stubs`, this is based on the actual time span instead of the number of timesteps, so it also works with variable time gaps between timesteps (unlike `linking_trackpy`, which assumes a constant time resolution). If a float is given, it is interpreted as seconds.
 - `cell_number_start` (int, default 1): number assigned to the first tracked cell.
 - `cell_number_unassigned` (int, default -1): value assigned to features that are not part of any tracked cell.
 

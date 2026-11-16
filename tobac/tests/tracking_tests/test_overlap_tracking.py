@@ -1133,3 +1133,217 @@ class TestLinkingOverlap:
         # unassigned, consistent with unmatched features in multi-timestep runs
         assert result.cell.tolist() == [cell_number_unassigned]
         assert result.time_cell.isna().all()
+
+    @staticmethod
+    def _make_mask_and_features(times, blobs, grid_size=20):
+        """Build a labeled mask and matching features dataframe.
+
+        Parameters
+        ----------
+        times : list of pd.Timestamp
+            Time coordinates of the mask.
+        blobs : list of tuple (frame_indices, row_slice, col_slice)
+            Each blob is labeled with consecutive feature IDs (1-based) at the
+            given frame indices; the same (row, col) region is used for all
+            frame indices of the blob.
+        grid_size : int
+            Size of the square (grid_size x grid_size) horizontal grid.
+
+        Returns
+        -------
+        mask : xr.DataArray
+            Labeled mask with dims (time, hdim_1, hdim_2); per timestep, each
+            blob's pixels are labeled with that timestep's feature ID.
+        features : pd.DataFrame
+            Features dataframe with one row per blob per frame index.
+        """
+        mask_data = np.zeros((len(times), grid_size, grid_size), dtype=int)
+        feature_rows = []
+        feature_id = 0
+        for frame_indices, rows, cols in blobs:
+            for frame in frame_indices:
+                feature_id += 1
+                mask_data[frame, rows, cols] = feature_id
+                feature_rows.append(
+                    {
+                        "feature": feature_id,
+                        "frame": frame,
+                        "time": times[frame],
+                        "hdim_1": float(np.mean(np.arange(grid_size)[rows])),
+                        "hdim_2": float(np.mean(np.arange(grid_size)[cols])),
+                    }
+                )
+        mask = xr.DataArray(
+            mask_data,
+            coords={
+                "time": list(times),
+                "hdim_1": np.arange(grid_size),
+                "hdim_2": np.arange(grid_size),
+            },
+            dims=["time", "hdim_1", "hdim_2"],
+        )
+        features = pd.DataFrame(feature_rows)
+        return mask, features
+
+    def test_max_time_gap(self):
+        """Test that max_time_gap prevents linking across large time gaps."""
+        # one blob at the same position at 5 timesteps, with a 7 h gap before the last
+        times = pd.to_datetime(
+            [
+                "2024-08-27 00:00",
+                "2024-08-27 01:00",
+                "2024-08-27 02:00",
+                "2024-08-27 03:00",
+                "2024-08-27 10:00",
+            ]
+        )
+        mask, features = self._make_mask_and_features(
+            times, [([0, 1, 2, 3, 4], slice(5, 10), slice(5, 10))]
+        )
+
+        # without max_time_gap, the blob is linked into a single cell across the gap
+        result = linking_overlap(features, mask)
+        assert np.all(result.cell == 1)
+
+        # a 7 h gap exceeds max_time_gap=2 h, so no linking across the gap
+        result = linking_overlap(features, mask, max_time_gap=pd.Timedelta("2h"))
+        assert result.cell.tolist() == [1, 1, 1, 1, -1]
+
+        # a float is interpreted as seconds: 2*3600 s = 2 h, same result
+        result_float = linking_overlap(features, mask, max_time_gap=2 * 3600)
+        assert result_float.cell.tolist() == [1, 1, 1, 1, -1]
+
+        # max_time_gap larger than the 7 h gap still links across it
+        result = linking_overlap(features, mask, max_time_gap=pd.Timedelta("8h"))
+        assert np.all(result.cell == 1)
+
+    def test_max_time_gap_variable_timesteps(self):
+        """Test max_time_gap with irregular time gaps between timesteps."""
+        # one blob at times 0 h, 1 h, 5 h (gaps of 1 h and 4 h)
+        times = pd.to_datetime(
+            ["2024-08-27 00:00", "2024-08-27 01:00", "2024-08-27 05:00"]
+        )
+        mask, features = self._make_mask_and_features(
+            times, [([0, 1, 2], slice(5, 10), slice(5, 10))]
+        )
+
+        # all gaps (1 h, 4 h) within 5 h: single cell
+        result = linking_overlap(features, mask, max_time_gap=pd.Timedelta("5h"))
+        assert np.all(result.cell == 1)
+
+        # the 4 h gap exceeds max_time_gap=2 h: no linking across it
+        result = linking_overlap(features, mask, max_time_gap=pd.Timedelta("2h"))
+        assert result.cell.tolist() == [1, 1, -1]
+
+        # float seconds equivalent
+        result_float = linking_overlap(features, mask, max_time_gap=2 * 3600)
+        assert result_float.cell.tolist() == [1, 1, -1]
+
+    def test_max_time_gap_with_memory(self):
+        """Test the interaction of max_time_gap and memory.
+
+        max_time_gap only limits the gap between *consecutive* timesteps, so
+        with memory > 0 a cell can still contain gaps larger than max_time_gap
+        between consecutive features (intended behavior).
+        """
+        # blob present at t=0 h and t=5 h only (empty mask in between), hourly timesteps
+        times = pd.date_range("2024-08-27", periods=6, freq="h")
+        mask, features = self._make_mask_and_features(
+            times,
+            [([0], slice(5, 10), slice(5, 10)), ([5], slice(5, 10), slice(5, 10))],
+        )
+
+        # memory bridges the 5 h gap between the two features
+        result = linking_overlap(features, mask, memory=5)
+        assert result.cell.tolist() == [1, 1]
+
+        # consecutive timestep gaps are 1 h <= max_time_gap=2 h, so matching is
+        # still attempted and memory links the features 5 h apart
+        result = linking_overlap(
+            features, mask, memory=5, max_time_gap=pd.Timedelta("2h")
+        )
+        assert result.cell.tolist() == [1, 1]
+
+    def test_time_cell_min(self):
+        """Test that time_cell_min filters cells by their actual time span."""
+        # long-lived blob at 5 hourly timesteps (span 4 h) and a short-lived
+        # blob at 2 consecutive timesteps (span 1 h)
+        times = pd.date_range("2024-08-27", periods=5, freq="h")
+        mask, features = self._make_mask_and_features(
+            times,
+            [
+                ([0, 1, 2, 3, 4], slice(2, 5), slice(2, 5)),
+                ([2, 3], slice(10, 13), slice(10, 13)),
+            ],
+        )
+
+        # default: two cells
+        result = linking_overlap(features, mask)
+        assert result.set_index("feature").cell.to_dict() == {
+            1: 1,
+            2: 1,
+            3: 1,
+            4: 1,
+            5: 1,
+            6: 2,
+            7: 2,
+        }
+
+        # time_cell_min=3 h keeps the 4 h cell and filters the 1 h cell
+        result = linking_overlap(features, mask, time_cell_min=pd.Timedelta("3h"))
+        assert result.set_index("feature").cell.to_dict() == {
+            1: 1,
+            2: 1,
+            3: 1,
+            4: 1,
+            5: 1,
+            6: -1,
+            7: -1,
+        }
+
+        # a float is interpreted as seconds: 3*3600 s = 3 h, same result
+        result_float = linking_overlap(features, mask, time_cell_min=3 * 3600)
+        assert result_float.set_index("feature").cell.to_dict() == {
+            1: 1,
+            2: 1,
+            3: 1,
+            4: 1,
+            5: 1,
+            6: -1,
+            7: -1,
+        }
+
+        # time_cell_min larger than both spans: everything unassigned
+        result = linking_overlap(features, mask, time_cell_min=pd.Timedelta("5h"))
+        assert np.all(result.cell == -1)
+
+    def test_time_cell_min_variable_time_gaps(self):
+        """Test that time_cell_min works with variable time gaps between timesteps.
+
+        Unlike stubs (which counts timesteps) or linking_trackpy's time_cell_min
+        (which assumes a constant time resolution), time_cell_min in
+        linking_overlap compares against the actual time span of the cell.
+        """
+        # one blob at times 0 h, 1 h, 5 h: 3 timesteps but a 5 h span
+        times = pd.to_datetime(
+            ["2024-08-27 00:00", "2024-08-27 01:00", "2024-08-27 05:00"]
+        )
+        mask, features = self._make_mask_and_features(
+            times, [([0, 1, 2], slice(5, 10), slice(5, 10))]
+        )
+
+        # stubs counts timesteps: 3 < 4, so stubs=4 filters the cell
+        result = linking_overlap(features, mask, stubs=4)
+        assert np.all(result.cell == -1)
+
+        # time_cell_min uses the actual 5 h span: 5 h >= 4 h, so the cell is kept
+        result = linking_overlap(features, mask, time_cell_min=pd.Timedelta("4h"))
+        assert np.all(result.cell == 1)
+
+        # 5 h < 6 h: filtered
+        result = linking_overlap(features, mask, time_cell_min=pd.Timedelta("6h"))
+        assert np.all(result.cell == -1)
+
+        # float seconds equivalent: 4*3600 s = 4 h
+        result_float = linking_overlap(features, mask, time_cell_min=4 * 3600)
+        assert np.all(result_float.cell == 1)

@@ -752,6 +752,11 @@ def _filter_stub_cells(
         Starting value for cell ID numbering.
     cell_number_unassigned : int
         Value to assign to unassigned/filtered cells.
+    time_cell_min : pd.Timedelta, optional
+        Minimum time span of a cell (latest minus earliest timestep of the
+        cell, `time.max() - time.min()`) for the cell to be retained. Cells
+        spanning less time are marked as unassigned. Default is None (no
+        minimum time span).
 
     Returns
     -------
@@ -889,14 +894,15 @@ def linking_overlap(
     vertical_axis: Optional[int] = None,
     vertical_coord: Optional[str] = None,
     memory: int = 0,
-    max_time_gap: Optional[pd.Timedelta | float] = None,
-    time_cell_min: Optional[pd.Timedelta | float] = None,
+    max_time_gap: Optional[Union[pd.Timedelta, float]] = None,
+    time_cell_min: Optional[Union[pd.Timedelta, float]] = None,
 ) -> pd.DataFrame:
     """Link features through time using spatial overlap tracking.
 
     Tracks features across consecutive time steps by finding the best
     one-to-one matches based on spatial overlap, optionally translating
-    features based on velocity predictions.
+    features based on velocity predictions. Unlike `linking_trackpy`,
+    variable time gaps between timesteps are supported.
 
     Parameters
     ----------
@@ -934,11 +940,32 @@ def linking_overlap(
     memory : int, optional
         Number of output timesteps features allowed to vanish for to
         be still considered tracked. Default is 0.
+        See `max_time_gap` for limiting time gaps between timesteps.
 
         .. warning::
             This parameter should be used with caution, as it
             can lead to erroneous trajectory linking,
             especially for data with low time resolution.
+
+    max_time_gap : pd.Timedelta or float, optional
+        Maximum time gap between two consecutive timesteps for linking to be
+        attempted between them: if the time difference between two consecutive
+        timesteps of `mask` exceeds `max_time_gap`, no matches are made
+        between them and tracks are not extended across the gap. If a float
+        is given, it is interpreted as seconds. Default is None (no limit).
+
+        Note that `max_time_gap` only limits the gap between *consecutive*
+        timesteps: with `memory > 0`, features from earlier timesteps remain
+        linking candidates, so a single cell can still contain gaps between
+        consecutive features that are larger than `max_time_gap`.
+    time_cell_min : pd.Timedelta or float, optional
+        Minimum time span of a cell (latest minus earliest timestep of the
+        cell) for the cell to be retained; cells spanning less time are
+        marked as unassigned. Like `stubs`, but based on the actual time span
+        instead of the number of timesteps, so it also works with variable
+        time gaps between timesteps (unlike `linking_trackpy`, which assumes
+        a constant time resolution). If a float is given, it is interpreted
+        as seconds. Default is None (no minimum time span).
 
     Returns
     -------
