@@ -738,6 +738,7 @@ def _filter_stub_cells(
     stubs: int,
     cell_number_start: int,
     cell_number_unassigned: int,
+    time_cell_min: Optional[pd.Timedelta] = None,
 ) -> pd.DataFrame:
     """Remove cells with fewer than minimum number of time steps.
 
@@ -764,6 +765,13 @@ def _filter_stub_cells(
         cell_count = tracks.groupby("cell").cell.count()
         stub_cells = cell_count.index[cell_count < stubs].values
         tracks.loc[np.isin(tracks.cell, stub_cells), "cell"] = 0
+
+    if time_cell_min is not None:
+        cell_time = (
+            tracks.groupby("cell").time.max() - tracks.groupby("cell").time.min()
+        )
+        short_cells = cell_time.index[cell_time < time_cell_min].values
+        tracks.loc[np.isin(tracks.cell, short_cells), "cell"] = 0
 
     new_cells = np.unique(tracks.cell, return_inverse=True)[1]
     if (tracks.cell == 0).any():
@@ -881,6 +889,8 @@ def linking_overlap(
     vertical_axis: Optional[int] = None,
     vertical_coord: Optional[str] = None,
     memory: int = 0,
+    max_time_gap: Optional[pd.Timedelta] = None,
+    time_cell_min: Optional[pd.Timedelta] = None,
 ) -> pd.DataFrame:
     """Link features through time using spatial overlap tracking.
 
@@ -974,7 +984,7 @@ def linking_overlap(
 
     field_and_features = iter(field_and_features_over_time(mask, tracks))
 
-    _, _, labels, features_t = next(field_and_features)
+    _, previous_timestep, labels, features_t = next(field_and_features)
     origin_features = _get_coords_and_centroids(features_t, labels, PBC_flag=PBC_flag)
 
     try:
@@ -985,6 +995,7 @@ def linking_overlap(
             stubs=stubs,
             cell_number_start=cell_number_start,
             cell_number_unassigned=cell_number_unassigned,
+            time_cell_min=time_cell_min,
         )
         tracks = _assign_cell_times(
             tracks, cell_number_unassigned=cell_number_unassigned
@@ -1001,7 +1012,11 @@ def linking_overlap(
     bootstrap = True if translate_method in ["drift", "predict"] else False
     matched_overlaps = {}
     while True:
-        if len(origin_features) and len(destination_features):
+        if (
+            len(origin_features)
+            and len(destination_features)
+            and (max_time_gap is None or (timestep - previous_timestep) <= max_time_gap)
+        ):
             if bootstrap:
                 _bootstrap_velocities(
                     origin_features,
@@ -1036,6 +1051,11 @@ def linking_overlap(
                     PBC_flag=PBC_flag,
                 )
         else:
+            if (
+                max_time_gap is not None
+                and (timestep - previous_timestep) > max_time_gap
+            ):
+                origin_features = pd.DataFrame()
             if not len(origin_features):
                 bootstrap = True  # if no features, we need to bootstrap next time we have features
 
@@ -1061,6 +1081,8 @@ def linking_overlap(
         else:
             origin_features = destination_features
 
+        previous_timestep = timestep
+
         try:
             frame, timestep, labels, features_t = next(field_and_features)
         except StopIteration:
@@ -1074,6 +1096,7 @@ def linking_overlap(
         stubs=stubs,
         cell_number_start=cell_number_start,
         cell_number_unassigned=cell_number_unassigned,
+        time_cell_min=time_cell_min,
     )
 
     tracks = _assign_cell_times(tracks, cell_number_unassigned=cell_number_unassigned)
