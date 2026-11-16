@@ -1242,9 +1242,10 @@ class TestLinkingOverlap:
     def test_max_time_gap_with_memory(self):
         """Test the interaction of max_time_gap and memory.
 
-        max_time_gap only limits the gap between *consecutive* timesteps, so
-        with memory > 0 a cell can still contain gaps larger than max_time_gap
-        between consecutive features (intended behavior).
+        max_time_gap limits the time gap between a feature and the timestep it
+        is matched to, so with memory > 0, candidates whose own timestep is
+        further than max_time_gap before the current timestep are no longer
+        linked (intended behavior).
         """
         # blob present at t=0 h and t=5 h only (empty mask in between), hourly timesteps
         times = pd.date_range("2024-08-27", periods=6, freq="h")
@@ -1257,12 +1258,28 @@ class TestLinkingOverlap:
         result = linking_overlap(features, mask, memory=5)
         assert result.cell.tolist() == [1, 1]
 
-        # consecutive timestep gaps are 1 h <= max_time_gap=2 h, so matching is
-        # still attempted and memory links the features 5 h apart
+        # max_time_gap=10 h >= 5 h: the t=0 h feature is still a valid candidate
+        result = linking_overlap(
+            features, mask, memory=5, max_time_gap=pd.Timedelta("10h")
+        )
+        assert result.cell.tolist() == [1, 1]
+
+        # boundary: a feature exactly max_time_gap old is still linked (<=)
+        result = linking_overlap(
+            features, mask, memory=5, max_time_gap=pd.Timedelta("5h")
+        )
+        assert result.cell.tolist() == [1, 1]
+
+        # max_time_gap=2 h < 5 h: the t=0 h feature is dropped as a candidate,
+        # so the two features 5 h apart are not linked
         result = linking_overlap(
             features, mask, memory=5, max_time_gap=pd.Timedelta("2h")
         )
-        assert result.cell.tolist() == [1, 1]
+        assert result.cell.tolist() == [-1, -1]
+
+        # a float is interpreted as seconds: 7200 s = 2 h, same result
+        result_float = linking_overlap(features, mask, memory=5, max_time_gap=7200)
+        assert result_float.cell.tolist() == [-1, -1]
 
     def test_time_cell_min(self):
         """Test that time_cell_min filters cells by their actual time span."""

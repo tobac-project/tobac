@@ -948,16 +948,14 @@ def linking_overlap(
             especially for data with low time resolution.
 
     max_time_gap : pd.Timedelta or float, optional
-        Maximum time gap between two consecutive timesteps for linking to be
-        attempted between them: if the time difference between two consecutive
-        timesteps of `mask` exceeds `max_time_gap`, no matches are made
-        between them and tracks are not extended across the gap. If a float
-        is given, it is interpreted as seconds. Default is None (no limit).
-
-        Note that `max_time_gap` only limits the gap between *consecutive*
-        timesteps: with `memory > 0`, features from earlier timesteps remain
-        linking candidates, so a single cell can still contain gaps between
-        consecutive features that are larger than `max_time_gap`.
+        Maximum allowed time gap between a feature and the timestep it is
+        matched to: before matching, origin features whose time difference to
+        the current timestep exceeds `max_time_gap` are discarded, so tracks
+        are not extended across time gaps larger than `max_time_gap`. This
+        also applies to features kept as linking candidates via `memory`, so
+        a cell cannot contain gaps between consecutive features that are
+        larger than `max_time_gap`. If a float is given, it is interpreted as
+        seconds. Default is None (no limit).
     time_cell_min : pd.Timedelta or float, optional
         Minimum time span of a cell (latest minus earliest timestep of the
         cell) for the cell to be retained; cells spanning less time are
@@ -1016,7 +1014,7 @@ def linking_overlap(
 
     field_and_features = iter(field_and_features_over_time(mask, tracks))
 
-    _, previous_timestep, labels, features_t = next(field_and_features)
+    _, _, labels, features_t = next(field_and_features)
     origin_features = _get_coords_and_centroids(features_t, labels, PBC_flag=PBC_flag)
 
     try:
@@ -1044,11 +1042,12 @@ def linking_overlap(
     bootstrap = True if translate_method in ["drift", "predict"] else False
     matched_overlaps = {}
     while True:
-        if (
-            len(origin_features)
-            and len(destination_features)
-            and (max_time_gap is None or (timestep - previous_timestep) <= max_time_gap)
-        ):
+        if max_time_gap is not None:
+            origin_features = origin_features[
+                (to_timestamp(timestep) - to_timestamp(origin_features.time))
+                <= max_time_gap
+            ]
+        if len(origin_features) and len(destination_features):
             if bootstrap:
                 _bootstrap_velocities(
                     origin_features,
@@ -1083,11 +1082,6 @@ def linking_overlap(
                     PBC_flag=PBC_flag,
                 )
         else:
-            if (
-                max_time_gap is not None
-                and (timestep - previous_timestep) > max_time_gap
-            ):
-                origin_features = pd.DataFrame()
             if not len(origin_features):
                 bootstrap = True  # if no features, we need to bootstrap next time we have features
 
@@ -1112,8 +1106,6 @@ def linking_overlap(
             )
         else:
             origin_features = destination_features
-
-        previous_timestep = timestep
 
         try:
             frame, timestep, labels, features_t = next(field_and_features)

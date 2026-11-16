@@ -86,9 +86,9 @@ This parameter should be used with caution, as it can lead to erroneous trajecto
 
 ### Maximum time gap: `max_time_gap`
 
-`max_time_gap` (`pandas.Timedelta` or float, default `None`) limits the time gap between two *consecutive timesteps* for which linking is attempted: if the time difference between two consecutive timesteps of the `mask` exceeds `max_time_gap`, no matches are made between them and tracks are not extended across the gap. This is useful for data with missing timesteps, where linking across a large gap would be unreliable. If a float is given, it is interpreted as seconds.
+`max_time_gap` (`pandas.Timedelta` or float, default `None`) limits the time gap between a feature and the timestep it is matched to: before matching, origin features whose time difference to the current timestep exceeds `max_time_gap` are discarded, so tracks are not extended across time gaps larger than `max_time_gap`. This is useful for data with missing timesteps, where linking across a large gap would be unreliable. If a float is given, it is interpreted as seconds.
 
-Note that `max_time_gap` only limits the gap between consecutive timesteps: with `memory > 0`, features from earlier timesteps remain linking candidates, so a single cell can still contain gaps between consecutive features that are larger than `max_time_gap`.
+This also applies to features kept as linking candidates via `memory`: with `memory > 0`, a feature whose own timestep is further than `max_time_gap` before the current timestep is dropped as a candidate, so a cell cannot contain gaps between consecutive features that are larger than `max_time_gap`.
 
 ### Cell numbering and filtering
 
