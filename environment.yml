@@ -7,7 +7,7 @@ name: tobac-dev
 channels:
   - conda-forge
 dependencies:
-  - python>=3.9,<3.15
+  - python>=3.11,<3.15
   - numpy>=1.23
   - scipy>=1.8
   - scikit-image>=0.19

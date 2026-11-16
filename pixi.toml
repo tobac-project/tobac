@@ -99,10 +99,6 @@ pandoc = "*"
 [feature.docs.tasks]
 docs = "sphinx-build -b html doc doc/_build/html"
 
-[feature.py39.dependencies]
-python = "3.9.*"
-[feature.py310.dependencies]
-python = "3.10.*"
 [feature.py311.dependencies]
 python = "3.11.*"
 [feature.py312.dependencies]
@@ -115,7 +111,7 @@ python = "3.14.*"
 # oldest supported versions of the core dependencies (the floors in
 # [project] dependencies), tested with the oldest supported python
 [feature.min-versions.dependencies]
-python = "3.9.*"
+python = "3.11.*"
 numpy = "1.23.*"
 scipy = "1.8.*"
 scikit-image = "0.19.*"
