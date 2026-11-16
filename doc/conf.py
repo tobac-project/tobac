@@ -202,7 +202,8 @@ nbsphinx_thumbnails = {
     "examples/Basics/Methods-and-Parameters-for-Feature-Detection_Part_1": "_static/thumbnails/Basics_Methods-and-Parameters-for-Feature-Detection_Part_1_Thumbnail.png",
     "examples/Basics/Methods-and-Parameters-for-Feature-Detection_Part_2": "_static/thumbnails/Basics_Methods-and-Parameters-for-Feature-Detection_Part_2_Thumbnail.png",
     "examples/Basics/Methods-and-Parameters-for-Linking": "_static/thumbnails/Basics_Methods-and-Parameters-for-Linking_Thumbnail.png",
-    "examples/Basics/Methods-and-Parameters-for-Segmentation": "_static/thumbnails/Basics_Methods-and-Parameters-for-Segmentation_Thumbnail.png",
+    "examples/Basics/Methods-and-Parameters-for-Overlap-Tracking": "_static/thumbnails/Basics_Methods-and-Parameters-for-Overlap-Tracking_Thumbnail.png",
+        "examples/Basics/Methods-and-Parameters-for-Segmentation": "_static/thumbnails/Basics_Methods-and-Parameters-for-Segmentation_Thumbnail.png",
     "examples/Example_OLR_Tracking_model/Example_OLR_Tracking_model": "_static/thumbnails/Example_OLR_Tracking_model_Thumbnail.png",
     "examples/Example_OLR_Tracking_model_latlon_tracking/Example_OLR_Tracking_model_latlon_tracking": "_static/thumbnails/Example_OLR_Tracking_model_Thumbnail.png",
     "examples/Example_OLR_Tracking_satellite/Example_OLR_Tracking_satellite": "_static/thumbnails/Example_OLR_Tracking_satellite_Thumbnail.png",
@@ -215,4 +216,5 @@ nbsphinx_thumbnails = {
     "examples/big_data_processing/parallel_processing_tobac": "_static/thumbnails/big_data_processing_parallel_processing_tobac.svg",
     "examples/Example_Append_Tracking_Radar/Example_Append_Tracking_Radar": "_static/thumbnails/Example_Append_Tracking_Radar.png",
     "examples/Example_3D_Tracking_Radar_Data/3D_Tracking_Radar_Data": "_static/thumbnails/3D_Tracking_Radar_Data.png",
+    "examples/Example_ISCCP-NG_overlap_tracking/Example_ISCCP-NG_overlap_tracking": "_static/thumbnails/Example_ISCCP-NG_overlap_tracking_Thumbnail.png",
 }
