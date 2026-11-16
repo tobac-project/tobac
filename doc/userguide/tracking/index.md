@@ -6,6 +6,7 @@ Tracking allows you to stitch together the single, individual points of feature 
 :maxdepth: 2
 
 tracking_output
+overlap_tracking
 lat_lon_tracking
 append_tracking
 

@@ -11,6 +11,8 @@ import pandas as pd
 import numpy as np
 import datetime
 
+from tobac.tracking.trackpy import append_tracks_trackpy
+
 
 def convert_cell_dtype_if_appropriate(output, expected_output):
     """Helper function to convert datatype of output if
@@ -135,7 +137,7 @@ def test_append_tracking_single_track(
         first_two_times_df, None, **tracking_params
     )
 
-    append_all_tracking = tobac.tracking.append_tracks_trackpy(
+    append_all_tracking = append_tracks_trackpy(
         initial_tracking_append, all_feats, **tracking_params
     )
 
@@ -147,7 +149,7 @@ def test_append_tracking_single_track(
     )
     for i in range(3, max(all_feats["frame"]) + 2):
         curr_times_df = all_feats[all_feats["frame"] < i]
-        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+        curr_tracking_append = append_tracks_trackpy(
             curr_tracking_append, curr_times_df, **tracking_params
         )
     assert tobac.testing.check_tracking_identical(curr_tracking_append, orig_tracking)
@@ -242,7 +244,7 @@ def test_append_tracking_single_track_predict(
         first_two_times_df, None, **tracking_params
     )
 
-    append_all_tracking = tobac.tracking.append_tracks_trackpy(
+    append_all_tracking = append_tracks_trackpy(
         initial_tracking_append, all_feats, **tracking_params
     )
 
@@ -253,7 +255,7 @@ def test_append_tracking_single_track_predict(
     )
     for i in range(3, max(all_feats["frame"]) + 2):
         curr_times_df = all_feats[all_feats["frame"] < i]
-        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+        curr_tracking_append = append_tracks_trackpy(
             curr_tracking_append, curr_times_df, **tracking_params
         )
     assert tobac.testing.check_tracking_identical(curr_tracking_append, orig_tracking)
@@ -263,7 +265,7 @@ def test_append_tracking_single_track_predict(
     )
     for i in range(2, max(all_feats["frame"]) + 1):
         curr_times_df = all_feats[all_feats["frame"] == i]
-        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+        curr_tracking_append = append_tracks_trackpy(
             curr_tracking_append, curr_times_df, **tracking_params
         )
     assert tobac.testing.check_tracking_identical(curr_tracking_append, orig_tracking)
@@ -274,7 +276,7 @@ def test_append_tracking_single_track_predict(
     )
     for i in range(2, max(all_feats["frame"]) + 1):
         curr_times_df = all_feats[all_feats["frame"] == i]
-        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+        curr_tracking_append = append_tracks_trackpy(
             curr_tracking_append, curr_times_df, **tracking_params
         )
     assert tobac.testing.check_tracking_identical(curr_tracking_append, orig_tracking)
@@ -331,7 +333,7 @@ def test_trackpy_predict_append():
         first_two_times_df, None, **tracking_params
     )
 
-    append_all_tracking = tobac.tracking.append_tracks_trackpy(
+    append_all_tracking = append_tracks_trackpy(
         initial_tracking_append, features, **tracking_params
     )
 
@@ -343,7 +345,7 @@ def test_trackpy_predict_append():
     )
     for i in range(3, max(features["frame"]) + 2):
         curr_times_df = features[features["frame"] < i]
-        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+        curr_tracking_append = append_tracks_trackpy(
             curr_tracking_append, curr_times_df, **tracking_params
         )
     assert tobac.testing.check_tracking_identical(curr_tracking_append, output_correct)
@@ -354,7 +356,7 @@ def test_trackpy_predict_append():
     )
     for i in range(2, max(features["frame"]) + 1):
         curr_times_df = features[features["frame"] == i]
-        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+        curr_tracking_append = append_tracks_trackpy(
             curr_tracking_append, curr_times_df, **tracking_params
         )
     assert tobac.testing.check_tracking_identical(curr_tracking_append, output_correct)
@@ -457,7 +459,7 @@ def test_append_tracking_single_track_predict_memory(
         first_two_times_df, None, **tracking_params
     )
 
-    append_all_tracking = tobac.tracking.append_tracks_trackpy(
+    append_all_tracking = append_tracks_trackpy(
         initial_tracking_append, all_feats, **tracking_params
     )
 
@@ -468,7 +470,7 @@ def test_append_tracking_single_track_predict_memory(
     )
     for i in range(3, max(all_feats["frame"]) + 2):
         curr_times_df = all_feats[all_feats["frame"] < i]
-        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+        curr_tracking_append = append_tracks_trackpy(
             curr_tracking_append, curr_times_df, **tracking_params
         )
     assert tobac.testing.check_tracking_identical(curr_tracking_append, orig_tracking)
@@ -478,7 +480,7 @@ def test_append_tracking_single_track_predict_memory(
     )
     for i in range(2, max(all_feats["frame"]) + 1):
         curr_times_df = all_feats[all_feats["frame"] == i]
-        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+        curr_tracking_append = append_tracks_trackpy(
             curr_tracking_append, curr_times_df, **tracking_params
         )
     assert tobac.testing.check_tracking_identical(curr_tracking_append, orig_tracking)
@@ -489,7 +491,7 @@ def test_append_tracking_single_track_predict_memory(
     )
     for i in range(2, max(all_feats["frame"]) + 1):
         curr_times_df = all_feats[all_feats["frame"] == i]
-        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+        curr_tracking_append = append_tracks_trackpy(
             curr_tracking_append, curr_times_df, **tracking_params
         )
     assert tobac.testing.check_tracking_identical(curr_tracking_append, orig_tracking)
@@ -582,7 +584,7 @@ def test_append_tracks_random(
         first_two_times_df, None, **tracking_params
     )
 
-    append_all_tracking = tobac.tracking.append_tracks_trackpy(
+    append_all_tracking = append_tracks_trackpy(
         initial_tracking_append, features, **tracking_params
     )
 
@@ -593,7 +595,7 @@ def test_append_tracks_random(
     )
     for i in range(3, max(features["frame"]) + 2):
         curr_times_df = features[features["frame"] < i]
-        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+        curr_tracking_append = append_tracks_trackpy(
             curr_tracking_append, curr_times_df, **tracking_params
         )
     assert tobac.testing.check_tracking_identical(curr_tracking_append, orig_tracking)
@@ -603,7 +605,7 @@ def test_append_tracks_random(
     )
     for i in range(2, max(features["frame"]) + 1):
         curr_times_df = features[features["frame"] == i]
-        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+        curr_tracking_append = append_tracks_trackpy(
             curr_tracking_append, curr_times_df, **tracking_params
         )
     assert tobac.testing.check_tracking_identical(curr_tracking_append, orig_tracking)
@@ -614,7 +616,7 @@ def test_append_tracks_random(
     )
     for i in range(2, max(features["frame"]) + 1):
         curr_times_df = features[features["frame"] == i]
-        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+        curr_tracking_append = append_tracks_trackpy(
             curr_tracking_append, curr_times_df, **tracking_params
         )
     assert tobac.testing.check_tracking_identical(curr_tracking_append, orig_tracking)
@@ -667,13 +669,9 @@ def test_append_tracks_predict_stubs_error(time_cell_min: float, should_raise: b
                 "Track the original features with save_unfiltered_cell=True."
             ),
         ):
-            tobac.tracking.append_tracks_trackpy(
-                initial_tracking, features, **tracking_params
-            )
+            append_tracks_trackpy(initial_tracking, features, **tracking_params)
     else:
-        tobac.tracking.append_tracks_trackpy(
-            initial_tracking, features, **tracking_params
-        )
+        append_tracks_trackpy(initial_tracking, features, **tracking_params)
 
     # with the unfiltered cell numbers saved, appending should always work
     initial_tracking = tobac.tracking.linking_trackpy(
@@ -682,7 +680,7 @@ def test_append_tracks_predict_stubs_error(time_cell_min: float, should_raise: b
         save_unfiltered_cell=True,
         **tracking_params,
     )
-    tobac.tracking.append_tracks_trackpy(initial_tracking, features, **tracking_params)
+    append_tracks_trackpy(initial_tracking, features, **tracking_params)
 
 
 def _generate_random_features(
@@ -820,15 +818,13 @@ def test_append_tracks_unfiltered_cell(
 
     # append everything at once
     check_identical(
-        tobac.tracking.append_tracks_trackpy(
-            initial_tracking_append, features, **tracking_params
-        )
+        append_tracks_trackpy(initial_tracking_append, features, **tracking_params)
     )
 
     # append one at a time with the full dataframe
     curr_tracking_append = initial_tracking_append
     for i in range(3, max(features["frame"]) + 2):
-        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+        curr_tracking_append = append_tracks_trackpy(
             curr_tracking_append, features[features["frame"] < i], **tracking_params
         )
     check_identical(curr_tracking_append)
@@ -836,7 +832,7 @@ def test_append_tracks_unfiltered_cell(
     # append one at a time with only individual times
     curr_tracking_append = initial_tracking_append
     for i in range(2, max(features["frame"]) + 1):
-        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+        curr_tracking_append = append_tracks_trackpy(
             curr_tracking_append, features[features["frame"] == i], **tracking_params
         )
     check_identical(curr_tracking_append)
@@ -858,9 +854,7 @@ def test_append_tracks_no_unfiltered_cell_output():
     initial_tracking = tobac.tracking.linking_trackpy(
         features[features["frame"] < 2], None, **tracking_params
     )
-    appended = tobac.tracking.append_tracks_trackpy(
-        initial_tracking, features, **tracking_params
-    )
+    appended = append_tracks_trackpy(initial_tracking, features, **tracking_params)
     assert "cell_unfiltered" not in appended
 
 
@@ -953,7 +947,7 @@ def test_append_tracks_latlon(
     )
 
     # append everything at once
-    appended = tobac.tracking.append_tracks_trackpy(
+    appended = append_tracks_trackpy(
         initial_tracking, features, use_latlon=True, **tracking_params
     )
     assert set(appended.columns) == set(orig_tracking.columns)
@@ -962,7 +956,7 @@ def test_append_tracks_latlon(
     # append one time at a time
     curr_tracking_append = initial_tracking
     for i in range(2, max(features["frame"]) + 1):
-        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+        curr_tracking_append = append_tracks_trackpy(
             curr_tracking_append,
             features[features["frame"] == i],
             use_latlon=True,
@@ -988,7 +982,7 @@ def test_append_tracks_latlon_errors():
         ValueError,
         match=re.escape("Exactly one of 'v_max' or 'd_max' should be specified."),
     ):
-        tobac.tracking.append_tracks_trackpy(
+        append_tracks_trackpy(
             initial_tracking, features, dt=300, v_max=30, d_max=30, use_latlon=True
         )
     # PBCs are not used with lat/lon
@@ -999,7 +993,7 @@ def test_append_tracks_latlon_errors():
             "already accounts for periodicity."
         ),
     ):
-        tobac.tracking.append_tracks_trackpy(
+        append_tracks_trackpy(
             initial_tracking,
             features,
             dt=300,
@@ -1014,7 +1008,7 @@ def test_append_tracks_latlon_errors():
         ValueError,
         match=re.escape("d_min is not supported with use_latlon. Use d_max or v_max."),
     ):
-        tobac.tracking.append_tracks_trackpy(
+        append_tracks_trackpy(
             initial_tracking, features, dt=300, d_min=30, use_latlon=True
         )
     # new features need lat/lon too
@@ -1022,7 +1016,7 @@ def test_append_tracks_latlon_errors():
         ValueError,
         match=re.escape("Coordinate latitude is note present in the dataframe"),
     ):
-        tobac.tracking.append_tracks_trackpy(
+        append_tracks_trackpy(
             initial_tracking,
             features.drop(columns=["latitude"]),
             dt=300,
@@ -1037,7 +1031,7 @@ def test_append_tracks_latlon_errors():
             "Use adaptive_stop_multiplier."
         ),
     ):
-        tobac.tracking.append_tracks_trackpy(
+        append_tracks_trackpy(
             initial_tracking,
             features,
             dt=300,
@@ -1054,7 +1048,7 @@ def test_append_tracks_latlon_errors():
             "adaptive_stop_multiplier. Please specify adaptive_stop_multiplier."
         ),
     ):
-        tobac.tracking.append_tracks_trackpy(
+        append_tracks_trackpy(
             initial_tracking,
             features,
             dt=300,
@@ -1069,7 +1063,7 @@ def test_append_tracks_latlon_errors():
             "Adaptive search requires values for adaptive_stop_multiplier between 0 and 1."
         ),
     ):
-        tobac.tracking.append_tracks_trackpy(
+        append_tracks_trackpy(
             initial_tracking,
             features,
             dt=300,
@@ -1086,7 +1080,7 @@ def test_append_tracks_latlon_errors():
             "Use adaptive_stop."
         ),
     ):
-        tobac.tracking.append_tracks_trackpy(
+        append_tracks_trackpy(
             initial_tracking,
             features,
             dt=300,
@@ -1099,9 +1093,7 @@ def test_append_tracks_latlon_errors():
     with pytest.raises(
         ValueError, match=re.escape("dxy must be set unless use_latlon is True.")
     ):
-        tobac.tracking.append_tracks_trackpy(
-            initial_tracking, features, dt=300, v_max=30
-        )
+        append_tracks_trackpy(initial_tracking, features, dt=300, v_max=30)
 
 
 def _generate_random_features_3d(
@@ -1190,7 +1182,7 @@ def test_append_tracks_3d_random(
     )
 
     # append everything at once
-    append_all_tracking = tobac.tracking.append_tracks_trackpy(
+    append_all_tracking = append_tracks_trackpy(
         initial_tracking_append, features, **tracking_params
     )
     assert "vdim" in append_all_tracking
@@ -1200,7 +1192,7 @@ def test_append_tracks_3d_random(
     # append one at a time with the full dataframe
     curr_tracking_append = initial_tracking_append
     for i in range(3, max(features["frame"]) + 2):
-        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+        curr_tracking_append = append_tracks_trackpy(
             curr_tracking_append, features[features["frame"] < i], **tracking_params
         )
     assert tobac.testing.check_tracking_identical(curr_tracking_append, orig_tracking)
@@ -1208,7 +1200,7 @@ def test_append_tracks_3d_random(
     # append one at a time with only individual times
     curr_tracking_append = initial_tracking_append
     for i in range(2, max(features["frame"]) + 1):
-        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+        curr_tracking_append = append_tracks_trackpy(
             curr_tracking_append, features[features["frame"] == i], **tracking_params
         )
     assert tobac.testing.check_tracking_identical(curr_tracking_append, orig_tracking)
@@ -1265,7 +1257,7 @@ def test_append_tracks_3d_unfiltered_cell(
         **tracking_params,
     )
 
-    appended = tobac.tracking.append_tracks_trackpy(
+    appended = append_tracks_trackpy(
         initial_tracking_append, features, **tracking_params
     )
     assert "cell_unfiltered" in appended
@@ -1276,7 +1268,7 @@ def test_append_tracks_3d_unfiltered_cell(
 
     curr_tracking_append = initial_tracking_append
     for i in range(2, max(features["frame"]) + 1):
-        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+        curr_tracking_append = append_tracks_trackpy(
             curr_tracking_append, features[features["frame"] == i], **tracking_params
         )
     assert tobac.testing.check_tracking_identical(orig_tracking, curr_tracking_append)
@@ -1341,14 +1333,14 @@ def test_trackpy_predict_append_3d():
         first_two_times_df, None, **tracking_params
     )
 
-    append_all_tracking = tobac.tracking.append_tracks_trackpy(
+    append_all_tracking = append_tracks_trackpy(
         initial_tracking_append, features, **tracking_params
     )
     assert tobac.testing.check_tracking_identical(output_correct, append_all_tracking)
 
     curr_tracking_append = initial_tracking_append
     for i in range(2, max(features["frame"]) + 1):
-        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+        curr_tracking_append = append_tracks_trackpy(
             curr_tracking_append, features[features["frame"] == i], **tracking_params
         )
     assert tobac.testing.check_tracking_identical(curr_tracking_append, output_correct)
@@ -1382,7 +1374,7 @@ def test_append_tracks_3d_pbc(PBC_flag: str, method_linking: str):
         features[features["frame"] < 2], None, **tracking_params
     )
     for i in range(2, max(features["frame"]) + 1):
-        curr_tracking_append = tobac.tracking.append_tracks_trackpy(
+        curr_tracking_append = append_tracks_trackpy(
             curr_tracking_append, features[features["frame"] == i], **tracking_params
         )
     assert tobac.testing.check_tracking_identical(orig_tracking, curr_tracking_append)
@@ -1412,7 +1404,7 @@ def test_append_tracks_3d_errors():
             "One track is 3D, new track is 2D. Need to both have the same dimensions."
         ),
     ):
-        tobac.tracking.append_tracks_trackpy(
+        append_tracks_trackpy(
             tracks_3d, features_2d, dz=500, vertical_coord=None, **tracking_params
         )
     # 2D tracks with 3D new features
@@ -1422,7 +1414,7 @@ def test_append_tracks_3d_errors():
             "One track is 3D, new track is 2D. Need to both have the same dimensions."
         ),
     ):
-        tobac.tracking.append_tracks_trackpy(
+        append_tracks_trackpy(
             tracks_2d, features_3d, dz=500, vertical_coord=None, **tracking_params
         )
     # dz and vertical_coord both set
@@ -1433,7 +1425,7 @@ def test_append_tracks_3d_errors():
             "Set one to None."
         ),
     ):
-        tobac.tracking.append_tracks_trackpy(
+        append_tracks_trackpy(
             tracks_3d, features_3d, dz=500, vertical_coord="z", **tracking_params
         )
     # neither dz nor vertical_coord set
@@ -1441,7 +1433,7 @@ def test_append_tracks_3d_errors():
         ValueError,
         match=re.escape("Neither dz nor vertical_coord are set. One must be set."),
     ):
-        tobac.tracking.append_tracks_trackpy(
+        append_tracks_trackpy(
             tracks_3d, features_3d, dz=None, vertical_coord=None, **tracking_params
         )
     # lat/lon append only supports 2D
@@ -1449,7 +1441,7 @@ def test_append_tracks_3d_errors():
         ValueError,
         match=re.escape("Append tracks with use_latlon only supports 2D tracking."),
     ):
-        tobac.tracking.append_tracks_trackpy(
+        append_tracks_trackpy(
             _add_latlon_to_features(tracks_3d, 40, -90, dxy=500),
             _add_latlon_to_features(features_3d, 40, -90, dxy=500),
             dt=300,

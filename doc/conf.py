@@ -215,4 +215,5 @@ nbsphinx_thumbnails = {
     "examples/big_data_processing/parallel_processing_tobac": "_static/thumbnails/big_data_processing_parallel_processing_tobac.svg",
     "examples/Example_Append_Tracking_Radar/Example_Append_Tracking_Radar": "_static/thumbnails/Example_Append_Tracking_Radar.png",
     "examples/Example_3D_Tracking_Radar_Data/3D_Tracking_Radar_Data": "_static/thumbnails/3D_Tracking_Radar_Data.png",
+    "examples/Example_ISCCP-NG_overlap_tracking/Example_ISCCP-NG_overlap_tracking": "_static/thumbnails/Example_ISCCP-NG_overlap_tracking_Thumbnail.png",
 }

@@ -15,6 +15,7 @@ tobac is provided with a set of Jupyter notebooks that show examples of the appl
    On Feature Detection: Part 2 <./Basics/Methods-and-Parameters-for-Feature-Detection_Part_2.ipynb>
    On Segmentation <./Basics/Methods-and-Parameters-for-Segmentation.ipynb>
    On Linking <./Basics/Methods-and-Parameters-for-Linking.ipynb>
+   On Overlap Tracking <./Basics/Methods-and-Parameters-for-Overlap-Tracking.ipynb>
 ```
 
 ## Examples of Using _tobac_ with Observations
@@ -26,6 +27,7 @@ tobac is provided with a set of Jupyter notebooks that show examples of the appl
    Combine Radar & Satellite <./Example_Track_on_Radar_Segment_on_Satellite/Example_Track_on_Radar_Segment_on_Satellite>
    Track in 3D with Radar Data <./Example_3D_Tracking_Radar_Data/Example_3D_Tracking_Radar_Data>
    Append Tracks with Radar Data <./Example_Append_Tracking_Radar/Example_Append_Tracking_Radar>
+   Overlap tracking with ISCCP-NG merged satellite data <./Example_ISCCP-NG_overlap_tracking/Example_ISCCP-NG_overlap_tracking>
 
 ```
 

@@ -78,6 +78,15 @@ def to_timestamp(
         dates = np.atleast_1d(dates)
         squeeze_output = True
 
+    # If dates is empty, return it
+    try:
+        _ = next(iter(dates))
+    except StopIteration:
+        return dates
+    except TypeError:  # Handle case of 0-D DataArray
+        dates = np.atleast_1d(dates.values)
+        squeeze_output = True
+
     if isinstance(next(iter(dates)), cftime.datetime):
         pd_dates = xr.CFTimeIndex(dates).to_datetimeindex()
     else:
