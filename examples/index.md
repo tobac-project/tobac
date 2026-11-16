@@ -27,6 +27,7 @@ tobac is provided with a set of Jupyter notebooks that show examples of the appl
    Combine Radar & Satellite <./Example_Track_on_Radar_Segment_on_Satellite/Example_Track_on_Radar_Segment_on_Satellite>
    Track in 3D with Radar Data <./Example_3D_Tracking_Radar_Data/Example_3D_Tracking_Radar_Data>
    Append Tracks with Radar Data <./Example_Append_Tracking_Radar/Example_Append_Tracking_Radar>
+   Overlap tracking with ISCCP-NG merged satellite data <./Example_ISCCP-NG_overlap_tracking/Example_ISCCP-NG_overlap_tracking.ipynb>
 
 ```
 
