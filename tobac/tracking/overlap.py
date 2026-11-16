@@ -1029,6 +1029,7 @@ def linking_overlap(
                 (to_timestamp(timestep) - to_timestamp(origin_features.time))
                 <= max_time_gap
             ]
+
         if len(origin_features) and len(destination_features):
             if bootstrap:
                 _bootstrap_velocities(
@@ -1065,7 +1066,9 @@ def linking_overlap(
                 )
         else:
             if not len(origin_features):
-                bootstrap = True if translate_method in ["drift", "predict"] else False # if no features, we need to bootstrap next time we have features
+                bootstrap = (
+                    True if translate_method in ["drift", "predict"] else False
+                )  # if no features, we need to bootstrap next time we have features
 
         if (memory > 0) and len(origin_features):
             # Merge untracked features from previous frames (that are within the memory limit) with current destination features for next iteration
