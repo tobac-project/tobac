@@ -1065,11 +1065,10 @@ def linking_overlap(
                 )
         else:
             if not len(origin_features):
-                bootstrap = True  # if no features, we need to bootstrap next time we have features
-
-        # construct new origin_features
+                bootstrap = True if translate_method in ["drift", "predict"] else False # if no features, we need to bootstrap next time we have features
 
         if (memory > 0) and len(origin_features):
+            # Merge untracked features from previous frames (that are within the memory limit) with current destination features for next iteration
             origin_features = pd.concat(
                 [
                     origin_features[
