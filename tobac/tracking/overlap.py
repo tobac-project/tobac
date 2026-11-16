@@ -1017,31 +1017,13 @@ def linking_overlap(
     _, _, labels, features_t = next(field_and_features)
     origin_features = _get_coords_and_centroids(features_t, labels, PBC_flag=PBC_flag)
 
-    try:
-        frame, timestep, labels, features_t = next(field_and_features)
-    except StopIteration:  # Only one timestep
-        tracks = _filter_stub_cells(
-            tracks,
-            stubs=stubs,
-            cell_number_start=cell_number_start,
-            cell_number_unassigned=cell_number_unassigned,
-            time_cell_min=time_cell_min,
-        )
-        tracks = _assign_cell_times(
-            tracks, cell_number_unassigned=cell_number_unassigned
-        )
-        # Reset index to match features input and replace features column in the correct location
-        tracks = tracks.set_index(features.index)
-        tracks.insert(features.columns.get_loc("feature"), "feature", features.feature)
-        return tracks
-
-    destination_features = _get_coords_and_centroids(
-        features_t, labels, PBC_flag=PBC_flag
-    )
-
     bootstrap = True if translate_method in ["drift", "predict"] else False
     matched_overlaps = {}
-    while True:
+    for frame, timestep, labels, features_t in field_and_features:
+        destination_features = _get_coords_and_centroids(
+            features_t, labels, PBC_flag=PBC_flag
+        )
+
         if max_time_gap is not None:
             origin_features = origin_features[
                 (to_timestamp(timestep) - to_timestamp(origin_features.time))
@@ -1106,14 +1088,6 @@ def linking_overlap(
             )
         else:
             origin_features = destination_features
-
-        try:
-            frame, timestep, labels, features_t = next(field_and_features)
-        except StopIteration:
-            break
-        destination_features = _get_coords_and_centroids(
-            features_t, labels, PBC_flag=PBC_flag
-        )
 
     tracks = _filter_stub_cells(
         tracks,
