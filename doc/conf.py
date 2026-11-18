@@ -4,6 +4,8 @@ The documentation on setting this up is here: https://www.sphinx-doc.org/en/mast
 
 # This is the standard readthedocs theme.
 import pydata_sphinx_theme
+import importlib
+import inspect
 import sys, os
 
 sys.path.insert(0, os.path.abspath("extensions"))
@@ -114,6 +116,107 @@ master_doc = "index"
 collapse_navigation = False
 
 
+def _api_documented_modules():
+    """Return the set of tobac modules listed in the API reference index.
+
+    Parses the autosummary block of doc/api/index.rst, whose entries are
+    module names relative to ``currentmodule:: tobac``.
+    """
+    api_index = os.path.join(os.path.dirname(__file__), "api", "index.rst")
+    modules = set()
+    in_autosummary = False
+    with open(api_index) as f:
+        for line in f:
+            stripped = line.strip()
+            if stripped.startswith(".. autosummary::"):
+                in_autosummary = True
+                continue
+            if not in_autosummary:
+                continue
+            if not stripped or stripped.startswith(":"):
+                continue
+            if line[:1] not in (" ", "\t"):
+                in_autosummary = False
+                continue
+            if not stripped.startswith("tobac"):
+                stripped = "tobac." + stripped
+            modules.add(stripped)
+    return modules
+
+
+API_DOCUMENTED_MODULES = _api_documented_modules()
+
+# autosummary renders the API module pages at builder-inited, when no docname
+# is set yet, so the module currently being processed is tracked explicitly
+# while autosummary works (same approach as the BuildEnvironment patch above).
+_scanned_module_stack = []
+
+
+def _track_autosummary_modules():
+    from sphinx.ext.autosummary import generate as autosummary_generate
+
+    if getattr(
+        autosummary_generate.generate_autosummary_content, "_tobac_tracked", False
+    ):
+        return
+    orig_generate = autosummary_generate.generate_autosummary_content
+
+    def tracked_generate(name, obj, parent, *args, **kwargs):
+        _scanned_module_stack.append((name, obj))
+        try:
+            return orig_generate(name, obj, parent, *args, **kwargs)
+        finally:
+            _scanned_module_stack.pop()
+
+    tracked_generate._tobac_tracked = True
+    autosummary_generate.generate_autosummary_content = tracked_generate
+
+
+_documented_module_cache = {}
+
+
+def _documented_module_from_docname(app):
+    """Return (name, module) of the tobac module documented on the current page.
+
+    Only autosummary-generated API pages (under the api_dir toctree) map to a
+    module; for any other page (None, None) is returned. Stub pages such as
+    ``api/generated/tobac.tracking.linking_trackpy`` resolve to the module
+    that contains the documented member (``tobac.tracking``).
+    """
+    docname = app.env.temp_data.get("docname", "")
+    prefix = html_context.get("api_dir", "api/generated") + "/"
+    if not docname.startswith(prefix):
+        return None, None
+    if docname not in _documented_module_cache:
+        dotted = docname[len(prefix) :].replace("/", ".")
+        parts = dotted.split(".")
+        found = (None, None)
+        for i in range(len(parts), 0, -1):
+            candidate = ".".join(parts[:i])
+            try:
+                mod = importlib.import_module(candidate)
+            except Exception:
+                continue
+            if inspect.ismodule(mod):
+                found = (candidate, mod)
+                break
+        _documented_module_cache[docname] = found
+    return _documented_module_cache[docname]
+
+
+def _current_api_module(app):
+    """Return (name, module) of the tobac module whose API page is processed.
+
+    While autosummary generates a page the module is tracked explicitly;
+    while a page is read (autodoc), it is derived from the docname.
+    """
+    if _scanned_module_stack:
+        name, obj = _scanned_module_stack[-1]
+        if inspect.ismodule(obj):
+            return name, obj
+    return _documented_module_from_docname(app)
+
+
 def skip_member_check(app, what, name, obj, skip, options):
     """Function to skip members (autodoc-skip-member)
 
@@ -133,6 +236,32 @@ def skip_member_check(app, what, name, obj, skip, options):
     if hasattr(obj, "__doc__") and obj.__doc__ and ":hidden:" in obj.__doc__:
         return True
 
+    # Skip members imported from outside the tobac package (e.g. Union or
+    # Optional from typing, deepcopy from copy) so that they are not
+    # rendered in the API documentation.
+    obj_module = getattr(obj, "__module__", None)
+    if obj_module is not None and not obj_module.startswith("tobac"):
+        return True
+
+    # On the page of a regular module, also skip private helpers (e.g.
+    # tobac.tracking._calc_*) and members re-imported from another tobac
+    # module that has its own API page (e.g. get_statistics is documented on
+    # the tobac.utils.bulk_statistics page, so it is not linked again from
+    # the tobac.feature_detection page). Re-exports in a package __init__
+    # (e.g. tobac.segmentation) are part of the public API and shown in full.
+    doc_name, doc_mod = _current_api_module(app)
+    if doc_mod is not None and not (getattr(doc_mod, "__file__", "") or "").endswith(
+        "__init__.py"
+    ):
+        if name.startswith("_") and not name.startswith("__"):
+            return True
+        if (
+            obj_module is not None
+            and obj_module != doc_name
+            and obj_module in API_DOCUMENTED_MODULES
+        ):
+            return True
+
     return skip
 
 
@@ -140,6 +269,7 @@ def skip_member_check(app, what, name, obj, skip, options):
 def setup(app):
     app.add_css_file("theme_overrides.css")
     app.add_css_file("custom.css")
+    _track_autosummary_modules()
     app.connect("autodoc-skip-member", skip_member_check)
 
 
