@@ -133,6 +133,14 @@ def skip_member_check(app, what, name, obj, skip, options):
     if hasattr(obj, "__doc__") and obj.__doc__ and ":hidden:" in obj.__doc__:
         return True
 
+    # Skip members imported from outside the tobac package (e.g. Union or
+    # Optional from typing, deepcopy from copy) so that they are not
+    # rendered in the API documentation. Members re-exported by tobac
+    # modules (whose __module__ starts with "tobac") are still documented.
+    obj_module = getattr(obj, "__module__", None)
+    if obj_module is not None and not obj_module.startswith("tobac"):
+        return True
+
     return skip
 
 
